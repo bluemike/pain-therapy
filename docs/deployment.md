@@ -34,7 +34,7 @@ az group create -n rg-pain-therapy -l switzerlandnorth
 export ENTRA_TENANT_ID=<tenant-id> ENTRA_CLIENT_ID=<client-id> ENTRA_CLIENT_SECRET=<secret>
 export AUTH_SECRET=$(openssl rand -base64 32)
 export POSTGRES_ADMIN_PASSWORD=$(openssl rand -base64 24)
-export MAIL_SENDER=praxis@ayanta.ch
+export MAIL_SENDER=pain-therapy@ayanta.ch
 # IMAGE_TAG leer lassen: die Container App startet mit einem Platzhalter-Image
 az deployment group create -g rg-pain-therapy -n main -f infra/main.bicep -p infra/main.bicepparam
 ```

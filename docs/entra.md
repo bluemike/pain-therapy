@@ -38,7 +38,7 @@ Die App liest den Claim `roles` aus dem ID-Token. Wer keine der beiden Rollen ha
 
 ## 6. E-Mail-Versand über Graph
 
-Die App sendet als Postfach `MAIL_SENDER` (z. B. `praxis@ayanta.ch`) über `POST /users/{MAIL_SENDER}/sendMail`. Sie meldet sich dafür mit der Managed Identity der Container App an, es gibt kein Passwort.
+Die App sendet als Postfach `MAIL_SENDER` (z. B. `pain-therapy@ayanta.ch`) über `POST /users/{MAIL_SENDER}/sendMail`. Sie meldet sich dafür mit der Managed Identity der Container App an, es gibt kein Passwort.
 
 1. Der Managed Identity die Graph-Anwendungsberechtigung `Mail.Send` geben. Die Principal ID steht nach dem ersten Deployment in der Ausgabe `identityPrincipalId`:
 
@@ -56,7 +56,7 @@ Die App sendet als Postfach `MAIL_SENDER` (z. B. `praxis@ayanta.ch`) über `POST
    ```powershell
    Connect-ExchangeOnline
    New-ServicePrincipal -AppId <identityClientId> -ObjectId <identityPrincipalId> -DisplayName "pain-therapy mail"
-   New-ManagementScope -Name "pain-therapy sender" -RecipientRestrictionFilter "PrimarySmtpAddress -eq 'praxis@ayanta.ch'"
+   New-ManagementScope -Name "pain-therapy sender" -RecipientRestrictionFilter "PrimarySmtpAddress -eq 'pain-therapy@ayanta.ch'"
    New-ManagementRoleAssignment -App <identityClientId> -Role "Application Mail.Send" -CustomResourceScope "pain-therapy sender"
    ```
 

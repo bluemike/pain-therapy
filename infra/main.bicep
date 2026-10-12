@@ -42,7 +42,7 @@ param postgresAdminLogin string = 'painadmin'
 @secure()
 param postgresAdminPassword string
 
-@description('Mailbox that sends the signed PDFs (Graph sendMail), e.g. praxis@ayanta.ch.')
+@description('Mailbox that sends the signed PDFs (Graph sendMail), e.g. pain-therapy@ayanta.ch.')
 param mailSender string
 
 @description('Default place shown on the signing page.')
