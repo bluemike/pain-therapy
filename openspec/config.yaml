@@ -1,0 +1,47 @@
+schema: spec-driven
+
+context: |
+  Language: de
+  All artifacts must be written in de.
+  Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+
+  Projekt: pain-therapy, eine Web-App zur Verwaltung von Patientinnen und Patienten
+  einer Praxis, die nach der Methode Liebscher & Bracht (L&B) behandelt.
+  Vorlage ist der Dokumentationsablauf des "Liebscher & Bracht Gesundheitszentrum
+  Schweiz" (Gesundheitszentrum Gut AG, Mettmenstetten und Zürich).
+
+  Fachlicher Rahmen:
+  - Drei Techniken: Osteopressur (Therapeut drückt definierte Knochenhaut-Punkte),
+    Engpassdehnungen (27 Übungen, Codes 1A-1F, 2A-2F, 3A-3H, 4A-4G, je 3 Schritte
+    à ca. 30 s, Intensität immer unter 10) und Faszien-Rollmassage
+    (Werkzeuge MiKu, MeKu, MiRo, MeRo).
+  - 12 Behandlungsregionen (1 Kopf/Nacken/HWS bis 12 Unterschenkel/Fuss), rund 80
+    Osteopressur-Punkte mit hierarchischen IDs (z. B. 1.1.1) in 4 Gruppen
+    (1 Kopf/Hals, 2 Rumpf, 3 Arm, 4 Bein); Regionen teilen sich Punkte und Übungen,
+    einzelne Punkte sind pro Region als Hauptpunkte markiert.
+  - Ablauf: Anamnese und Einwilligungen, 3 bis 5 Behandlungen pro Schmerzbereich,
+    Heimprogramm (1 Monat, 6x pro Woche, 2x täglich), Erfolgsprotokoll.
+  - Die praxiseigenen Formulare gehen öffentlichem L&B-Material vor.
+  - Quellen der Fachlogik: docs/research/ in diesem Repository.
+
+  Rahmenbedingungen:
+  - Gesundheitsdaten nach Schweizer Datenschutzgesetz (revDSG); Aufbewahrung
+    20 Jahre nach der letzten Behandlung.
+  - Die App erfasst Ergebnisse neutral (Schmerz in %, Schwierigkeit, Adhärenz) und
+    macht keine Heilversprechen; die Evidenz der Methode ist schwach.
+  - Browser-Web-App, responsiv, auf iPad und iPhone gut bedienbar; native Apps
+    sind später möglich.
+  - Betrieb im Ayanta-Azure-Container unter https://pain-therapy.ayanta.ch.
+  - Anmeldung und Rollen (RBAC) über Ayanta Entra ID; vorerst haben nur
+    Ayanta-Benutzer Zugang.
+  - Look & Feel nach dem Corporate Design von ayanta.ch.
+  - Mehrsprachig (i18n) von Anfang an: Deutsch und Englisch.
+  - Iterativ: jede Iteration ist ein eigener OpenSpec-Change; Funktionen späterer
+    Iterationen stehen in docs/roadmap.md.
+
+# Per-artifact rules (optional)
+rules:
+  proposal:
+    - State explicitly what is out of scope.
+  specs:
+    - Use the practice's own vocabulary (Behandlungsbogen, Übungsblatt, Erfolgsprotokoll) for domain terms.
