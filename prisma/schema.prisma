@@ -1,0 +1,248 @@
+// Data model for Iteration 1 (see openspec/changes/iteration-1-scaffolding-patient-management/design.md, D5)
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  THERAPIST
+  ADMIN
+}
+
+enum Language {
+  de
+  en
+}
+
+enum Gender {
+  m
+  w
+  d
+}
+
+enum PatientStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum YesNo {
+  YES
+  NO
+}
+
+enum Pregnancy {
+  YES
+  NO
+  NOT_APPLICABLE
+}
+
+enum SignatureStatus {
+  OPEN
+  ABORTED
+  SIGNED
+}
+
+enum ConsentKind {
+  LIABILITY_WAIVER
+  DATA_PROCESSING
+  UNENCRYPTED_EMAIL
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED_NO_CONSENT
+  SKIPPED_NO_ADDRESS
+}
+
+/// A signed-in Ayanta user. Created on first sign-in from the Entra ID token.
+model User {
+  id          String   @id @default(cuid())
+  entraOid    String   @unique
+  email       String
+  name        String
+  roles       Role[]
+  locale      Language @default(de)
+  place       String?
+  createdAt   DateTime @default(now())
+  lastLoginAt DateTime @default(now())
+  /// Sessions issued before this time are rejected (sign-out, access-control)
+  signedOutAt DateTime?
+}
+
+model Patient {
+  id                 String        @id @default(cuid())
+  firstName          String
+  lastName           String
+  gender             Gender?
+  dateOfBirth        DateTime      @db.Date
+  preferredLanguage  Language      @default(de)
+  occupation         String?
+  gp                 String?
+  street             String?
+  zip                String?
+  city               String?
+  phone              String?
+  mobile             String?
+  email              String?
+  emergencyName      String?
+  emergencyPhone     String?
+  insurer            String?
+  insuranceNumber    String?
+  status             PatientStatus @default(ACTIVE)
+  deactivatedAt      DateTime?
+  deactivationReason String?
+  createdAt          DateTime      @default(now())
+  createdBy          String
+  updatedAt          DateTime      @updatedAt
+  updatedBy          String
+
+  anamnesis         Anamnesis?
+  signatureSessions SignatureSession[]
+  documents         SignedDocument[]
+  auditEvents       AuditEvent[]
+
+  @@index([lastName, dateOfBirth])
+  @@index([status, lastName])
+}
+
+/// Medical part of the intake form ("Anamnese L&B-Patienten", page 2)
+model Anamnesis {
+  patientId         String    @id
+  patient           Patient   @relation(fields: [patientId], references: [id])
+  smoker            YesNo     @default(NO)
+  smokingYears      Int?
+  packsPerDay       Decimal?  @db.Decimal(4, 1)
+  highBloodPressure Boolean   @default(false)
+  highBloodLipids   Boolean   @default(false)
+  dizziness         Boolean   @default(false)
+  osteoporosis      Boolean   @default(false)
+  arthrosis         Boolean   @default(false)
+  rheumatism        Boolean   @default(false)
+  orthoOther        Boolean   @default(false)
+  orthoOtherText    String?
+  cardiovascular    Boolean   @default(false)
+  diabetes          Boolean   @default(false)
+  asthma            Boolean   @default(false)
+  allergies         Boolean   @default(false)
+  internalOther     Boolean   @default(false)
+  internalOtherText String?
+  furtherDiagnoses  String?
+  medication        String?
+  pregnancy         Pregnancy @default(NOT_APPLICABLE)
+  inTreatment       YesNo     @default(NO)
+  treatingDoctor    String?
+}
+
+/// Versioned disclaimer text (liability waiver, patient information, privacy notice), one row per version and language
+model ConsentTextVersion {
+  id          String    @id @default(cuid())
+  version     Int
+  language    Language
+  title       String
+  body        String
+  publishedAt DateTime  @default(now())
+  publishedBy String
+
+  sessions SignatureSession[]
+
+  @@unique([version, language])
+}
+
+model SignatureSession {
+  id             String             @id @default(cuid())
+  patientId      String
+  patient        Patient            @relation(fields: [patientId], references: [id])
+  textVersionId  String
+  textVersion    ConsentTextVersion @relation(fields: [textVersionId], references: [id])
+  language       Language
+  status         SignatureStatus    @default(OPEN)
+  startedBy      String
+  startedAt      DateTime           @default(now())
+  completedAt    DateTime?
+  abortedAt      DateTime?
+  patientNote    String?
+  place          String?
+  signaturePoints Json?
+  signatureSvg   String?
+
+  consents Consent[]
+  document SignedDocument?
+
+  @@index([patientId, startedAt])
+}
+
+model Consent {
+  id        String           @id @default(cuid())
+  sessionId String
+  session   SignatureSession @relation(fields: [sessionId], references: [id])
+  kind      ConsentKind
+  granted   Boolean
+  createdAt DateTime         @default(now())
+
+  @@unique([sessionId, kind])
+}
+
+/// Archived PDF. Rows are immutable (enforced by a database trigger); the file lives in immutable Blob Storage.
+model SignedDocument {
+  id             String           @id @default(cuid())
+  documentNumber String           @unique
+  patientId      String
+  patient        Patient          @relation(fields: [patientId], references: [id])
+  sessionId      String           @unique
+  session        SignatureSession @relation(fields: [sessionId], references: [id])
+  textVersion    Int
+  language       Language
+  blobPath       String
+  sha256         String
+  sizeBytes      Int
+  createdAt      DateTime         @default(now())
+
+  deliveries EmailDelivery[]
+
+  @@index([patientId, createdAt])
+}
+
+model EmailDelivery {
+  id          String         @id @default(cuid())
+  documentId  String
+  document    SignedDocument @relation(fields: [documentId], references: [id])
+  recipient   String?
+  status      EmailStatus    @default(PENDING)
+  attempts    Int            @default(0)
+  lastError   String?
+  sentAt      DateTime?
+  requestedBy String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+/// Append-only access and change log (enforced by a database trigger)
+model AuditEvent {
+  id        String   @id @default(cuid())
+  at        DateTime @default(now())
+  userId    String
+  userName  String
+  patientId String?
+  patient   Patient? @relation(fields: [patientId], references: [id])
+  action    String
+  field     String?
+  before    String?
+  after     String?
+  details   Json?
+
+  @@index([patientId, at])
+}
+
+/// Sequence for human-readable document numbers (PT-YYYY-NNNNN)
+model DocumentCounter {
+  year Int @id
+  last Int @default(0)
+}
