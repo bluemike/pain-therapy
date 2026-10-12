@@ -3,7 +3,7 @@ using './main.bicep'
 // Non-secret settings. Secrets come from environment variables, set by the deploy workflow
 // from GitHub environment secrets, or exported in the shell for a manual deployment.
 param customDomain = 'pain-therapy.ayanta.ch'
-param bindCertificate = bool(readEnvironmentVariable('BIND_CERTIFICATE', 'false'))
+param customDomainMode = readEnvironmentVariable('CUSTOM_DOMAIN_MODE', 'off')
 param imageTag = readEnvironmentVariable('IMAGE_TAG', '')
 param entraTenantId = readEnvironmentVariable('ENTRA_TENANT_ID')
 param entraClientId = readEnvironmentVariable('ENTRA_CLIENT_ID')

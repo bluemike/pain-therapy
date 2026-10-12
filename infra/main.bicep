@@ -14,8 +14,10 @@ param name string = 'pain-therapy'
 @description('Public host name of the app.')
 param customDomain string = 'pain-therapy.ayanta.ch'
 
-@description('false for the first deployment (before the DNS records exist), true once DNS points to the app. See docs/deployment.md.')
-param bindCertificate bool = false
+@description('''Custom domain on the app: off for the first deployment (before the DNS records exist),
+add once DNS resolves (Azure verifies the TXT record), bind to issue and bind the managed certificate. See docs/deployment.md.''')
+@allowed(['off', 'add', 'bind'])
+param customDomainMode string = 'off'
 
 @description('Container image tag in the registry. Empty on the very first deployment, before any image was pushed.')
 param imageTag string = ''
@@ -254,7 +256,7 @@ resource environment 'Microsoft.App/managedEnvironments@2024-03-01' = {
   }
 }
 
-resource certificate 'Microsoft.App/managedEnvironments/managedCertificates@2024-03-01' = if (bindCertificate) {
+resource certificate 'Microsoft.App/managedEnvironments/managedCertificates@2024-03-01' = if (customDomainMode == 'bind') {
   parent: environment
   name: 'cert-${replace(customDomain, '.', '-')}'
   location: location
@@ -309,13 +311,15 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
         targetPort: appPort
         transport: 'auto'
         allowInsecure: false
-        customDomains: [
-          {
-            name: customDomain
-            bindingType: bindCertificate ? 'SniEnabled' : 'Disabled'
-            certificateId: bindCertificate ? certificate.id : null
-          }
-        ]
+        customDomains: customDomainMode == 'off'
+          ? []
+          : [
+              {
+                name: customDomain
+                bindingType: customDomainMode == 'bind' ? 'SniEnabled' : 'Disabled'
+                certificateId: customDomainMode == 'bind' ? certificate.id : null
+              }
+            ]
       }
     }
     template: {

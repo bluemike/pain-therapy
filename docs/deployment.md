@@ -52,13 +52,14 @@ In der Zone `ayanta.ch`:
 | CNAME | `pain-therapy` | Ausgabe `appFqdn` |
 | TXT | `asuid.pain-therapy` | Ausgabe `customDomainVerificationId` |
 
-Sobald die Einträge auflösen, das verwaltete Zertifikat ausstellen lassen:
+Azure prüft den TXT-Eintrag, sobald die Domain an der App hängt; deshalb kommt sie erst jetzt dazu. Sobald beide Einträge auflösen (`dig +short TXT asuid.pain-therapy.ayanta.ch`), in zwei Läufen erst die Domain hinzufügen und dann das verwaltete Zertifikat ausstellen und binden:
 
 ```bash
-BIND_CERTIFICATE=true az deployment group create -g rg-pain-therapy -n main -f infra/main.bicep -p infra/main.bicepparam
+CUSTOM_DOMAIN_MODE=add  az deployment group create -g rg-pain-therapy -n main -f infra/main.bicep -p infra/main.bicepparam
+CUSTOM_DOMAIN_MODE=bind az deployment group create -g rg-pain-therapy -n main -f infra/main.bicep -p infra/main.bicepparam
 ```
 
-Danach die GitHub-Variable `BIND_CERTIFICATE` auf `true` setzen.
+Danach die GitHub-Variable `CUSTOM_DOMAIN_MODE` auf `bind` setzen.
 
 ### 4. E-Mail
 
@@ -69,7 +70,7 @@ Graph-Berechtigung und Beschränkung auf das Absenderpostfach nach [entra.md](en
 1. App-Registrierung für GitHub Actions anlegen (z. B. `github-pain-therapy-deploy`), *Federated credential* → *GitHub Actions deploying Azure resources*: Organisation `bluemike`, Repository `pain-therapy`, Entity *Environment*, Name `production`.
 2. Dieser App auf der Ressourcengruppe die Rollen *Contributor*, *User Access Administrator* (für die Rollenzuweisungen im Bicep, eingeschränkt auf die drei Rollen AcrPull, Key Vault Secrets User, Storage Blob Data Contributor) und auf der Registry *AcrPush* geben.
 3. Im Repository unter *Settings → Environments* die Umgebung `production` anlegen (empfohlen: *Required reviewers*) mit
-   - **Variables:** `AZURE_CLIENT_ID` (GitHub-App), `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP` = `rg-pain-therapy`, `ENTRA_TENANT_ID`, `ENTRA_CLIENT_ID`, `MAIL_SENDER`, `BIND_CERTIFICATE`
+   - **Variables:** `AZURE_CLIENT_ID` (GitHub-App), `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP` = `rg-pain-therapy`, `ENTRA_TENANT_ID`, `ENTRA_CLIENT_ID`, `MAIL_SENDER`, `CUSTOM_DOMAIN_MODE`
    - **Secrets:** `ENTRA_CLIENT_SECRET`, `AUTH_SECRET`, `POSTGRES_ADMIN_PASSWORD`
 4. Repository-Variable `AZURE_DEPLOY_ENABLED` = `true`. Ab dann deployt jeder Push auf `main`; manuell über *Actions → Deploy to Azure → Run workflow*.
 

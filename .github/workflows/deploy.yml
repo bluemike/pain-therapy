@@ -71,7 +71,7 @@ jobs:
           ENTRA_TENANT_ID: ${{ vars.ENTRA_TENANT_ID }}
           ENTRA_CLIENT_ID: ${{ vars.ENTRA_CLIENT_ID }}
           MAIL_SENDER: ${{ vars.MAIL_SENDER }}
-          BIND_CERTIFICATE: ${{ vars.BIND_CERTIFICATE }}
+          CUSTOM_DOMAIN_MODE: ${{ vars.CUSTOM_DOMAIN_MODE || 'off' }}
           ENTRA_CLIENT_SECRET: ${{ secrets.ENTRA_CLIENT_SECRET }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
           POSTGRES_ADMIN_PASSWORD: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
