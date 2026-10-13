@@ -1,0 +1,58 @@
+# Local run of the production image with PostgreSQL and Azurite (Blob Storage emulator).
+#   docker compose up --build   →  http://localhost:3000 (developer sign-in, mails land in ./data/outbox)
+name: pain-therapy
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: pain_therapy
+    ports: ['5432:5432']
+    volumes: [db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U app -d pain_therapy']
+      interval: 2s
+      retries: 30
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:3.35.0
+    command: azurite-blob --blobHost 0.0.0.0 --loose --skipApiVersionCheck
+    ports: ['10000:10000']
+    volumes: [blobs:/data]
+
+  migrate:
+    build: .
+    image: pain-therapy:local
+    command: ['prisma', 'migrate', 'deploy']
+    environment:
+      DATABASE_URL: postgresql://app:app@db:5432/pain_therapy
+    depends_on:
+      db: { condition: service_healthy }
+
+  app:
+    image: pain-therapy:local
+    ports: ['3000:3000']
+    environment:
+      DATABASE_URL: postgresql://app:app@db:5432/pain_therapy
+      AUTH_SECRET: ${AUTH_SECRET:-local-compose-secret-change-me-0123456789}
+      AUTH_URL: http://localhost:3000
+      AUTH_DEV_LOGIN: 'true'
+      # Set these three to test the real Entra ID sign-in locally (see docs/entra.md)
+      AUTH_MICROSOFT_ENTRA_ID_ID: ${AUTH_MICROSOFT_ENTRA_ID_ID:-}
+      AUTH_MICROSOFT_ENTRA_ID_SECRET: ${AUTH_MICROSOFT_ENTRA_ID_SECRET:-}
+      AUTH_MICROSOFT_ENTRA_ID_TENANT_ID: ${AUTH_MICROSOFT_ENTRA_ID_TENANT_ID:-}
+      STORAGE_DRIVER: azure
+      AZURE_STORAGE_CONNECTION_STRING: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;
+      MAIL_DRIVER: outbox
+      MAIL_OUTBOX_DIR: /app/data/outbox
+    volumes: [outbox:/app/data]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      azurite: { condition: service_started }
+
+volumes:
+  db:
+  blobs:
+  outbox:

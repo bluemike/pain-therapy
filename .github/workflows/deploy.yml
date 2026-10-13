@@ -1,0 +1,88 @@
+# Builds the image, runs the database migration job and rolls out a new Container App revision.
+# Needs the one-time setup in docs/deployment.md (resource group, first Bicep deployment, OIDC federation,
+# GitHub environment "production"). Runs only when the repository variable AZURE_DEPLOY_ENABLED is "true".
+name: Deploy to Azure
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: vars.AZURE_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://pain-therapy.ayanta.ch
+    env:
+      RG: ${{ vars.AZURE_RESOURCE_GROUP }}
+      IMAGE_TAG: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Read resource names
+        id: names
+        run: |
+          out=$(az deployment group show -g "$RG" -n main --query properties.outputs -o json)
+          echo "registry=$(jq -r .registryName.value <<<"$out")" >> "$GITHUB_OUTPUT"
+          echo "loginServer=$(jq -r .registryLoginServer.value <<<"$out")" >> "$GITHUB_OUTPUT"
+          echo "job=$(jq -r .migrateJobName.value <<<"$out")" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push image
+        run: |
+          az acr login --name "${{ steps.names.outputs.registry }}"
+          image="${{ steps.names.outputs.loginServer }}/pain-therapy:$IMAGE_TAG"
+          docker build -t "$image" .
+          docker push "$image"
+
+      - name: Run database migrations
+        run: |
+          job="${{ steps.names.outputs.job }}"
+          az containerapp job update -g "$RG" -n "$job" \
+            --image "${{ steps.names.outputs.loginServer }}/pain-therapy:$IMAGE_TAG" \
+            --command prisma migrate deploy -o none
+          execution=$(az containerapp job start -g "$RG" -n "$job" --query name -o tsv)
+          for i in $(seq 1 60); do
+            status=$(az containerapp job execution show -g "$RG" -n "$job" --job-execution-name "$execution" --query properties.status -o tsv)
+            echo "Migration $execution: $status"
+            [ "$status" = "Succeeded" ] && exit 0
+            [ "$status" = "Failed" ] && exit 1
+            sleep 10
+          done
+          echo "Migration did not finish in time" && exit 1
+
+      - name: Deploy infrastructure and new revision
+        env:
+          ENTRA_TENANT_ID: ${{ vars.ENTRA_TENANT_ID }}
+          ENTRA_CLIENT_ID: ${{ vars.ENTRA_CLIENT_ID }}
+          MAIL_SENDER: ${{ vars.MAIL_SENDER }}
+          CUSTOM_DOMAIN_MODE: ${{ vars.CUSTOM_DOMAIN_MODE || 'off' }}
+          ENTRA_CLIENT_SECRET: ${{ secrets.ENTRA_CLIENT_SECRET }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          POSTGRES_ADMIN_PASSWORD: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
+        run: |
+          az deployment group create -g "$RG" -n main -f infra/main.bicep -p infra/main.bicepparam -o none
+
+      - name: Smoke test
+        run: |
+          fqdn=$(az deployment group show -g "$RG" -n main --query properties.outputs.appFqdn.value -o tsv)
+          for i in $(seq 1 30); do
+            curl -fsS "https://$fqdn/api/health" && exit 0
+            sleep 10
+          done
+          exit 1

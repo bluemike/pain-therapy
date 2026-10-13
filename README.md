@@ -16,6 +16,20 @@ Das Projekt wird spezifikationsgetrieben mit [OpenSpec](https://github.com/Fissi
 
 `openspec/changes/iteration-1-scaffolding-patient-management` beschreibt das Grundgerüst (Betrieb unter pain-therapy.ayanta.ch, Anmeldung über Ayanta Entra ID, Ayanta-Design, Deutsch und Englisch), das Dashboard, die Patientenverwaltung und die Unterschrift des Haftungsausschlusses auf dem iPad mit PDF-Archiv und E-Mail. Spätere Iterationen stehen in `docs/roadmap.md`.
 
+## App starten
+
+```bash
+cp .env.example .env          # AUTH_SECRET setzen
+docker compose up -d db
+npm install && npx prisma migrate deploy
+npm run dev                   # http://localhost:3000, Entwickler-Anmeldung ohne Entra ID
+```
+
+Details, Tests und `docker compose up --build` (Produktions-Image mit Azurite): [docs/local-development.md](docs/local-development.md).
+Betrieb in Azure: [docs/deployment.md](docs/deployment.md), Entra ID und E-Mail: [docs/entra.md](docs/entra.md).
+
+Technik: Next.js 15 (App Router, Server Actions), Auth.js mit Entra ID, Prisma mit PostgreSQL, next-intl, @react-pdf/renderer, perfect-freehand; Tests mit Vitest und Playwright (inkl. axe). Infrastruktur als Bicep, CI/CD mit GitHub Actions.
+
 ## Mit OpenSpec arbeiten
 
 ```bash

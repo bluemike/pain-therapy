@@ -1,0 +1,13 @@
+.git
+.next
+node_modules
+data
+test-results
+playwright-report
+.env
+.env.*
+!.env.example
+infra
+docs
+openspec
+tsconfig.tsbuildinfo
