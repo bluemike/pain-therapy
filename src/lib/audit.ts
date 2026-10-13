@@ -15,7 +15,14 @@ export type AuditAction =
   | 'email.sent'
   | 'email.failed'
   | 'email.resend'
-  | 'consentText.published';
+  | 'consentText.published'
+  | 'treatment.created'
+  | 'treatment.updated'
+  | 'consultation.created'
+  | 'consultation.updated'
+  | 'photo.added'
+  | 'photo.removed'
+  | 'photo.viewed';
 
 type Tx = Prisma.TransactionClient | PrismaClient;
 

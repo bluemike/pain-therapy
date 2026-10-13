@@ -14,6 +14,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const items = [
     { href: '/', label: t('dashboard') },
     { href: '/patients', label: t('patients') },
+    { href: '/catalog', label: t('catalog') },
     ...(user.roles.includes('ADMIN') ? [{ href: '/admin/consent-texts', label: t('consentTexts') }] : []),
   ];
   const initials = user.name

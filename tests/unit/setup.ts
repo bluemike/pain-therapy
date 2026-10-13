@@ -6,6 +6,7 @@ process.env.DATABASE_URL = process.env.TEST_DATABASE_URL ?? 'postgresql://app:ap
 process.env.AUTH_SECRET = 'test-secret';
 process.env.STORAGE_DRIVER = 'local';
 process.env.STORAGE_LOCAL_DIR = path.join(os.tmpdir(), `pt-docs-${process.pid}`);
+process.env.STORAGE_PHOTO_LOCAL_DIR = path.join(os.tmpdir(), `pt-photos-${process.pid}`);
 process.env.MAIL_DRIVER = 'outbox';
 process.env.MAIL_OUTBOX_DIR = path.join(os.tmpdir(), `pt-outbox-${process.pid}`);
 

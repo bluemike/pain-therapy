@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { parseSwissDate } from './format';
+import { parseLocalInput, parseSwissDate } from './format';
 
 /**
  * Patient form schema, shared by client and server (design D1).
@@ -265,3 +265,155 @@ export const EMPTY_PATIENT: PatientFormValues = {
   inTreatment: 'NO',
   treatingDoctor: '',
 };
+
+// ---------- Iteration 2: treatments and consultations ----------
+
+/** Pain in percent on the paper form: 0, 10 … 100 */
+export const PAIN_VALUES = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100] as const;
+export const SENSITIVITIES = ['LOW', 'MEDIUM', 'STRONG', 'EXTREME'] as const;
+export const DIFFICULTIES = ['EASY', 'MEDIUM', 'HARD', 'IMPOSSIBLE'] as const;
+export const ROLLING_SLOTS = 6;
+
+const isPain = (n: number) => (PAIN_VALUES as readonly number[]).includes(n);
+
+/** Date and time from <input type="datetime-local">, Swiss time, required and not in the future. */
+const pastDateTime = z
+  .string()
+  .trim()
+  .min(1, { message: 'required' })
+  .transform((v, ctx) => {
+    const d = parseLocalInput(v);
+    if (!d) {
+      ctx.addIssue({ code: 'custom', message: 'dateTime' });
+      return z.NEVER;
+    }
+    // The form shows minutes only, so "now" may be up to a minute ahead of the server clock
+    if (d.getTime() > Date.now() + 60_000) {
+      ctx.addIssue({ code: 'custom', message: 'dateTimeFuture' });
+      return z.NEVER;
+    }
+    return d;
+  });
+
+const optionalPain = z
+  .string()
+  .trim()
+  .transform((v, ctx) => {
+    if (v === '') return null;
+    const n = Number(v);
+    if (!isPain(n)) {
+      ctx.addIssue({ code: 'custom', message: 'pain' });
+      return z.NEVER;
+    }
+    return n;
+  });
+
+const requiredPain = z
+  .string()
+  .trim()
+  .min(1, { message: 'required' })
+  .pipe(optionalPain)
+  .transform((v) => v as number);
+
+/** treatments: Behandlung eröffnen / ändern */
+export const treatmentSchema = z.object({
+  startedAt: pastDateTime,
+  regionId: z
+    .string()
+    .trim()
+    .min(1, { message: 'required' })
+    .transform((v, ctx) => {
+      const n = Number(v);
+      if (!Number.isInteger(n) || n < 1) {
+        ctx.addIssue({ code: 'custom', message: 'required' });
+        return z.NEVER;
+      }
+      return n;
+    }),
+  diagnosis: requiredText(2000),
+  painStart: requiredPain,
+});
+export type TreatmentInput = z.output<typeof treatmentSchema>;
+export const TREATMENT_FIELDS = ['startedAt', 'regionId', 'diagnosis', 'painStart'] as const;
+
+const sheetText = (max: number) =>
+  z
+    .string()
+    .nullable()
+    .transform((v) => v?.trim() ?? '')
+    .pipe(z.string().max(max, { message: 'tooLong' }))
+    .transform((v) => (v === '' ? null : v));
+
+/** The digital Behandlungsbogen, sent by the consultation form as JSON. Empty rows are dropped. */
+export const sheetSchema = z
+  .object({
+    points: z
+      .array(
+        z.object({
+          pointId: z.string().min(1).max(20),
+          left: z.boolean(),
+          right: z.boolean(),
+          sensitivity: z.enum(SENSITIVITIES).nullable(),
+        }),
+      )
+      .max(200),
+    exercises: z
+      .array(
+        z.object({
+          code: z.string().min(1).max(10),
+          prescribed: z.boolean(),
+          difficulty: z.enum(DIFFICULTIES).nullable(),
+          variants: sheetText(500),
+        }),
+      )
+      .max(100),
+    rolling: z
+      .array(
+        z.object({
+          position: z.number().int().min(1).max(ROLLING_SLOTS),
+          area: sheetText(200),
+          toolCode: z.string().min(1).max(10).nullable(),
+        }),
+      )
+      .max(ROLLING_SLOTS),
+  })
+  .transform((s) => ({
+    points: s.points.filter((p) => p.left || p.right || p.sensitivity),
+    exercises: s.exercises.filter((x) => x.prescribed || x.difficulty || x.variants),
+    rolling: s.rolling.filter((r) => r.area || r.toolCode),
+  }))
+  .refine((s) => new Set(s.points.map((p) => p.pointId)).size === s.points.length, { message: 'sheet' })
+  .refine((s) => new Set(s.exercises.map((x) => x.code)).size === s.exercises.length, { message: 'sheet' })
+  .refine((s) => new Set(s.rolling.map((r) => r.position)).size === s.rolling.length, { message: 'sheet' });
+export type Sheet = z.output<typeof sheetSchema>;
+export const EMPTY_SHEET: Sheet = { points: [], exercises: [], rolling: [] };
+
+/** consultations: Konsultation eröffnen / ändern */
+export const consultationSchema = z.object({
+  at: pastDateTime,
+  diagnosis: requiredText(2000),
+  painBefore: optionalPain,
+  painAfter: optionalPain,
+  comparison: text(2000),
+  sheet: z
+    .string()
+    .transform((v, ctx) => {
+      try {
+        return JSON.parse(v || '{"points":[],"exercises":[],"rolling":[]}') as unknown;
+      } catch {
+        ctx.addIssue({ code: 'custom', message: 'sheet' });
+        return z.NEVER;
+      }
+    })
+    .pipe(sheetSchema),
+});
+export type ConsultationInput = z.output<typeof consultationSchema>;
+
+export function pickFields(fd: FormData, fields: readonly string[]): Record<string, string> {
+  const obj: Record<string, string> = {};
+  for (const k of fields) {
+    const v = fd.get(k);
+    obj[k] = typeof v === 'string' ? v : '';
+  }
+  return obj;
+}

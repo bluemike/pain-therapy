@@ -119,7 +119,7 @@ export async function getPatient(id: string) {
 
 export async function historyOf(patientId: string) {
   return db.auditEvent.findMany({
-    where: { patientId, action: { notIn: ['patient.viewed', 'document.viewed'] } },
+    where: { patientId, action: { notIn: ['patient.viewed', 'document.viewed', 'photo.viewed'] } },
     orderBy: { at: 'desc' },
     take: 300,
   });
