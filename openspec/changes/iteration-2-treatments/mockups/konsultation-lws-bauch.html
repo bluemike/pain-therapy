@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup Behandlungen und Konsultation</title>
+<!-- Klickbares Mockup zu openspec/changes/iteration-2-treatments. Statisch, ohne Server; Daten aus reference/ (Bereich 6). -->
+<style>
+:root{--gold:#b99438;--gold-text:#8a6a1c;--gold-pale:#f5edd0;--gold-bg:#faf7ee;--ink:#1c1a14;--mid:#5c5040;--muted:#6b6252;--bg:#f7f5ef;--surface:#fff;--border:#e2d9c4;--line:#eee7d6;--ok:#256b42;--ok-bg:#e6f3eb;--warn:#7a5500;--warn-bg:#fdf3d8;--orange:#d9542c;--bar:#1c1a14;--bar-fg:#ede6d3;--r:8px}
+*{box-sizing:border-box}body{margin:0;font:15px/1.45 Inter,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+header.bar{background:var(--bar);color:var(--bar-fg);display:flex;align-items:center;gap:16px;padding:10px 20px}
+.logo{font-weight:800;font-size:20px;letter-spacing:-.5px}.logo i{color:var(--gold);font-style:normal}
+.mocknav{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}.mocknav button{background:#2e2a1e;color:var(--bar-fg);border:1px solid #4a4230;border-radius:20px;padding:5px 12px;font:inherit;font-size:13px;cursor:pointer}
+.mocknav button[aria-pressed=true]{background:var(--gold);color:#1c1a14;border-color:var(--gold)}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 80px}
+.crumb{font-size:13px;color:var(--muted);margin-bottom:6px}.crumb a{color:var(--gold-text);text-decoration:none}
+h1{font-size:26px;margin:0 0 4px}h2{font-size:18px;margin:0 0 10px}h3{font-size:15px;margin:0 0 8px;text-transform:uppercase;letter-spacing:.04em;color:var(--mid)}
+.sub{color:var(--muted);margin-bottom:14px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin:16px 0;overflow-x:auto}.tabs span{padding:8px 14px;border-bottom:3px solid transparent;color:var(--mid);white-space:nowrap}.tabs .on{border-color:var(--gold);color:var(--ink);font-weight:600}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.btn{display:inline-flex;align-items:center;gap:6px;border-radius:var(--r);padding:9px 16px;font:inherit;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--ink);min-height:44px}
+.btn--gold{background:var(--gold);border-color:var(--gold);color:#1c1a14}.btn--ghost{background:transparent}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.spacer{flex:1}
+.pill{display:inline-block;font-size:12px;border-radius:12px;padding:2px 9px;background:var(--gold-pale);color:var(--gold-text);font-weight:600}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}
+.treat{border-left:4px solid var(--gold)}.treat .meta{color:var(--muted);font-size:13px}
+.cons{display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line);cursor:pointer}.cons:hover{background:var(--gold-bg)}
+.cons .n{font-weight:700;width:46px;white-space:nowrap;color:var(--gold-text)}.cons .d{width:150px}.cons .p{width:120px}.cons .x{flex:1;color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}.f{display:flex;flex-direction:column;gap:4px}.f label{font-size:13px;font-weight:600;color:var(--mid)}.req{color:#c0262d}
+.w2{grid-column:span 2}.w3{grid-column:span 3}.w6{grid-column:span 6}
+input,select,textarea{font:inherit;border:1px solid var(--border);border-radius:6px;padding:9px 10px;background:#fff;min-height:44px;color:var(--ink)}textarea{min-height:70px}
+.hint{font-size:12px;color:var(--muted)}
+.photos{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start}.ph{width:118px}.ph .img{width:118px;height:88px;border-radius:6px;background:linear-gradient(135deg,#d8ccb0,#b8a985);display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;position:relative}
+.ph .img b{position:absolute;top:4px;right:6px;font-size:13px;background:rgba(0,0,0,.45);border-radius:10px;width:20px;height:20px;line-height:20px;text-align:center;cursor:pointer}
+.ph small{display:block;font-size:11px;color:var(--muted);margin-top:3px}
+.add{width:118px;height:88px;border:2px dashed var(--border);border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--gold-text);font-weight:600;cursor:pointer;font-size:13px;background:var(--gold-bg)}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:middle}th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.pid{font-weight:700;white-space:nowrap}.pname small{display:block;color:var(--muted)}
+.e-main .pname{color:var(--orange);font-weight:700}.e-relevant .pname{color:var(--orange)}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}.seg button{border:0;border-right:1px solid var(--border);background:#fff;font:inherit;font-size:13px;padding:8px 10px;cursor:pointer;min-height:40px}.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--gold);color:#1c1a14;font-weight:600}
+.lr label{display:inline-flex;align-items:center;gap:4px;margin-right:10px}.lr input{width:22px;height:22px;min-height:0}
+.scale{display:flex;gap:4px;flex-wrap:wrap}.scale button{width:46px;min-height:40px;border:1px solid var(--border);background:#fff;border-radius:6px;font:inherit;cursor:pointer}.scale button[aria-pressed=true]{background:var(--gold);border-color:var(--gold);font-weight:700}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);flex-wrap:wrap;margin-bottom:8px}.legend .m{color:var(--orange);font-weight:700}.legend .r{color:var(--orange)}
+.filter{font-size:13px}.sticky{position:sticky;bottom:0;background:var(--surface);border-top:1px solid var(--border);padding:12px 16px;display:flex;gap:10px;justify-content:flex-end;margin:0 -16px}
+.note{background:var(--warn-bg);color:var(--warn);border-radius:6px;padding:8px 12px;font-size:13px;margin-bottom:12px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ok);color:#fff;padding:10px 18px;border-radius:20px;display:none}
+[hidden]{display:none!important}
+@media(max-width:760px){.grid{grid-template-columns:1fr 1fr}.w2,.w3{grid-column:span 2}.cons .d{width:auto}.cons .p,.cons .x{display:none}.hide-sm{display:none}td,th{padding:6px 3px}}
+</style>
+</head>
+<body>
+<header class="bar"><span class="logo">ayanta<i>.</i></span><span class="hide-sm">Schmerztherapie</span>
+<nav class="mocknav" aria-label="Mockup-Ansichten"><button data-v="record" aria-pressed="true">1 Akte: Behandlungen</button><button data-v="newtreat">2 Neue Behandlung</button><button data-v="cons">3 Konsultation</button></nav></header>
+<main>
+<!-- 1: record -->
+<section id="v-record">
+ <div class="crumb"><a href="#">← Patient:innen</a></div>
+ <div class="row"><div><h1>Anna Müller</h1><div class="sub">05.03.1980 · aktiv · Haftungsausschluss unterschrieben <span class="pill ok">gültig</span></div></div><span class="spacer"></span><button class="btn btn--gold" data-go="newtreat">+ Neue Behandlung</button></div>
+ <div class="tabs"><span class="on">Behandlungen</span><span>Personalien</span><span>Anamnese</span><span>Dokumente</span><span>Verlauf</span></div>
+ <div class="card treat">
+  <div class="row"><div><h2>6 · Lendenwirbelsäule, Bauch</h2><div class="meta">Eröffnet 13.10.2026, 09:15 · Schmerzgrad zu Beginn 60 % · 2 Fotos</div><div>Diagnose: Lumbalgie rechts, ausstrahlend in die Leiste</div></div><span class="spacer"></span><button class="btn" data-go="cons">+ Konsultation</button></div>
+  <div style="margin-top:10px">
+   <div class="cons" data-go="cons"><span class="n">Nr. 2</span><span class="d">20.10.2026, 10:00</span><span class="p">60 % → 30 %</span><span class="x">8 Punkte · 3 Übungen · 2 Rollmassagen · 1 Foto</span><span>›</span></div>
+   <div class="cons" data-go="cons"><span class="n">Nr. 1</span><span class="d">13.10.2026, 09:30</span><span class="p">60 % → 40 %</span><span class="x">10 Punkte · 4 Übungen · 3 Rollmassagen</span><span>›</span></div>
+  </div>
+ </div>
+ <div class="card treat">
+  <div class="row"><div><h2>7 · Schulter</h2><div class="meta">Eröffnet 02.09.2026, 14:00 · Schmerzgrad zu Beginn 40 %</div><div>Diagnose: Impingement links</div></div><span class="spacer"></span><button class="btn" data-go="cons">+ Konsultation</button></div>
+  <div style="margin-top:10px"><div class="cons"><span class="n">Nr. 1</span><span class="d">02.09.2026, 14:10</span><span class="p">40 % → 10 %</span><span class="x">7 Punkte · 2 Übungen</span><span>›</span></div></div>
+ </div>
+</section>
+<!-- 2: new treatment -->
+<section id="v-newtreat" hidden>
+ <div class="crumb"><a href="#" data-go="record">← Anna Müller</a></div>
+ <h1>Neue Behandlung</h1><div class="sub">Felder mit <span class="req">*</span> sind Pflichtfelder</div>
+ <div class="card"><div class="grid">
+  <div class="f w2"><label>Datum und Zeit <span class="req">*</span></label><input type="datetime-local" value="2026-10-13T09:15"></div>
+  <div class="f w2"><label>Bereich <span class="req">*</span></label><select id="regionSel"></select></div>
+  <div class="f w2"><label>Schmerzgrad zu Beginn <span class="req">*</span></label><select><option value="">Bitte wählen</option></select></div>
+  <div class="f w6"><label>Diagnose <span class="req">*</span></label><textarea>Lumbalgie rechts, ausstrahlend in die Leiste</textarea></div>
+  <div class="f w6"><label>Fotos</label><div class="photos" data-photos><label class="add">📷<span>Foto aufnehmen</span></label></div><div class="hint">Öffnet auf iPad und iPhone die Kamera. Zeitpunkt der Aufnahme wird gespeichert, Standortdaten werden entfernt.</div></div>
+ </div></div>
+ <div class="row"><span class="spacer"></span><button class="btn btn--ghost" data-go="record">Abbrechen</button><button class="btn btn--gold" data-save="record">Behandlung eröffnen</button></div>
+</section>
+<!-- 3: consultation -->
+<section id="v-cons" hidden>
+ <div class="crumb"><a href="#" data-go="record">← Anna Müller · 6 Lendenwirbelsäule, Bauch</a></div>
+ <div class="row"><div><h1>Konsultation Nr. 3</h1><div class="sub">Behandlungsbogen 6 · Lendenwirbelsäule, Bauch</div></div></div>
+ <div class="card"><div class="grid">
+  <div class="f w2"><label>Datum und Zeit <span class="req">*</span></label><input type="datetime-local" value="2026-10-27T10:00"></div>
+  <div class="f w2"><label>Schmerz vor der Konsultation</label><select id="painBefore"></select><span class="hint">"Schmerz %" im Kopf des Bogens</span></div>
+  <div class="f w2"><label>Behandlung</label><input value="eröffnet 13.10.2026 · 60 %" disabled></div>
+  <div class="f w6"><label>Diagnose</label><textarea>Lumbalgie rechts, ausstrahlend in die Leiste</textarea><span class="hint">Aus der Behandlung übernommen, hier änderbar.</span></div>
+  <div class="f w6"><label>Vergleich mit der letzten Konsultation</label><textarea placeholder="z. B. Schmerz am Morgen deutlich geringer"></textarea></div>
+ </div></div>
+ <div class="card">
+  <div class="row"><h3>Osteopressur</h3><span class="spacer"></span><label class="filter"><input type="checkbox" id="onlyMain" style="min-height:0;width:18px;height:18px"> nur Hauptpunkte</label></div>
+  <div class="legend"><span class="m">■ Hauptpunkt</span><span class="r">■ wichtig</span><span>■ weitere</span></div>
+  <table><thead><tr><th>Punkt</th><th>Muskel und Ansatz</th><th>behandelt</th><th>Empfindlichkeit</th></tr></thead><tbody id="pts"></tbody></table>
+  <div style="margin-top:10px"><button class="btn btn--ghost">+ Punkt aus anderem Bereich</button></div>
+ </div>
+ <div class="card"><h3>Restschmerz nach der Konsultation</h3><div class="scale" id="rest"></div></div>
+ <div class="card"><h3>Engpassdehnungen</h3>
+  <table><thead><tr><th>Übung</th><th>verordnet</th><th>Übung fällt</th><th class="hide-sm">Varianten</th></tr></thead><tbody id="exs"></tbody></table></div>
+ <div class="card"><h3>Faszien-Rollmassage</h3><div class="hint" style="margin-bottom:8px">Mini-Kugel = MiKu · Medi-Kugel = MeKu · Mini-Rolle = MiRo · Medi-Rolle = MeRo</div>
+  <div class="grid" id="roll"></div></div>
+ <div class="card"><h3>Fotos</h3><div class="photos" data-photos><div class="ph"><div class="img">🖼<b>×</b></div><small>27.10.2026, 10:04</small></div><label class="add">📷<span>Foto aufnehmen</span></label></div></div>
+ <div class="sticky"><button class="btn btn--ghost" data-go="record">Abbrechen</button><button class="btn btn--gold" data-save="record">Konsultation speichern</button></div>
+</section>
+</main>
+<div class="toast" id="toast">Gespeichert (Mockup)</div>
+<script>
+const D = {"regions": [{"id": 1, "nameDe": "Kopf, Nacken, Halswirbelsäule", "nameEn": "Head, neck, cervical spine", "sheetTitle": "1. Kopf, Nacken, Halswirbelsäule"}, {"id": 2, "nameDe": "Kiefer und Zähne", "nameEn": "Jaw and teeth", "sheetTitle": "2. Kiefer und Zähne"}, {"id": 3, "nameDe": "Augen", "nameEn": "Eyes", "sheetTitle": "3. Augen"}, {"id": 4, "nameDe": "Brustwirbelsäule, Brustkorb", "nameEn": "Thoracic spine, rib cage", "sheetTitle": "4. Brustwirbelsäule-Brustkorb"}, {"id": 5, "nameDe": "Zwerchfell, Atmung", "nameEn": "Diaphragm, breathing", "sheetTitle": "5. Zwerchfell-Atmung"}, {"id": 6, "nameDe": "Lendenwirbelsäule, Bauch", "nameEn": "Lumbar spine, abdomen", "sheetTitle": "6. Lendenwirbelsäule-Bauch"}, {"id": 7, "nameDe": "Schulter", "nameEn": "Shoulder", "sheetTitle": "7. Schulter"}, {"id": 8, "nameDe": "Oberarm, Ellenbogen", "nameEn": "Upper arm, elbow", "sheetTitle": "8. Oberarm-Ellenbogen"}, {"id": 9, "nameDe": "Unterarm, Handgelenk, Hand", "nameEn": "Forearm, wrist, hand", "sheetTitle": "9. Unterarm Handgelenk-Hand"}, {"id": 10, "nameDe": "Becken, Gesäss, Hüfte", "nameEn": "Pelvis, buttocks, hip", "sheetTitle": "10. Becken-Gesäß-Hüfte"}, {"id": 11, "nameDe": "Oberschenkel, Knie", "nameEn": "Thigh, knee", "sheetTitle": "11. Oberschenkel-Knie"}, {"id": 12, "nameDe": "Unterschenkel, Fussgelenk, Fuss", "nameEn": "Lower leg, ankle, foot", "sheetTitle": "12. Unterschenkel-Fußgelenk-Fuß"}], "scales": {"painPercent": [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100], "sensitivity": [{"code": "LOW", "de": "niedrig", "en": "low"}, {"code": "MEDIUM", "de": "mittel", "en": "medium"}, {"code": "STRONG", "de": "stark", "en": "strong"}, {"code": "EXTREME", "de": "extrem", "en": "extreme"}], "difficulty": [{"code": "EASY", "de": "leicht", "en": "easy"}, {"code": "MEDIUM", "de": "mittel", "en": "medium"}, {"code": "HARD", "de": "schwer", "en": "hard"}, {"code": "IMPOSSIBLE", "de": "unmöglich", "en": "impossible"}], "rollingSlots": 6}, "tools": [{"code": "MiKu", "nameDe": "Mini-Kugel", "nameEn": "Mini ball"}, {"code": "MeKu", "nameDe": "Medi-Kugel", "nameEn": "Medi ball"}, {"code": "MiRo", "nameDe": "Mini-Rolle", "nameEn": "Mini roller"}, {"code": "MeRo", "nameDe": "Medi-Rolle", "nameEn": "Medi roller"}], "points": [{"id": "2.1.1", "emphasis": "standard", "latin": "Gluteus maximus-OsSacrum", "de": "Kreuzbein"}, {"id": "2.1.2", "emphasis": "relevant", "latin": "Gluteus maximus-OsIlium", "de": "Darmbein"}, {"id": "2.2.1", "emphasis": "relevant", "latin": "Iliocostalis-OsSacrum", "de": "Kreuzbein"}, {"id": "2.2.2", "emphasis": "main", "latin": "Iliocostalis-OsIlium", "de": "Darmbein"}, {"id": "2.3", "emphasis": "standard", "latin": "Multifidus-OsSacrum", "de": "Kreuzbein"}, {"id": "2.4", "emphasis": "main", "latin": "VertebraeLumbales", "de": "Lendenwirbelsäule"}, {"id": "2.5", "emphasis": "relevant", "latin": "VertebraeThoracicae", "de": "Brustwirbelsäule"}, {"id": "2.8.1", "emphasis": "main", "latin": "RectusAbdominis-OsPubis", "de": "Schambein"}, {"id": "2.8.2", "emphasis": "standard", "latin": "RectusAbdominis-Costa 5", "de": "5. Rippe"}, {"id": "2.10", "emphasis": "relevant", "latin": "ObliquusInternusAbdominis-ArcusCostalis", "de": "Rippenbogen"}, {"id": "2.11.1", "emphasis": "main", "latin": "QuadratusLumborum-CristaIliaca", "de": "Beckenkamm"}, {"id": "2.11.2", "emphasis": "standard", "latin": "QuadratusLumborum-Costa 12", "de": "12. Rippe"}, {"id": "2.12", "emphasis": "main", "latin": "Iliopsoas-TrochanterMinor", "de": "kleiner Rollhügel"}, {"id": "2.13", "emphasis": "main", "latin": "RectusFemoris-SpinaIliacaAnteriorInferior", "de": "vorderer unterer Darmbeinstachel"}, {"id": "4.5", "emphasis": "standard", "latin": "Iliacus-OsIlium", "de": "Darmbein"}], "exercises": [{"code": "1F", "nameDe": "Rotations-Übung"}, {"code": "2A", "nameDe": "Wirbelsäulen-Übung"}, {"code": "2B", "nameDe": "Brust-Übung 10°"}, {"code": "2C", "nameDe": "Atem-Übung"}, {"code": "2D", "nameDe": "Bauch-Übung"}]};
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+function show(v){ $$('main>section').forEach(s => s.hidden = s.id !== 'v-' + v); $$('.mocknav button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === v)); scrollTo(0, 0); }
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-v],[data-go],[data-save]'); if (!b) return; e.preventDefault();
+  if (b.dataset.save) { const t = $('#toast'); t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 1400); show(b.dataset.save); }
+  else show(b.dataset.v || b.dataset.go);
+});
+// regions and pain selects
+$('#regionSel').innerHTML = '<option value="">Bitte wählen</option>' + D.regions.map(r => `<option ${r.id === 6 ? 'selected' : ''}>${r.id} · ${r.nameDe}</option>`).join('');
+const pain = D.scales.painPercent.map(p => `<option>${p} %</option>`).join('');
+$('#v-newtreat select:not(#regionSel)').insertAdjacentHTML('beforeend', pain);
+$('#painBefore').innerHTML = '<option value="">–</option>' + pain;
+const seg = (opts, name) => `<span class="seg" role="group" aria-label="${name}">${opts.map(o => `<button type="button" aria-pressed="false">${o}</button>`).join('')}</span>`;
+$('#pts').innerHTML = D.points.map(p => `<tr class="e-${p.emphasis}" data-e="${p.emphasis}"><td class="pid">${p.id}</td><td class="pname">${p.latin}<small>${p.de}</small></td>
+  <td class="lr"><label><input type="checkbox"> Li</label><label><input type="checkbox"> Re</label></td><td>${seg(D.scales.sensitivity.map(s => s.de), 'Empfindlichkeit ' + p.id)}</td></tr>`).join('');
+$('#exs').innerHTML = D.exercises.map(x => `<tr><td><b>${x.code}</b> ${x.nameDe}</td><td class="lr"><label><input type="checkbox"> verordnet</label></td>
+  <td>${seg(D.scales.difficulty.map(s => s.de === 'unmöglich' ? 'unmögl.' : s.de), 'Übung fällt ' + x.code)}</td><td class="hide-sm"><input placeholder="Variante" style="width:100%"></td></tr>`).join('');
+$('#rest').innerHTML = D.scales.painPercent.map(p => `<button type="button" aria-pressed="${p === 30}">${p}</button>`).join('');
+$('#roll').innerHTML = Array.from({ length: D.scales.rollingSlots }, (_, i) => `<div class="f w2"><label>Bereich ${i + 1}</label><input placeholder="${i === 0 ? 'z. B. Beckenkamm' : ''}"><select><option value="">Kugel/Rolle</option>${D.tools.map(t => `<option>${t.code} · ${t.nameDe}</option>`).join('')}</select></div>`).join('');
+document.addEventListener('click', e => {
+  const b = e.target.closest('.seg button,.scale button'); if (!b) return;
+  const on = b.getAttribute('aria-pressed') !== 'true'; $$('button', b.parentElement).forEach(x => x.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed', on);
+});
+$('#onlyMain').addEventListener('change', e => $$('#pts tr').forEach(tr => tr.hidden = e.target.checked && tr.dataset.e !== 'main'));
+// fake camera: each tap adds a photo with the current time
+$$('[data-photos] .add').forEach(a => a.addEventListener('click', () => {
+  const t = new Date(), ts = t.toLocaleDateString('de-CH') + ', ' + t.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' });
+  a.insertAdjacentHTML('beforebegin', `<div class="ph"><div class="img">🖼<b>×</b></div><small>${ts}</small></div>`);
+}));
+document.addEventListener('click', e => { if (e.target.matches('.ph b')) e.target.closest('.ph').remove(); });
+</script>
+</body>
+</html>
