@@ -1,9 +1,10 @@
 /**
- * Seeds the first form text version (task 6.1) and, with SEED_DEMO=true, sample patients for local development.
- * Safe to run repeatedly.
+ * Seeds the first form text version (task 6.1), the therapy catalog (iteration 2, same as `npm run catalog:sync`)
+ * and, with SEED_DEMO=true, sample patients for local development. Safe to run repeatedly.
  */
 import { PrismaClient } from '@prisma/client';
 import { INITIAL_TEXTS } from '../src/lib/consent-texts';
+import { syncCatalog } from './catalog/sync.mjs';
 
 const db = new PrismaClient();
 
@@ -17,6 +18,12 @@ async function main() {
     });
     console.log('Form texts version 1 published');
   }
+  const catalog = await syncCatalog(db);
+  console.log(
+    `Therapy catalog: ${Object.entries(catalog)
+      .map(([table, s]) => `${table} ${s.created} new, ${s.updated} updated, ${s.retired} retired`)
+      .join('; ')}`,
+  );
   if (process.env.SEED_DEMO === 'true' && (await db.patient.count()) === 0) {
     const by = 'Seed';
     const demo = [

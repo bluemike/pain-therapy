@@ -1,0 +1,360 @@
+[
+  {
+    "code": "1A",
+    "group": 1,
+    "nameDe": "Kiefer-Übung",
+    "nameEn": "Jaw exercise",
+    "regions": [1, 2, 3],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  },
+  {
+    "code": "1B",
+    "group": 1,
+    "nameDe": "Kiefergelenk-Übung",
+    "nameEn": "Jaw joint exercise",
+    "regions": [2, 3],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  },
+  {
+    "code": "1C",
+    "group": 1,
+    "nameDe": "Augen-Übung",
+    "nameEn": "Eyes exercise",
+    "regions": [3],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  },
+  {
+    "code": "1D",
+    "group": 1,
+    "nameDe": "Nacken-Übung",
+    "nameEn": "Neck exercise",
+    "regions": [1, 2, 3],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  },
+  {
+    "code": "1E",
+    "group": 1,
+    "nameDe": "Halswirbelsäulen-Übung",
+    "nameEn": "Cervical spine exercise",
+    "regions": [1, 2, 3],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  },
+  {
+    "code": "1F",
+    "group": 1,
+    "nameDe": "Rotations-Übung",
+    "nameEn": "Rotation exercise",
+    "regions": [1, 2, 4, 5, 6, 10, 11],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  },
+  {
+    "code": "2A",
+    "group": 2,
+    "nameDe": "Wirbelsäulen-Übung",
+    "nameEn": "Spine exercise",
+    "regions": [4, 5, 6],
+    "stretchSteps": 3,
+    "rolling": [
+      {
+        "order": 1,
+        "toolCode": "MiKu",
+        "areaDe": "Schambein, Beckenkamm und Rippenbogen, von rechts nach links"
+      },
+      {
+        "order": 2,
+        "toolCode": "MiKu",
+        "areaDe": "Leiste, Hüftbeuger",
+        "note": "Werkzeug auf dem Scan nicht ausdrücklich genannt; TODO prüfen"
+      },
+      {
+        "order": 3,
+        "toolCode": "MeRo",
+        "areaDe": "Lenden-, Brust- und Halswirbelsäule"
+      }
+    ],
+    "variants": [
+      {
+        "order": 1,
+        "de": "Am Boden mit Schlaufe"
+      },
+      {
+        "order": 2,
+        "de": "Auf einem Stuhl mit Schlaufe"
+      },
+      {
+        "order": 3,
+        "de": "Abschliessend stehend an der Wand"
+      }
+    ],
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche); exercises/scan1.pdf (Buchseite 97: Rollmassage, Schritte, Varianten)",
+    "stretchStepVariants": [
+      "3A: im Sitzen aktiv weiter nach vorne und unten ziehen",
+      "3B: in Rückenlage Kinn, Lendenwirbelsäule, Kniekehlen und Schultern zum Boden"
+    ]
+  },
+  {
+    "code": "2B",
+    "group": 2,
+    "nameDe": "Brust-Übung 10°",
+    "nameEn": "Chest 10° exercise",
+    "regions": [4, 5, 6],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  },
+  {
+    "code": "2C",
+    "group": 2,
+    "nameDe": "Atem-Übung",
+    "nameEn": "Breathing exercise",
+    "regions": [4, 5, 6],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  },
+  {
+    "code": "2D",
+    "group": 2,
+    "nameDe": "Bauch-Übung",
+    "nameEn": "Abdomen exercise",
+    "regions": [1, 4, 5, 6, 10],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  },
+  {
+    "code": "2E",
+    "group": 2,
+    "nameDe": "Gesäß-Übung",
+    "nameEn": "Buttocks exercise",
+    "regions": [10],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  },
+  {
+    "code": "2F",
+    "group": 2,
+    "nameDe": "Vordere Oberschenkel-Übung",
+    "nameEn": "Front thigh exercise",
+    "regions": [10, 11, 12],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  },
+  {
+    "code": "3A",
+    "group": 3,
+    "nameDe": "Schulter-Rücken-Übung",
+    "nameEn": "Shoulder, back exercise",
+    "regions": [7, 8],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  },
+  {
+    "code": "3B",
+    "group": 3,
+    "nameDe": "Obere Brust-Übung 45°",
+    "nameEn": "Upper chest 45° exercise",
+    "regions": [1, 7, 8, 9],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  },
+  {
+    "code": "3C",
+    "group": 3,
+    "nameDe": "Handbeuger-Übung",
+    "nameEn": "Wrist flexors exercise",
+    "regions": [8, 9],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  },
+  {
+    "code": "3D",
+    "group": 3,
+    "nameDe": "Handstrecker-Übung",
+    "nameEn": "Wrist extensors exercise",
+    "regions": [8, 9],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  },
+  {
+    "code": "3E",
+    "group": 3,
+    "nameDe": "Arm-Innendreher-Übung",
+    "nameEn": "Arm internal rotators exercise",
+    "regions": [7, 8],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  },
+  {
+    "code": "3F",
+    "group": 3,
+    "nameDe": "Hintere-Schulter-Übung",
+    "nameEn": "Back of shoulder exercise",
+    "regions": [7, 8],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  },
+  {
+    "code": "3G",
+    "group": 3,
+    "nameDe": "Armstrecker-Übung",
+    "nameEn": "Arm extensors exercise",
+    "regions": [7, 8, 9],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  },
+  {
+    "code": "3H",
+    "group": 3,
+    "nameDe": "Arm-Schulter-Übung",
+    "nameEn": "Arm, shoulder exercise",
+    "regions": [7, 8, 9],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  },
+  {
+    "code": "4A",
+    "group": 4,
+    "nameDe": "Äußere Bein-Rumpf-Übung",
+    "nameEn": "Outer leg, trunk exercise",
+    "regions": [10, 11],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  },
+  {
+    "code": "4B",
+    "group": 4,
+    "nameDe": "Hintere Bein-Übung",
+    "nameEn": "Back of leg exercise",
+    "regions": [10, 11, 12],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  },
+  {
+    "code": "4C",
+    "group": 4,
+    "nameDe": "Waden-Übung",
+    "nameEn": "Calf exercise",
+    "regions": [11, 12],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  },
+  {
+    "code": "4D",
+    "group": 4,
+    "nameDe": "Tiefe Waden-Übung",
+    "nameEn": "Deep calf exercise",
+    "regions": [12],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  },
+  {
+    "code": "4E",
+    "group": 4,
+    "nameDe": "Schienbein-Zehenstrecker-Übung",
+    "nameEn": "Shin, toe extensors exercise",
+    "regions": [12],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  },
+  {
+    "code": "4F",
+    "group": 4,
+    "nameDe": "Zehenbeuger-Übung",
+    "nameEn": "Toe flexors exercise",
+    "regions": [12],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  },
+  {
+    "code": "4G",
+    "group": 4,
+    "nameDe": "Innere Oberschenkel-Übung",
+    "nameEn": "Inner thigh exercise",
+    "regions": [10, 11],
+    "stretchSteps": 3,
+    "rolling": "TODO",
+    "variants": "TODO",
+    "handout": "TODO",
+    "source": "Sammelmappe 12 Behandlungsbögen (Code, Name, Bereiche)"
+  }
+]

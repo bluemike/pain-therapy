@@ -15,6 +15,12 @@ const nextConfig: NextConfig = {
     ],
   },
   poweredByHeader: false,
+  experimental: {
+    // clinical-photos: forms with up to 10 resized photos go through Server Actions (design D6)
+    serverActions: { bodySizeLimit: '25mb' },
+    // The middleware sees every request body; without this, uploads above 10 MB would be cut off
+    middlewareClientMaxBodySize: '25mb',
+  },
   async headers() {
     return [
       {

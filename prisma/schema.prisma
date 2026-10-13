@@ -1,4 +1,5 @@
 // Data model for Iteration 1 (see openspec/changes/iteration-1-scaffolding-patient-management/design.md, D5)
+// and Iteration 2 (openspec/changes/iteration-2-treatments/design.md, D1)
 
 generator client {
   provider      = "prisma-client-js"
@@ -64,15 +65,15 @@ enum EmailStatus {
 
 /// A signed-in Ayanta user. Created on first sign-in from the Entra ID token.
 model User {
-  id          String   @id @default(cuid())
-  entraOid    String   @unique
+  id          String    @id @default(cuid())
+  entraOid    String    @unique
   email       String
   name        String
   roles       Role[]
-  locale      Language @default(de)
+  locale      Language  @default(de)
   place       String?
-  createdAt   DateTime @default(now())
-  lastLoginAt DateTime @default(now())
+  createdAt   DateTime  @default(now())
+  lastLoginAt DateTime  @default(now())
   /// Sessions issued before this time are rejected (sign-out, access-control)
   signedOutAt DateTime?
 }
@@ -108,6 +109,7 @@ model Patient {
   signatureSessions SignatureSession[]
   documents         SignedDocument[]
   auditEvents       AuditEvent[]
+  treatments        Treatment[]
 
   @@index([lastName, dateOfBirth])
   @@index([status, lastName])
@@ -143,12 +145,12 @@ model Anamnesis {
 
 /// Versioned disclaimer text (liability waiver, patient information, privacy notice), one row per version and language
 model ConsentTextVersion {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   version     Int
   language    Language
   title       String
   body        String
-  publishedAt DateTime  @default(now())
+  publishedAt DateTime @default(now())
   publishedBy String
 
   sessions SignatureSession[]
@@ -157,21 +159,21 @@ model ConsentTextVersion {
 }
 
 model SignatureSession {
-  id             String             @id @default(cuid())
-  patientId      String
-  patient        Patient            @relation(fields: [patientId], references: [id])
-  textVersionId  String
-  textVersion    ConsentTextVersion @relation(fields: [textVersionId], references: [id])
-  language       Language
-  status         SignatureStatus    @default(OPEN)
-  startedBy      String
-  startedAt      DateTime           @default(now())
-  completedAt    DateTime?
-  abortedAt      DateTime?
-  patientNote    String?
-  place          String?
+  id              String             @id @default(cuid())
+  patientId       String
+  patient         Patient            @relation(fields: [patientId], references: [id])
+  textVersionId   String
+  textVersion     ConsentTextVersion @relation(fields: [textVersionId], references: [id])
+  language        Language
+  status          SignatureStatus    @default(OPEN)
+  startedBy       String
+  startedAt       DateTime           @default(now())
+  completedAt     DateTime?
+  abortedAt       DateTime?
+  patientNote     String?
+  place           String?
   signaturePoints Json?
-  signatureSvg   String?
+  signatureSvg    String?
 
   consents Consent[]
   document SignedDocument?
@@ -245,4 +247,224 @@ model AuditEvent {
 model DocumentCounter {
   year Int @id
   last Int @default(0)
+}
+
+// ---------- Therapy catalog (therapy-catalog, design D2) ----------
+// Loaded from prisma/catalog/ by `npm run catalog:sync`. Rows are never deleted; entries that disappear from the
+// reference files get `retiredAt` so recorded consultations keep their meaning.
+
+/// Emphasis of a point on the paper form: orange bold, orange, black
+enum PointEmphasis {
+  main
+  relevant
+  standard
+}
+
+/// One of the 12 treatment areas (Behandlungsbögen) of the Sammelmappe
+model Region {
+  id         Int       @id
+  nameDe     String
+  nameEn     String
+  sheetTitle String
+  retiredAt  DateTime?
+
+  points     RegionPoint[]
+  exercises  RegionExercise[]
+  treatments Treatment[]
+}
+
+model OsteopressurePoint {
+  /// e.g. "2.11.1"
+  id                    String    @id
+  group                 Int
+  muscleAttachmentLatin String
+  attachmentDe          String
+  /// Order of the reference file (numeric by ID)
+  sort                  Int
+  retiredAt             DateTime?
+
+  regions       RegionPoint[]
+  consultations ConsultationPoint[]
+}
+
+/// A point on the form of an area, in paper order
+model RegionPoint {
+  regionId  Int
+  region    Region             @relation(fields: [regionId], references: [id])
+  pointId   String
+  point     OsteopressurePoint @relation(fields: [pointId], references: [id])
+  emphasis  PointEmphasis
+  sort      Int
+  retiredAt DateTime?
+
+  @@id([regionId, pointId])
+}
+
+/// Engpassdehnung 1A to 4G
+model Exercise {
+  code         String    @id
+  group        Int
+  nameDe       String
+  nameEn       String
+  stretchSteps Int?
+  /// [{ order, toolCode, areaDe, note? }], null while not yet captured
+  rolling      Json?
+  /// [{ order, de }], null while not yet captured
+  variants     Json?
+  source       String?
+  sort         Int
+  retiredAt    DateTime?
+
+  regions       RegionExercise[]
+  consultations ConsultationExercise[]
+}
+
+model RegionExercise {
+  regionId     Int
+  region       Region    @relation(fields: [regionId], references: [id])
+  exerciseCode String
+  exercise     Exercise  @relation(fields: [exerciseCode], references: [code])
+  sort         Int
+  retiredAt    DateTime?
+
+  @@id([regionId, exerciseCode])
+}
+
+/// Fascia rolling tool (MiKu, MeKu, MiRo, MeRo)
+model RollingTool {
+  code      String    @id
+  nameDe    String
+  nameEn    String
+  sort      Int
+  retiredAt DateTime?
+
+  consultations ConsultationRolling[]
+}
+
+// ---------- Treatments and consultations (design D1, D4) ----------
+
+enum Sensitivity {
+  LOW
+  MEDIUM
+  STRONG
+  EXTREME
+}
+
+/// "Übung fällt"
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+  IMPOSSIBLE
+}
+
+/// One treatment per pain area; never deleted (database trigger)
+model Treatment {
+  id        String   @id @default(cuid())
+  patientId String
+  patient   Patient  @relation(fields: [patientId], references: [id])
+  startedAt DateTime
+  regionId  Int
+  region    Region   @relation(fields: [regionId], references: [id])
+  diagnosis String
+  /// Pain at the start in percent, 0 to 100 in steps of 10
+  painStart Int
+  createdAt DateTime @default(now())
+  createdBy String
+  updatedAt DateTime @updatedAt
+  updatedBy String
+
+  consultations Consultation[]
+  photos        ClinicalPhoto[]
+
+  @@index([patientId, startedAt])
+}
+
+/// One session, i.e. one paper form; never deleted (database trigger)
+model Consultation {
+  id          String    @id @default(cuid())
+  treatmentId String
+  treatment   Treatment @relation(fields: [treatmentId], references: [id])
+  /// "Behandlung Nr." on the paper form: 1, 2, 3 … within the treatment, fixed when created
+  number      Int
+  at          DateTime
+  diagnosis   String
+  painBefore  Int?
+  /// Residual pain after the consultation
+  painAfter   Int?
+  comparison  String?
+  createdAt   DateTime  @default(now())
+  createdBy   String
+  updatedAt   DateTime  @updatedAt
+  updatedBy   String
+
+  points    ConsultationPoint[]
+  exercises ConsultationExercise[]
+  rolling   ConsultationRolling[]
+  photos    ClinicalPhoto[]
+
+  @@unique([treatmentId, number])
+}
+
+/// Only stored when at least one value is given
+model ConsultationPoint {
+  consultationId String
+  consultation   Consultation       @relation(fields: [consultationId], references: [id])
+  pointId        String
+  point          OsteopressurePoint @relation(fields: [pointId], references: [id])
+  left           Boolean            @default(false)
+  right          Boolean            @default(false)
+  sensitivity    Sensitivity?
+
+  @@id([consultationId, pointId])
+}
+
+model ConsultationExercise {
+  consultationId String
+  consultation   Consultation @relation(fields: [consultationId], references: [id])
+  exerciseCode   String
+  exercise       Exercise     @relation(fields: [exerciseCode], references: [code])
+  prescribed     Boolean      @default(false)
+  difficulty     Difficulty?
+  variants       String?
+
+  @@id([consultationId, exerciseCode])
+}
+
+/// Fascia rolling row 1 to 6
+model ConsultationRolling {
+  consultationId String
+  consultation   Consultation @relation(fields: [consultationId], references: [id])
+  position       Int
+  area           String?
+  toolCode       String?
+  tool           RollingTool? @relation(fields: [toolCode], references: [code])
+
+  @@id([consultationId, position])
+}
+
+// ---------- Clinical photos (clinical-photos, design D5, D6) ----------
+
+/// Photo of a treatment, optionally of one of its consultations. Removing only hides it; the file stays.
+model ClinicalPhoto {
+  id             String        @id @default(cuid())
+  treatmentId    String
+  treatment      Treatment     @relation(fields: [treatmentId], references: [id])
+  consultationId String?
+  consultation   Consultation? @relation(fields: [consultationId], references: [id])
+  blobPath       String
+  thumbPath      String
+  sha256         String
+  width          Int
+  height         Int
+  sizeBytes      Int
+  /// When the photo was taken (EXIF DateTimeOriginal), otherwise when it was added
+  takenAt        DateTime
+  uploadedAt     DateTime      @default(now())
+  uploadedBy     String
+  removedAt      DateTime?
+  removedBy      String?
+
+  @@index([treatmentId, takenAt])
+  @@index([consultationId])
 }

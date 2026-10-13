@@ -1,0 +1,74 @@
+[
+  {
+    "id": 1,
+    "nameDe": "Kopf, Nacken, Halswirbelsäule",
+    "nameEn": "Head, neck, cervical spine",
+    "sheetTitle": "1. Kopf, Nacken, Halswirbelsäule"
+  },
+  {
+    "id": 2,
+    "nameDe": "Kiefer und Zähne",
+    "nameEn": "Jaw and teeth",
+    "sheetTitle": "2. Kiefer und Zähne"
+  },
+  {
+    "id": 3,
+    "nameDe": "Augen",
+    "nameEn": "Eyes",
+    "sheetTitle": "3. Augen"
+  },
+  {
+    "id": 4,
+    "nameDe": "Brustwirbelsäule, Brustkorb",
+    "nameEn": "Thoracic spine, rib cage",
+    "sheetTitle": "4. Brustwirbelsäule-Brustkorb"
+  },
+  {
+    "id": 5,
+    "nameDe": "Zwerchfell, Atmung",
+    "nameEn": "Diaphragm, breathing",
+    "sheetTitle": "5. Zwerchfell-Atmung"
+  },
+  {
+    "id": 6,
+    "nameDe": "Lendenwirbelsäule, Bauch",
+    "nameEn": "Lumbar spine, abdomen",
+    "sheetTitle": "6. Lendenwirbelsäule-Bauch"
+  },
+  {
+    "id": 7,
+    "nameDe": "Schulter",
+    "nameEn": "Shoulder",
+    "sheetTitle": "7. Schulter"
+  },
+  {
+    "id": 8,
+    "nameDe": "Oberarm, Ellenbogen",
+    "nameEn": "Upper arm, elbow",
+    "sheetTitle": "8. Oberarm-Ellenbogen"
+  },
+  {
+    "id": 9,
+    "nameDe": "Unterarm, Handgelenk, Hand",
+    "nameEn": "Forearm, wrist, hand",
+    "sheetTitle": "9. Unterarm Handgelenk-Hand"
+  },
+  {
+    "id": 10,
+    "nameDe": "Becken, Gesäss, Hüfte",
+    "nameEn": "Pelvis, buttocks, hip",
+    "sheetTitle": "10. Becken-Gesäß-Hüfte"
+  },
+  {
+    "id": 11,
+    "nameDe": "Oberschenkel, Knie",
+    "nameEn": "Thigh, knee",
+    "sheetTitle": "11. Oberschenkel-Knie"
+  },
+  {
+    "id": 12,
+    "nameDe": "Unterschenkel, Fussgelenk, Fuss",
+    "nameEn": "Lower leg, ankle, foot",
+    "sheetTitle": "12. Unterschenkel-Fußgelenk-Fuß"
+  }
+]

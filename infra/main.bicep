@@ -180,7 +180,7 @@ resource postgresAzureAccess 'Microsoft.DBforPostgreSQL/flexibleServers/firewall
   properties: { startIpAddress: '0.0.0.0', endIpAddress: '0.0.0.0' }
 }
 
-// ---------- Document archive (Blob Storage with immutability) ----------
+// ---------- Document archive (Blob Storage with immutability) and clinical photos ----------
 
 resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   name: 'stpain${suffix}'
@@ -225,6 +225,16 @@ resource documentRetention 'Microsoft.Storage/storageAccounts/blobServices/conta
   properties: {
     immutabilityPeriodSinceCreationInDays: documentRetentionDays
     allowProtectedAppendWrites: false
+  }
+}
+
+// Clinical photos (iteration 2, design D6): private, versioning and soft delete (365 days) from the blob service
+// above, no immutability so mistaken photos can be hidden. Removing a photo in the app never deletes the blob.
+resource photos 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+  parent: blobService
+  name: 'clinical-photos'
+  properties: {
+    publicAccess: 'None'
   }
 }
 
@@ -285,6 +295,7 @@ var appEnv = [
   { name: 'STORAGE_DRIVER', value: 'azure' }
   { name: 'AZURE_STORAGE_ACCOUNT_URL', value: storage.properties.primaryEndpoints.blob }
   { name: 'AZURE_STORAGE_CONTAINER', value: documents.name }
+  { name: 'AZURE_STORAGE_PHOTO_CONTAINER', value: photos.name }
   { name: 'MAIL_DRIVER', value: 'graph' }
   { name: 'MAIL_SENDER', value: mailSender }
   { name: 'DEFAULT_PLACE', value: defaultPlace }
@@ -343,7 +354,8 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
   }
 }
 
-// Runs `prisma migrate deploy` with the same image before each new revision (started by .github/workflows/deploy.yml).
+// Runs `prisma migrate deploy` and then `catalog:sync` (prisma/migrate.sh) with the same image before each new
+// revision (started by .github/workflows/deploy.yml).
 resource migrateJob 'Microsoft.App/jobs@2024-03-01' = {
   name: 'caj-${name}-migrate'
   location: location
@@ -369,7 +381,7 @@ resource migrateJob 'Microsoft.App/jobs@2024-03-01' = {
         {
           name: 'migrate'
           image: image
-          command: empty(imageTag) ? [] : ['prisma', 'migrate', 'deploy']
+          command: empty(imageTag) ? [] : ['sh', 'prisma/migrate.sh']
           env: [{ name: 'DATABASE_URL', secretRef: 'database-url' }]
           resources: { cpu: json('0.25'), memory: '0.5Gi' }
         }
