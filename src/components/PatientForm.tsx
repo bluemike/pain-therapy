@@ -167,7 +167,7 @@ export function PatientForm({ id, initial, cancelHref }: { id?: string; initial:
           <div className="f w1" aria-hidden="true" />
           {Field({ name: 'phone', label: t('phone'), type: 'tel', ph: '044 123 45 67' })}
           {Field({ name: 'mobile', label: t('mobile'), type: 'tel', ph: '079 123 45 67' })}
-          {Field({ name: 'email', label: t('email'), type: 'email', ph: 'name@beispiel.ch' })}
+          {Field({ name: 'email', label: t('email'), type: 'email', ph: 'name@beispiel.ch', req: true })}
         </div>
       </fieldset>
 

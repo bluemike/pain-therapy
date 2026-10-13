@@ -18,7 +18,7 @@ export async function login(
 
 export const unique = () => `${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
 
-/** Fills the required fields of the new-patient form. */
+/** Fills the required fields of the new-patient form; email defaults to <first>@example.ch. */
 export async function fillPatient(
   page: Page,
   p: { first: string; last: string; dob: string; lang?: 'de' | 'en'; email?: string; street?: string },
@@ -27,7 +27,7 @@ export async function fillPatient(
   await page.locator('#f_lastName').fill(p.last);
   await page.locator('#f_dateOfBirth').fill(p.dob);
   if (p.lang) await page.locator('#f_preferredLanguage').selectOption(p.lang);
-  if (p.email !== undefined) await page.locator('#f_email').fill(p.email);
+  await page.locator('#f_email').fill(p.email ?? `${p.first.toLowerCase()}@example.ch`);
   if (p.street) await page.locator('#f_street').fill(p.street);
 }
 

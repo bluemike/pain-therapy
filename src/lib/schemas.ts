@@ -71,12 +71,14 @@ export const patientSchema = z
     city: text(),
     phone: text(40),
     mobile: text(40),
+    // Required: signed documents are sent to this address
     email: z
       .string()
       .trim()
+      .min(1, { message: 'required' })
       .max(200, { message: 'tooLong' })
-      .refine((v) => v === '' || /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v), { message: 'email' })
-      .transform((v) => (v === '' ? null : v.toLowerCase())),
+      .refine((v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v), { message: 'email' })
+      .transform((v) => v.toLowerCase()),
     emergencyName: text(),
     emergencyPhone: text(40),
     insurer: text(),

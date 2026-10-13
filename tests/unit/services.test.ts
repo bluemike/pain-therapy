@@ -23,6 +23,7 @@ const actor: Actor = { id: 'u-1', name: 'Mike Franz', email: 'mike.franz@ayanta.
 const form = (over: Record<string, string>) =>
   patientSchema.parse({
     ...Object.fromEntries(Object.entries(EMPTY_PATIENT).map(([k, v]) => [k, typeof v === 'boolean' ? '' : v])),
+    email: 'patient@example.ch',
     ...over,
   });
 const signature = {
