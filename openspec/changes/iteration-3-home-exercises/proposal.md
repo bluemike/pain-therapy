@@ -31,5 +31,5 @@ In der Konsultation verordnet die Therapeutin Engpassdehnungen, und die Patienti
 
 - Neue Tabellen für Inhalte und Zeitbedarf der Übungen, Verordnungen und Übungsblätter; Prisma-Migration nur additiv.
 - Neuer privater Blob-Container `exercise-media` für Bilder und Inhalte der Übungsblätter; die Inhalte liegen nicht im Git-Repository.
-- Nutzung der L&B-Übungsblätter in digitaler Form und im Versand an Patientinnen setzt die Erlaubnis von Liebscher & Bracht voraus (siehe design.md, Risiken).
+- Die Praxis darf die Bilder der L&B-Übungsblätter an Patientinnen abgeben (bestätigt am 13.10.2026); die Inhalte liegen trotzdem nicht im Repository.
 - E-Mail-Versand über das bestehende Postfach `pain-therapy@ayanta.ch`.

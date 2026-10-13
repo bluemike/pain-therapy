@@ -62,7 +62,7 @@ Ein erneutes Senden nach Änderungen erzeugt eine neue Version; ältere bleiben 
 
 ## Risks / Trade-offs
 
-- [Urheberrecht an Texten und Fotos der L&B-Blätter] → Inhalte nicht im Repository; digitale Nutzung und E-Mail-Versand erst nach schriftlicher Erlaubnis von Liebscher & Bracht oder Bestätigung, dass die Lizenz der Praxis das abdeckt. Bis dahin kann das Deckblatt allein (ohne Blattbilder) versendet werden.
+- [Urheberrecht an Texten und Fotos der L&B-Blätter] → Die Praxis darf die Bilder an Patientinnen abgeben (Bestätigung von Mike Franz am 13.10.2026). Die Inhalte bleiben trotzdem ausserhalb des Repositorys und sind in der App nur für angemeldete Benutzer und im persönlichen Übungsblatt sichtbar.
 - [Abgeleitete Zeiten stimmen nicht mit der Praxis überein] → Werte in einer Datei mit Herkunft, Abnahme durch die Praxis, Korrektur per Pull Request.
 - [Gesundheitsdaten per unverschlüsselter E-Mail] → Nur mit Einwilligung, wie in Iteration 1.
 - [Zu viele Übungen für den Alltag] → Gesamtzeitbedarf sichtbar vor dem Versand; Hinweis ab 30 Minuten pro Tag.
@@ -73,7 +73,6 @@ Additive Migration, Upload der Medien in `exercise-media` vor dem ersten Deploym
 
 ## Open Questions
 
-- Darf die Praxis die L&B-Übungsblätter digital nutzen und per E-Mail versenden? (Voraussetzung für die Blattbilder im PDF.)
 - "3-7x pro Woche" und "5x pro Woche" überschneiden sich; ist "3-7x" so gemeint, oder "3x pro Woche"?
 - Rollmassage-Dauer pro Übung (Vorschlag 120 s) und Dauer für 1C und 2C.
 - Vorschlagswert für neue Verordnungen: "täglich 2x"?

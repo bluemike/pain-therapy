@@ -3,7 +3,7 @@
 ## 1. Übungsbibliothek (exercise-library)
 
 - [x] 1.1 Erste Digitalisierung der 27 Blätter (Hauptbild, Blattbild, Texte) nach OneDrive `pain-therapy/exercises/digitalisiert/`; Übersicht der Hauptbilder geprüft
-- [ ] 1.2 Erlaubnis von Liebscher & Bracht für digitale Nutzung und E-Mail-Versand klären (Praxis)
+- [x] 1.2 Erlaubnis für die Abgabe der Bilder an Patientinnen geklärt (bestätigt von Mike Franz am 13.10.2026)
 - [ ] 1.3 Zeitbedarf mit der Praxis abnehmen (Rollmassage-Dauer, 1C, 2C) und in `reference/exercise-sheets.json` eintragen
 - [ ] 1.4 Importskript `scripts/import-exercise-sheets.py` ins Repository (ohne Inhalte); Upload nach `exercise-media` in docs/deployment.md beschreiben
 - [ ] 1.5 Bicep: privater Container `exercise-media`; `what-if` zeigt nur den neuen Container

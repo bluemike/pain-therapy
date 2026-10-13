@@ -20,4 +20,4 @@ Texte und Bilder der Blätter gehören Liebscher & Bracht und liegen nicht im Re
 - `exercises-content.json`: Texte der Abschnitte pro Übung, Schritt-Bezeichnungen, Zeitbedarf
 - `uebersicht-hauptbilder.png`: alle 27 Hauptbilder auf einen Blick
 
-Sie werden nach der Klärung der Nutzungsrechte in den privaten Container `exercise-media` geladen (design.md, D2).
+Die Praxis darf die Bilder an Patientinnen abgeben (bestätigt am 13.10.2026). Sie werden vor dem ersten Deployment von Iteration 3 in den privaten Container `exercise-media` geladen (design.md, D2).
