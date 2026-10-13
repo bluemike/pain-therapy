@@ -74,6 +74,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx prisma migrate deploy
+      # Synthetic exercise media (no L&B content), read by catalog:sync and the app
+      - run: npm run media:placeholders
       - run: npm run catalog:sync
       - run: npm run build
       - run: npx playwright install --with-deps chromium

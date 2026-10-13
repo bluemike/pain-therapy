@@ -238,6 +238,17 @@ resource photos 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-
   }
 }
 
+// Exercise media (iteration 3, design D2): L&B pictures and texts of the digitised exercise sheets, uploaded by
+// hand (docs/deployment.md), never part of the repository or the image. Private: the app serves them only to
+// signed-in users, catalog:sync in the migration job reads exercises-content.json from here.
+resource exerciseMedia 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+  parent: blobService
+  name: 'exercise-media'
+  properties: {
+    publicAccess: 'None'
+  }
+}
+
 resource blobContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(storage.id, identity.id, roles.storageBlobDataContributor)
   scope: storage
@@ -296,6 +307,7 @@ var appEnv = [
   { name: 'AZURE_STORAGE_ACCOUNT_URL', value: storage.properties.primaryEndpoints.blob }
   { name: 'AZURE_STORAGE_CONTAINER', value: documents.name }
   { name: 'AZURE_STORAGE_PHOTO_CONTAINER', value: photos.name }
+  { name: 'AZURE_STORAGE_EXERCISE_CONTAINER', value: exerciseMedia.name }
   { name: 'MAIL_DRIVER', value: 'graph' }
   { name: 'MAIL_SENDER', value: mailSender }
   { name: 'DEFAULT_PLACE', value: defaultPlace }
@@ -364,7 +376,7 @@ resource migrateJob 'Microsoft.App/jobs@2024-03-01' = {
     type: 'UserAssigned'
     userAssignedIdentities: { '${identity.id}': {} }
   }
-  dependsOn: [acrPull, vaultSecretsUser]
+  dependsOn: [acrPull, vaultSecretsUser, blobContributor]
   properties: {
     environmentId: environment.id
     workloadProfileName: 'Consumption'
@@ -382,7 +394,14 @@ resource migrateJob 'Microsoft.App/jobs@2024-03-01' = {
           name: 'migrate'
           image: image
           command: empty(imageTag) ? [] : ['sh', 'prisma/migrate.sh']
-          env: [{ name: 'DATABASE_URL', secretRef: 'database-url' }]
+          // The exercise texts for catalog:sync come from the exercise-media container
+          env: [
+            { name: 'DATABASE_URL', secretRef: 'database-url' }
+            { name: 'AZURE_CLIENT_ID', value: identity.properties.clientId }
+            { name: 'STORAGE_DRIVER', value: 'azure' }
+            { name: 'AZURE_STORAGE_ACCOUNT_URL', value: storage.properties.primaryEndpoints.blob }
+            { name: 'AZURE_STORAGE_EXERCISE_CONTAINER', value: exerciseMedia.name }
+          ]
           resources: { cpu: json('0.25'), memory: '0.5Gi' }
         }
       ]

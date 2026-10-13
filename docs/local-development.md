@@ -9,6 +9,7 @@ cp .env.example .env                      # AUTH_SECRET setzen: openssl rand -ba
 docker compose up -d db                   # PostgreSQL 16 auf localhost:5432 (app/app)
 npm install
 npx prisma migrate deploy                 # Tabellen und Schutz-Trigger anlegen
+npm run media:placeholders                # Platzhalter-Bilder und -Texte der Übungsblätter in data/exercise-media/
 npm run catalog:sync                      # Therapiekatalog aus prisma/catalog/ einspielen (auch Teil von db:seed)
 SEED_DEMO=true npm run db:seed            # optional: Formulartexte, Katalog und 4 Beispiel-Patient:innen
 npm run dev                               # http://localhost:3000
@@ -16,7 +17,7 @@ npm run dev                               # http://localhost:3000
 
 Mit `AUTH_DEV_LOGIN=true` zeigt die Anmeldeseite zusätzlich die **Entwickler-Anmeldung**: Name, Rolle (Therapeut:in, Administration, keine) und Kontoart (Ayanta, Gast, fremder Tenant) frei wählbar. Damit lassen sich alle Zugriffsfälle durchspielen. In Azure ist sie immer aus.
 
-Mails landen als `.json` mit dem PDF-Anhang daneben in `data/outbox/`, unterschriebene PDFs in `data/documents/`, Fotos von Behandlungen und Konsultationen in `data/clinical-photos/` (`STORAGE_PHOTO_LOCAL_DIR`). Neue Behandlungen und Konsultationen gibt es nur für aktive Patient:innen mit gültig unterschriebenem Haftungsausschluss; lokal also zuerst über *An Patient:in übergeben* unterschreiben. Das iPad lässt sich im Browser mit den Entwicklerwerkzeugen (Gerätesimulation) oder mit einem echten iPad im selben Netz (`http://<rechner-ip>:3000`) testen.
+Mails landen als `.json` mit dem PDF-Anhang daneben in `data/outbox/`, unterschriebene PDFs in `data/documents/`, Fotos von Behandlungen und Konsultationen in `data/clinical-photos/` (`STORAGE_PHOTO_LOCAL_DIR`), Übungsblätter (PDF) wie die unterschriebenen Dokumente in `data/documents/`. Die Bilder und Texte der L&B-Übungsblätter liest die App aus `data/exercise-media/` (`STORAGE_EXERCISE_LOCAL_DIR`); `npm run media:placeholders` legt dort synthetische Platzhalter an (gestreifte Bilder, Texte "Platzhalter …"), die echten Inhalte gehören nicht ins Repository (siehe [deployment.md](deployment.md#iteration-3-selbstausführung-übungsblatt)). Wer die echten Dateien lokal braucht, kopiert sie aus OneDrive in diesen Ordner und startet `npm run catalog:sync`. Neue Behandlungen und Konsultationen gibt es nur für aktive Patient:innen mit gültig unterschriebenem Haftungsausschluss; lokal also zuerst über *An Patient:in übergeben* unterschreiben. Das iPad lässt sich im Browser mit den Entwicklerwerkzeugen (Gerätesimulation) oder mit einem echten iPad im selben Netz (`http://<rechner-ip>:3000`) testen.
 
 ## Wie in Produktion
 
@@ -45,7 +46,7 @@ Die Trigger in der ersten Migration verhindern Änderungen und Löschungen an `A
 
 ## Therapiekatalog ändern
 
-Bereiche, Osteopressur-Punkte, Engpassdehnungen und Rollwerkzeuge stehen in `prisma/catalog/` (JSON und CSV, Herkunft in `openspec/changes/iteration-2-treatments/reference/README.md`). Nach einer Änderung `npm run catalog:sync`: Das Skript schreibt nur geänderte Zeilen und löscht nichts. Was aus den Dateien verschwindet, bekommt `retiredAt`, erscheint nicht mehr auf neuen Bögen und bleibt in bestehenden Konsultationen sichtbar. Ein Eintrag, der wieder in den Dateien steht, wird reaktiviert.
+Bereiche, Osteopressur-Punkte, Engpassdehnungen, Rollwerkzeuge und die Übungsblätter (Dateinamen, Schritte, Zeitbedarf) stehen in `prisma/catalog/` (JSON und CSV, Herkunft in `openspec/changes/iteration-2-treatments/reference/README.md`). Nach einer Änderung `npm run catalog:sync`: Das Skript schreibt nur geänderte Zeilen und löscht nichts. Was aus den Dateien verschwindet, bekommt `retiredAt`, erscheint nicht mehr auf neuen Bögen und bleibt in bestehenden Konsultationen sichtbar. Ein Eintrag, der wieder in den Dateien steht, wird reaktiviert.
 
 ## Aufbau
 
@@ -53,6 +54,9 @@ Bereiche, Osteopressur-Punkte, Engpassdehnungen und Rollwerkzeuge stehen in `pri
 src/app/            Seiten (App Router) und Server Actions
   (app)/            angemeldeter Bereich: Dashboard, Patient:innen, Behandlungen, Konsultationen, Katalog, Formulartexte
   api/photos/[id]/  Auslieferung der Fotos (und /thumb) nur mit Anmeldung, ohne Cache
+  api/exercise-media/[code]/[main|sheet]/  Bilder der Übungsblätter, nur mit Anmeldung
+  (app)/patients/[id]/treatments/[tid]/consultations/[cid]/handout/  Abschluss: Übungsblatt senden oder drucken
+  (app)/catalog/exercises/[code]/  Übung im Katalog
   sign/             Patientenmodus auf dem iPad
   documents/[id]/   PDF-Auslieferung mit Prüfsumme
 src/lib/            Dienste: Patient:innen, Unterschrift, PDF, Ablage, Mail, Audit, Zugriff
