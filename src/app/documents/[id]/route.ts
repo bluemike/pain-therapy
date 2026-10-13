@@ -4,14 +4,18 @@ import { audit } from '@/lib/audit';
 import { db } from '@/lib/db';
 import { documentStore, sha256 } from '@/lib/storage';
 
-/** consent-documents: Dokument ansehen. Streams the archived PDF after checking its checksum. */
+/**
+ * consent-documents: Dokument ansehen. Streams the archived PDF after checking its checksum. The same address serves
+ * exercise sheets (exercise-handout: Ablage in der Akte), which share the archive and the document numbers.
+ */
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user?.id || session.patientMode || !can.managePatients(session.user.roles)) {
     return new Response('Forbidden', { status: 403 });
   }
   const { id } = await params;
-  const doc = await db.signedDocument.findUnique({ where: { id } });
+  const doc =
+    (await db.signedDocument.findUnique({ where: { id } })) ?? (await db.exerciseHandout.findUnique({ where: { id } }));
   if (!doc) return new Response('Not found', { status: 404 });
   const data = await documentStore().get(doc.blobPath);
   if (sha256(data) !== doc.sha256) return new Response('Checksum mismatch', { status: 500 });

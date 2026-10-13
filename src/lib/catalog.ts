@@ -103,7 +103,7 @@ export async function catalogView() {
       where: { retiredAt: null, point: { retiredAt: null }, region: { retiredAt: null } },
       orderBy: [{ regionId: 'asc' }, { sort: 'asc' }],
     }),
-    db.exercise.findMany({ where: { retiredAt: null }, orderBy: { sort: 'asc' } }),
+    db.exercise.findMany({ where: { retiredAt: null }, include: { sheet: true }, orderBy: { sort: 'asc' } }),
     db.regionExercise.findMany({
       where: { retiredAt: null, exercise: { retiredAt: null }, region: { retiredAt: null } },
       orderBy: [{ regionId: 'asc' }, { sort: 'asc' }],

@@ -2233,3 +2233,227 @@ table.catalog td {
     padding: 6px 3px;
   }
 }
+
+/* ---------- Iteration 3: Selbstausführung, Übungsblatt, Katalog-Übung (mockups/selbstausfuehrung.html) ---------- */
+.rxlist {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+.rx {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  gap: 10px 12px;
+  align-items: center;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+.rx .rximg {
+  width: 64px;
+  height: 52px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.exph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: repeating-linear-gradient(135deg, var(--line) 0 8px, var(--gold-bg) 8px 16px);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--mid);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px;
+}
+.rx .nm small,
+.rx .dur small {
+  display: block;
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 12.5px;
+}
+.rx .dur {
+  font-weight: 700;
+  color: var(--gold-text);
+  white-space: nowrap;
+  text-align: right;
+}
+.rx .opts {
+  grid-column: 2 / 4;
+  display: flex;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.rx .lbl,
+.rx label.lbl {
+  font-size: 12.5px;
+  color: var(--muted);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.rx select.inp {
+  width: auto;
+  min-height: 42px;
+}
+.rx input.note {
+  width: auto;
+  flex: 1 1 160px;
+  min-height: 42px;
+}
+.total {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  background: var(--gold-bg);
+  border: 1px solid var(--gold-pale);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-top: 12px;
+}
+.total b {
+  display: block;
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+.total span {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.sheet p.note {
+  background: var(--warn-bg);
+  color: var(--warn);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13.5px;
+  margin: 10px 0 0;
+}
+.sheet p.hint + .total,
+.sheet .total + .hint {
+  margin-top: 10px;
+}
+fieldset.choice {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  border: 0;
+  padding: 0;
+  margin: 0 0 12px;
+}
+fieldset.choice legend {
+  grid-column: 1 / -1;
+  margin-bottom: 10px;
+}
+fieldset.choice label.card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 16px;
+  margin: 0;
+  cursor: pointer;
+}
+fieldset.choice label.card input {
+  width: 22px;
+  height: 22px;
+  margin: 2px 0 0;
+  accent-color: var(--gold);
+}
+fieldset.choice label.card b {
+  display: block;
+  font-size: 17px;
+}
+fieldset.choice label.card .d {
+  display: block;
+}
+fieldset.choice label.card small {
+  display: block;
+  color: var(--muted);
+  margin-top: 6px;
+  font-size: 12.5px;
+}
+fieldset.choice label.card.on {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px var(--gold-pale);
+}
+fieldset.choice label.card.off {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.handout .formbar {
+  position: static;
+  margin: 0;
+  padding: 12px 0 0;
+  border: 0;
+  background: none;
+}
+.exdet {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+.exdet .exmain {
+  width: 100%;
+  min-height: 160px;
+  max-height: 320px;
+  object-fit: contain;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 14px;
+}
+.exdet .card h2 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--mid);
+  padding: 14px 16px 0;
+  margin: 0;
+}
+.exdet .card dl.kv,
+.exdet .card ul.hint {
+  padding: 8px 16px 14px;
+  margin: 0;
+}
+.exdet .exsheet {
+  width: 100%;
+  min-height: 360px;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.pre {
+  white-space: pre-line;
+}
+ol.steps {
+  margin: 0;
+  padding-left: 20px;
+}
+ol.steps li {
+  margin-bottom: 6px;
+}
+@media (max-width: 760px) {
+  .rx {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+  .rx .rximg {
+    width: 52px;
+    height: 44px;
+  }
+  .rx .dur {
+    grid-column: 2;
+    text-align: left;
+  }
+  .rx .opts {
+    grid-column: 1 / -1;
+  }
+  fieldset.choice,
+  .exdet {
+    grid-template-columns: 1fr;
+  }
+}

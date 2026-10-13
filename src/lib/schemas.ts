@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { parseLocalInput, parseSwissDate } from './format';
+import { DEFAULT_REPETITION, REPETITIONS } from './home-program';
 
 /**
  * Patient form schema, shared by client and server (design D1).
@@ -344,7 +345,20 @@ const sheetText = (max: number) =>
     .pipe(z.string().max(max, { message: 'tooLong' }))
     .transform((v) => (v === '' ? null : v));
 
-/** The digital Behandlungsbogen, sent by the consultation form as JSON. Empty rows are dropped. */
+const homeRow = z.object({
+  code: z.string().min(1).max(10),
+  repetition: z.enum(REPETITIONS),
+  // home-program: Intensität 10 is never offered
+  intensity: z.number().int().min(1).max(9).nullable(),
+  steps: z.number().int().min(1).max(3).nullable(),
+  note: sheetText(300),
+});
+export type HomeRow = z.output<typeof homeRow>;
+
+/**
+ * The digital Behandlungsbogen, sent by the consultation form as JSON. Empty rows are dropped. `home` is the block
+ * "Selbstausführung" (iteration 3): exactly one row per prescribed exercise, "täglich 1x" where the form sent none.
+ */
 export const sheetSchema = z
   .object({
     points: z
@@ -376,17 +390,35 @@ export const sheetSchema = z
         }),
       )
       .max(ROLLING_SLOTS),
+    home: z.array(homeRow).max(100).default([]),
   })
-  .transform((s) => ({
-    points: s.points.filter((p) => p.left || p.right || p.sensitivity),
-    exercises: s.exercises.filter((x) => x.prescribed || x.difficulty || x.variants),
-    rolling: s.rolling.filter((r) => r.area || r.toolCode),
-  }))
+  .refine((s) => new Set(s.home.map((h) => h.code)).size === s.home.length, { message: 'sheet' })
+  .transform((s) => {
+    const exercises = s.exercises.filter((x) => x.prescribed || x.difficulty || x.variants);
+    const home = exercises
+      .filter((x) => x.prescribed)
+      .map(
+        (x) =>
+          s.home.find((h) => h.code === x.code) ?? {
+            code: x.code,
+            repetition: DEFAULT_REPETITION,
+            intensity: null,
+            steps: null,
+            note: null,
+          },
+      );
+    return {
+      points: s.points.filter((p) => p.left || p.right || p.sensitivity),
+      exercises,
+      rolling: s.rolling.filter((r) => r.area || r.toolCode),
+      home,
+    };
+  })
   .refine((s) => new Set(s.points.map((p) => p.pointId)).size === s.points.length, { message: 'sheet' })
   .refine((s) => new Set(s.exercises.map((x) => x.code)).size === s.exercises.length, { message: 'sheet' })
   .refine((s) => new Set(s.rolling.map((r) => r.position)).size === s.rolling.length, { message: 'sheet' });
 export type Sheet = z.output<typeof sheetSchema>;
-export const EMPTY_SHEET: Sheet = { points: [], exercises: [], rolling: [] };
+export const EMPTY_SHEET: Sheet = { points: [], exercises: [], rolling: [], home: [] };
 
 /** consultations: Konsultation eröffnen / ändern */
 export const consultationSchema = z.object({
@@ -399,7 +431,7 @@ export const consultationSchema = z.object({
     .string()
     .transform((v, ctx) => {
       try {
-        return JSON.parse(v || '{"points":[],"exercises":[],"rolling":[]}') as unknown;
+        return JSON.parse(v || '{"points":[],"exercises":[],"rolling":[],"home":[]}') as unknown;
       } catch {
         ctx.addIssue({ code: 'custom', message: 'sheet' });
         return z.NEVER;

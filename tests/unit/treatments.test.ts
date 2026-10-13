@@ -292,6 +292,7 @@ describe('consultations', () => {
       points: [{ pointId: '2.11.1', left: false, right: true, sensitivity: 'STRONG' }],
       exercises: [{ code: '2D', prescribed: true, difficulty: 'HARD', variants: null }],
       rolling: [{ position: 1, area: 'Beckenkamm', toolCode: 'MiKu' }],
+      home: [{ code: '2D', repetition: 'DAILY_1', intensity: null, steps: null, note: null }],
     });
     // Unknown catalog entries are refused
     await expect(

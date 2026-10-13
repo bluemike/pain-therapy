@@ -7,9 +7,12 @@ import { historyOf, viewPatient } from '@/lib/patients';
 import { treatmentsOf } from '@/lib/treatments';
 import { listRegions, regionLabel } from '@/lib/catalog';
 import { ageOn, formatDate, formatDateTime, formatPercent } from '@/lib/format';
+import { repetitionParts, stepsLabel, type Repetition } from '@/lib/home-program';
 import { ConsentPill, StatusPill } from '@/components/Pills';
 import { PlusIcon, TabletIcon } from '@/components/Icons';
 import { DeactivateDialog } from '@/components/DeactivateDialog';
+import { HandoutList } from '@/components/HandoutList';
+import { handoutsOf } from '@/lib/handouts';
 import { handOver, reactivatePatient, resendEmail } from '../../actions';
 
 export const dynamic = 'force-dynamic';
@@ -39,7 +42,7 @@ export default async function PatientRecord({
     getTranslations('deactivate'),
     getTranslations('patients'),
   ]);
-  const treatments = await treatmentsOf(p.id);
+  const [treatments, handouts] = await Promise.all([treatmentsOf(p.id), handoutsOf(p.id)]);
   const name = `${p.firstName} ${p.lastName}`;
   const active = p.status === 'ACTIVE';
   const lastSession = p.signatureSessions[0];
@@ -204,7 +207,7 @@ export default async function PatientRecord({
             scroll={false}
           >
             {label}
-            {k === 'documents' ? <span className="count">{p.documents.length}</span> : null}
+            {k === 'documents' ? <span className="count">{p.documents.length + handouts.length}</span> : null}
             {k === 'treatments' ? <span className="count">{treatments.length}</span> : null}
           </Link>
         ))}
@@ -215,7 +218,17 @@ export default async function PatientRecord({
       ) : null}
       {tab === 'personal' ? <Personal p={p} tf={tf} tc={tc} /> : null}
       {tab === 'anamnesis' ? <AnamnesisView a={p.anamnesis} tf={tf} tc={tc} /> : null}
-      {tab === 'documents' ? <Documents p={p} active={active} handOverForm={handOverForm} /> : null}
+      {tab === 'documents' ? (
+        <>
+          <Documents p={p} active={active} handOverForm={handOverForm} />
+          {handouts.length ? (
+            <section className="card" aria-labelledby="h_handouts">
+              <h2 id="h_handouts">{(await getTranslations('documents'))('handouts')}</h2>
+              <HandoutList handouts={handouts} />
+            </section>
+          ) : null}
+        </>
+      ) : null}
       {tab === 'history' ? <History events={await historyOf(p.id)} regions={await listRegions()} /> : null}
     </>
   );
@@ -619,6 +632,10 @@ function sheetFieldLabel(th: T, field: string | null): string {
     'exercise:variants': 'fExerciseVariants',
     'rolling:area': 'fRollingArea',
     'rolling:tool': 'fRollingTool',
+    'home:repetition': 'fHomeRepetition',
+    'home:intensity': 'fHomeIntensity',
+    'home:steps': 'fHomeSteps',
+    'home:note': 'fHomeNote',
   };
   const k = key[sub ? `${kind}:${sub}` : kind];
   return k ? th(k as never, { id } as never) : field;
@@ -634,6 +651,7 @@ async function History({
   const t = await getTranslations('history');
   const tf = await getTranslations('form');
   const ts = await getTranslations('scales');
+  const th = await getTranslations('home');
   const locale = await getLocale();
   const detail = (e: AuditEvent) => (e.details ?? {}) as { regionId?: number; number?: number };
   const region = (e: AuditEvent) => {
@@ -650,6 +668,10 @@ async function History({
         return region(e) + t('consultationCreated', { n: detail(e).number ?? 0 });
       case 'consultation.updated':
         return region(e) + t('consultationUpdated', { n: detail(e).number ?? 0, field: sheetFieldLabel(t, e.field) });
+      case 'handout.created':
+        return region(e) + t('handoutCreated', { n: detail(e).number ?? 0 });
+      case 'handout.printed':
+        return region(e) + t('handoutPrinted', { n: detail(e).number ?? 0 });
       case 'photo.added':
         return region(e) + (detail(e).number ? t('photoAddedConsultation', { n: detail(e).number! }) : t('photoAdded'));
       case 'photo.removed':
@@ -684,6 +706,11 @@ async function History({
     if (v === 'true') return '✓';
     if (v === 'false') return '–';
     if (v && /^(LOW|MEDIUM|STRONG|EXTREME|EASY|HARD|IMPOSSIBLE)$/.test(v)) return ts(v as 'LOW');
+    if (v && /^(DAILY|WEEKLY)_\d$/.test(v)) {
+      const { daily, times } = repetitionParts(v as Repetition);
+      return th(daily ? 'repDaily' : 'repWeekly', { n: times });
+    }
+    if (v && /^home:.*:steps$/.test(e.field ?? '')) return stepsLabel(Number(v));
     if (v && /^(painStart|painBefore|painAfter)$/.test(e.field ?? '')) return `${v} %`;
     if (v && e.field === 'regionId') {
       const r = regions.find((x) => String(x.id) === v);

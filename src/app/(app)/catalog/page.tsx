@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { requireUser } from '@/lib/session';
 import { catalogView, localName, type RollingStep, type Variant } from '@/lib/catalog';
+import { timingOf } from '@/lib/exercise-sheets';
+import { executionTime, formatMinutes } from '@/lib/home-program';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,6 +45,7 @@ export default async function CatalogPage({
         .filter((p) => p.id)
     : c.points.map((p) => ({ ...p, emphasis: 'standard' as const }));
   const tc = await getTranslations('consultation');
+  const te = await getTranslations('exercise');
 
   return (
     <>
@@ -175,6 +178,7 @@ export default async function CatalogPage({
                   <th scope="col">{t('colCode')}</th>
                   <th scope="col">{t('colExercise')}</th>
                   <th scope="col">{t('colRegions')}</th>
+                  <th scope="col">{t('colTiming')}</th>
                   <th scope="col">{t('colRolling')}</th>
                   <th scope="col">{t('colVariants')}</th>
                 </tr>
@@ -183,9 +187,13 @@ export default async function CatalogPage({
                 {c.exercises.map((x) => {
                   const rolling = x.rolling as RollingStep[] | null;
                   const variants = x.variants as Variant[] | null;
+                  const timing = timingOf(x.sheet);
+                  const e = executionTime(timing);
                   return (
                     <tr key={x.code}>
-                      <td className="pid">{x.code}</td>
+                      <td className="pid">
+                        <Link href={`/catalog/exercises/${x.code}`}>{x.code}</Link>
+                      </td>
                       <td>
                         {localName(x, locale)}
                         <small className="muted"> · {other(x)}</small>
@@ -195,6 +203,10 @@ export default async function CatalogPage({
                           .filter((r) => r.exerciseCode === x.code)
                           .map((r) => r.regionId)
                           .join(', ')}
+                      </td>
+                      <td className="num">
+                        {timing ? formatMinutes(e.seconds / 60, locale) : '–'}
+                        {timing && e.stretchMissing ? <small className="todo"> · {te('stretchNotSet')}</small> : null}
                       </td>
                       <td>
                         {rolling

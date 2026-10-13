@@ -22,7 +22,9 @@ export type AuditAction =
   | 'consultation.updated'
   | 'photo.added'
   | 'photo.removed'
-  | 'photo.viewed';
+  | 'photo.viewed'
+  | 'handout.created'
+  | 'handout.printed';
 
 type Tx = Prisma.TransactionClient | PrismaClient;
 

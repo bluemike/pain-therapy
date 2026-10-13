@@ -187,6 +187,15 @@ function sheetRows(sheet: Sheet) {
     rolling: {
       create: sheet.rolling.map((r) => ({ position: r.position, area: r.area, toolCode: r.toolCode })),
     },
+    home: {
+      create: sheet.home.map((h) => ({
+        exerciseCode: h.code,
+        repetition: h.repetition,
+        intensity: h.intensity,
+        steps: h.steps,
+        note: h.note,
+      })),
+    },
   };
 }
 
@@ -253,6 +262,7 @@ export async function getConsultation(id: string) {
       points: true,
       exercises: true,
       rolling: { orderBy: { position: 'asc' } },
+      home: true,
     },
   });
 }
@@ -260,7 +270,7 @@ export async function getConsultation(id: string) {
 type Stored = NonNullable<Awaited<ReturnType<typeof getConsultation>>>;
 
 /** The sheet of a stored consultation in the shape of the form */
-export function sheetOf(c: Pick<Stored, 'points' | 'exercises' | 'rolling'>): Sheet {
+export function sheetOf(c: Pick<Stored, 'points' | 'exercises' | 'rolling' | 'home'>): Sheet {
   return {
     points: c.points.map((p) => ({ pointId: p.pointId, left: p.left, right: p.right, sensitivity: p.sensitivity })),
     exercises: c.exercises.map((x) => ({
@@ -270,12 +280,23 @@ export function sheetOf(c: Pick<Stored, 'points' | 'exercises' | 'rolling'>): Sh
       variants: x.variants,
     })),
     rolling: c.rolling.map((r) => ({ position: r.position, area: r.area, toolCode: r.toolCode })),
+    // In the order of the exercise rows, like the form
+    home: c.exercises
+      .map((x) => c.home.find((h) => h.exerciseCode === x.exerciseCode))
+      .filter((h) => !!h)
+      .map((h) => ({
+        code: h.exerciseCode,
+        repetition: h.repetition,
+        intensity: h.intensity,
+        steps: h.steps,
+        note: h.note,
+      })),
   };
 }
 
 /**
  * Field-by-field changes of a consultation for the history. Sheet fields are named "point:<id>:<field>",
- * "exercise:<code>:<field>" and "rolling:<position>:<field>".
+ * "exercise:<code>:<field>", "rolling:<position>:<field>" and "home:<code>:<field>" (Selbstausführung).
  */
 export function consultationChanges(before: Stored, input: ConsultationInput): Change[] {
   const changes: Change[] = [];
@@ -313,6 +334,16 @@ export function consultationChanges(before: Stored, input: ConsultationInput): C
     cmp(`rolling:${pos}:area`, a?.area, b?.area);
     cmp(`rolling:${pos}:tool`, a?.toolCode, b?.toolCode);
   }
+  // home-program: Änderungshistorie der Verordnungen (task 2.4)
+  const homeCodes = [...new Set([...old.home, ...next.home].map((h) => h.code))];
+  for (const code of homeCodes) {
+    const a = old.home.find((h) => h.code === code);
+    const b = next.home.find((h) => h.code === code);
+    cmp(`home:${code}:repetition`, a?.repetition, b?.repetition);
+    cmp(`home:${code}:intensity`, a?.intensity, b?.intensity);
+    cmp(`home:${code}:steps`, a?.steps, b?.steps);
+    cmp(`home:${code}:note`, a?.note, b?.note);
+  }
   return changes;
 }
 
@@ -336,6 +367,7 @@ export async function updateConsultation(
       await tx.consultationPoint.deleteMany({ where: { consultationId: id } });
       await tx.consultationExercise.deleteMany({ where: { consultationId: id } });
       await tx.consultationRolling.deleteMany({ where: { consultationId: id } });
+      await tx.homePrescription.deleteMany({ where: { consultationId: id } });
       await tx.consultation.update({
         where: { id },
         data: {

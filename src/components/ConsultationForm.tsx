@@ -6,7 +6,10 @@ import { useLocale, useTranslations } from 'next-intl';
 import { saveConsultation, type TreatmentFormState } from '@/app/(app)/treatment-actions';
 import { DIFFICULTIES, PAIN_VALUES, ROLLING_SLOTS, SENSITIVITIES, type Sheet } from '@/lib/schemas';
 import type { SheetExercise, SheetPoint } from '@/lib/catalog';
+import { DEFAULT_REPETITION, type Timing } from '@/lib/home-program';
 import { PhotoField, usePhotos, type SavedPhoto } from './PhotoField';
+import { Seg } from './Seg';
+import { HomeProgramBlock, type HomeEntry } from './HomeProgramBlock';
 
 type Sensitivity = (typeof SENSITIVITIES)[number];
 type Difficulty = (typeof DIFFICULTIES)[number];
@@ -23,39 +26,6 @@ export type ConsultationValues = {
   sheet: Sheet;
 };
 
-/**
- * Segmentschalter (design D3): one tap chooses a value, a tap on the chosen value clears it. Buttons with aria-pressed
- * in a labelled group, so they work with the keyboard (Tab, Space, Enter) and announce their state.
- */
-function Seg<V extends string | number>({
-  label,
-  options,
-  value,
-  onChange,
-  className = 'seg',
-}: {
-  label: string;
-  options: [V, string][];
-  value: V | null;
-  onChange: (v: V | null) => void;
-  className?: string;
-}) {
-  return (
-    <span className={className} role="group" aria-label={label}>
-      {options.map(([v, l]) => (
-        <button
-          key={String(v)}
-          type="button"
-          aria-pressed={value === v}
-          onClick={() => onChange(value === v ? null : v)}
-        >
-          {l}
-        </button>
-      ))}
-    </span>
-  );
-}
-
 /** consultations: digitaler Behandlungsbogen nach mockups/konsultation-lws-bauch.html */
 export function ConsultationForm({
   patientId,
@@ -65,8 +35,9 @@ export function ConsultationForm({
   treatmentInfo,
   initial,
   points: sheetPoints,
-  exercises,
+  exercises: sheetExercises,
   catalogPoints,
+  catalogExercises,
   tools,
   saved,
   cancelHref,
@@ -80,6 +51,8 @@ export function ConsultationForm({
   points: SheetPoint[];
   exercises: SheetExercise[];
   catalogPoints: { id: string; latin: string; de: string; group: number }[];
+  /** All exercises with their timing (Selbstausführung: "Übung hinzufügen" and the time totals) */
+  catalogExercises: { code: string; nameDe: string; nameEn: string; retired: boolean; timing: Timing | null }[];
   tools: { code: string; name: string }[];
   saved?: SavedPhoto[];
   cancelHref: string;
@@ -114,6 +87,11 @@ export function ConsultationForm({
       ]),
     ),
   );
+  // Exercises added in "Selbstausführung" that are not on this area's form
+  const [extraExercises, setExtraExercises] = useState<SheetExercise[]>([]);
+  const [home, setHome] = useState<Record<string, HomeEntry>>(() =>
+    Object.fromEntries(initial.sheet.home.map((h) => [h.code, { ...h, note: h.note ?? '' }])),
+  );
   const [rolling, setRolling] = useState<RollingEntry[]>(() =>
     Array.from({ length: ROLLING_SLOTS }, (_, i) => {
       const r = initial.sheet.rolling.find((x) => x.position === i + 1);
@@ -134,11 +112,28 @@ export function ConsultationForm({
   const setExercise = (code: string, patch: Partial<ExerciseEntry>) =>
     setExs((prev) => ({ ...prev, [code]: { ...exercise(code), ...patch } }));
 
+  const exercises = [...sheetExercises, ...extraExercises];
+  const homeEntry = (code: string): HomeEntry =>
+    home[code] ?? { repetition: DEFAULT_REPETITION, intensity: null, steps: null, note: '' };
+  const setHomeEntry = (code: string, patch: Partial<HomeEntry>) =>
+    setHome((prev) => ({ ...prev, [code]: { ...homeEntry(code), ...patch } }));
+  const exName = (x: { nameDe: string; nameEn: string }) => (locale === 'en' ? x.nameEn : x.nameDe);
+  const prescribed = exercises.filter((x) => exercise(x.code).prescribed);
+  /** home-program: Weitere Übung. Added from the catalog it counts as prescribed. */
+  function addHomeExercise(code: string) {
+    const x = catalogExercises.find((c) => c.code === code);
+    if (!x) return;
+    if (!exercises.some((e) => e.code === code))
+      setExtraExercises((prev) => [...prev, { code, nameDe: x.nameDe, nameEn: x.nameEn, retired: false }]);
+    setExercise(code, { prescribed: true });
+  }
+
   function sheetJson(): string {
     const sheet = {
       points: allPoints.map((p) => ({ pointId: p.id, ...point(p.id) })),
       exercises: exercises.map((x) => ({ code: x.code, ...exercise(x.code) })),
       rolling: rolling.map((r, i) => ({ position: i + 1, area: r.area, toolCode: r.toolCode || null })),
+      home: prescribed.map((x) => ({ code: x.code, ...homeEntry(x.code) })),
     };
     return JSON.stringify(sheet);
   }
@@ -409,7 +404,7 @@ export function ConsultationForm({
                     return (
                       <tr key={x.code}>
                         <th scope="row">
-                          <b>{x.code}</b> {locale === 'en' ? x.nameEn : x.nameDe}
+                          <b>{x.code}</b> {exName(x)}
                           {x.retired ? <small> · {t('retired')}</small> : null}
                         </th>
                         <td className="lr">
@@ -452,6 +447,21 @@ export function ConsultationForm({
           )}
         </div>
       </section>
+
+      <HomeProgramBlock
+        rows={prescribed.map((x) => ({
+          code: x.code,
+          name: exName(x),
+          timing: catalogExercises.find((c) => c.code === x.code)?.timing ?? null,
+        }))}
+        entry={homeEntry}
+        onChange={setHomeEntry}
+        onRemove={(code) => setExercise(code, { prescribed: false })}
+        addable={catalogExercises
+          .filter((c) => !c.retired && !exercise(c.code).prescribed)
+          .map((c) => ({ code: c.code, name: exName(c) }))}
+        onAdd={addHomeExercise}
+      />
 
       <section className="card sheet" aria-labelledby="h_roll">
         <h2 id="h_roll">{t('rolling')}</h2>
