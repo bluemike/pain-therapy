@@ -1,0 +1,515 @@
+[
+  {
+    "code": "1A",
+    "title": "1A Kiefer-Übung",
+    "sheetPage": 1,
+    "mainImage": "1A.jpg",
+    "sheetImage": "1A-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 2",
+      "Schritt 3"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": 120,
+      "sides": 1,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
+    }
+  },
+  {
+    "code": "1B",
+    "title": "1B Kiefergelenk-Übung",
+    "sheetPage": 2,
+    "mainImage": "1B.jpg",
+    "sheetImage": "1B-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 2",
+      "Schritt 3"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": 120,
+      "sides": 2,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
+    }
+  },
+  {
+    "code": "1C",
+    "title": "1C Augen-Übung",
+    "sheetPage": 3,
+    "mainImage": "1C.jpg",
+    "sheetImage": "1C-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 2",
+      "Schritt 3"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": null,
+      "sides": 1,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": [
+        "Augenübung in mehreren Blickrichtungen; Dauer pro Richtung von der Praxis bestätigen"
+      ]
+    }
+  },
+  {
+    "code": "1D",
+    "title": "1D Nacken-Übung",
+    "sheetPage": 4,
+    "mainImage": "1D.jpg",
+    "sheetImage": "1D-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 2",
+      "Schritt 3"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": 120,
+      "sides": 2,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
+    }
+  },
+  {
+    "code": "1E",
+    "title": "1E Halswirbelsäulen-Übung",
+    "sheetPage": 5,
+    "mainImage": "1E.jpg",
+    "sheetImage": "1E-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 2",
+      "Schritt 3 A"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": 120,
+      "sides": 1,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
+    }
+  },
+  {
+    "code": "1F",
+    "title": "1F Rotations-Übung",
+    "sheetPage": 6,
+    "mainImage": "1F.jpg",
+    "sheetImage": "1F-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 2",
+      "Schritt 3"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": 120,
+      "sides": 2,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
+    }
+  },
+  {
+    "code": "2A",
+    "title": "2A Wirbelsäulen-Übung",
+    "sheetPage": 7,
+    "mainImage": "2A.jpg",
+    "sheetImage": "2A-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 2",
+      "Schritt 3A",
+      "Schritt 3B"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": 120,
+      "sides": 1,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
+    }
+  },
+  {
+    "code": "2B",
+    "title": "2B Brust-Übung 10°",
+    "sheetPage": 8,
+    "mainImage": "2B.jpg",
+    "sheetImage": "2B-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 2",
+      "Schritt 3"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": 120,
+      "sides": 2,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
+    }
+  },
+  {
+    "code": "2C",
+    "title": "2C Atem-Übung",
+    "sheetPage": 9,
+    "mainImage": "2C.jpg",
+    "sheetImage": "2C-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 2"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": null,
+      "sides": 1,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": [
+        "Atemübung: Schritte mit zwölf Atemzügen statt 30-Sekunden-Takt; Dauer von der Praxis festlegen"
+      ]
+    }
+  },
+  {
+    "code": "2D",
+    "title": "2D Bauch-Übung",
+    "sheetPage": 10,
+    "mainImage": "2D.jpg",
+    "sheetImage": "2D-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 2",
+      "Schritt 3"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": 120,
+      "sides": 1,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
+    }
+  },
+  {
+    "code": "2E",
+    "title": "2E Gesäß-Übung",
+    "sheetPage": 11,
+    "mainImage": "2E.jpg",
+    "sheetImage": "2E-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 2",
+      "Schritt 3"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": 120,
+      "sides": 2,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
+    }
+  },
+  {
+    "code": "2F",
+    "title": "2F Vordere Oberschenkel-Übung",
+    "sheetPage": 12,
+    "mainImage": "2F.jpg",
+    "sheetImage": "2F-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 2",
+      "Schritt 3"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": 120,
+      "sides": 2,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
+    }
+  },
+  {
+    "code": "3A",
+    "title": "3A Schulter-Rücken-Übung",
+    "sheetPage": 13,
+    "mainImage": "3A.jpg",
+    "sheetImage": "3A-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 2",
+      "Schritt 3"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": 120,
+      "sides": 1,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
+    }
+  },
+  {
+    "code": "3B",
+    "title": "3B Obere Brust-Übung 45°",
+    "sheetPage": 14,
+    "mainImage": "3B.jpg",
+    "sheetImage": "3B-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 2",
+      "Schritt 3"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": 120,
+      "sides": 2,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
+    }
+  },
+  {
+    "code": "3C",
+    "title": "3C Handbeuger-Übung",
+    "sheetPage": 15,
+    "mainImage": "3C.jpg",
+    "sheetImage": "3C-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 2",
+      "Schritt 3"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": 120,
+      "sides": 2,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
+    }
+  },
+  {
+    "code": "3D",
+    "title": "3D Handstrecker-Übung",
+    "sheetPage": 16,
+    "mainImage": "3D.jpg",
+    "sheetImage": "3D-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 2"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": 120,
+      "sides": 2,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
+    }
+  },
+  {
+    "code": "3E",
+    "title": "3E Arm-Innendreher-Übung",
+    "sheetPage": 17,
+    "mainImage": "3E.jpg",
+    "sheetImage": "3E-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 2",
+      "Schritt 3"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": 120,
+      "sides": 2,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
+    }
+  },
+  {
+    "code": "3F",
+    "title": "3F Hintere-Schulter-Übung",
+    "sheetPage": 18,
+    "mainImage": "3F.jpg",
+    "sheetImage": "3F-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 2",
+      "Schritt 3"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": 120,
+      "sides": 2,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
+    }
+  },
+  {
+    "code": "3G",
+    "title": "3G Armstrecker-Übung",
+    "sheetPage": 19,
+    "mainImage": "3G.jpg",
+    "sheetImage": "3G-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 2",
+      "Schritt 3"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": 120,
+      "sides": 2,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
+    }
+  },
+  {
+    "code": "3H",
+    "title": "3H Arm-Schulter-Übung",
+    "sheetPage": 20,
+    "mainImage": "3H.jpg",
+    "sheetImage": "3H-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 2",
+      "Schritt 3"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": 120,
+      "sides": 1,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
+    }
+  },
+  {
+    "code": "4A",
+    "title": "4A Äußere Bein-Rumpf-Übung",
+    "sheetPage": 21,
+    "mainImage": "4A.jpg",
+    "sheetImage": "4A-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 3"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": 120,
+      "sides": 2,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
+    }
+  },
+  {
+    "code": "4B",
+    "title": "4B Hintere Bein-Übung",
+    "sheetPage": 22,
+    "mainImage": "4B.jpg",
+    "sheetImage": "4B-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 3"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": 120,
+      "sides": 2,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
+    }
+  },
+  {
+    "code": "4C",
+    "title": "4C Waden-Übung",
+    "sheetPage": 23,
+    "mainImage": "4C.jpg",
+    "sheetImage": "4C-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 2"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": 120,
+      "sides": 2,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
+    }
+  },
+  {
+    "code": "4D",
+    "title": "4D Tiefe Waden-Übung",
+    "sheetPage": 24,
+    "mainImage": "4D.jpg",
+    "sheetImage": "4D-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 2",
+      "Schritt 3"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": 120,
+      "sides": 2,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
+    }
+  },
+  {
+    "code": "4E",
+    "title": "4E Schienbein-Zehenstrecker-Übung",
+    "sheetPage": 25,
+    "mainImage": "4E.jpg",
+    "sheetImage": "4E-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 2",
+      "Schritt 3"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": 120,
+      "sides": 2,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
+    }
+  },
+  {
+    "code": "4F",
+    "title": "4F Zehenbeuger-Übung",
+    "sheetPage": 26,
+    "mainImage": "4F.jpg",
+    "sheetImage": "4F-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 2",
+      "Schritt 3"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": 120,
+      "sides": 2,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
+    }
+  },
+  {
+    "code": "4G",
+    "title": "4G Innere Oberschenkel-Übung",
+    "sheetPage": 27,
+    "mainImage": "4G.jpg",
+    "sheetImage": "4G-blatt.png",
+    "stretchStepLabels": [
+      "Schritt 1",
+      "Schritt 2",
+      "Schritt 3"
+    ],
+    "timing": {
+      "stretchSecondsPerSide": 120,
+      "sides": 1,
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
+    }
+  }
+]
