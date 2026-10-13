@@ -17,6 +17,7 @@ export function TreatmentForm({
   regions,
   saved,
   cancelHref,
+  regionLocked = false,
 }: {
   patientId: string;
   id?: string;
@@ -24,6 +25,8 @@ export function TreatmentForm({
   regions: [string, string][];
   saved?: SavedPhoto[];
   cancelHref: string;
+  /** after the first consultation the area is fixed (the sheets hang off it) */
+  regionLocked?: boolean;
 }) {
   const t = useTranslations('treatments');
   const tc = useTranslations('common');
@@ -49,9 +52,11 @@ export function TreatmentForm({
     label: string,
     w: string,
     control: (common: Record<string, unknown>) => React.ReactNode,
+    hint?: string,
   ) => {
     const err = errors[name];
     const fid = `f_${name}`;
+    const described = [err ? `${fid}_m` : '', hint ? `${fid}_h` : ''].filter(Boolean).join(' ');
     return (
       <div className={`f ${w} ${err ? 'bad' : ''}`}>
         <label className="l" htmlFor={fid}>
@@ -65,9 +70,14 @@ export function TreatmentForm({
           value: v[name],
           onChange: set(name),
           'aria-invalid': err ? true : undefined,
-          'aria-describedby': err ? `${fid}_m` : undefined,
+          'aria-describedby': described || undefined,
           'aria-required': true,
         })}
+        {hint ? (
+          <span className="hint" id={`${fid}_h`}>
+            {hint}
+          </span>
+        ) : null}
         {err ? (
           <span className="msg" id={`${fid}_m`}>
             {te(err as 'tooLong', { max: 2000 })}
@@ -102,16 +112,25 @@ export function TreatmentForm({
           {field('startedAt', t('startedAt'), '', (c) => (
             <input {...c} type="datetime-local" />
           ))}
-          {field('regionId', t('regionId'), '', (c) => (
-            <select {...c}>
-              <option value="">{t('choose')}</option>
-              {regions.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          ))}
+          {field(
+            'regionId',
+            t('regionId'),
+            '',
+            (c) => (
+              <>
+                <select {...c} disabled={regionLocked} name={regionLocked ? undefined : 'regionId'}>
+                  <option value="">{t('choose')}</option>
+                  {regions.map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+                {regionLocked ? <input type="hidden" name="regionId" value={v.regionId} /> : null}
+              </>
+            ),
+            regionLocked ? t('regionLockedHint') : undefined,
+          )}
           {field('painStart', t('painStartLabel'), '', (c) => (
             <select {...c}>
               <option value="">{t('choose')}</option>

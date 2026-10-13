@@ -49,6 +49,7 @@ export default async function EditTreatmentPage({ params }: { params: Promise<{ 
         regions={regions.map((r) => [String(r.id), regionLabel(r, locale)])}
         saved={photos.map((p) => ({ id: p.id, takenAt: p.takenAt.toISOString() }))}
         cancelHref={`/patients/${id}#t-${tid}`}
+        regionLocked={tr._count.consultations > 0}
       />
     </>
   );

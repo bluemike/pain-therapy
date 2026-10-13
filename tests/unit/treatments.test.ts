@@ -214,6 +214,28 @@ describe('treatments', () => {
     ]);
   });
 
+  it('fixes the area after the first consultation; diagnosis and pain stay correctable (Bereich nach erster Konsultation)', async () => {
+    const p = await signedPatient('Locked');
+    const t = await createTreatment(actor, p.id, treatmentInput());
+    // Before any consultation the area can still be corrected
+    await updateTreatment(actor, t.id, treatmentInput({ regionId: '4' }));
+    await createConsultation(actor, t.id, consultationInput());
+    await expect(updateTreatment(actor, t.id, treatmentInput({ regionId: '6' }))).rejects.toMatchObject({
+      code: 'regionLocked',
+    });
+    // The start may not move past the first consultation (09:30)
+    await expect(
+      updateTreatment(actor, t.id, treatmentInput({ regionId: '4', startedAt: '2026-10-01T10:00' })),
+    ).rejects.toMatchObject({ code: 'startAfterConsultation' });
+    await updateTreatment(
+      actor,
+      t.id,
+      treatmentInput({ regionId: '4', startedAt: '2026-10-01T09:30', diagnosis: 'Lumbalgie links', painStart: '50' }),
+    );
+    const saved = await db.treatment.findUniqueOrThrow({ where: { id: t.id } });
+    expect([saved.regionId, saved.diagnosis, saved.painStart]).toEqual([4, 'Lumbalgie links', 50]);
+  });
+
   it('cannot be deleted (database trigger)', async () => {
     const p = await signedPatient('NoDelete');
     const t = await createTreatment(actor, p.id, treatmentInput());

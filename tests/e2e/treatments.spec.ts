@@ -159,6 +159,9 @@ test.describe('treatments and consultations', () => {
       .click();
     await expect(page.getByRole('heading', { level: 1, name: 'Behandlung ändern' })).toBeVisible();
     await expect(page.getByRole('button', { name: /Löschen/ })).toHaveCount(0);
+    // With a consultation saved, the area is fixed
+    await expect(page.locator('#f_regionId')).toBeDisabled();
+    await expect(page.locator('#f_regionId_h')).toContainText('Fest seit der ersten Konsultation');
     await page.locator('#f_diagnosis').fill('Lumbalgie rechts');
     await page.getByRole('button', { name: /^Foto vom .* entfernen$/ }).click();
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();

@@ -14,6 +14,7 @@
 - [x] 2.2 Service: anlegen und ändern mit Audit; nur aktive Patienten mit gültigem Haftungsausschluss; Tests für beide Sperren
 - [x] 2.3 Reiter "Behandlungen" als Standardansicht der Akte mit Liste, leerem Zustand und "Neue Behandlung"
 - [x] 2.4 Formular "Neue Behandlung" und "Behandlung ändern" in Deutsch und Englisch
+- [x] 2.5 Nach der ersten Konsultation: Bereich gesperrt (Formular und Server), Beginn nicht nach der ersten Konsultation; Tests
 
 ## 3. Konsultationen (consultations)
 

@@ -174,6 +174,8 @@
     "photoSize": "Ein Foto ist grösser als 5 MB.",
     "photoCount": "Höchstens 10 Fotos pro Speichern.",
     "region": "Dieser Bereich ist nicht mehr verfügbar.",
+    "regionLocked": "Der Bereich ist nach der ersten Konsultation fest. Bei falschem Bereich bitte eine neue Behandlung eröffnen.",
+    "startAfterConsultation": "Die Behandlung darf nicht nach der ersten Konsultation beginnen.",
     "catalog": "Ein Eintrag des Bogens fehlt im Katalog. Bitte Seite neu laden.",
     "sheet": "Der Bogen konnte nicht gelesen werden. Bitte Seite neu laden.",
     "consent": "Für neue Behandlungen und Konsultationen braucht es einen gültigen unterschriebenen Haftungsausschluss."
@@ -405,6 +407,7 @@
     "rolling": "{count, plural, one {# Rollmassage} other {# Rollmassagen}}",
     "startedAt": "Datum und Zeit",
     "regionId": "Bereich",
+    "regionLockedHint": "Fest seit der ersten Konsultation. Bei falschem Bereich eine neue Behandlung eröffnen.",
     "diagnosis": "Diagnose",
     "painStartLabel": "Schmerzgrad zu Beginn",
     "choose": "Bitte wählen",

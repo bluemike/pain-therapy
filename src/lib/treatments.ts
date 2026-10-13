@@ -11,7 +11,9 @@ import type { Actor } from './session';
 /** treatments and consultations: every write goes through here and into the audit log (design D1). */
 
 export class TreatmentError extends Error {
-  constructor(public code: 'inactive' | 'consent' | 'region' | 'catalog' | 'notFound') {
+  constructor(
+    public code: 'inactive' | 'consent' | 'region' | 'regionLocked' | 'startAfterConsultation' | 'catalog' | 'notFound',
+  ) {
     super(code);
   }
 }
@@ -125,6 +127,14 @@ export async function updateTreatment(
 ) {
   const existing = await db.treatment.findUnique({ where: { id } });
   if (!existing) throw new TreatmentError('notFound');
+  // Behandlung nach der ersten Konsultation: the sheets hang off the area, and no consultation may predate the start
+  const first = await db.consultation.findFirst({
+    where: { treatmentId: id },
+    orderBy: { at: 'asc' },
+    select: { at: true },
+  });
+  if (first && input.regionId !== existing.regionId) throw new TreatmentError('regionLocked');
+  if (first && input.startedAt > first.at) throw new TreatmentError('startAfterConsultation');
   if (input.regionId !== existing.regionId) await assertRegion(input.regionId, existing.regionId);
   const photos = preparePhotos(existing.patientId, photoChanges.add ?? []);
   await writePhotos(photos);
