@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup Selbstausführung und Übungsblatt</title>
+<!-- Klickbares Mockup zu openspec/changes/iteration-3-home-exercises. Statisch, ohne Server. Dauern sind Beispielwerte (berechnet nach design.md D3). -->
+<style>
+:root{--gold:#b99438;--gold-text:#8a6a1c;--gold-pale:#f5edd0;--gold-bg:#faf7ee;--ink:#1c1a14;--mid:#5c5040;--muted:#6b6252;--bg:#f7f5ef;--surface:#fff;--border:#e2d9c4;--line:#eee7d6;--ok:#256b42;--ok-bg:#e6f3eb;--warn:#7a5500;--warn-bg:#fdf3d8;--orange:#d9542c;--bar:#1c1a14;--bar-fg:#ede6d3;--r:8px}
+*{box-sizing:border-box}body{margin:0;font:15px/1.45 Inter,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+header.bar{background:var(--bar);color:var(--bar-fg);display:flex;align-items:center;gap:16px;padding:10px 20px}
+.logo{font-weight:800;font-size:20px;letter-spacing:-.5px}.logo i{color:var(--gold);font-style:normal}
+.mocknav{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}.mocknav button{background:#2e2a1e;color:var(--bar-fg);border:1px solid #4a4230;border-radius:20px;padding:5px 12px;font:inherit;font-size:13px;cursor:pointer}
+.mocknav button[aria-pressed=true]{background:var(--gold);color:#1c1a14;border-color:var(--gold)}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 80px}
+.crumb{font-size:13px;color:var(--muted);margin-bottom:6px}.crumb a{color:var(--gold-text);text-decoration:none}
+h1{font-size:26px;margin:0 0 4px}h2{font-size:18px;margin:0 0 10px}h3{font-size:15px;margin:0 0 8px;text-transform:uppercase;letter-spacing:.04em;color:var(--mid)}
+.sub{color:var(--muted);margin-bottom:14px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin:16px 0;overflow-x:auto}.tabs span{padding:8px 14px;border-bottom:3px solid transparent;color:var(--mid);white-space:nowrap}.tabs .on{border-color:var(--gold);color:var(--ink);font-weight:600}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.btn{display:inline-flex;align-items:center;gap:6px;border-radius:var(--r);padding:9px 16px;font:inherit;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--ink);min-height:44px}
+.btn--gold{background:var(--gold);border-color:var(--gold);color:#1c1a14}.btn--ghost{background:transparent}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.spacer{flex:1}
+.pill{display:inline-block;font-size:12px;border-radius:12px;padding:2px 9px;background:var(--gold-pale);color:var(--gold-text);font-weight:600}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}
+.treat{border-left:4px solid var(--gold)}.treat .meta{color:var(--muted);font-size:13px}
+.cons{display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line);cursor:pointer}.cons:hover{background:var(--gold-bg)}
+.cons .n{font-weight:700;width:46px;white-space:nowrap;color:var(--gold-text)}.cons .d{width:150px}.cons .p{width:120px}.cons .x{flex:1;color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}.f{display:flex;flex-direction:column;gap:4px}.f label{font-size:13px;font-weight:600;color:var(--mid)}.req{color:#c0262d}
+.w2{grid-column:span 2}.w3{grid-column:span 3}.w4{grid-column:span 4}.w6{grid-column:span 6}.painrow{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.painrow>span{width:250px;font-weight:600;color:var(--mid)}.todo{color:var(--muted);font-style:italic}.ctabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 14px}.ctabs button{border:1px solid var(--border);background:#fff;border-radius:20px;padding:6px 14px;font:inherit;cursor:pointer;min-height:40px}.ctabs button[aria-pressed=true]{background:var(--gold);border-color:var(--gold);font-weight:600}
+input,select,textarea{font:inherit;border:1px solid var(--border);border-radius:6px;padding:9px 10px;background:#fff;min-height:44px;color:var(--ink)}textarea{min-height:70px}
+.hint{font-size:12px;color:var(--muted)}
+.photos{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start}.ph{width:118px}.ph .img{width:118px;height:88px;border-radius:6px;background:linear-gradient(135deg,#d8ccb0,#b8a985);display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;position:relative}
+.ph .img b{position:absolute;top:4px;right:6px;font-size:13px;background:rgba(0,0,0,.45);border-radius:10px;width:20px;height:20px;line-height:20px;text-align:center;cursor:pointer}
+.ph small{display:block;font-size:11px;color:var(--muted);margin-top:3px}
+.add{width:118px;height:88px;border:2px dashed var(--border);border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--gold-text);font-weight:600;cursor:pointer;font-size:13px;background:var(--gold-bg)}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:middle}th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.pid{font-weight:700;white-space:nowrap}.pname small{display:block;color:var(--muted)}
+.e-main .pname{color:var(--orange);font-weight:700}.e-relevant .pname{color:var(--orange)}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}.seg button{border:0;border-right:1px solid var(--border);background:#fff;font:inherit;font-size:13px;padding:8px 10px;cursor:pointer;min-height:40px}.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--gold);color:#1c1a14;font-weight:600}
+.lr label{display:inline-flex;align-items:center;gap:4px;margin-right:10px}.lr input{width:22px;height:22px;min-height:0}
+.scale{display:flex;gap:4px;flex-wrap:wrap}.scale button{width:46px;min-height:40px;border:1px solid var(--border);background:#fff;border-radius:6px;font:inherit;cursor:pointer}.scale button[aria-pressed=true]{background:var(--gold);border-color:var(--gold);font-weight:700}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);flex-wrap:wrap;margin-bottom:8px}.legend .m{color:var(--orange);font-weight:700}.legend .r{color:var(--orange)}
+.filter{font-size:13px}.sticky{position:sticky;bottom:0;background:var(--surface);border-top:1px solid var(--border);padding:12px 16px;display:flex;gap:10px;justify-content:flex-end;margin:0 -16px}
+.note{background:var(--warn-bg);color:var(--warn);border-radius:6px;padding:8px 12px;font-size:13px;margin-bottom:12px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ok);color:#fff;padding:10px 18px;border-radius:20px;display:none}
+[hidden]{display:none!important}
+@media(max-width:760px){.grid{grid-template-columns:1fr 1fr}.w2,.w3,.w4{grid-column:span 2}.painrow>span{width:100%}.cons .d{width:auto}.cons .p,.cons .x{display:none}.hide-sm{display:none}td,th{padding:6px 3px}}
+.home td,.home th{vertical-align:middle}.home select{min-width:150px}.home input.hnote{width:100%}.sticky{flex-wrap:wrap}
+.dur{white-space:nowrap}.dur small{display:block;color:var(--muted);font-size:11px}
+.totals{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}.tot{flex:1;min-width:150px;background:var(--gold-bg);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px}.tot span{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}.tot b{font-size:22px}
+.sugg{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--gold-bg);border:1px dashed var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:10px}
+.x{border:0;background:none;font-size:20px;color:var(--muted);cursor:pointer;min-width:40px;min-height:40px}
+.detail{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:18px}
+.imgph{background:#e4e1da;border:1px solid #cfcabd;border-radius:var(--r);aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;color:#6b6252;font-weight:600;text-align:center;padding:12px}
+.steps{margin:0;padding-left:20px}.steps li{margin-bottom:6px}.steps .sub{margin:4px 0 0;color:var(--ink)}
+dl.kv{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;margin:0}dl.kv dt{color:var(--muted);font-size:13px}dl.kv dd{margin:0}
+.sheet{background:#fff;max-width:794px;margin:0 auto;box-shadow:0 2px 12px rgba(28,26,20,.12);padding:40px 46px;font-size:13px;aspect-ratio:210/297;overflow:hidden}
+.sheet .hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--gold);padding-bottom:8px;margin-bottom:12px;gap:10px;flex-wrap:wrap}
+.sheet .hd .addr{color:var(--mid);font-size:12px}
+.sheet h2{font-size:17px;margin:0 0 2px}.sheet .meta{color:var(--mid);margin-bottom:10px}
+.safety{border:1px solid var(--border);border-left:4px solid var(--gold);border-radius:4px;padding:8px 10px;margin-bottom:12px;background:var(--gold-bg)}
+.ex{display:grid;grid-template-columns:150px 1fr;gap:12px;border-top:1px solid var(--line);padding:10px 0}.ex .imgph{aspect-ratio:4/3;font-size:11px}
+.ex h4{margin:0 0 2px;font-size:14px}.ex .rx{color:var(--gold-text);font-weight:600;margin-bottom:4px}.ex ol{margin:0;padding-left:18px}
+.sheet .sum{display:flex;gap:20px;border-top:2px solid var(--gold);padding-top:8px;font-weight:600;flex-wrap:wrap}
+.dialog{position:fixed;inset:0;background:rgba(28,26,20,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:5}
+.dialog .box{background:#fff;border-radius:12px;max-width:480px;width:100%;padding:20px}
+.opt{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:10px}.opt[aria-disabled=true]{opacity:.65;background:#f4f2ec}
+.opt .why{color:#a3361c;font-size:13px;margin-top:4px}
+.mockswitch{font-size:12px;color:var(--muted);border-top:1px dashed var(--border);margin-top:12px;padding-top:10px}
+.handouts td{font-size:14px}
+@media(max-width:760px){.detail{grid-template-columns:1fr}.home thead{display:none}.home tr{display:grid;grid-template-columns:1fr auto;gap:6px 10px;padding:10px 0;border-bottom:1px solid var(--line)}.home td{border:0;padding:0}.home td.c-ex{grid-column:1;grid-row:1}.home td.c-x{grid-column:2;grid-row:1}.home td.c-freq,.home td.c-dur,.home td.c-note{grid-column:1 / -1}.home select{width:100%}.sheet{padding:20px 16px;aspect-ratio:auto;font-size:12px}.ex{grid-template-columns:90px 1fr}}
+</style>
+</head>
+<body>
+<header class="bar"><span class="logo">ayanta<i>.</i></span><span class="hide-sm">Schmerztherapie</span>
+<nav class="mocknav" aria-label="Mockup-Ansichten"><button data-v="cons" aria-pressed="true">1 Konsultation: Selbstausführung</button><button data-v="detail">2 Katalog: Übung 2A</button><button data-v="sheet">3 Übungsblatt</button></nav></header>
+<main>
+<!-- 1: consultation with Selbstausführung -->
+<section id="v-cons">
+ <div class="crumb"><a href="#">← Anna Müller · 6 Lendenwirbelsäule, Bauch</a></div>
+ <div class="row"><div><h1>Konsultation Nr. 3</h1><div class="sub">27.10.2026, 10:00 · Behandlungsbogen 6 · Lendenwirbelsäule, Bauch</div></div></div>
+ <div class="card"><h3>Engpassdehnungen</h3>
+  <div class="hint" style="margin-bottom:6px">Ausschnitt aus dem Bogen (Iteration 2); angekreuzt "verordnet" werden zu Vorschlägen für die Selbstausführung.</div>
+  <table><thead><tr><th>Übung</th><th>verordnet</th></tr></thead><tbody>
+   <tr><td><b>1F</b> Rotations-Übung</td><td class="lr"><label><input type="checkbox"> verordnet</label></td></tr>
+   <tr><td><b>2A</b> Wirbelsäulen-Übung</td><td class="lr"><label><input type="checkbox" checked> verordnet</label></td></tr>
+   <tr><td><b>2D</b> Bauch-Übung</td><td class="lr"><label><input type="checkbox" checked> verordnet</label></td></tr>
+  </tbody></table></div>
+ <div class="card" aria-labelledby="h_home"><div class="row"><h3 id="h_home" style="margin:0">Selbstausführung</h3><span class="spacer"></span><button class="btn btn--ghost" id="addBtn">+ Übung</button></div>
+  <div class="hint" style="margin:4px 0 10px">Übungen für zu Hause, wie eine Medikamenten-Verordnung. Dauer einer Ausführung aus dem Katalog.</div>
+  <div class="sugg" id="sugg" hidden><span>Im Bogen verordnet: <b>2A</b>, <b>2D</b></span><span class="spacer"></span><button class="btn" id="takeSugg">Vorschläge übernehmen</button></div>
+  <div class="row" id="addRow" hidden style="margin-bottom:10px"><label class="filter">Übung aus dem Katalog <select id="addSel"></select></label><button class="btn" id="addOk">Hinzufügen</button></div>
+  <table class="home"><thead><tr><th>Übung</th><th>Häufigkeit <span class="req">*</span></th><th>Dauer</th><th>Bemerkung</th><th><span class="hide-sm">Entfernen</span></th></tr></thead><tbody id="home"></tbody></table>
+  <div class="totals"><div class="tot"><span>Zeit pro Tag</span><b id="perDay">–</b></div><div class="tot"><span>Zeit pro Woche</span><b id="perWeek">–</b></div></div>
+  <div class="hint" id="totHint" style="margin-top:6px"></div>
+ </div>
+ <div class="card"><h3>Übungsblätter</h3>
+  <table class="handouts"><thead><tr><th>Erstellt</th><th>Sprache</th><th>Versand</th><th></th></tr></thead><tbody>
+   <tr><td>20.10.2026, 10:40 · Nr. 2</td><td>Deutsch</td><td><span class="pill">heruntergeladen</span></td><td><button class="btn btn--ghost" data-go="sheet">Öffnen</button></td></tr>
+  </tbody></table>
+  <div class="hint" style="margin-top:6px">Beispiel aus der vorherigen Konsultation; jedes erstellte Blatt bleibt unverändert gespeichert.</div></div>
+ <div class="sticky"><button class="btn btn--ghost hide-sm">Abbrechen</button><button class="btn" data-save="cons">Konsultation speichern</button><button class="btn btn--gold" data-go="sheet" data-dialog="1">Übungsblatt erstellen</button></div>
+</section>
+<!-- 2: catalog exercise detail -->
+<section id="v-detail" hidden>
+ <div class="crumb"><a href="#">← Katalog · Engpassdehnungen</a></div>
+ <div class="row"><div><h1>2A Wirbelsäulen-Übung</h1><div class="sub">Gruppe Rumpf · Bereiche 4 Brustwirbelsäule, Brustkorb · 5 Zwerchfell, Atmung · 6 Lendenwirbelsäule, Bauch</div></div></div>
+ <div class="detail">
+  <div><div class="imgph">Bild aus Übungsblatt 2A</div>
+   <div class="card" style="margin-top:14px"><dl class="kv"><dt>Dauer einer Ausführung</dt><dd><b>5 Min.</b> · berechnet</dd><dt>Seiten</dt><dd>symmetrisch, eine Ausführung</dd><dt>Quelle</dt><dd>Sammelmappe 27 Übungsblätter, Seite 7</dd></dl>
+    <div class="hint" style="margin-top:8px">Berechnet: Rollzeit laut Blatt (3 Min.) + 4 × 30 s Dehnung × 1 Seite, aufgerundet.</div></div></div>
+  <div>
+   <div class="card"><h3>Faszien-Rollmassage</h3><ol class="steps">
+    <li>Mini-Kugel (MiKu): Schambein, Beckenkamm und Rippenbogen, von rechts nach links, je 1 Min.</li>
+    <li>Mini-Kugel (MiKu): Leiste, Hüftbeuger, 1 Min.</li>
+    <li>Medi-Rolle (MeRo): Lenden-, Brust- und Halswirbelsäule, 1 Min.</li></ol></div>
+   <div class="card"><h3>Engpassdehnung</h3><div class="hint" style="margin-bottom:6px">Im Sitzen, Fusssohlen aneinander; Oberkörper nach vorne, Kopf nach unten ziehen.</div><ol class="steps">
+    <li>In die Dehnung gehen und sie 30 s lang steigern.</li>
+    <li>7 s ohne Bewegung gegen den Widerstand anspannen, lösen, 3 s weiter dehnen; 3 × (30 s). Danach dasselbe 30 s schneller, etwa 8 bis 12 Mal.</li>
+    <li>Endposition 30 s aktiv aus eigener Kraft halten.
+     <p class="sub"><b>3A</b> im Sitzen aktiv weiter nach vorne und unten ziehen</p>
+     <p class="sub"><b>3B</b> in Rückenlage Kinn, Lendenwirbelsäule, Kniekehlen und Schultern zum Boden</p></li></ol></div>
+   <div class="card"><h3>Varianten</h3><ul class="steps"><li>Am Boden mit Schlaufe</li><li>Auf einem Stuhl mit Schlaufe</li><li>Abschliessend stehend an der Wand</li></ul></div>
+   <div class="card"><h3>Andere Übung, noch nicht digitalisiert</h3><div class="row"><b>4G</b> Innere Oberschenkel-Übung <span class="todo">noch nicht digitalisiert</span></div>
+    <div class="hint">So erscheint eine Übung ohne digitalisiertes Blatt: Code, Name, Bereiche, ohne Bild, Texte und Dauer.</div></div>
+  </div>
+ </div>
+ <div class="hint">Nur Ansicht · Änderungen über die Referenzdateien</div>
+</section>
+<!-- 3: patient sheet preview -->
+<section id="v-sheet" hidden>
+ <div class="crumb"><a href="#" data-go="cons">← Konsultation Nr. 3</a></div>
+ <div class="row" style="margin-bottom:12px"><div><h1>Übungsblatt</h1><div class="sub">Nr. 3 · erstellt 27.10.2026, 10:45 · Deutsch · gespeichert</div></div><span class="spacer"></span><button class="btn btn--gold" id="openDlg">Senden oder drucken</button></div>
+ <div class="sheet" aria-label="Vorschau Übungsblatt A4">
+  <div class="hd"><span class="logo" style="color:var(--ink)">Pain Therapy<i>.</i></span><span class="addr">Pain Therapy | Via Prau da Cuort 5 | 7153 Falera</span></div>
+  <h2>Deine Übungen für zu Hause</h2>
+  <div class="meta">Anna Müller · 27.10.2026 · Konsultation Nr. 3 · Lendenwirbelsäule, Bauch</div>
+  <div class="safety">Übe langsam und bewusst. Die Intensität (Schmerz, Anstrengung, Widerwille) darf nie 10 erreichen. Bei Fragen wende dich an deine Therapeutin.</div>
+  <div id="sheetEx"></div>
+  <div class="sum"><span>Pro Tag: <span id="sDay"></span></span><span>Pro Woche: <span id="sWeek"></span></span></div>
+ </div>
+</section>
+</main>
+<div class="dialog" id="dlg" hidden role="dialog" aria-modal="true" aria-labelledby="dlgT"><div class="box">
+ <h2 id="dlgT">Übungsblatt senden</h2>
+ <div class="opt" id="optMail"><input type="radio" name="d" id="rMail" style="min-height:0;width:20px;height:20px"><label for="rMail"><b>Per E-Mail</b> an anna.mueller@example.ch<div class="hint">Absender pain-therapy@ayanta.ch, PDF im Anhang</div><div class="why" id="why">Nicht möglich: keine Einwilligung in unverschlüsselte E-Mails (Haftungsausschluss vom 13.10.2026).</div></label></div>
+ <div class="opt"><input type="radio" name="d" id="rPrint" checked style="min-height:0;width:20px;height:20px"><label for="rPrint"><b>Drucken oder herunterladen</b><div class="hint">Öffnet das PDF; zum Mitgeben auf Papier.</div></label></div>
+ <div class="row"><span class="spacer"></span><button class="btn btn--ghost" id="dlgClose">Schliessen</button><button class="btn btn--gold" id="dlgOk">Weiter</button></div>
+ <div class="mockswitch"><label><input type="checkbox" id="consent" style="min-height:0;width:16px;height:16px"> Mockup: Patientin hat in unverschlüsselte E-Mails eingewilligt</label></div>
+</div></div>
+<div class="toast" id="toast">Gespeichert (Mockup)</div>
+<script>
+const EX = {
+  '1F': { name: 'Rotations-Übung', dur: null },
+  '2A': { name: 'Wirbelsäulen-Übung', dur: 5, derived: true, steps: ['Rollmassage: Schambein, Beckenkamm, Rippenbogen (MiKu); Leiste (MiKu); Wirbelsäule (MeRo)', 'Sitzend, Fusssohlen aneinander: Oberkörper nach vorne, Kopf nach unten, 30 s steigern', '3 × 7 s anspannen, 3 s weiter dehnen; danach 30 s schneller', 'Endposition 30 s aktiv halten (3A sitzend, 3B Rückenlage)'] },
+  '2D': { name: 'Bauch-Übung', dur: 4, derived: true, steps: ['Vierfüssler: Becken sinken lassen, Leiste voran, Nabel eingezogen', 'Schritte 1 bis 3 wie oben'] },
+  '4C': { name: 'Waden-Übung', dur: 6, derived: true, steps: ['Vorfuss auf dem Knieretter-Keil, Knie gestreckt, Becken nach vorne', 'Schritte 1 bis 3, beide Seiten'] },
+  '4G': { name: 'Innere Oberschenkel-Übung', dur: null },
+};
+const FREQ = [['', 'Bitte wählen'], ['D1', 'täglich 1×'], ['D2', 'täglich 2×'], ['W37', '3–7× pro Woche'], ['W5', '5× pro Woche']];
+// per day [min,max] and per week [min,max] repetitions, design D6
+const REP = { D1: { day: [1, 1], week: [7, 7] }, D2: { day: [2, 2], week: [14, 14] }, W37: { day: [0, 1], week: [3, 7] }, W5: { day: [0, 1], week: [5, 5] } };
+let rows = [{ code: '2A', f: 'D1', note: '' }, { code: '2D', f: 'D2', note: 'morgens und abends' }, { code: '4C', f: 'W37', note: 'beide Seiten' }];
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const span = ([a, b]) => (a === b ? `${a} Min.` : `${a}–${b} Min.`);
+function totals() {
+  const d = [0, 0], w = [0, 0], missing = [];
+  for (const r of rows) { const x = EX[r.code], p = REP[r.f]; if (!p) continue; if (!x.dur) { missing.push(r.code); continue; }
+    d[0] += x.dur * p.day[0]; d[1] += x.dur * p.day[1]; w[0] += x.dur * p.week[0]; w[1] += x.dur * p.week[1]; }
+  return { d, w, missing };
+}
+function render() {
+  $('#home').innerHTML = rows.map((r, i) => { const x = EX[r.code];
+    return `<tr><td class="c-ex"><b>${r.code}</b> ${x.name}</td>
+    <td class="c-freq"><select data-i="${i}" aria-label="Häufigkeit ${r.code}">${FREQ.map(([v, l]) => `<option value="${v}" ${v === r.f ? 'selected' : ''}>${l}</option>`).join('')}</select></td>
+    <td class="c-dur dur">${x.dur ? `${x.dur} Min.${x.derived ? '<small>berechnet</small>' : ''}` : '<span class="todo">noch nicht digitalisiert</span>'}</td>
+    <td class="c-note"><input class="hnote" data-n="${i}" value="${r.note}" placeholder="Bemerkung" aria-label="Bemerkung ${r.code}"></td>
+    <td class="c-x"><button class="x" data-rm="${i}" aria-label="${r.code} entfernen">×</button></td></tr>`; }).join('');
+  const t = totals();
+  $('#perDay').textContent = rows.length ? span(t.d) : '–';
+  $('#perWeek').textContent = rows.length ? span(t.w) : '–';
+  $('#totHint').textContent = (t.d[0] !== t.d[1] ? 'Pro Tag: nur tägliche Übungen bis alle Übungen. ' : '') + (t.missing.length ? `Nicht eingerechnet: ${t.missing.join(', ')} (noch nicht digitalisiert).` : '');
+  $('#sugg').hidden = rows.length > 0;
+  $('#addSel').innerHTML = Object.entries(EX).filter(([c]) => !rows.some(r => r.code === c)).map(([c, x]) => `<option value="${c}">${c} · ${x.name}</option>`).join('');
+  $('#sheetEx').innerHTML = rows.map(r => { const x = EX[r.code], f = FREQ.find(([v]) => v === r.f)[1];
+    return `<div class="ex"><div class="imgph">${x.steps ? 'Bild aus Übungsblatt ' + r.code : 'kein Bild'}</div><div><h4>${r.code} ${x.name}</h4>
+    <div class="rx">${f} · ${x.dur ? x.dur + ' Min.' : 'Dauer offen'}${r.note ? ' · ' + r.note : ''}</div>
+    ${x.steps ? '<ol>' + x.steps.map(s => `<li>${s}</li>`).join('') + '</ol>' : ''}</div></div>`; }).join('');
+  $('#sDay').textContent = span(t.d); $('#sWeek').textContent = span(t.w);
+}
+function show(v) { $$('main>section').forEach(s => s.hidden = s.id !== 'v-' + v); $$('.mocknav button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === v)); scrollTo(0, 0); }
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-v],[data-go],[data-save],[data-rm]'); if (!b) return; e.preventDefault();
+  if (b.dataset.rm) { rows.splice(+b.dataset.rm, 1); render(); return; }
+  if (b.dataset.save) { const t = $('#toast'); t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 1400); return; }
+  show(b.dataset.v || b.dataset.go); if (b.dataset.dialog) openDlg();
+});
+document.addEventListener('change', e => {
+  if (e.target.dataset.i) { rows[+e.target.dataset.i].f = e.target.value; render(); }
+  if (e.target.dataset.n) rows[+e.target.dataset.n].note = e.target.value;
+});
+$('#takeSugg').onclick = () => { rows = [{ code: '2A', f: '', note: '' }, { code: '2D', f: '', note: '' }]; render(); };
+$('#addBtn').onclick = () => { $('#addRow').hidden = !$('#addRow').hidden; };
+$('#addOk').onclick = () => { const c = $('#addSel').value; if (c) rows.push({ code: c, f: '', note: '' }); $('#addRow').hidden = true; render(); };
+function consent() { const ok = $('#consent').checked; $('#optMail').setAttribute('aria-disabled', !ok); $('#rMail').disabled = !ok; $('#why').hidden = ok; if (!ok) $('#rPrint').checked = true; }
+function openDlg() { $('#dlg').hidden = false; consent(); }
+$('#openDlg').onclick = openDlg; $('#consent').onchange = consent;
+$('#dlgClose').onclick = () => { $('#dlg').hidden = true; };
+$('#dlgOk').onclick = () => { $('#dlg').hidden = true; const t = $('#toast'); t.textContent = $('#rMail').checked ? 'E-Mail wird gesendet (Mockup)' : 'PDF geöffnet (Mockup)'; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 1600); };
+render();
+</script>
+</body>
+</html>
