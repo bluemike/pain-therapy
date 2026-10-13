@@ -160,7 +160,46 @@ describe('consultation schema', () => {
     expect(r.sheet.points).toEqual([{ pointId: '2.11.1', left: false, right: true, sensitivity: 'STRONG' }]);
     expect(r.sheet.exercises).toEqual([{ code: '2D', prescribed: true, difficulty: 'HARD', variants: null }]);
     expect(r.sheet.rolling).toEqual([{ position: 1, area: 'Beckenkamm', toolCode: 'MiKu' }]);
-    expect(consultationSchema.parse({ ...base, sheet: '' }).sheet).toEqual({ points: [], exercises: [], rolling: [] });
+    expect(consultationSchema.parse({ ...base, sheet: '' }).sheet).toEqual({
+      points: [],
+      exercises: [],
+      rolling: [],
+      home: [],
+    });
+  });
+
+  it('keeps one home prescription per prescribed exercise, "täglich 1x" when none was sent (home-program)', () => {
+    const r = consultationSchema.parse({ ...base, sheet: JSON.stringify(sheet) });
+    expect(r.sheet.home).toEqual([{ code: '2D', repetition: 'DAILY_1', intensity: null, steps: null, note: null }]);
+    const withHome = {
+      ...sheet,
+      exercises: [...sheet.exercises, { code: '2A', prescribed: false, difficulty: 'EASY', variants: null }],
+      home: [
+        { code: '2D', repetition: 'WEEKLY_5', intensity: 7, steps: 3, note: ' abends ' },
+        // Not prescribed (any more): dropped
+        { code: '2A', repetition: 'DAILY_2', intensity: null, steps: null, note: null },
+      ],
+    };
+    expect(consultationSchema.parse({ ...base, sheet: JSON.stringify(withHome) }).sheet.home).toEqual([
+      { code: '2D', repetition: 'WEEKLY_5', intensity: 7, steps: 3, note: 'abends' },
+    ]);
+  });
+
+  it('refuses intensity 10, steps beyond 3 and unknown repetitions (Intensität 10)', () => {
+    const home = (h: object) =>
+      consultationSchema.safeParse({
+        ...base,
+        sheet: JSON.stringify({
+          ...sheet,
+          home: [{ code: '2D', repetition: 'DAILY_1', intensity: null, steps: null, note: null, ...h }],
+        }),
+      }).success;
+    expect(home({ intensity: 9, steps: 3 })).toBe(true);
+    expect(home({ intensity: 10 })).toBe(false);
+    expect(home({ intensity: 0 })).toBe(false);
+    expect(home({ steps: 4 })).toBe(false);
+    expect(home({ repetition: 'DAILY_4' })).toBe(false);
+    expect(home({ repetition: 'WEEKLY_8' })).toBe(false);
   });
 
   it('accepts pain before and after in steps of 10 and rejects other values', () => {

@@ -87,3 +87,34 @@ test('treatments, consultation and catalog', async ({ page }) => {
     await expectNoViolations(page, `catalog ${tab || 'regions'}`);
   }
 });
+
+/** Iteration 3, task 4.2: block "Selbstausführung", Abschluss with the exercise sheet and the catalog exercise */
+test('home exercises, exercise sheet and catalog exercise', async ({ page }) => {
+  await login(page);
+  await createSignedPatient(page, { first: 'Lea', last: `Axe${unique()}`, dob: '21.06.1985', emailConsent: true });
+  await page.locator('.rechead').getByRole('link', { name: 'Neue Behandlung' }).click();
+  await page.locator('#f_regionId').selectOption('6');
+  await page.locator('#f_painStart').selectOption('50');
+  await page.locator('#f_diagnosis').fill('Lumbalgie');
+  await page.getByRole('button', { name: 'Behandlung eröffnen' }).click();
+  await expect(page.getByText('Behandlung eröffnet.')).toBeVisible();
+  await page.locator('section.treat').first().getByRole('link', { name: 'Konsultation', exact: true }).click();
+  await page.getByLabel('Übung 2A verordnet').check();
+  await page.getByLabel('Übung 2C verordnet').check();
+  await page
+    .getByRole('group', { name: 'Wiederholung 2A wöchentlich', exact: true })
+    .getByRole('button', { name: '3x' })
+    .click();
+  await page.locator('section[aria-labelledby="h_home"]').getByRole('button', { name: '+ Übung hinzufügen' }).click();
+  await expectNoViolations(page, 'consultation with home exercises');
+  await page.getByRole('button', { name: 'Konsultation speichern' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Übungsblatt' })).toBeVisible();
+  await expectNoViolations(page, 'Abschluss');
+  await page.getByRole('button', { name: 'Übungsblatt senden' }).click();
+  await expect(page.getByText(/Übungsblatt PT-\d{4}-\d{5} erstellt/)).toBeVisible();
+  await expectNoViolations(page, 'Abschluss after sending');
+  for (const code of ['2A', '1C']) {
+    await page.goto(`/catalog/exercises/${code}`);
+    await expectNoViolations(page, `catalog exercise ${code}`);
+  }
+});

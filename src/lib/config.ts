@@ -22,6 +22,9 @@ export const config = {
     container: process.env.AZURE_STORAGE_CONTAINER ?? 'signed-documents',
     photoLocalDir: process.env.STORAGE_PHOTO_LOCAL_DIR ?? './data/clinical-photos',
     photoContainer: process.env.AZURE_STORAGE_PHOTO_CONTAINER ?? 'clinical-photos',
+    /** Images and texts of the L&B exercise sheets (iteration 3, design D2); never in the repository */
+    exerciseLocalDir: process.env.STORAGE_EXERCISE_LOCAL_DIR ?? './data/exercise-media',
+    exerciseContainer: process.env.AZURE_STORAGE_EXERCISE_CONTAINER ?? 'exercise-media',
   },
   photos: {
     /** Per photo after resizing in the browser (design D5) */

@@ -11,7 +11,7 @@ import { translator } from './i18n-server';
 
 const fontDir = path.join(process.cwd(), 'assets', 'fonts');
 let fontsRegistered = false;
-function registerFonts() {
+export function registerFonts() {
   if (fontsRegistered) return;
   Font.register({
     family: 'Inter',
@@ -25,10 +25,10 @@ function registerFonts() {
   fontsRegistered = true;
 }
 
-const GOLD = '#B99438';
-const INK = '#1C1A14';
-const MID = '#5C5040';
-const BORDER = '#E2D9C4';
+export const GOLD = '#B99438';
+export const INK = '#1C1A14';
+export const MID = '#5C5040';
+export const BORDER = '#E2D9C4';
 
 const s = StyleSheet.create({
   page: {

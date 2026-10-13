@@ -81,3 +81,26 @@ export function getMailer(): Mailer {
 export function setMailer(m: Mailer | null) {
   mailer = m;
 }
+
+/**
+ * Sends a mail with up to `config.mail.maxAttempts` attempts and exponential back-off (consent-documents:
+ * Fehlgeschlagener Versand). `onFailedAttempt` records each failed attempt, e.g. in the delivery row.
+ */
+export async function sendWithRetry(
+  mail: OutgoingMail,
+  opts: { retryDelayMs?: number; onFailedAttempt?: (attempt: number, error: string) => Promise<void> } = {},
+): Promise<{ ok: true; attempts: number } | { ok: false; attempts: number; lastError: string }> {
+  const delay = opts.retryDelayMs ?? config.mail.retryDelayMs;
+  let lastError = '';
+  for (let attempt = 1; attempt <= config.mail.maxAttempts; attempt++) {
+    try {
+      await getMailer().send(mail);
+      return { ok: true, attempts: attempt };
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : String(e);
+      await opts.onFailedAttempt?.(attempt, lastError);
+      if (attempt < config.mail.maxAttempts) await new Promise((r) => setTimeout(r, delay * 2 ** (attempt - 1)));
+    }
+  }
+  return { ok: false, attempts: config.mail.maxAttempts, lastError };
+}

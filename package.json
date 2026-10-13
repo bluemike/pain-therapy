@@ -16,6 +16,7 @@
     "db:dev": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "catalog:sync": "node prisma/catalog/sync.mjs",
+    "media:placeholders": "tsx scripts/exercise-media-placeholders.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {

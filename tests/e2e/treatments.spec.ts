@@ -105,7 +105,7 @@ test.describe('treatments and consultations', () => {
     // Point from another area
     await page.getByRole('button', { name: 'Punkt aus anderem Bereich' }).click();
     await page.getByLabel('Punkt aus dem Katalog').selectOption('1.1.1');
-    await page.getByRole('button', { name: 'Hinzufügen' }).click();
+    await page.getByRole('button', { name: 'Hinzufügen', exact: true }).click();
     await expect(rows).toHaveCount(16);
     await page.getByLabel('Punkt 1.1.1 links behandelt').check();
 
@@ -120,6 +120,9 @@ test.describe('treatments and consultations', () => {
     await page.getByRole('button', { name: 'Konsultation speichern' }).click();
 
     await expect(page.getByText('Konsultation Nr. 1 gespeichert.')).toBeVisible();
+    // A prescribed exercise leads to the Abschluss with the exercise sheet (iteration 3); "Später" goes to the record
+    await expect(page.getByRole('heading', { level: 1, name: 'Übungsblatt' })).toBeVisible();
+    await page.getByRole('link', { name: 'Später' }).click();
     const list = page.locator('section.treat').first().locator('.conslist li');
     await expect(list).toHaveCount(1);
     await expect(list.first()).toContainText('Nr. 1');

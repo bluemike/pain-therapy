@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { getLocale, getTranslations } from 'next-intl/server';
 import type { Patient, Region, Treatment } from '@prisma/client';
 import { allPoints, localName, regionLabel, regionSheet, rollingTools } from '@/lib/catalog';
+import { exerciseChoices } from '@/lib/exercise-sheets';
 import { formatDateZurich, formatPercent } from '@/lib/format';
 import { ConsultationForm, type ConsultationValues } from '@/components/ConsultationForm';
 import type { SavedPhoto } from '@/components/PhotoField';
@@ -14,6 +15,7 @@ export async function ConsultationPage({
   initial,
   saved,
   blocked,
+  handoutHref,
 }: {
   treatment: Treatment & { region: Region; patient: Patient };
   number: number;
@@ -21,6 +23,8 @@ export async function ConsultationPage({
   initial: ConsultationValues;
   saved?: SavedPhoto[];
   blocked?: React.ReactNode;
+  /** exercise-handout: shown once the saved consultation has home exercises */
+  handoutHref?: string;
 }) {
   const [t, locale] = await Promise.all([getTranslations('consultation'), getLocale()]);
   const p = treatment.patient;
@@ -30,12 +34,13 @@ export async function ConsultationPage({
     pointIds: initial.sheet.points.map((x) => x.pointId),
     exerciseCodes: initial.sheet.exercises.map((x) => x.code),
   };
-  const [sheet, points, tools] = blocked
-    ? [null, [], []]
+  const [sheet, points, tools, choices] = blocked
+    ? [null, [], [], []]
     : await Promise.all([
         regionSheet(treatment.regionId, recorded),
         allPoints(),
         rollingTools(initial.sheet.rolling.map((r) => r.toolCode).filter((c): c is string => !!c)),
+        exerciseChoices(recorded.exerciseCodes),
       ]);
   return (
     <>
@@ -49,6 +54,13 @@ export async function ConsultationPage({
           <h1>{t('title', { n: number })}</h1>
           <div className="sub">{t('sheet', { region: label })}</div>
         </div>
+        {handoutHref ? (
+          <div className="actions">
+            <Link className="btn btn--ghost" href={handoutHref}>
+              {(await getTranslations('handout'))('create')}
+            </Link>
+          </div>
+        ) : null}
       </div>
       {blocked ??
         (sheet ? (
@@ -70,6 +82,7 @@ export async function ConsultationPage({
               de: x.attachmentDe,
               group: x.group,
             }))}
+            catalogExercises={choices}
             tools={tools.map((x) => ({ code: x.code, name: localName(x, locale) }))}
             saved={saved}
             cancelHref={`${base}#t-${treatment.id}`}

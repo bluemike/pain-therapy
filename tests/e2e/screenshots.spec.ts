@@ -74,3 +74,32 @@ test('treatment screens', async ({ page }, info) => {
   await page.goto('/catalog?tab=points&region=6');
   await shot('14-catalog-points');
 });
+
+/** Iteration 3: block "Selbstausführung", Abschluss and the catalog exercise (task 4.3 preparation) */
+test('home exercise screens', async ({ page }, info) => {
+  const shot = (name: string) =>
+    page.screenshot({ path: `test-results/screenshots/${info.project.name}/${name}.png`, fullPage: true });
+  await login(page);
+  await createSignedPatient(page, { first: 'Anna', last: `Heim${unique()}`, dob: '05.03.1980', emailConsent: true });
+  await page.locator('.rechead').getByRole('link', { name: 'Neue Behandlung' }).click();
+  await page.locator('#f_regionId').selectOption('6');
+  await page.locator('#f_painStart').selectOption('60');
+  await page.locator('#f_diagnosis').fill('Lumbalgie');
+  await page.getByRole('button', { name: 'Behandlung eröffnen' }).click();
+  await expect(page.getByText('Behandlung eröffnet.')).toBeVisible();
+  await page.locator('section.treat').first().getByRole('link', { name: 'Konsultation', exact: true }).click();
+  await page.getByLabel('Übung 2A verordnet').check();
+  await page.getByLabel('Übung 2D verordnet').check();
+  await page
+    .getByRole('group', { name: 'Wiederholung 2D wöchentlich', exact: true })
+    .getByRole('button', { name: '5x' })
+    .click();
+  await page.getByLabel('Übung 2C verordnet').check();
+  await page.locator('section[aria-labelledby="h_home"]').scrollIntoViewIfNeeded();
+  await shot('20-home-exercises');
+  await page.getByRole('button', { name: 'Konsultation speichern' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Übungsblatt' })).toBeVisible();
+  await shot('21-handout');
+  await page.goto('/catalog/exercises/2A');
+  await shot('22-catalog-exercise');
+});

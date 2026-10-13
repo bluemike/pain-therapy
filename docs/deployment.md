@@ -12,6 +12,7 @@ Ziel: `https://pain-therapy.ayanta.ch`, alle Daten in **Switzerland North**. Die
 | PostgreSQL Flexible Server 16 (B1ms) | Datenbank, 35 Tage Backup, nur Azure-Dienste dürfen verbinden |
 | Storage Account (ZRS), Container `signed-documents` | PDF-Archiv mit Versionierung und unveränderlicher Aufbewahrung (20 Jahre) |
 | Container `clinical-photos` im selben Storage Account | Fotos von Behandlungen und Konsultationen, privat, Versionierung und Soft Delete (365 Tage), ohne Unveränderlichkeit; *Entfernen* in der App blendet nur aus |
+| Container `exercise-media` im selben Storage Account | Bilder und Texte der digitalisierten L&B-Übungsblätter, privat, von Hand geladen (siehe Iteration 3); die App liefert die Bilder nur an angemeldete Benutzer:innen aus |
 | Key Vault | `AUTH_SECRET`, Client Secret, Datenbank-URL |
 | User-assigned Managed Identity | Zugriff auf Registry, Key Vault, Blob Storage und Graph (E-Mail) |
 | Log Analytics | Logs der Container Apps, 90 Tage |
@@ -79,7 +80,7 @@ Graph-Berechtigung und Beschränkung auf das Absenderpostfach nach [entra.md](en
 
 1. Image bauen und als `pain-therapy:<commit>` in die Registry schieben.
 2. Migrationsjob mit dem neuen Image starten (`sh prisma/migrate.sh`: Migrationen, dann Therapiekatalog aus `prisma/catalog/`) und auf Erfolg warten. Schlägt er fehl, bricht das Deployment ab und die alte Revision läuft weiter. Ein frisches Deployment hat danach den vollständigen Katalog; erneutes Einspielen ändert nichts.
-3. Bicep anwenden: Infrastruktur abgleichen (ab Iteration 2 inklusive Container `clinical-photos` und `AZURE_STORAGE_PHOTO_CONTAINER`) und neue Revision mit dem neuen Image ausrollen.
+3. Bicep anwenden: Infrastruktur abgleichen (ab Iteration 2 inklusive Container `clinical-photos` und `AZURE_STORAGE_PHOTO_CONTAINER`, ab Iteration 3 Container `exercise-media`, `AZURE_STORAGE_EXERCISE_CONTAINER` und Blob-Zugriff des Migrationsjobs) und neue Revision mit dem neuen Image ausrollen.
 4. Smoke-Test auf `/api/health`.
 
 **Rollback:** `az containerapp revision list -g rg-pain-therapy -n ca-pain-therapy -o table`, dann die vorherige Revision aktivieren oder den Workflow mit dem alten Commit erneut starten. Migrationen sind nur additiv (Iteration 2: neue Tabellen für Katalog, Behandlungen, Konsultationen und Fotos), ein Rollback der App braucht kein Rollback der Datenbank.
@@ -93,6 +94,65 @@ az deployment group what-if -g rg-pain-therapy -n main -f infra/main.bicep -p in
 ```
 
 Erwartet: *Create* `…/blobServices/default/containers/clinical-photos`, *Modify* der Container App (`AZURE_STORAGE_PHOTO_CONTAINER`, neues Image) und des Migrationsjobs (Kommando `sh prisma/migrate.sh`). Die bestehende Rolle *Storage Blob Data Contributor* gilt für den ganzen Storage Account und deckt den neuen Container ab. Formulare mit Fotos dürfen bis 25 MB gross sein (`serverActions.bodySizeLimit`); bei der Abnahme einmal 10 Fotos auf einmal speichern, um auch die Grenze des Ingress zu prüfen.
+
+## Iteration 3 (Selbstausführung, Übungsblatt)
+
+Die Bilder und Texte der Übungsblätter gehören Liebscher & Bracht und liegen **nie** im Repository oder im Image. Sie kommen einmalig von Hand aus OneDrive (`Ayanta Home - Dokumente/pain-therapy/exercises/digitalisiert/`) in den privaten Container `exercise-media`. Fehlen sie, läuft die App trotzdem: Bilder zeigen "Bild nicht verfügbar", das PDF druckt die Texte oder "Blatt nicht verfügbar", und der Zeitbedarf kommt ohnehin aus `prisma/catalog/exercise-sheets.json`.
+
+### 1. Bicep prüfen
+
+```bash
+az deployment group what-if -g rg-pain-therapy -n main -f infra/main.bicep -p infra/main.bicepparam
+```
+
+Erwartet: *Create* `…/blobServices/default/containers/exercise-media`, *Modify* der Container App (`AZURE_STORAGE_EXERCISE_CONTAINER`, neues Image) und des Migrationsjobs (Umgebungsvariablen `AZURE_CLIENT_ID`, `STORAGE_DRIVER`, `AZURE_STORAGE_ACCOUNT_URL`, `AZURE_STORAGE_EXERCISE_CONTAINER`). Sonst nichts. Die Managed Identity hat über *Storage Blob Data Contributor* auf dem Storage Account bereits Lesezugriff auf den neuen Container.
+
+### 2. Medien hochladen
+
+Der Container ist flach, ohne Unterordner. Die Dateinamen stehen pro Übung in `prisma/catalog/exercise-sheets.json` (`mainImage`, `sheetImage`) und müssen genau so heissen (Gross-/Kleinschreibung beachten):
+
+```
+exercise-media/
+  1A.jpg  1A-blatt.png      Hauptbild (JPEG) und ganzes Blatt (PNG), je Code
+  1B.jpg  1B-blatt.png
+  …                          1A–1F, 2A–2F, 3A–3H, 4A–4G (27 Übungen, 54 Bilder)
+  4G.jpg  4G-blatt.png
+  exercises-content.json    Texte der Abschnitte
+```
+
+`uebersicht-hauptbilder.png` wird nicht gebraucht und kann mitkommen oder wegbleiben. `exercises-content.json` hat diese Form (die Leseroutine in `prisma/catalog/sync.mjs` akzeptiert auch `{ "exercises": [...] }`, ein Objekt mit dem Code als Schlüssel, `sections` als Unterobjekt und Schritte als reine Texte):
+
+```json
+[
+  {
+    "code": "1A",
+    "rolling": "Text des Abschnitts Faszien-Rollmassage",
+    "steps": [{ "label": "Schritt 1", "text": "…" }, { "label": "Schritt 2", "text": "…" }],
+    "variants": "Text der Varianten oder null"
+  }
+]
+```
+
+Hochladen mit einem Konto, das auf dem Storage Account die Rolle *Storage Blob Data Contributor* hat (einmalig zuweisen: `az role assignment create --assignee <upn> --role "Storage Blob Data Contributor" --scope <storageAccountId>`):
+
+```bash
+az storage blob upload-batch --account-name <storageAccountName> --auth-mode login \
+  -d exercise-media -s "<OneDrive>/pain-therapy/exercises/digitalisiert" \
+  --pattern "*" --overwrite
+az storage blob list --account-name <storageAccountName> --auth-mode login -c exercise-media --query "length(@)"
+```
+
+Erwartet: 55 Blobs (56 mit der Übersicht). Neu digitalisieren lässt sich mit `scripts/import-exercise-sheets.py` aus dem PDF der Sammelmappe; das Skript schreibt dieselben Dateinamen.
+
+### 3. Texte einspielen
+
+`catalog:sync` im Migrationsjob liest `exercises-content.json` aus dem Container. Beim ersten Deployment mit Iteration 3 läuft der Job noch vor Bicep, also ohne die neuen Umgebungsvariablen; er meldet dann `exercises-content.json: not found; exercise texts unchanged` und lässt die Texte leer. Nach dem Deployment (und nach jedem späteren Upload neuer Texte) den Job einmal von Hand starten:
+
+```bash
+az containerapp job start -g rg-pain-therapy -n caj-pain-therapy-migrate
+```
+
+Prüfen: *Katalog → Übungen → 2A* zeigt Hauptbild, Abschnitte, Zeitbedarf und das ganze Blatt. Bilder ersetzen braucht keinen Neustart (die Browser halten sie höchstens eine Stunde im Cache); geänderte Texte brauchen den Job.
 
 ## Nach dem Go-live
 

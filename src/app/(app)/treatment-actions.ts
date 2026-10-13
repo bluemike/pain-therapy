@@ -70,16 +70,20 @@ export async function saveConsultation(_prev: TreatmentFormState, fd: FormData):
     const errors = fieldErrors(parsed.error);
     return errors.sheet ? { errors, error: 'sheet' } : { errors };
   }
-  let number: number;
+  let saved: { id: string; number: number };
   try {
     const photos = await readPhotos(fd);
-    number = id
-      ? (await updateConsultation(actor, id, parsed.data, photos)).number
-      : (await createConsultation(actor, treatmentId, parsed.data, photos.add)).number;
+    saved = id
+      ? await updateConsultation(actor, id, parsed.data, photos)
+      : await createConsultation(actor, treatmentId, parsed.data, photos.add);
   } catch (e) {
     const known = knownError(e);
     if (known) return known;
     throw e;
   }
-  redirect(`/patients/${patientId}?flash=consultationSaved&n=${number}#t-${treatmentId}`);
+  // exercise-handout (design D6): with home exercises the Abschluss page offers the exercise sheet; saving alone
+  // never creates one
+  if (parsed.data.sheet.home.length)
+    redirect(`/patients/${patientId}/treatments/${treatmentId}/consultations/${saved.id}/handout?flash=saved`);
+  redirect(`/patients/${patientId}?flash=consultationSaved&n=${saved.number}#t-${treatmentId}`);
 }

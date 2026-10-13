@@ -32,6 +32,7 @@ export default async function EditConsultationPage({
         sheet: sheetOf(c),
       }}
       saved={photos.map((p) => ({ id: p.id, takenAt: p.takenAt.toISOString() }))}
+      handoutHref={c.home.length ? `/patients/${id}/treatments/${tid}/consultations/${cid}/handout` : undefined}
     />
   );
 }

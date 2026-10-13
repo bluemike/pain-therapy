@@ -5,7 +5,9 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 const nextConfig: NextConfig = {
   output: 'standalone',
-  serverExternalPackages: ['@react-pdf/renderer'],
+  // The Azure SDKs stay in node_modules (traced into the standalone output) so that prisma/catalog/sync.mjs can load
+  // them in the migration job to read exercises-content.json from the container exercise-media
+  serverExternalPackages: ['@react-pdf/renderer', '@azure/storage-blob', '@azure/identity'],
   // pdfkit loads its standard fonts and data files dynamically, which file tracing misses
   outputFileTracingIncludes: {
     '/**': [

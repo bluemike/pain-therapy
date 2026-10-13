@@ -1,11 +1,10 @@
 import type { Language } from '@prisma/client';
 import { db } from './db';
 import { audit, SYSTEM_ACTOR } from './audit';
-import { config } from './config';
 import { currentText } from './consent-texts';
 import { formatDateTime } from './format';
 import { translator } from './i18n-server';
-import { getMailer } from './mail';
+import { sendWithRetry } from './mail';
 import { renderSignedFormPdf } from './pdf';
 import { signatureSvg } from './signature';
 import { documentStore, sha256 } from './storage';
@@ -66,7 +65,8 @@ export async function abortIfOpen(actor: Actor, sid: string) {
   });
 }
 
-async function nextDocumentNumber(): Promise<string> {
+/** Next human-readable document number PT-YYYY-NNNNN, shared by signed forms and exercise sheets */
+export async function nextDocumentNumber(): Promise<string> {
   const year = new Date().getUTCFullYear();
   const row = await db.documentCounter.upsert({
     where: { year },
@@ -195,27 +195,25 @@ export async function deliverEmail(deliveryId: string, opts: { retryDelayMs?: nu
     }),
     attachment: { name: `${document.documentNumber}.pdf`, contentType: 'application/pdf', data },
   };
-  const delay = opts.retryDelayMs ?? config.mail.retryDelayMs;
-  let lastError = '';
-  for (let attempt = 1; attempt <= config.mail.maxAttempts; attempt++) {
-    try {
-      await getMailer().send(mail);
-      await db.emailDelivery.update({
-        where: { id: deliveryId },
-        data: { status: 'SENT', attempts: attempt, sentAt: new Date(), lastError: null },
-      });
-      await audit(SYSTEM_ACTOR, 'email.sent', {
-        patientId: document.patientId,
-        after: delivery.recipient,
-        details: { document: document.documentNumber },
-      });
-      return db.emailDelivery.findUnique({ where: { id: deliveryId } });
-    } catch (e) {
-      lastError = e instanceof Error ? e.message : String(e);
+  const result = await sendWithRetry(mail, {
+    retryDelayMs: opts.retryDelayMs,
+    onFailedAttempt: async (attempt, lastError) => {
       await db.emailDelivery.update({ where: { id: deliveryId }, data: { attempts: attempt, lastError } });
-      if (attempt < config.mail.maxAttempts) await new Promise((r) => setTimeout(r, delay * 2 ** (attempt - 1)));
-    }
+    },
+  });
+  if (result.ok) {
+    await db.emailDelivery.update({
+      where: { id: deliveryId },
+      data: { status: 'SENT', attempts: result.attempts, sentAt: new Date(), lastError: null },
+    });
+    await audit(SYSTEM_ACTOR, 'email.sent', {
+      patientId: document.patientId,
+      after: delivery.recipient,
+      details: { document: document.documentNumber },
+    });
+    return db.emailDelivery.findUnique({ where: { id: deliveryId } });
   }
+  const { lastError } = result;
   await db.emailDelivery.update({ where: { id: deliveryId }, data: { status: 'FAILED' } });
   await audit(SYSTEM_ACTOR, 'email.failed', {
     patientId: document.patientId,
