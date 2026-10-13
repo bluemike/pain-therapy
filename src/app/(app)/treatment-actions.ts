@@ -21,6 +21,8 @@ function knownError(e: unknown): TreatmentFormState | null {
   if (e instanceof PhotoError) return { errors: { photos: e.code } };
   if (e instanceof TreatmentError) {
     if (e.code === 'region') return { errors: { regionId: 'region' } };
+    if (e.code === 'regionLocked') return { errors: { regionId: 'regionLocked' } };
+    if (e.code === 'startAfterConsultation') return { errors: { startedAt: 'startAfterConsultation' } };
     if (e.code === 'inactive') return { error: 'patientInactive' };
     if (e.code === 'consent') return { error: 'consent' };
     if (e.code === 'catalog') return { error: 'catalog' };

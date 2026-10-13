@@ -174,6 +174,8 @@
     "photoSize": "A photo is larger than 5 MB.",
     "photoCount": "At most 10 photos per save.",
     "region": "This area is no longer available.",
+    "regionLocked": "The area is fixed after the first consultation. If it is wrong, please open a new treatment.",
+    "startAfterConsultation": "The treatment cannot start after its first consultation.",
     "catalog": "An entry of the form is missing from the catalog. Please reload the page.",
     "sheet": "The form could not be read. Please reload the page.",
     "consent": "New treatments and consultations need a valid signed liability waiver."
@@ -405,6 +407,7 @@
     "rolling": "{count, plural, one {# rolling row} other {# rolling rows}}",
     "startedAt": "Date and time",
     "regionId": "Area",
+    "regionLockedHint": "Fixed since the first consultation. If the area is wrong, open a new treatment.",
     "diagnosis": "Diagnosis",
     "painStartLabel": "Pain level at the start",
     "choose": "Please choose",

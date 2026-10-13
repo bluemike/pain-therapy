@@ -52,11 +52,19 @@ The system SHALL record the pain level at the start of a treatment as a percenta
 - **THEN** sieht sie die Werte 0 %, 10 % bis 100 %, und keiner ist vorausgewählt
 
 ### Requirement: Behandlung ändern
-The system SHALL let users with the role Therapist or Admin change date and time, diagnosis, area and pain level of a treatment and add or remove photos. Every change SHALL appear in the record's history with old and new value. The system MUST NOT offer deleting a treatment.
+The system SHALL let users with the role Therapist or Admin change date and time, diagnosis, area and pain level of a treatment and add or remove photos. Once a consultation of the treatment is saved, the system MUST NOT allow changing the area, and the start MUST NOT lie after the first consultation; diagnosis, pain level and photos stay changeable. Every change SHALL appear in the record's history with old and new value. The system MUST NOT offer deleting a treatment.
 
 #### Scenario: Diagnose korrigieren
 - **WHEN** die Therapeutin die Diagnose einer Behandlung ändert
 - **THEN** zeigt die Behandlung die neue Diagnose, und die Änderungshistorie zeigt alte und neue
+
+#### Scenario: Bereich nach der ersten Konsultation
+- **WHEN** zu einer Behandlung mindestens eine Konsultation gespeichert ist
+- **THEN** zeigt das Formular «Behandlung ändern» den Bereich schreibgeschützt mit dem Hinweis, bei falschem Bereich eine neue Behandlung zu eröffnen, und das System lehnt eine Änderung des Bereichs auch serverseitig ab
+
+#### Scenario: Beginn nicht nach der ersten Konsultation
+- **WHEN** die Therapeutin Datum und Zeit einer Behandlung auf einen Zeitpunkt nach ihrer ersten Konsultation ändert
+- **THEN** lehnt das System das Speichern ab und zeigt beim Feld Datum und Zeit, dass die Behandlung nicht nach der ersten Konsultation beginnen darf
 
 #### Scenario: Kein Löschen
 - **WHEN** ein Benutzer eine Behandlung ansieht
