@@ -27,6 +27,21 @@ The system SHALL provide the 27 stretching exercises 1A to 1F, 2A to 2F, 3A to 3
 - **WHEN** der Bogen für Bereich 12 aufgebaut wird
 - **THEN** enthält er die Übungen 2F, 4B, 4C, 4D, 4E und 4F
 
+### Requirement: Katalog ansehen
+The system SHALL offer users with the role Therapist or Admin a read-only view "Katalog" in the main navigation that lists the treatment areas, the Osteopressur points (filterable by area, with main and relevant points marked as on the paper form), the stretching exercises with their areas and the fascia rolling tools. Values not yet captured SHALL be shown as "noch nicht erfasst". The view MUST NOT offer editing.
+
+#### Scenario: Punkte eines Bereichs ansehen
+- **WHEN** der Arzt im Katalog die Osteopressur-Punkte öffnet und den Bereich "Lendenwirbelsäule, Bauch" wählt
+- **THEN** sieht er die 15 Punkte dieses Bereichs in der Reihenfolge des Bogens, Hauptpunkte hervorgehoben
+
+#### Scenario: Übung ohne erfasste Inhalte
+- **WHEN** ein Benutzer die Engpassdehnungen ansieht
+- **THEN** sieht er alle 27 Übungen mit ihren Bereichen, und bei Übungen ohne Rollmassage oder Varianten steht "noch nicht erfasst"
+
+#### Scenario: Keine Bearbeitung
+- **WHEN** ein Benutzer mit der Rolle Admin den Katalog ansieht
+- **THEN** bietet das System keine Funktion zum Ändern, Hinzufügen oder Entfernen an
+
 ### Requirement: Erstbefüllung und Änderungen
 The system SHALL load the catalog from versioned reference files during deployment, idempotently. It MUST NOT delete catalog entries that consultations refer to; entries removed from the files SHALL be marked as retired and stay visible in existing consultations.
 

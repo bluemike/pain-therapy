@@ -31,8 +31,8 @@ Alle Schreibzugriffe laufen über die Service-Schicht mit `AuditEvent` (z. B. `t
 Die Tabellen in `reference/` werden nach `prisma/catalog/` übernommen und mit `npm run catalog:sync` per Upsert eingespielt, im Migrationsjob nach `prisma migrate deploy`. Seed-Plan und Herkunft der Daten in `reference/README.md`. Konsultationen speichern Punkt-IDs und Übungscodes mit Fremdschlüssel; der Bogen zeigt die Bezeichnungen aus dem Katalog.
 
 ### D3: Behandlungsbogen aus dem Katalog
-Der Bogen einer Konsultation wird aus `RegionPoint` und `RegionExercise` des Bereichs der Behandlung aufgebaut, in der Reihenfolge der Papiervorlage. Hauptpunkte (orange fett) und wichtige Punkte (orange) sind wie auf dem Papier farbig hervorgehoben; ein Filter "nur Hauptpunkte" verkürzt die Liste. Punkte anderer Bereiche lassen sich über "Punkt aus anderem Bereich" ergänzen, weil die Bereiche sich Punkte teilen und Therapeut:innen davon abweichen. Empfindlichkeit, "Übung fällt" und Restschmerz sind Segmentschalter statt Auswahllisten, damit sie mit einem Tippen bedienbar sind; ein zweites Tippen auf den gewählten Wert hebt die Wahl auf.
-Mockup: [`mockups/konsultation-lws-bauch.html`](mockups/konsultation-lws-bauch.html) (im Browser öffnen; Ansichten 1 Akte, 2 Neue Behandlung, 3 Konsultation für Bereich 6 mit den echten Referenzdaten).
+Der Bogen einer Konsultation wird aus `RegionPoint` und `RegionExercise` des Bereichs der Behandlung aufgebaut, in der Reihenfolge der Papiervorlage. Hauptpunkte (orange fett) und wichtige Punkte (orange) sind wie auf dem Papier farbig hervorgehoben; ein Filter "nur Hauptpunkte" verkürzt die Liste. Punkte anderer Bereiche lassen sich über "Punkt aus anderem Bereich" ergänzen, weil die Bereiche sich Punkte teilen und Therapeut:innen davon abweichen. Schmerz vor und nach der Konsultation stehen gemeinsam im Abschnitt "Schmerz" als zwei gleich bedienbare Zeilen mit den Werten 0 bis 100, nicht als Felder im Kopf. Empfindlichkeit, "Übung fällt" und die Schmerzwerte sind Segmentschalter statt Auswahllisten, damit sie mit einem Tippen bedienbar sind; ein zweites Tippen auf den gewählten Wert hebt die Wahl auf.
+Mockup: [`mockups/konsultation-lws-bauch.html`](mockups/konsultation-lws-bauch.html) (im Browser öffnen; Ansichten 1 Akte, 2 Neue Behandlung, 3 Konsultation für Bereich 6 und 4 Katalog, alle mit den echten Referenzdaten).
 
 ### D4: Nummerierung
 Konsultationen werden innerhalb ihrer Behandlung nummeriert (1, 2, 3 …); das entspricht "Behandlung Nr." auf dem Papierbogen, wo pro Schmerzbereich 3 bis 5 Sitzungen üblich sind. Die Nummer wird beim Speichern in derselben Transaktion vergeben und ändert sich nicht, wenn Datum oder Zeit korrigiert werden. Behandlungen selbst tragen ihren Bereich als Kennung ("6 · Lendenwirbelsäule, Bauch"); eine zweite Behandlung im selben Bereich ist möglich (z. B. ein neuer Schmerzschub ein Jahr später) und wird über das Datum unterschieden.
@@ -47,7 +47,10 @@ Privater Container `clinical-photos` im bestehenden Storage-Account, mit Version
 ### D7: Akte
 Der Reiter "Behandlungen" wird erster Reiter und Standardansicht der Akte. Jede Behandlung zeigt Bereich, Eröffnung, Schmerzgrad zu Beginn, Diagnose und ihre Konsultationen (neueste zuerst, mit Schmerz vorher und nachher). "Neue Behandlung" steht im Kopf der Akte, "+ Konsultation" bei jeder Behandlung.
 
-### D8: Voraussetzungen
+### D8: Katalogansicht
+Eine reine Leseansicht `/catalog` mit Eintrag "Katalog" in der Hauptnavigation, für beide Rollen. Vier Reiter: Bereiche (mit Anzahl Punkte, Hauptpunkten und Übungen), Osteopressur-Punkte (Filter nach Bereich; mit Bereich in Reihenfolge und Hervorhebung des Bogens, ohne Bereich alle Punkte nach ID mit den Bereichen, in denen sie vorkommen), Engpassdehnungen (Bereiche, Rollmassage, Varianten; fehlende Inhalte als "noch nicht erfasst") und Rollmassage-Werkzeuge. Zurückgezogene Einträge werden nicht gezeigt. Bearbeiten folgt in einer späteren Iteration.
+
+### D9: Voraussetzungen
 Neue Behandlungen und Konsultationen nur für aktive Patienten mit gültigem unterschriebenem Haftungsausschluss (gleiche Prüfung wie "Unterschrift ausstehend" auf dem Dashboard). Ohne Unterschrift zeigt die App einen Hinweis mit "An Patient:in übergeben". Beide Rollen (Therapist, Admin) dürfen erfassen und ändern.
 
 ## Risks / Trade-offs
@@ -69,7 +72,7 @@ Diese Punkte sind mit dem jeweiligen Vorschlag umgesetzt und können bei der Dur
 - Fotos sind optional (0 bis n), sowohl bei der Behandlung als auch bei der Konsultation.
 - Ohne gültigen unterschriebenen Haftungsausschluss lassen sich keine Behandlungen und Konsultationen eröffnen.
 - Nummeriert werden die Konsultationen innerhalb einer Behandlung (entspricht "Behandlung Nr." auf dem Bogen), nicht die Behandlungen.
-- "Schmerzgrad" der Behandlung ist der Schmerz zu Beginn; jede Konsultation hat zusätzlich "Schmerz vorher" und "Restschmerz nachher" wie der Bogen. Beide sind bei der Konsultation optional.
+- "Schmerzgrad" der Behandlung ist der Schmerz zu Beginn; jede Konsultation hat zusätzlich Schmerz vor und nach der Konsultation im eigenen Abschnitt "Schmerz", beide optional.
 - Fehlerfassungen werden noch nicht gekennzeichnet; Korrekturen erfolgen durch Ändern mit Historie.
 - Bedeutung der Farben auf dem Bogen (orange fett = Hauptpunkt, orange = wichtig, schwarz = weitere) ist zu bestätigen.
 - Rollmassage, Varianten und Übungsblätter fehlen für 26 der 27 Übungen (nur 2A liegt als Scan vor).

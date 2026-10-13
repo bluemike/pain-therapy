@@ -39,12 +39,16 @@ The system SHALL show in each consultation the treatment form (Behandlungsbogen)
 - **WHEN** die Therapeutin einen Punkt behandelt, der nicht auf dem Bogen des Bereichs steht
 - **THEN** kann sie ihn aus dem Katalog hinzufügen und wie die anderen Punkte erfassen
 
-### Requirement: Schmerz vorher und Restschmerz
-The system SHALL record per consultation the pain before the consultation and the residual pain after it, each optional, from 0 to 100 % in steps of 10.
+### Requirement: Schmerz vor und nach der Konsultation
+The system SHALL record per consultation, in its own section of the form and not among the header fields, the pain before the consultation and the residual pain after it, each optional, entered the same way with a row of buttons from 0 to 100 % in steps of 10.
 
-#### Scenario: Restschmerz
-- **WHEN** die Therapeutin Schmerz vorher 60 und Restschmerz 30 wählt
-- **THEN** zeigt die Liste der Konsultationen für diese Konsultation "60 % → 30 %"
+#### Scenario: Schmerz vorher und nachher
+- **WHEN** die Therapeutin im Abschnitt "Schmerz" in der Zeile "vor der Konsultation" 60 und in der Zeile "nach der Konsultation" 30 antippt
+- **THEN** speichert das System beide Werte, und die Liste der Konsultationen zeigt "60 % → 30 %"
+
+#### Scenario: Nur Schmerz vorher
+- **WHEN** die Therapeutin nur den Schmerz vor der Konsultation wählt und speichert
+- **THEN** speichert das System die Konsultation ohne Restschmerz
 
 ### Requirement: Osteopressur erfassen
 The system SHALL record per point of a consultation whether it was treated left and/or right and its sensitivity (niedrig, mittel, stark, extrem).
