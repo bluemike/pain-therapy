@@ -81,4 +81,4 @@ Neuanlage ohne Datenübernahme. Reihenfolge: Azure-Ressourcen und Entra-App-Regi
 
 - Ob der bestehende Ayanta-Container eine Azure Container App oder ein App Service ist (ändert nur die Pipeline).
 - Welches Postfach als Absender dient.
-- Welcher Ort ("Mettmenstetten" oder "Zürich") auf dem PDF steht; vorerst wählbar pro Benutzer.
+- Ort auf dem PDF: Falera (Praxisadresse "Pain Therapy | Via Prau da Cuort 5 | 7153 Falera"), änderbar über `DEFAULT_PLACE`.
