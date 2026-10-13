@@ -1,0 +1,60 @@
+{
+  "painPercent": [
+    0,
+    10,
+    20,
+    30,
+    40,
+    50,
+    60,
+    70,
+    80,
+    90,
+    100
+  ],
+  "sensitivity": [
+    {
+      "code": "LOW",
+      "de": "niedrig",
+      "en": "low"
+    },
+    {
+      "code": "MEDIUM",
+      "de": "mittel",
+      "en": "medium"
+    },
+    {
+      "code": "STRONG",
+      "de": "stark",
+      "en": "strong"
+    },
+    {
+      "code": "EXTREME",
+      "de": "extrem",
+      "en": "extreme"
+    }
+  ],
+  "difficulty": [
+    {
+      "code": "EASY",
+      "de": "leicht",
+      "en": "easy"
+    },
+    {
+      "code": "MEDIUM",
+      "de": "mittel",
+      "en": "medium"
+    },
+    {
+      "code": "HARD",
+      "de": "schwer",
+      "en": "hard"
+    },
+    {
+      "code": "IMPOSSIBLE",
+      "de": "unmöglich",
+      "en": "impossible"
+    }
+  ],
+  "rollingSlots": 6
+}
