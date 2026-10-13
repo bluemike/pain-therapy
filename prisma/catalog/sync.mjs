@@ -4,6 +4,11 @@
  * and RollingTool. Idempotent: unchanged rows are not written. Nothing is deleted; entries missing from the files
  * get `retiredAt` and come back to life when they reappear.
  *
+ * exercise-library (iteration 3, design D2): ExerciseSheet takes file names and timing from exercise-sheets.json
+ * and the texts from `exercises-content.json` in the private container `exercise-media` (STORAGE_DRIVER=azure) or
+ * the local folder STORAGE_EXERCISE_LOCAL_DIR. Without that file the texts stay as they are ("noch nicht erfasst"
+ * on a fresh database); the deployment does not fail because of it.
+ *
  * Plain JavaScript so it runs in the production image without a build step:
  *   node prisma/catalog/sync.mjs        (migration job, after `prisma migrate deploy`; locally `npm run catalog:sync`)
  */
@@ -30,16 +35,95 @@ async function csv(dir, name) {
 /** "TODO" in the reference files means "not yet captured" and is stored as SQL NULL. */
 const captured = (v) => (Array.isArray(v) ? v : Prisma.DbNull);
 
-/** Reads and checks the reference files; returns the rows per table keyed by their primary key. */
-export async function readCatalog(dir = HERE) {
-  const [regions, points, exercises, tools, regionPoints, regionExercises] = await Promise.all([
+const CONTENT_FILE = 'exercises-content.json';
+
+/**
+ * Reads `exercises-content.json` from the exercise media (container or local folder). Returns null when the file is
+ * missing or cannot be read, with a warning in the log.
+ */
+export async function readExerciseContent(env = process.env) {
+  try {
+    if (env.STORAGE_DRIVER === 'azure') {
+      const { BlobServiceClient } = await import('@azure/storage-blob');
+      const service = env.AZURE_STORAGE_CONNECTION_STRING
+        ? BlobServiceClient.fromConnectionString(env.AZURE_STORAGE_CONNECTION_STRING)
+        : new BlobServiceClient(
+            env.AZURE_STORAGE_ACCOUNT_URL ?? '',
+            new (await import('@azure/identity')).DefaultAzureCredential(),
+          );
+      const blob = service
+        .getContainerClient(env.AZURE_STORAGE_EXERCISE_CONTAINER || 'exercise-media')
+        .getBlockBlobClient(CONTENT_FILE);
+      return JSON.parse((await blob.downloadToBuffer()).toString('utf8'));
+    }
+    const dir = env.STORAGE_EXERCISE_LOCAL_DIR || './data/exercise-media';
+    return JSON.parse(await readFile(path.join(dir, CONTENT_FILE), 'utf8'));
+  } catch (e) {
+    const missing = e?.code === 'ENOENT' || e?.statusCode === 404;
+    console.warn(
+      `catalog:sync ${CONTENT_FILE}: ${missing ? 'not found' : (e?.message ?? e)}; exercise texts unchanged`,
+    );
+    return null;
+  }
+}
+
+const text = (v) => {
+  const t = (Array.isArray(v) ? v.join('\n') : typeof v === 'string' ? v : '').trim();
+  return t || null;
+};
+
+/**
+ * Brings the texts of one sheet into the stored shape { rolling, steps: [{ label, text }], variants }; null if
+ * nothing is there. Accepts the sections at the top level or under `sections`, steps as a list of { label, text }
+ * or of strings (labelled from exercise-sheets.json).
+ */
+export function normalizeContent(entry, stepLabels = []) {
+  if (!entry || typeof entry !== 'object') return null;
+  const src = entry.sections && typeof entry.sections === 'object' ? entry.sections : entry;
+  const rawSteps = Array.isArray(src.steps) ? src.steps : Array.isArray(src.stretch) ? src.stretch : [];
+  let steps = rawSteps
+    .map((s, i) =>
+      typeof s === 'string'
+        ? { label: stepLabels[i] ?? `${i + 1}`, text: text(s) }
+        : { label: String(s?.label ?? stepLabels[i] ?? `${i + 1}`), text: text(s?.text) },
+    )
+    .filter((s) => s.text);
+  if (!steps.length && typeof src.stretch === 'string' && text(src.stretch))
+    steps = [{ label: '', text: text(src.stretch) }];
+  const out = {
+    rolling: text(src.rolling),
+    steps,
+    variants: text(src.variants),
+  };
+  return out.rolling || steps.length || out.variants ? out : null;
+}
+
+/** Entries of exercises-content.json by code: a list of { code, … }, { exercises: [...] } or { "1A": {…}, … } */
+function contentByCode(content) {
+  if (!content) return null;
+  const list = Array.isArray(content)
+    ? content
+    : Array.isArray(content.exercises)
+      ? content.exercises
+      : Object.entries(content).map(([code, v]) => ({ ...(v && typeof v === 'object' ? v : {}), code }));
+  return new Map(list.filter((x) => x && typeof x.code === 'string').map((x) => [x.code, x]));
+}
+
+/**
+ * Reads and checks the reference files; returns the rows per table keyed by their primary key.
+ * `content`: parsed exercises-content.json, or null when it is not available (texts are then left unchanged).
+ */
+export async function readCatalog(dir = HERE, content = null) {
+  const [regions, points, exercises, tools, regionPoints, regionExercises, sheets] = await Promise.all([
     json(dir, 'regions.json'),
     json(dir, 'osteopressure-points.json'),
     json(dir, 'exercises.json'),
     json(dir, 'rolling-tools.json'),
     csv(dir, 'region-points.csv'),
     csv(dir, 'region-exercises.csv'),
+    json(dir, 'exercise-sheets.json'),
   ]);
+  const texts = contentByCode(content);
   const rows = {
     region: regions.map((r) => ({ id: r.id, nameDe: r.nameDe, nameEn: r.nameEn, sheetTitle: r.sheetTitle })),
     osteopressurePoint: points.map((p, i) => ({
@@ -72,6 +156,21 @@ export async function readCatalog(dir = HERE) {
       exerciseCode: r.exerciseCode,
       sort: Number(r.sort),
     })),
+    exerciseSheet: sheets.map((x) => ({
+      exerciseCode: x.code,
+      sheetPage: x.sheetPage,
+      title: x.title,
+      mainImage: x.mainImage,
+      sheetImage: x.sheetImage,
+      stepLabels: x.stretchStepLabels ?? [],
+      stretchSecondsPerSide: x.timing?.stretchSecondsPerSide ?? null,
+      sides: x.timing?.sides ?? 1,
+      rollingSeconds: x.timing?.rollingSeconds ?? null,
+      timingSource: x.timing?.source ?? null,
+      timingTodo: x.timing?.todo?.length ? x.timing.todo : Prisma.DbNull,
+      // Only written when the content file was read, so a missing file never wipes texts
+      ...(texts ? { content: normalizeContent(texts.get(x.code), x.stretchStepLabels) ?? Prisma.DbNull } : {}),
+    })),
   };
   // Referential checks, so a typo in a file fails the deployment instead of the database
   const regionIds = new Set(rows.region.map((r) => r.id));
@@ -85,6 +184,17 @@ export async function readCatalog(dir = HERE) {
   for (const r of rows.regionExercise)
     if (!regionIds.has(r.regionId) || !codes.has(r.exerciseCode))
       throw new Error(`region-exercises.csv: ${JSON.stringify(r)}`);
+  const seconds = (v) => v === null || (Number.isInteger(v) && v > 0 && v <= 3600);
+  for (const x of rows.exerciseSheet) {
+    if (!codes.has(x.exerciseCode)) throw new Error(`exercise-sheets.json: unknown code ${x.exerciseCode}`);
+    if (!seconds(x.stretchSecondsPerSide) || !seconds(x.rollingSeconds) || ![1, 2].includes(x.sides))
+      throw new Error(`exercise-sheets.json: timing of ${x.exerciseCode}`);
+    if (!/^[\w.-]+$/.test(x.mainImage) || !/^[\w.-]+$/.test(x.sheetImage))
+      throw new Error(`exercise-sheets.json: file names of ${x.exerciseCode}`);
+  }
+  if (texts)
+    for (const code of texts.keys())
+      if (!codes.has(code)) console.warn(`catalog:sync ${CONTENT_FILE}: unknown code ${code} ignored`);
   return rows;
 }
 
@@ -104,6 +214,7 @@ const TABLES = [
     key: (r) => `${r.regionId}|${r.exerciseCode}`,
     where: (r) => ({ regionId_exerciseCode: { regionId: r.regionId, exerciseCode: r.exerciseCode } }),
   },
+  { model: 'exerciseSheet', key: (r) => r.exerciseCode, where: (r) => ({ exerciseCode: r.exerciseCode }) },
 ];
 
 /** Key-order independent comparison (jsonb does not keep the key order of the files). */
@@ -122,10 +233,11 @@ const same = (a, b) => JSON.stringify(canon(a)) === JSON.stringify(canon(b));
 
 /**
  * Writes the catalog. Returns per table how many rows were created, updated, retired and left unchanged.
+ * `content` replaces reading exercises-content.json from the exercise media (tests); null means not available.
  * @param {import('@prisma/client').PrismaClient} db
  */
-export async function syncCatalog(db, { dir = HERE, now = new Date() } = {}) {
-  const wanted = await readCatalog(dir);
+export async function syncCatalog(db, { dir = HERE, now = new Date(), content } = {}) {
+  const wanted = await readCatalog(dir, content === undefined ? await readExerciseContent() : content);
   const stats = {};
   await db.$transaction(
     async (tx) => {

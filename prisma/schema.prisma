@@ -1,5 +1,6 @@
-// Data model for Iteration 1 (see openspec/changes/iteration-1-scaffolding-patient-management/design.md, D5)
-// and Iteration 2 (openspec/changes/iteration-2-treatments/design.md, D1)
+// Data model for Iteration 1 (see openspec/changes/iteration-1-scaffolding-patient-management/design.md, D5),
+// Iteration 2 (openspec/changes/iteration-2-treatments/design.md, D1) and Iteration 3
+// (openspec/changes/iteration-3-home-exercises/design.md, D2, D4, D5)
 
 generator client {
   provider      = "prisma-client-js"
@@ -110,6 +111,7 @@ model Patient {
   documents         SignedDocument[]
   auditEvents       AuditEvent[]
   treatments        Treatment[]
+  handouts          ExerciseHandout[]
 
   @@index([lastName, dateOfBirth])
   @@index([status, lastName])
@@ -317,6 +319,8 @@ model Exercise {
 
   regions       RegionExercise[]
   consultations ConsultationExercise[]
+  sheet         ExerciseSheet?
+  prescriptions HomePrescription[]
 }
 
 model RegionExercise {
@@ -402,6 +406,8 @@ model Consultation {
   exercises ConsultationExercise[]
   rolling   ConsultationRolling[]
   photos    ClinicalPhoto[]
+  home      HomePrescription[]
+  handouts  ExerciseHandout[]
 
   @@unique([treatmentId, number])
 }
@@ -467,4 +473,111 @@ model ClinicalPhoto {
 
   @@index([treatmentId, takenAt])
   @@index([consultationId])
+}
+
+// ---------- Exercise sheets (exercise-library, iteration 3 design D1 to D3) ----------
+// Timing and file names from prisma/catalog/exercise-sheets.json, texts from `exercises-content.json` in the
+// private container `exercise-media` (never in the repository). Loaded by `npm run catalog:sync` like the catalog.
+
+/// One of the 27 sheets of the "Sammelmappe 27 Übungsblätter"
+model ExerciseSheet {
+  exerciseCode          String    @id
+  exercise              Exercise  @relation(fields: [exerciseCode], references: [code])
+  /// Page in the Sammelmappe
+  sheetPage             Int
+  title                 String
+  /// File names in the container `exercise-media`
+  mainImage             String
+  sheetImage            String
+  /// ["Schritt 1", "Schritt 2", …] as printed on the sheet
+  stepLabels            Json
+  /// null: not yet set by the practice ("noch nicht festgelegt")
+  stretchSecondsPerSide Int?
+  sides                 Int
+  rollingSeconds        Int?
+  timingSource          String?
+  /// Open points of the timing, e.g. "Dauer von der Praxis festlegen"
+  timingTodo            Json?
+  /// { rolling, steps: [{ label, text }], variants } from the container; null while "noch nicht erfasst"
+  content               Json?
+  retiredAt             DateTime?
+}
+
+// ---------- Home program and exercise handout (home-program, exercise-handout, design D4 to D6) ----------
+
+/// "täglich 1x" to "täglich 3x" and "wöchentlich 1x" to "wöchentlich 7x"
+enum Repetition {
+  DAILY_1
+  DAILY_2
+  DAILY_3
+  WEEKLY_1
+  WEEKLY_2
+  WEEKLY_3
+  WEEKLY_4
+  WEEKLY_5
+  WEEKLY_6
+  WEEKLY_7
+}
+
+/// Selbstausführung: one row per exercise prescribed in a consultation. Replaced with the form, like the sheet rows.
+model HomePrescription {
+  consultationId String
+  consultation   Consultation @relation(fields: [consultationId], references: [id])
+  exerciseCode   String
+  exercise       Exercise     @relation(fields: [exerciseCode], references: [code])
+  repetition     Repetition   @default(DAILY_1)
+  /// 1 to 9; the intensity must stay below 10
+  intensity      Int?
+  /// Steps 1 to n (1, 1-2, 1-3)
+  steps          Int?
+  note           String?
+
+  @@id([consultationId, exerciseCode])
+}
+
+enum HandoutChannel {
+  EMAIL
+  PRINT
+}
+
+/// Personal exercise sheet (PDF). Rows are immutable (database trigger); the file lives in the document archive.
+model ExerciseHandout {
+  id             String       @id @default(cuid())
+  documentNumber String       @unique
+  patientId      String
+  patient        Patient      @relation(fields: [patientId], references: [id])
+  consultationId String
+  consultation   Consultation @relation(fields: [consultationId], references: [id])
+  /// 1, 2, 3 … per consultation; the newest is the current one
+  version        Int
+  language       Language
+  /// The prescriptions as printed, so older versions stay readable after changes
+  prescriptions  Json
+  blobPath       String
+  sha256         String
+  sizeBytes      Int
+  createdAt      DateTime     @default(now())
+  createdBy      String
+
+  deliveries HandoutDelivery[]
+
+  @@unique([consultationId, version])
+  @@index([patientId, createdAt])
+}
+
+/// Email (with status and retries, like EmailDelivery) or printout of a handout; never deleted (database trigger)
+model HandoutDelivery {
+  id          String          @id @default(cuid())
+  handoutId   String
+  handout     ExerciseHandout @relation(fields: [handoutId], references: [id])
+  channel     HandoutChannel
+  recipient   String?
+  /// Email only; null for a printout
+  status      EmailStatus?
+  attempts    Int             @default(0)
+  lastError   String?
+  sentAt      DateTime?
+  requestedBy String
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 }

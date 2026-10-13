@@ -4,8 +4,8 @@ import path from 'node:path';
 import { config } from './config';
 
 /**
- * Document archive (design D8) and clinical photos (iteration 2, design D6), one container each.
- * Files are written once and never overwritten.
+ * Document archive (design D8), clinical photos (iteration 2, design D6) and exercise media (iteration 3, design D2),
+ * one container each. Archive and photo files are written once and never overwritten.
  */
 export interface DocumentStore {
   put(blobPath: string, data: Buffer, contentType: string): Promise<void>;
@@ -80,4 +80,39 @@ export function photoStore(): DocumentStore {
       ? new AzureStore(config.storage.photoContainer)
       : new LocalStore(config.storage.photoLocalDir);
   return photos;
+}
+
+/** Read-only access to the exercise media; a missing file is null, so the app can show "Bild nicht verfügbar". */
+export interface MediaStore {
+  get(blobPath: string): Promise<Buffer | null>;
+}
+
+const isMissing = (e: unknown) => {
+  const err = e as { code?: string; statusCode?: number };
+  return err?.code === 'ENOENT' || err?.statusCode === 404;
+};
+
+/** Private container `exercise-media`, filled once by an administrator (docs/deployment.md) */
+let media: MediaStore | null = null;
+export function exerciseMediaStore(): MediaStore {
+  if (!media) {
+    const store =
+      config.storage.driver === 'azure'
+        ? new AzureStore(config.storage.exerciseContainer)
+        : new LocalStore(config.storage.exerciseLocalDir);
+    media = {
+      async get(p) {
+        try {
+          return await store.get(p);
+        } catch (e) {
+          if (isMissing(e)) return null;
+          throw e;
+        }
+      },
+    };
+  }
+  return media;
+}
+export function setExerciseMediaStore(s: MediaStore | null) {
+  media = s;
 }
