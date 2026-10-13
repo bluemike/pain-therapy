@@ -47,3 +47,24 @@ export async function scrollReaderToEnd(page: Page) {
   await reader.evaluate((el) => el.scrollTo(0, el.scrollHeight));
   await expect(page.getByText(/Text vollständig gelesen|Text read to the end/)).toBeVisible();
 }
+
+/** Creates a German-speaking patient and signs the disclaimer on the device, then opens the record. */
+export async function createSignedPatient(page: Page, p: { first: string; last: string; dob: string }) {
+  await page.goto('/patients/new');
+  await fillPatient(page, p);
+  await page.getByRole('button', { name: 'Speichern' }).click();
+  await expect(page.getByText(/ist angelegt/)).toBeVisible();
+  await page.locator('.banner').getByRole('button', { name: 'An Patient:in übergeben' }).click();
+  await expect(page.getByRole('heading', { name: 'Haftungsausschluss und Einwilligung' })).toBeVisible();
+  await scrollReaderToEnd(page);
+  await page.getByTestId('consent-liability').check();
+  await page.getByTestId('consent-dataProcessing').check();
+  await drawSignature(page);
+  await page.getByRole('button', { name: 'Unterschreiben', exact: true }).click();
+  await expect(page.getByRole('heading', { name: `Vielen Dank, ${p.first}` })).toBeVisible();
+  await page.getByRole('link', { name: 'Zurück zur Praxis' }).click();
+  await page.getByRole('button', { name: 'Erneut anmelden' }).click();
+  await page.getByRole('link', { name: 'Zur Akte' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: `${p.first} ${p.last}` })).toBeVisible();
+  await page.goto(page.url().split('?')[0]);
+}

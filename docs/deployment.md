@@ -7,10 +7,11 @@ Ziel: `https://pain-therapy.ayanta.ch`, alle Daten in **Switzerland North**. Die
 | Ressource | Zweck |
 | --- | --- |
 | Container App `ca-pain-therapy` | die App (Next.js), 1–2 Replikate, eigene Domain mit verwaltetem Zertifikat |
-| Container Apps Job `caj-pain-therapy-migrate` | `prisma migrate deploy` vor jeder neuen Revision |
+| Container Apps Job `caj-pain-therapy-migrate` | `prisma/migrate.sh` vor jeder neuen Revision: `prisma migrate deploy`, danach `catalog:sync` (Therapiekatalog) |
 | Container Registry | Images aus GitHub Actions |
 | PostgreSQL Flexible Server 16 (B1ms) | Datenbank, 35 Tage Backup, nur Azure-Dienste dürfen verbinden |
 | Storage Account (ZRS), Container `signed-documents` | PDF-Archiv mit Versionierung und unveränderlicher Aufbewahrung (20 Jahre) |
+| Container `clinical-photos` im selben Storage Account | Fotos von Behandlungen und Konsultationen, privat, Versionierung und Soft Delete (365 Tage), ohne Unveränderlichkeit; *Entfernen* in der App blendet nur aus |
 | Key Vault | `AUTH_SECRET`, Client Secret, Datenbank-URL |
 | User-assigned Managed Identity | Zugriff auf Registry, Key Vault, Blob Storage und Graph (E-Mail) |
 | Log Analytics | Logs der Container Apps, 90 Tage |
@@ -77,11 +78,21 @@ Graph-Berechtigung und Beschränkung auf das Absenderpostfach nach [entra.md](en
 ## Ablauf eines Deployments
 
 1. Image bauen und als `pain-therapy:<commit>` in die Registry schieben.
-2. Migrationsjob mit dem neuen Image starten und auf Erfolg warten. Schlägt er fehl, bricht das Deployment ab und die alte Revision läuft weiter.
-3. Bicep anwenden: Infrastruktur abgleichen und neue Revision mit dem neuen Image ausrollen.
+2. Migrationsjob mit dem neuen Image starten (`sh prisma/migrate.sh`: Migrationen, dann Therapiekatalog aus `prisma/catalog/`) und auf Erfolg warten. Schlägt er fehl, bricht das Deployment ab und die alte Revision läuft weiter. Ein frisches Deployment hat danach den vollständigen Katalog; erneutes Einspielen ändert nichts.
+3. Bicep anwenden: Infrastruktur abgleichen (ab Iteration 2 inklusive Container `clinical-photos` und `AZURE_STORAGE_PHOTO_CONTAINER`) und neue Revision mit dem neuen Image ausrollen.
 4. Smoke-Test auf `/api/health`.
 
-**Rollback:** `az containerapp revision list -g rg-pain-therapy -n ca-pain-therapy -o table`, dann die vorherige Revision aktivieren oder den Workflow mit dem alten Commit erneut starten. Migrationen sind in Iteration 1 nur additiv, ein Rollback der App braucht kein Rollback der Datenbank.
+**Rollback:** `az containerapp revision list -g rg-pain-therapy -n ca-pain-therapy -o table`, dann die vorherige Revision aktivieren oder den Workflow mit dem alten Commit erneut starten. Migrationen sind nur additiv (Iteration 2: neue Tabellen für Katalog, Behandlungen, Konsultationen und Fotos), ein Rollback der App braucht kein Rollback der Datenbank.
+
+## Iteration 2 (Behandlungen, Konsultationen, Fotos)
+
+Vor dem ersten Deployment mit Iteration 2 einmal prüfen, dass Bicep nur den neuen Container und die neue Umgebungsvariable ändert:
+
+```bash
+az deployment group what-if -g rg-pain-therapy -n main -f infra/main.bicep -p infra/main.bicepparam
+```
+
+Erwartet: *Create* `…/blobServices/default/containers/clinical-photos`, *Modify* der Container App (`AZURE_STORAGE_PHOTO_CONTAINER`, neues Image) und des Migrationsjobs (Kommando `sh prisma/migrate.sh`). Die bestehende Rolle *Storage Blob Data Contributor* gilt für den ganzen Storage Account und deckt den neuen Container ab. Formulare mit Fotos dürfen bis 25 MB gross sein (`serverActions.bodySizeLimit`); bei der Abnahme einmal 10 Fotos auf einmal speichern, um auch die Grenze des Ingress zu prüfen.
 
 ## Nach dem Go-live
 
