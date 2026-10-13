@@ -6,8 +6,15 @@ Gibt der Patientin am Ende der Konsultation ein persönliches Übungsblatt mit d
 
 ## ADDED Requirements
 
-### Requirement: Persönliches Übungsblatt
-The system SHALL generate on request at the end of a consultation a PDF in the patient's language with a cover page (practice, patient, consultation date, therapist, one row per prescribed exercise with main image, code, name, repetition, intensity, steps and duration, total time, safety note that the intensity must never reach 10) followed by the sheet of each prescribed exercise with the prescription printed into its fields.
+### Requirement: Übungsblatt auf Knopfdruck
+The system SHALL generate a personal exercise sheet as a PDF in the patient's language only when the user chooses "Übungsblatt erstellen" at the end of a consultation, never automatically on saving.
+
+#### Scenario: Kein automatisches Blatt
+- **WHEN** die Therapeutin eine Konsultation mit verordneten Übungen speichert, ohne "Übungsblatt erstellen" zu wählen
+- **THEN** erzeugt das System kein Übungsblatt
+
+### Requirement: Inhalt des Übungsblatts
+The system SHALL start the exercise sheet with a cover page listing practice, patient, consultation date, therapist, each prescribed exercise with main image, repetition, intensity, steps and duration, the total time and the safety note, followed by the sheet of each prescribed exercise with the prescription printed into its fields.
 
 #### Scenario: Übungsblatt erzeugen
 - **WHEN** die Therapeutin bei einer Konsultation mit drei verordneten Übungen "Übungsblatt erstellen" wählt

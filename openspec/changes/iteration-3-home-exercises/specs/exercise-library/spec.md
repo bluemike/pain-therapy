@@ -25,8 +25,8 @@ The system SHALL store for each exercise the stretch time per side, the number o
 - **THEN** zeigt das System eine Dauer von 6 Minuten pro Ausführung
 
 #### Scenario: Wert fehlt
-- **WHEN** für eine Übung die Rollmassage-Dauer nicht festgelegt ist
-- **THEN** zeigt das System die Dauer der Dehnung und den Hinweis "Rollmassage noch nicht festgelegt"
+- **WHEN** für die Übung 1C die Dauer der Dehnung nicht festgelegt ist
+- **THEN** zeigt das System die Dauer der Rollmassage und den Hinweis "Dehnung noch nicht festgelegt"
 
 ### Requirement: Schutz der Übungsinhalte
 The system SHALL deliver exercise images and texts only to signed-in users with a role, and to patients only inside their personal exercise sheet. The contents MUST NOT be stored in the source code repository.

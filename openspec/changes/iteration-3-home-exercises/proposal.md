@@ -8,7 +8,7 @@ In der Konsultation verordnet die Therapeutin Engpassdehnungen, und die Patienti
 
 - **Übungsbibliothek:** Die 27 Übungsblätter der "Sammelmappe 27 Übungsblätter" werden digitalisiert: pro Übung ein Hauptbild (das Foto der Engpassdehnung), das ganze Blatt als Bild, die Texte zu Faszien-Rollmassage, Engpassdehnung (Schritte) und Varianten sowie der Zeitbedarf einer Ausführung. Ansicht im Katalog pro Übung.
 - **Zeitbedarf pro Übung:** Dehnung pro Seite, Anzahl Seiten und Rollmassage ergeben die Dauer einer Ausführung. Die Blätter nennen keine Zeiten; die Werte sind aus dem 30-Sekunden-Takt der Schritte abgeleitet und werden von der Praxis bestätigt.
-- **Selbstausführung in der Konsultation:** Pro verordneter Übung eine Wiederholung (täglich 1x, täglich 2x, 3-7x pro Woche, 5x pro Woche), dazu Intensität und Schritte wie auf dem Blatt. Die App zeigt den gesamten Zeitbedarf pro Tag und pro Woche.
+- **Selbstausführung in der Konsultation:** Pro verordneter Übung eine Wiederholung (täglich 1x, 2x oder 3x, oder wöchentlich 1x bis 7x (10 Optionen)), dazu Intensität und Schritte wie auf dem Blatt. Die App zeigt den gesamten Zeitbedarf pro Tag und pro Woche.
 - **Übungsblatt für die Patientin:** Beim Abschluss der Konsultation ein PDF mit Deckblatt (Übersicht, Wiederholungen, Zeitbedarf) und den Blättern der verordneten Übungen mit eingetragener Verordnung. Versand per E-Mail, wenn die Patientin in den unverschlüsselten E-Mail-Versand eingewilligt hat, sonst Ausdruck. Ablage in der Akte unter "Dokumente".
 
 **Nicht im Umfang (Out of scope), siehe docs/roadmap.md:**

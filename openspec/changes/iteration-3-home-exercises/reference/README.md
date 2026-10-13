@@ -8,7 +8,7 @@
 |---|---|
 | `stretchSecondsPerSide` | Dehnung pro Seite: Schritt 1 (30 s) + Schritt 2 (2 × 30 s) + Schritt 3 (30 s) = 120 s; `null` bei 1C und 2C |
 | `sides` | 2, wenn das Blatt die andere Seite oder beide Seiten nennt, sonst 1 |
-| `rollingSeconds` | Rollmassage; steht nicht auf den Blättern, `null` bis die Praxis einen Wert festlegt (Vorschlag 120 s) |
+| `rollingSeconds` | Rollmassage; steht nicht auf den Blättern, 120 s (von der Praxis festgelegt am 13.10.2026) |
 | `source`, `todo` | Herkunft der Werte und offene Punkte |
 
 ## Inhalte

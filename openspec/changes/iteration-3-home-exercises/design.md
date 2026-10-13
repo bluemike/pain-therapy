@@ -32,19 +32,19 @@ Bilder und `exercises-content.json` werden einmalig von einem Administrator in d
 Die Blätter nennen keine Gesamtzeit. Abgeleitet:
 - **Dehnung pro Seite:** Schritt 1 (30 s) + Schritt 2 (2 × 30 s, langsam und schnell) + Schritt 3 (30 s) = 120 s. Bei 3A/3B ist Schritt 3 eine Wahl, nicht zusätzlich.
 - **Seiten:** 2, wenn das Blatt die andere Seite oder beide Seiten nennt (18 Übungen), sonst 1.
-- **Rollmassage:** steht nicht auf den Blättern; Vorschlag 120 s pro Übung, von der Praxis zu bestätigen.
+- **Rollmassage:** steht nicht auf den Blättern; 120 s pro Übung (von der Praxis festgelegt am 13.10.2026).
 - **Sonderfälle:** 2C (Atemübung mit zwölf Atemzügen) und 1C (mehrere Blickrichtungen) ohne abgeleiteten Wert, von der Praxis festzulegen.
 
 Dauer einer Ausführung = Rollmassage + Dehnung pro Seite × Seiten, also typisch 4 Minuten (eine Seite) oder 6 Minuten (zwei Seiten). Die Werte stehen in `reference/exercise-sheets.json` (`timing`) mit Herkunft und offenen Punkten; `null` heisst "noch nicht festgelegt", die App rechnet dann ohne diesen Anteil und zeigt einen Hinweis.
 
 ### D4: Selbstausführung als Verordnung
 Neue Tabelle `HomePrescription` (Konsultation, Übungscode, Wiederholung, Intensität 1 bis 9 optional, Schritte 1 bis 3 optional, Bemerkung). Wiederholung ist ein Enum:
-- `DAILY_1` täglich 1x (7 Ausführungen pro Woche)
-- `DAILY_2` täglich 2x (14 pro Woche)
-- `WEEKLY_3_7` 3-7x pro Woche (3 bis 7 pro Woche, als Spanne angezeigt)
-- `WEEKLY_5` 5x pro Woche (5 pro Woche)
+- `DAILY_1`, `DAILY_2`, `DAILY_3`: täglich 1x, 2x, 3x (7, 14, 21 Ausführungen pro Woche)
+- `WEEKLY_1` bis `WEEKLY_7`: wöchentlich 1x bis 7x (1 bis 7 Ausführungen pro Woche)
 
-Übungen mit "verordnet" im Bogen erscheinen automatisch im Block, mit Vorschlag "täglich 2x" (L&B-Standard 6x pro Woche, 2x täglich laut Praxisunterlagen); weitere Übungen lassen sich aus dem Katalog hinzufügen. Entfernt die Therapeutin "verordnet", verschwindet die Zeile. Der Block zeigt pro Zeile die Dauer einer Ausführung und unten den Gesamtbedarf pro Tag und pro Woche (bei 3-7x als Spanne).
+Die Auswahl zeigt die zehn Optionen in zwei Gruppen ("täglich" 1x bis 3x, "wöchentlich" 1x bis 7x).
+
+Übungen mit "verordnet" im Bogen erscheinen automatisch im Block, mit Vorschlag "täglich 1x"; weitere Übungen lassen sich aus dem Katalog hinzufügen. Entfernt die Therapeutin "verordnet", verschwindet die Zeile. Der Block zeigt pro Zeile die Dauer einer Ausführung und unten den Gesamtbedarf pro Woche und den Durchschnitt pro Tag (Woche / 7).
 Mockup: [`mockups/selbstausfuehrung.html`](mockups/selbstausfuehrung.html) (Ansichten 1 Selbstausführung, 2 Abschluss, 3 Übungsblatt, 4 Katalog-Übung).
 
 ### D5: Übungsblatt als PDF
@@ -55,7 +55,7 @@ Mit `@react-pdf/renderer` wie das Formular-PDF aus Iteration 1, in der Sprache d
 Das PDF wird mit Dokumentnummer im bestehenden Archiv-Container abgelegt (`SignedDocument` bekommt einen Typ `EXERCISE_SHEET`, oder eine eigene Tabelle `HandoutDocument`; Entscheid bei der Umsetzung) und erscheint in der Akte unter "Dokumente".
 
 ### D6: Abschluss und Versand
-Der Abschluss einer Konsultation bietet "Übungsblatt senden" an, sobald mindestens eine Verordnung besteht:
+Das Übungsblatt entsteht nur auf Knopfdruck ("Übungsblatt erstellen"), nicht automatisch beim Speichern. Der Abschluss einer Konsultation bietet es an, sobald mindestens eine Verordnung besteht:
 - Mit Einwilligung in unverschlüsselte E-Mail (aus der gültigen Unterschrift) und E-Mail-Adresse: Versand über Microsoft Graph aus `pain-therapy@ayanta.ch`, mit den bestehenden Wiederholungen und dem Zustellstatus.
 - Sonst: "Drucken" öffnet das PDF im Browser zum Ausdrucken; die Akte vermerkt "ausgedruckt".
 Ein erneutes Senden nach Änderungen erzeugt eine neue Version; ältere bleiben in der Akte.
@@ -73,7 +73,6 @@ Additive Migration, Upload der Medien in `exercise-media` vor dem ersten Deploym
 
 ## Open Questions
 
-- "3-7x pro Woche" und "5x pro Woche" überschneiden sich; ist "3-7x" so gemeint, oder "3x pro Woche"?
-- Rollmassage-Dauer pro Übung (Vorschlag 120 s) und Dauer für 1C und 2C.
-- Vorschlagswert für neue Verordnungen: "täglich 2x"?
-- Soll das Übungsblatt automatisch beim Speichern der Konsultation erzeugt werden oder nur auf Knopfdruck (Vorschlag: auf Knopfdruck)?
+- Dauer der Dehnung für 1C (Augen, mehrere Blickrichtungen) und 2C (Atemübung mit zwölf Atemzügen).
+
+Entschieden am 13.10.2026: Wiederholungen täglich 1x bis 3x und wöchentlich 1x bis 7x; Rollmassage 2 Minuten; Vorschlag für neue Verordnungen "täglich 1x"; Übungsblatt nur auf Knopfdruck; die Bilder dürfen an Patientinnen abgegeben werden.

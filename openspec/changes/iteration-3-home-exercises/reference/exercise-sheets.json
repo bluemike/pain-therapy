@@ -13,11 +13,9 @@
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 1,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
-      "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen"
-      ]
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
     }
   },
   {
@@ -34,11 +32,9 @@
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 2,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
-      "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen"
-      ]
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
     }
   },
   {
@@ -55,10 +51,9 @@
     "timing": {
       "stretchSecondsPerSide": null,
       "sides": 1,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen",
         "Augenübung in mehreren Blickrichtungen; Dauer pro Richtung von der Praxis bestätigen"
       ]
     }
@@ -77,11 +72,9 @@
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 2,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
-      "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen"
-      ]
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
     }
   },
   {
@@ -98,11 +91,9 @@
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 1,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
-      "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen"
-      ]
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
     }
   },
   {
@@ -119,11 +110,9 @@
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 2,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
-      "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen"
-      ]
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
     }
   },
   {
@@ -141,11 +130,9 @@
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 1,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
-      "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen"
-      ]
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
     }
   },
   {
@@ -162,11 +149,9 @@
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 2,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
-      "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen"
-      ]
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
     }
   },
   {
@@ -182,10 +167,9 @@
     "timing": {
       "stretchSecondsPerSide": null,
       "sides": 1,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen",
         "Atemübung: Schritte mit zwölf Atemzügen statt 30-Sekunden-Takt; Dauer von der Praxis festlegen"
       ]
     }
@@ -204,11 +188,9 @@
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 1,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
-      "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen"
-      ]
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
     }
   },
   {
@@ -225,11 +207,9 @@
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 2,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
-      "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen"
-      ]
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
     }
   },
   {
@@ -246,11 +226,9 @@
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 2,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
-      "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen"
-      ]
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
     }
   },
   {
@@ -267,11 +245,9 @@
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 1,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
-      "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen"
-      ]
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
     }
   },
   {
@@ -288,11 +264,9 @@
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 2,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
-      "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen"
-      ]
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
     }
   },
   {
@@ -309,11 +283,9 @@
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 2,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
-      "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen"
-      ]
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
     }
   },
   {
@@ -329,11 +301,9 @@
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 2,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
-      "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen"
-      ]
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
     }
   },
   {
@@ -350,11 +320,9 @@
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 2,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
-      "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen"
-      ]
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
     }
   },
   {
@@ -371,11 +339,9 @@
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 2,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
-      "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen"
-      ]
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
     }
   },
   {
@@ -392,11 +358,9 @@
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 2,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
-      "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen"
-      ]
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
     }
   },
   {
@@ -413,11 +377,9 @@
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 1,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
-      "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen"
-      ]
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
     }
   },
   {
@@ -433,11 +395,9 @@
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 2,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
-      "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen"
-      ]
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
     }
   },
   {
@@ -453,11 +413,9 @@
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 2,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
-      "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen"
-      ]
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
     }
   },
   {
@@ -473,11 +431,9 @@
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 2,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
-      "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen"
-      ]
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
     }
   },
   {
@@ -494,11 +450,9 @@
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 2,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
-      "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen"
-      ]
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
     }
   },
   {
@@ -515,11 +469,9 @@
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 2,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
-      "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen"
-      ]
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
     }
   },
   {
@@ -536,11 +488,9 @@
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 2,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
-      "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen"
-      ]
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
     }
   },
   {
@@ -557,11 +507,9 @@
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 1,
-      "rollingSeconds": null,
-      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt",
-      "todo": [
-        "rollingSeconds: steht nicht auf dem Blatt; Vorschlag 120 s, von der Praxis bestätigen"
-      ]
+      "rollingSeconds": 120,
+      "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
+      "todo": []
     }
   }
 ]

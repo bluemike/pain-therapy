@@ -4,7 +4,7 @@
 
 - [x] 1.1 Erste Digitalisierung der 27 Blätter (Hauptbild, Blattbild, Texte) nach OneDrive `pain-therapy/exercises/digitalisiert/`; Übersicht der Hauptbilder geprüft
 - [x] 1.2 Erlaubnis für die Abgabe der Bilder an Patientinnen geklärt (bestätigt von Mike Franz am 13.10.2026)
-- [ ] 1.3 Zeitbedarf mit der Praxis abnehmen (Rollmassage-Dauer, 1C, 2C) und in `reference/exercise-sheets.json` eintragen
+- [ ] 1.3 Dauer für 1C und 2C mit der Praxis festlegen und in `reference/exercise-sheets.json` eintragen (Rollmassage 120 s ist festgelegt)
 - [ ] 1.4 Importskript `scripts/import-exercise-sheets.py` ins Repository (ohne Inhalte); Upload nach `exercise-media` in docs/deployment.md beschreiben
 - [ ] 1.5 Bicep: privater Container `exercise-media`; `what-if` zeigt nur den neuen Container
 - [ ] 1.6 Modell `ExerciseSheet` und `catalog:sync` erweitern (Inhalte aus dem Container, Zeitbedarf aus dem Repository); Tests für fehlende Inhalte
@@ -13,7 +13,7 @@
 ## 2. Selbstausführung (home-program)
 
 - [ ] 2.1 Modell `HomePrescription` mit Enum der Wiederholungen; additive Migration
-- [ ] 2.2 Berechnung des Zeitbedarfs pro Tag und Woche mit Spannen und fehlenden Werten; Unit-Tests mit den Szenarien der Spec
+- [ ] 2.2 Berechnung des Zeitbedarfs pro Woche und Tag mit den zehn Wiederholungen und fehlenden Werten; Unit-Tests mit den Szenarien der Spec
 - [ ] 2.3 Block "Selbstausführung" in der Konsultation, gekoppelt an "verordnet", mit "Übung hinzufügen", Segmentschaltern und Gesamtzeit nach dem Mockup
 - [ ] 2.4 Änderungshistorie für Verordnungen
 
