@@ -8,7 +8,7 @@ test.describe('patient-records', () => {
     await page.goto('/patients/new');
     await page.getByRole('button', { name: 'Speichern' }).click();
     await expect(page.getByText('Nicht gespeichert. Bitte prüfen Sie die markierten Felder.')).toBeVisible();
-    await expect(page.locator('.f.bad')).toHaveCount(3);
+    await expect(page.locator('.f.bad')).toHaveCount(4);
     await fillPatient(page, { first: 'Eva', last: `Test${unique()}`, dob: '31.02.1980', email: 'eva@' });
     await page.getByText('andere').first().click();
     await page.getByRole('button', { name: 'Speichern' }).click();

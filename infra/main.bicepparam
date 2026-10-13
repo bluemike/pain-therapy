@@ -11,4 +11,4 @@ param entraClientSecret = readEnvironmentVariable('ENTRA_CLIENT_SECRET')
 param authSecret = readEnvironmentVariable('AUTH_SECRET')
 param postgresAdminPassword = readEnvironmentVariable('POSTGRES_ADMIN_PASSWORD')
 param mailSender = readEnvironmentVariable('MAIL_SENDER')
-param defaultPlace = 'Mettmenstetten'
+param defaultPlace = 'Falera'

@@ -292,7 +292,7 @@
     "date": "Datum",
     "signatureHint": "Hier mit Finger oder Apple Pencil unterschreiben",
     "signatureLocked": "Bitte zuerst den Text bis zum Ende lesen",
-    "clear": "Löschen",
+    "clear": "Unterschrift löschen",
     "sign": "Unterschreiben",
     "signing": "Wird gespeichert …",
     "signatureError": "Bitte unterschreiben Sie im Feld.",

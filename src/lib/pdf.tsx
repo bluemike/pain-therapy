@@ -2,6 +2,7 @@ import path from 'node:path';
 import React from 'react';
 import { Document, Font, Page, Path, StyleSheet, Svg, Text, View, renderToBuffer } from '@react-pdf/renderer';
 import type { Language } from '@prisma/client';
+import { config } from './config';
 import { parseBlocks } from './consent-texts';
 import { formatDate } from './format';
 import { translator } from './i18n-server';
@@ -140,6 +141,7 @@ export function SignedFormPdf({ input }: { input: PdfInput }) {
               ayanta<Text style={s.dot}>.</Text>
             </Text>
             <Text style={s.muted}>{t('practice')}</Text>
+            <Text style={s.muted}>{config.practiceAddress}</Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
             <Text style={s.muted}>{t('version', { version: input.textVersion })}</Text>

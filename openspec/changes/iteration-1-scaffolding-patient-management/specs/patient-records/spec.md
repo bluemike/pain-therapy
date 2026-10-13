@@ -25,7 +25,7 @@ The system SHALL store the medical part of the intake form: smoker (yes/no, year
 - **THEN** verlangt das System eine Beschreibung im zugehörigen Freitextfeld
 
 ### Requirement: Patient anlegen
-The system SHALL create a patient when at least first name, last name, date of birth and preferred language are given. New patients SHALL have the status "aktiv".
+The system SHALL create a patient when at least first name, last name, date of birth, preferred language and email are given. The email is required because signed documents are sent to it. New patients SHALL have the status "aktiv".
 
 #### Scenario: Erfolgreich anlegen
 - **WHEN** die Therapeutin die Pflichtfelder ausfüllt und speichert
@@ -34,6 +34,10 @@ The system SHALL create a patient when at least first name, last name, date of b
 #### Scenario: Pflichtfeld fehlt
 - **WHEN** das Geburtsdatum fehlt
 - **THEN** speichert das System nicht und markiert das Feld mit einer Meldung in der Sprache der Oberfläche
+
+#### Scenario: E-Mail-Adresse fehlt
+- **WHEN** keine E-Mail-Adresse eingegeben wird
+- **THEN** speichert das System nicht und markiert das Feld als Pflichtfeld
 
 #### Scenario: Ungültige E-Mail-Adresse
 - **WHEN** eine E-Mail-Adresse ohne gültiges Format eingegeben wird

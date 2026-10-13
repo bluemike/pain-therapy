@@ -9,20 +9,27 @@ const base = () =>
 
 /** patient-records: Pflichtfelder, E-Mail-Format, "andere" mit Freitext (task 5.1) */
 describe('patient schema', () => {
-  it('requires first name, last name and date of birth', () => {
+  it('requires first name, last name, date of birth and email', () => {
     const r = patientSchema.safeParse(base());
     expect(r.success).toBe(false);
     expect(fieldErrors(r.error!)).toMatchObject({
       firstName: 'required',
       lastName: 'required',
       dateOfBirth: 'required',
+      email: 'required',
     });
   });
 
   it('accepts a minimal patient and parses the Swiss date', () => {
-    const r = patientSchema.parse({ ...base(), firstName: 'Anna', lastName: 'Müller', dateOfBirth: '05.03.1980' });
+    const r = patientSchema.parse({
+      ...base(),
+      firstName: 'Anna',
+      lastName: 'Müller',
+      dateOfBirth: '05.03.1980',
+      email: ' Anna.Mueller@Example.CH ',
+    });
     expect(r.dateOfBirth.toISOString()).toBe('1980-03-05T00:00:00.000Z');
-    expect(r.email).toBeNull();
+    expect(r.email).toBe('anna.mueller@example.ch');
     expect(r.preferredLanguage).toBe('de');
   });
 
@@ -62,6 +69,7 @@ describe('patient schema', () => {
       firstName: 'A',
       lastName: 'B',
       dateOfBirth: '01.01.1990',
+      email: 'a.b@example.ch',
       orthoOther: 'on',
       orthoOtherText: 'Skoliose',
     });
