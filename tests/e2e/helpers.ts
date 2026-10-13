@@ -48,8 +48,14 @@ export async function scrollReaderToEnd(page: Page) {
   await expect(page.getByText(/Text vollständig gelesen|Text read to the end/)).toBeVisible();
 }
 
-/** Creates a German-speaking patient and signs the disclaimer on the device, then opens the record. */
-export async function createSignedPatient(page: Page, p: { first: string; last: string; dob: string }) {
+/**
+ * Creates a German-speaking patient and signs the disclaimer on the device, then opens the record. With
+ * `emailConsent` the patient also agrees to unencrypted email.
+ */
+export async function createSignedPatient(
+  page: Page,
+  p: { first: string; last: string; dob: string; emailConsent?: boolean },
+) {
   await page.goto('/patients/new');
   await fillPatient(page, p);
   await page.getByRole('button', { name: 'Speichern' }).click();
@@ -59,6 +65,7 @@ export async function createSignedPatient(page: Page, p: { first: string; last: 
   await scrollReaderToEnd(page);
   await page.getByTestId('consent-liability').check();
   await page.getByTestId('consent-dataProcessing').check();
+  if (p.emailConsent) await page.getByTestId('consent-unencryptedEmail').check();
   await drawSignature(page);
   await page.getByRole('button', { name: 'Unterschreiben', exact: true }).click();
   await expect(page.getByRole('heading', { name: `Vielen Dank, ${p.first}` })).toBeVisible();

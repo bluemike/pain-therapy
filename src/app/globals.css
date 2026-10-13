@@ -2420,6 +2420,12 @@ fieldset.choice label.card.off {
   padding: 8px 16px 14px;
   margin: 0;
 }
+.exdet .card dl.kv {
+  grid-template-columns: minmax(0, 1fr);
+}
+.exdet .card dl.kv div {
+  grid-template-columns: 110px minmax(0, 1fr);
+}
 .exdet .exsheet {
   width: 100%;
   min-height: 360px;
