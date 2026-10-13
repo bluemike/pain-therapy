@@ -292,7 +292,7 @@
     "date": "Date",
     "signatureHint": "Sign here with your finger or Apple Pencil",
     "signatureLocked": "Please read the text to the end first",
-    "clear": "Clear",
+    "clear": "Clear signature",
     "sign": "Sign",
     "signing": "Saving …",
     "signatureError": "Please sign in the box.",

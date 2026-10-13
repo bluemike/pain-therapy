@@ -38,7 +38,7 @@ test.describe('consent-signing and consent-documents', () => {
     await expect(page.getByText('Please sign in the box.')).toBeVisible();
     await page.getByTestId('consent-dataProcessing').check();
     await drawSignature(page);
-    await page.getByRole('button', { name: 'Clear' }).click();
+    await page.getByRole('button', { name: 'Clear signature' }).click();
     await page.getByRole('button', { name: 'Sign', exact: true }).click();
     await expect(page.getByText('Please sign in the box.')).toBeVisible();
     await drawSignature(page);

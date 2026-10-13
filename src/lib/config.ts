@@ -28,5 +28,7 @@ export const config = {
     maxAttempts: 3,
     retryDelayMs: Number(process.env.MAIL_RETRY_DELAY_MS ?? 2000),
   },
-  defaultPlace: process.env.DEFAULT_PLACE ?? 'Mettmenstetten',
+  defaultPlace: process.env.DEFAULT_PLACE ?? 'Falera',
+  /** Printed in the header of every signed PDF */
+  practiceAddress: 'Pain Therapy | Via Prau da Cuort 5 | 7153 Falera',
 };

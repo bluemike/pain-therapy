@@ -35,7 +35,7 @@ const input = (language: 'de' | 'en'): PdfInput => ({
   },
   consents: { liability: true, dataProcessing: true, unencryptedEmail: false },
   note: 'Neue Adresse',
-  place: 'Mettmenstetten',
+  place: 'Falera',
   signedAtText: '12.10.2026 10:14',
   signature: {
     ...signatureSvg(
@@ -69,7 +69,8 @@ describe('signed PDF', () => {
       '(nicht erteilt)',
       'Neue Adresse',
       'Unterschrift: Anna Müller',
-      'Mettmenstetten, 12.10.2026 10:14',
+      'Falera, 12.10.2026 10:14',
+      'Pain Therapy | Via Prau da Cuort 5 | 7153 Falera',
       'PT-2026-00001',
       'Textversion 1',
     ]) {

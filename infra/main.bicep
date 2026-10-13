@@ -46,7 +46,7 @@ param postgresAdminPassword string
 param mailSender string
 
 @description('Default place shown on the signing page.')
-param defaultPlace string = 'Mettmenstetten'
+param defaultPlace string = 'Falera'
 
 @description('Retention of signed PDFs in days; 7300 days = 20 years after signing.')
 param documentRetentionDays int = 7300

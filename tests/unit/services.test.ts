@@ -40,7 +40,7 @@ const signature = {
 };
 const signInput = (email: boolean) => ({
   note: null,
-  place: 'Mettmenstetten',
+  place: 'Falera',
   readToEnd: true as const,
   liability: true as const,
   dataProcessing: true as const,
