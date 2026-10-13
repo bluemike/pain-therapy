@@ -3,7 +3,10 @@ import { mkdir, readFile, writeFile, chmod } from 'node:fs/promises';
 import path from 'node:path';
 import { config } from './config';
 
-/** Document archive (design D8). Files are written once and never overwritten. */
+/**
+ * Document archive (design D8) and clinical photos (iteration 2, design D6), one container each.
+ * Files are written once and never overwritten.
+ */
 export interface DocumentStore {
   put(blobPath: string, data: Buffer, contentType: string): Promise<void>;
   get(blobPath: string): Promise<Buffer>;
@@ -31,7 +34,7 @@ class LocalStore implements DocumentStore {
 
 class AzureStore implements DocumentStore {
   private client: Promise<import('@azure/storage-blob').ContainerClient>;
-  constructor() {
+  constructor(containerName: string) {
     this.client = (async () => {
       const { BlobServiceClient } = await import('@azure/storage-blob');
       const service = config.storage.connectionString
@@ -40,7 +43,7 @@ class AzureStore implements DocumentStore {
             config.storage.accountUrl,
             new (await import('@azure/identity')).DefaultAzureCredential(),
           );
-      const container = service.getContainerClient(config.storage.container);
+      const container = service.getContainerClient(containerName);
       if (config.storage.connectionString) await container.createIfNotExists();
       return container;
     })();
@@ -59,9 +62,22 @@ class AzureStore implements DocumentStore {
 
 let store: DocumentStore | null = null;
 export function documentStore(): DocumentStore {
-  store ??= config.storage.driver === 'azure' ? new AzureStore() : new LocalStore(config.storage.localDir);
+  store ??=
+    config.storage.driver === 'azure'
+      ? new AzureStore(config.storage.container)
+      : new LocalStore(config.storage.localDir);
   return store;
 }
 export function setDocumentStore(s: DocumentStore | null) {
   store = s;
+}
+
+/** Private container `clinical-photos` (versioning and soft delete, no immutability so mistakes can be hidden). */
+let photos: DocumentStore | null = null;
+export function photoStore(): DocumentStore {
+  photos ??=
+    config.storage.driver === 'azure'
+      ? new AzureStore(config.storage.photoContainer)
+      : new LocalStore(config.storage.photoLocalDir);
+  return photos;
 }

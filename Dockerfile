@@ -22,6 +22,8 @@ ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
 COPY --from=build /app/node_modules/prisma/package.json /tmp/prisma-package.json
 RUN npm install --prefix /opt/migrate --no-audit --no-fund --omit=dev "prisma@$(node -p "require('/tmp/prisma-package.json').version")" \
  && ln -s /opt/migrate/node_modules/.bin/prisma /usr/local/bin/prisma && npm cache clean --force
+# Schema, migrations, the therapy catalog files and prisma/migrate.sh (migration job: migrate deploy, then
+# `node prisma/catalog/sync.mjs`, which uses @prisma/client from the standalone node_modules below)
 COPY --from=build /app/prisma ./prisma
 COPY --from=build --chown=node:node /app/.next/standalone ./
 COPY --from=build --chown=node:node /app/.next/static ./.next/static

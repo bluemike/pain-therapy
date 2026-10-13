@@ -1,0 +1,22 @@
+[
+  {
+    "code": "MiKu",
+    "nameDe": "Mini-Kugel",
+    "nameEn": "Mini ball"
+  },
+  {
+    "code": "MeKu",
+    "nameDe": "Medi-Kugel",
+    "nameEn": "Medi ball"
+  },
+  {
+    "code": "MiRo",
+    "nameDe": "Mini-Rolle",
+    "nameEn": "Mini roller"
+  },
+  {
+    "code": "MeRo",
+    "nameDe": "Medi-Rolle",
+    "nameEn": "Medi roller"
+  }
+]

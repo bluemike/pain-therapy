@@ -50,12 +50,13 @@ jobs:
           docker build -t "$image" .
           docker push "$image"
 
-      - name: Run database migrations
+      # prisma/migrate.sh: `prisma migrate deploy`, then the therapy catalog (`node prisma/catalog/sync.mjs`)
+      - name: Run database migrations and catalog sync
         run: |
           job="${{ steps.names.outputs.job }}"
           az containerapp job update -g "$RG" -n "$job" \
             --image "${{ steps.names.outputs.loginServer }}/pain-therapy:$IMAGE_TAG" \
-            --command prisma migrate deploy -o none
+            --command sh prisma/migrate.sh -o none
           execution=$(az containerapp job start -g "$RG" -n "$job" --query name -o tsv)
           for i in $(seq 1 60); do
             status=$(az containerapp job execution show -g "$RG" -n "$job" --job-execution-name "$execution" --query properties.status -o tsv)

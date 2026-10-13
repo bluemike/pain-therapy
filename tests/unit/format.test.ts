@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ageOn, formatDate, formatDateTime, parseSwissDate } from '@/lib/format';
+import { ageOn, formatDate, formatDateTime, parseLocalInput, parseSwissDate, toLocalInput } from '@/lib/format';
 import { consentStatusOf, displayValue } from '@/lib/patients';
 
 describe('Swiss formats (localization)', () => {
@@ -51,5 +51,22 @@ describe('greeting', () => {
       'greetingEvening',
       'greetingEvening',
     ]);
+  });
+});
+
+describe('datetime-local in Swiss time (treatments, consultations)', () => {
+  it('round-trips summer and winter time', () => {
+    const summer = parseLocalInput('2026-10-13T09:15')!;
+    expect(summer.toISOString()).toBe('2026-10-13T07:15:00.000Z');
+    expect(toLocalInput(summer)).toBe('2026-10-13T09:15');
+    const winter = parseLocalInput('2026-12-01T09:15')!;
+    expect(winter.toISOString()).toBe('2026-12-01T08:15:00.000Z');
+    expect(toLocalInput(winter)).toBe('2026-12-01T09:15');
+  });
+
+  it('rejects invalid values', () => {
+    expect(parseLocalInput('')).toBeNull();
+    expect(parseLocalInput('13.10.2026 09:15')).toBeNull();
+    expect(parseLocalInput('2026-02-30T09:15')).toBeNull();
   });
 });

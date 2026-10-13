@@ -25,7 +25,8 @@ services:
   migrate:
     build: .
     image: pain-therapy:local
-    command: ['prisma', 'migrate', 'deploy']
+    # Migrations, then the therapy catalog (prisma/catalog/sync.mjs)
+    command: ['sh', 'prisma/migrate.sh']
     environment:
       DATABASE_URL: postgresql://app:app@db:5432/pain_therapy
     depends_on:

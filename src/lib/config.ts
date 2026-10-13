@@ -20,6 +20,14 @@ export const config = {
     accountUrl: process.env.AZURE_STORAGE_ACCOUNT_URL ?? '',
     connectionString: process.env.AZURE_STORAGE_CONNECTION_STRING ?? '',
     container: process.env.AZURE_STORAGE_CONTAINER ?? 'signed-documents',
+    photoLocalDir: process.env.STORAGE_PHOTO_LOCAL_DIR ?? './data/clinical-photos',
+    photoContainer: process.env.AZURE_STORAGE_PHOTO_CONTAINER ?? 'clinical-photos',
+  },
+  photos: {
+    /** Per photo after resizing in the browser (design D5) */
+    maxBytes: 5 * 1024 * 1024,
+    maxPerSave: 10,
+    maxThumbBytes: 1024 * 1024,
   },
   mail: {
     driver: (process.env.MAIL_DRIVER ?? 'outbox') as 'outbox' | 'graph' | 'fail',

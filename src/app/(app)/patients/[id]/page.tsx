@@ -1,30 +1,34 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import type { AuditEvent, EmailDelivery } from '@prisma/client';
 import { requireUser } from '@/lib/session';
 import { historyOf, viewPatient } from '@/lib/patients';
-import { ageOn, formatDate, formatDateTime } from '@/lib/format';
+import { treatmentsOf } from '@/lib/treatments';
+import { listRegions, regionLabel } from '@/lib/catalog';
+import { ageOn, formatDate, formatDateTime, formatPercent } from '@/lib/format';
 import { ConsentPill, StatusPill } from '@/components/Pills';
-import { TabletIcon } from '@/components/Icons';
+import { PlusIcon, TabletIcon } from '@/components/Icons';
 import { DeactivateDialog } from '@/components/DeactivateDialog';
 import { handOver, reactivatePatient, resendEmail } from '../../actions';
 
 export const dynamic = 'force-dynamic';
 
-type Tab = 'personal' | 'anamnesis' | 'documents' | 'history';
+type Tab = 'treatments' | 'personal' | 'anamnesis' | 'documents' | 'history';
 
 export default async function PatientRecord({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; flash?: string; error?: string }>;
+  searchParams: Promise<{ tab?: string; flash?: string; error?: string; n?: string }>;
 }) {
   const actor = await requireUser();
   const { id } = await params;
   const sp = await searchParams;
-  const tab: Tab = (['personal', 'anamnesis', 'documents', 'history'] as const).find((x) => x === sp.tab) ?? 'personal';
+  // patient-records: Behandlungen in der Akte, first tab and default view (iteration 2, design D7)
+  const tab: Tab =
+    (['personal', 'anamnesis', 'documents', 'history'] as const).find((x) => x === sp.tab) ?? 'treatments';
   const p = await viewPatient(actor, id);
   if (!p) notFound();
   const [t, tc, tf, te, td, tp] = await Promise.all([
@@ -35,6 +39,7 @@ export default async function PatientRecord({
     getTranslations('deactivate'),
     getTranslations('patients'),
   ]);
+  const treatments = await treatmentsOf(p.id);
   const name = `${p.firstName} ${p.lastName}`;
   const active = p.status === 'ACTIVE';
   const lastSession = p.signatureSessions[0];
@@ -63,7 +68,13 @@ export default async function PatientRecord({
             ? { kind: 'ok', text: t('reactivatedFlash', { name }) }
             : sp.flash === 'resent'
               ? { kind: 'ok', text: (await getTranslations('documents'))('resent') }
-              : null;
+              : sp.flash === 'treatmentCreated'
+                ? { kind: 'ok', text: t('treatmentCreatedFlash') }
+                : sp.flash === 'treatmentSaved'
+                  ? { kind: 'ok', text: t('treatmentSavedFlash') }
+                  : sp.flash === 'consultationSaved'
+                    ? { kind: 'ok', text: t('consultationSavedFlash', { n: Number(sp.n) || 0 }) }
+                    : null;
   const error =
     sp.error === 'noText'
       ? te('noConsentText')
@@ -74,6 +85,7 @@ export default async function PatientRecord({
           : null;
 
   const tabs: [Tab, string][] = [
+    ['treatments', t('tabTreatments')],
     ['personal', t('tabPersonal')],
     ['anamnesis', t('tabAnamnesis')],
     ['documents', t('tabDocuments')],
@@ -149,6 +161,12 @@ export default async function PatientRecord({
           </div>
         </div>
         <div className="actions">
+          {active ? (
+            <Link className="btn btn--gold" href={`/patients/${p.id}/treatments/new`}>
+              <PlusIcon />
+              {(await getTranslations('treatments'))('new')}
+            </Link>
+          ) : null}
           <Link className="btn btn--ghost" href={`/patients/${p.id}/edit`}>
             {t('edit')}
           </Link>
@@ -180,21 +198,25 @@ export default async function PatientRecord({
         {tabs.map(([k, label]) => (
           <Link
             key={k}
-            href={`/patients/${p.id}${k === 'personal' ? '' : `?tab=${k}`}`}
+            href={`/patients/${p.id}${k === 'treatments' ? '' : `?tab=${k}`}`}
             aria-current={tab === k ? 'page' : undefined}
             replace
             scroll={false}
           >
             {label}
             {k === 'documents' ? <span className="count">{p.documents.length}</span> : null}
+            {k === 'treatments' ? <span className="count">{treatments.length}</span> : null}
           </Link>
         ))}
       </nav>
 
+      {tab === 'treatments' ? (
+        <Treatments patientId={p.id} list={treatments} active={active} canOpen={active && p.consent === 'signed'} />
+      ) : null}
       {tab === 'personal' ? <Personal p={p} tf={tf} tc={tc} /> : null}
       {tab === 'anamnesis' ? <AnamnesisView a={p.anamnesis} tf={tf} tc={tc} /> : null}
       {tab === 'documents' ? <Documents p={p} active={active} handOverForm={handOverForm} /> : null}
-      {tab === 'history' ? <History events={await historyOf(p.id)} /> : null}
+      {tab === 'history' ? <History events={await historyOf(p.id)} regions={await listRegions()} /> : null}
     </>
   );
 }
@@ -331,6 +353,125 @@ function AnamnesisView({ a, tf, tc }: { a: Rec['anamnesis']; tf: T; tc: T }) {
   );
 }
 
+type TreatmentRow = Awaited<ReturnType<typeof treatmentsOf>>[number];
+
+/** treatments: Behandlungsliste, newest first, each with its consultations (design D7) */
+async function Treatments({
+  patientId,
+  list,
+  active,
+  canOpen,
+}: {
+  patientId: string;
+  list: TreatmentRow[];
+  active: boolean;
+  canOpen: boolean;
+}) {
+  const t = await getTranslations('treatments');
+  const tp = await getTranslations('photos');
+  const locale = await getLocale();
+  if (!list.length)
+    return (
+      <section className="card">
+        <div className="empty">
+          <div className="ill" aria-hidden="true">
+            +
+          </div>
+          <h2 style={{ fontSize: 18 }}>{t('emptyTitle')}</h2>
+          <p className="muted" style={{ maxWidth: '52ch', margin: 0 }}>
+            {t('emptyText')}
+          </p>
+          {active ? (
+            <Link className="btn btn--gold" href={`/patients/${patientId}/treatments/new`}>
+              <PlusIcon />
+              {t('new')}
+            </Link>
+          ) : null}
+        </div>
+      </section>
+    );
+  const pain = (c: { painBefore: number | null; painAfter: number | null }) =>
+    c.painBefore === null && c.painAfter === null
+      ? ''
+      : `${formatPercent(c.painBefore)} → ${formatPercent(c.painAfter)}`;
+  return (
+    <>
+      {list.map((tr) => {
+        const label = regionLabel(tr.region, locale);
+        const base = `/patients/${patientId}/treatments/${tr.id}`;
+        return (
+          <section className="card treat" id={`t-${tr.id}`} key={tr.id} aria-labelledby={`th-${tr.id}`}>
+            <header>
+              <div style={{ minWidth: 0 }}>
+                <h2 id={`th-${tr.id}`}>{label}</h2>
+                <div className="meta num">
+                  {t('opened', { at: formatDateTime(tr.startedAt) })} ·{' '}
+                  {t('painStart', { pain: formatPercent(tr.painStart) })} ·{' '}
+                  {t('photoCount', { count: tr.photos.length })}
+                </div>
+                <div className="diag">{t('diagnosisLine', { text: tr.diagnosis })}</div>
+              </div>
+              <div className="actions">
+                <Link className="btn btn--ghost" href={`${base}/edit`} aria-label={`${t('edit')}: ${label}`}>
+                  {t('edit')}
+                </Link>
+                {canOpen ? (
+                  <Link className="btn btn--ghost" href={`${base}/consultations/new`}>
+                    <PlusIcon />
+                    {t('addConsultation')}
+                  </Link>
+                ) : null}
+              </div>
+            </header>
+            {tr.photos.length ? (
+              <ul className="photos strip" aria-label={t('photos')}>
+                {tr.photos.map((ph) => {
+                  const at = formatDateTime(ph.takenAt);
+                  return (
+                    <li key={ph.id} className="ph">
+                      <a href={`/api/photos/${ph.id}`} target="_blank" rel="noopener" aria-label={tp('open', { at })}>
+                        {/* eslint-disable-next-line @next/next/no-img-element -- private, uncached photo */}
+                        <img src={`/api/photos/${ph.id}/thumb`} alt={tp('alt', { at })} />
+                      </a>
+                      <small className="num">{at}</small>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+            {tr.consultations.length ? (
+              <ul className="conslist" aria-label={`${t('consultationsOf')} ${label}`}>
+                {tr.consultations.map((c) => (
+                  <li key={c.id}>
+                    <Link href={`${base}/consultations/${c.id}`}>
+                      <span className="n">{t('number', { n: c.number })}</span>
+                      <span className="d num">{formatDateTime(c.at)}</span>
+                      <span className="p num">{pain(c)}</span>
+                      <span className="x">
+                        {[
+                          c._count.points ? t('points', { count: c._count.points }) : null,
+                          c._count.exercises ? t('exercises', { count: c._count.exercises }) : null,
+                          c._count.rolling ? t('rolling', { count: c._count.rolling }) : null,
+                          c._count.photos ? t('photoCount', { count: c._count.photos }) : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </span>
+                      <span aria-hidden="true">›</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="body muted">{t('noConsultations')}</div>
+            )}
+          </section>
+        );
+      })}
+    </>
+  );
+}
+
 async function DeliveryLine({
   d,
   documentId,
@@ -457,11 +598,64 @@ async function Documents({ p, active, handOverForm }: { p: Rec; active: boolean;
   );
 }
 
-async function History({ events }: { events: AuditEvent[] }) {
+/** Name of a treatment or consultation field in the history ("point:2.11.1:sensitivity" → "Punkt 2.11.1 …") */
+function sheetFieldLabel(th: T, field: string | null): string {
+  if (!field) return '';
+  const [kind, id, sub] = field.split(':');
+  const key: Record<string, string> = {
+    startedAt: 'fStartedAt',
+    regionId: 'fRegionId',
+    diagnosis: 'fDiagnosis',
+    painStart: 'fPainStart',
+    at: 'fAt',
+    painBefore: 'fPainBefore',
+    painAfter: 'fPainAfter',
+    comparison: 'fComparison',
+    'point:left': 'fPointLeft',
+    'point:right': 'fPointRight',
+    'point:sensitivity': 'fPointSensitivity',
+    'exercise:prescribed': 'fExercisePrescribed',
+    'exercise:difficulty': 'fExerciseDifficulty',
+    'exercise:variants': 'fExerciseVariants',
+    'rolling:area': 'fRollingArea',
+    'rolling:tool': 'fRollingTool',
+  };
+  const k = key[sub ? `${kind}:${sub}` : kind];
+  return k ? th(k as never, { id } as never) : field;
+}
+
+async function History({
+  events,
+  regions,
+}: {
+  events: AuditEvent[];
+  regions: { id: number; nameDe: string; nameEn: string }[];
+}) {
   const t = await getTranslations('history');
   const tf = await getTranslations('form');
+  const ts = await getTranslations('scales');
+  const locale = await getLocale();
+  const detail = (e: AuditEvent) => (e.details ?? {}) as { regionId?: number; number?: number };
+  const region = (e: AuditEvent) => {
+    const r = regions.find((x) => x.id === detail(e).regionId);
+    return r ? `${regionLabel(r, locale)} · ` : '';
+  };
   const label = (e: AuditEvent) => {
     switch (e.action) {
+      case 'treatment.created':
+        return region(e) + t('treatmentCreated');
+      case 'treatment.updated':
+        return region(e) + t('treatmentUpdated', { field: sheetFieldLabel(t, e.field) });
+      case 'consultation.created':
+        return region(e) + t('consultationCreated', { n: detail(e).number ?? 0 });
+      case 'consultation.updated':
+        return region(e) + t('consultationUpdated', { n: detail(e).number ?? 0, field: sheetFieldLabel(t, e.field) });
+      case 'photo.added':
+        return region(e) + (detail(e).number ? t('photoAddedConsultation', { n: detail(e).number! }) : t('photoAdded'));
+      case 'photo.removed':
+        return (
+          region(e) + (detail(e).number ? t('photoRemovedConsultation', { n: detail(e).number! }) : t('photoRemoved'))
+        );
       case 'patient.created':
         return t('created');
       case 'patient.updated':
@@ -486,7 +680,17 @@ async function History({ events }: { events: AuditEvent[] }) {
         return e.action;
     }
   };
-  const show = (v: string | null) => (v === 'true' ? '✓' : v === 'false' ? '–' : v);
+  const show = (e: AuditEvent, v: string | null) => {
+    if (v === 'true') return '✓';
+    if (v === 'false') return '–';
+    if (v && /^(LOW|MEDIUM|STRONG|EXTREME|EASY|HARD|IMPOSSIBLE)$/.test(v)) return ts(v as 'LOW');
+    if (v && /^(painStart|painBefore|painAfter)$/.test(e.field ?? '')) return `${v} %`;
+    if (v && e.field === 'regionId') {
+      const r = regions.find((x) => String(x.id) === v);
+      return r ? regionLabel(r, locale) : v;
+    }
+    return v;
+  };
   return (
     <section className="card">
       <h2>{(await getTranslations('record'))('tabHistory')}</h2>
@@ -517,10 +721,10 @@ async function History({ events }: { events: AuditEvent[] }) {
                         <br />
                         {e.before ? (
                           <>
-                            <del>{show(e.before)}</del> →{' '}
+                            <del>{show(e, e.before)}</del> →{' '}
                           </>
                         ) : null}
-                        <ins>{show(e.after)}</ins>
+                        <ins>{show(e, e.after)}</ins>
                       </>
                     ) : null}
                   </td>
