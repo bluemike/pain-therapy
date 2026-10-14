@@ -12,7 +12,15 @@ import type { Actor } from './session';
 
 export class TreatmentError extends Error {
   constructor(
-    public code: 'inactive' | 'consent' | 'region' | 'regionLocked' | 'startAfterConsultation' | 'catalog' | 'notFound',
+    public code:
+      | 'inactive'
+      | 'consent'
+      | 'region'
+      | 'regionLocked'
+      | 'startAfterConsultation'
+      | 'catalog'
+      | 'notFound'
+      | 'prescriptionLogged',
   ) {
     super(code);
   }
@@ -361,13 +369,30 @@ export async function updateConsultation(
   const photos = preparePhotos(t.patientId, photoChanges.add ?? []);
   await writePhotos(photos);
   const changes = consultationChanges(existing, input);
+  // exercise-log (iteration 4, design D8): entries of the patient point to their prescription, which therefore stays
+  const keep = new Set(input.sheet.home.map((h) => h.code));
+  const removed = existing.home.map((h) => h.exerciseCode).filter((code) => !keep.has(code));
+  if (
+    removed.length &&
+    (await db.exerciseLogEntry.count({ where: { consultationId: id, exerciseCode: { in: removed } } }))
+  )
+    throw new TreatmentError('prescriptionLogged');
+  const { home, ...rows } = sheetRows(input.sheet);
   return db.$transaction(async (tx) => {
     if (changes.length) {
-      // Sheet rows are replaced as a whole; the history keeps every single change
+      // Sheet rows are replaced as a whole; the history keeps every single change. Prescriptions are updated in place.
       await tx.consultationPoint.deleteMany({ where: { consultationId: id } });
       await tx.consultationExercise.deleteMany({ where: { consultationId: id } });
       await tx.consultationRolling.deleteMany({ where: { consultationId: id } });
-      await tx.homePrescription.deleteMany({ where: { consultationId: id } });
+      await tx.homePrescription.deleteMany({ where: { consultationId: id, exerciseCode: { in: removed } } });
+      for (const h of home.create) {
+        const { exerciseCode, ...values } = h;
+        await tx.homePrescription.upsert({
+          where: { consultationId_exerciseCode: { consultationId: id, exerciseCode } },
+          create: { consultationId: id, ...h },
+          update: values,
+        });
+      }
       await tx.consultation.update({
         where: { id },
         data: {
@@ -377,7 +402,7 @@ export async function updateConsultation(
           painAfter: input.painAfter,
           comparison: input.comparison,
           updatedBy: actor.name,
-          ...sheetRows(input.sheet),
+          ...rows,
         },
       });
     }

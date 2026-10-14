@@ -7,14 +7,16 @@ Ziel: `https://pain-therapy.ayanta.ch`, alle Daten in **Switzerland North**. Die
 | Ressource | Zweck |
 | --- | --- |
 | Container App `ca-pain-therapy` | die App (Next.js), 1–2 Replikate, eigene Domain mit verwaltetem Zertifikat |
-| Container Apps Job `caj-pain-therapy-migrate` | `prisma/migrate.sh` vor jeder neuen Revision: `prisma migrate deploy`, danach `catalog:sync` (Therapiekatalog) |
+| Container App `ca-pain-therapy-zone` | Patienten-Zone (ab Iteration 4): Heimprogramm und Übungstagebuch für Patient:innen, ohne Entra-Anmeldung, 0–2 Replikate, eigene Domain `patient.pain-therapy.ayanta.ch` |
+| Container Apps Job `caj-pain-therapy-migrate` | `prisma/migrate.sh` vor jeder neuen Revision: `prisma migrate deploy`, Rolle `patient_zone` mit ihren Rechten, danach `catalog:sync` (Therapiekatalog) |
 | Container Registry | Images aus GitHub Actions |
 | PostgreSQL Flexible Server 16 (B1ms) | Datenbank, 35 Tage Backup, nur Azure-Dienste dürfen verbinden |
 | Storage Account (ZRS), Container `signed-documents` | PDF-Archiv mit Versionierung und unveränderlicher Aufbewahrung (20 Jahre) |
 | Container `clinical-photos` im selben Storage Account | Fotos von Behandlungen und Konsultationen, privat, Versionierung und Soft Delete (365 Tage), ohne Unveränderlichkeit; *Entfernen* in der App blendet nur aus |
 | Container `exercise-media` im selben Storage Account | Bilder und Texte der digitalisierten L&B-Übungsblätter, privat, von Hand geladen (siehe Iteration 3); die App liefert die Bilder nur an angemeldete Benutzer:innen aus |
-| Key Vault | `AUTH_SECRET`, Client Secret, Datenbank-URL |
-| User-assigned Managed Identity | Zugriff auf Registry, Key Vault, Blob Storage und Graph (E-Mail) |
+| Key Vault | `AUTH_SECRET`, Client Secret, Datenbank-URL; ab Iteration 4 `patient-zone-database-url`, `patient-zone-db-password`, `patient-zone-secret` |
+| User-assigned Managed Identity `id-pain-therapy` | Zugriff auf Registry, Key Vault, Blob Storage und Graph (E-Mail) |
+| User-assigned Managed Identity `id-pain-therapy-zone` | nur für die Patienten-Zone: *AcrPull*, *Key Vault Secrets User* nur auf ihren zwei Secrets, *Storage Blob Data Reader* nur auf `exercise-media` |
 | Log Analytics | Logs der Container Apps, 90 Tage |
 
 Die App greift mit der Managed Identity auf Blob Storage, Key Vault und Graph zu. Für PostgreSQL nutzt sie Benutzer und Passwort aus dem Key Vault; Prisma kann keine Entra-Tokens für Postgres erneuern (Abweichung von design.md D2, siehe offene Punkte).
@@ -72,16 +74,17 @@ Graph-Berechtigung und Beschränkung auf das Absenderpostfach nach [entra.md](en
 1. App-Registrierung für GitHub Actions anlegen (z. B. `github-pain-therapy-deploy`), *Federated credential* → *GitHub Actions deploying Azure resources*: Organisation `bluemike`, Repository `pain-therapy`, Entity *Environment*, Name `production`.
 2. Dieser App auf der Ressourcengruppe die Rollen *Contributor*, *User Access Administrator* (für die Rollenzuweisungen im Bicep, eingeschränkt auf die drei Rollen AcrPull, Key Vault Secrets User, Storage Blob Data Contributor) und auf der Registry *AcrPush* geben.
 3. Im Repository unter *Settings → Environments* die Umgebung `production` anlegen (empfohlen: *Required reviewers*) mit
-   - **Variables:** `AZURE_CLIENT_ID` (GitHub-App), `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP` = `rg-pain-therapy`, `ENTRA_TENANT_ID`, `ENTRA_CLIENT_ID`, `MAIL_SENDER`, `CUSTOM_DOMAIN_MODE`
-   - **Secrets:** `ENTRA_CLIENT_SECRET`, `AUTH_SECRET`, `POSTGRES_ADMIN_PASSWORD`
+   - **Variables:** `AZURE_CLIENT_ID` (GitHub-App), `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP` = `rg-pain-therapy`, `ENTRA_TENANT_ID`, `ENTRA_CLIENT_ID`, `MAIL_SENDER`, `CUSTOM_DOMAIN_MODE`, ab Iteration 4 `ZONE_CUSTOM_DOMAIN_MODE`
+   - **Secrets:** `ENTRA_CLIENT_SECRET`, `AUTH_SECRET`, `POSTGRES_ADMIN_PASSWORD`, ab Iteration 4 `PATIENT_ZONE_DB_PASSWORD`
 4. Repository-Variable `AZURE_DEPLOY_ENABLED` = `true`. Ab dann deployt jeder Push auf `main`; manuell über *Actions → Deploy to Azure → Run workflow*.
 
 ## Ablauf eines Deployments
 
-1. Image bauen und als `pain-therapy:<commit>` in die Registry schieben.
-2. Migrationsjob mit dem neuen Image starten (`sh prisma/migrate.sh`: Migrationen, dann Therapiekatalog aus `prisma/catalog/`) und auf Erfolg warten. Schlägt er fehl, bricht das Deployment ab und die alte Revision läuft weiter. Ein frisches Deployment hat danach den vollständigen Katalog; erneutes Einspielen ändert nichts.
+0. Ab Iteration 4: Abbruch mit klarer Meldung, wenn das GitHub-Secret `PATIENT_ZONE_DB_PASSWORD` fehlt, bevor etwas gebaut oder in Azure geändert wird.
+1. Images bauen und als `pain-therapy:<commit>` und `pain-therapy-zone:<commit>` in die Registry schieben.
+2. Migrationsjob mit dem neuen Image starten (`sh prisma/migrate.sh`: Migrationen, Rolle `patient_zone`, dann Therapiekatalog aus `prisma/catalog/`) und auf Erfolg warten. Schlägt er fehl, bricht das Deployment ab und die alte Revision läuft weiter. Ein frisches Deployment hat danach den vollständigen Katalog; erneutes Einspielen ändert nichts.
 3. Bicep anwenden: Infrastruktur abgleichen (ab Iteration 2 inklusive Container `clinical-photos` und `AZURE_STORAGE_PHOTO_CONTAINER`, ab Iteration 3 Container `exercise-media`, `AZURE_STORAGE_EXERCISE_CONTAINER` und Blob-Zugriff des Migrationsjobs) und neue Revision mit dem neuen Image ausrollen.
-4. Smoke-Test auf `/api/health`.
+4. Smoke-Test auf `/api/health` beider Apps.
 
 **Rollback:** `az containerapp revision list -g rg-pain-therapy -n ca-pain-therapy -o table`, dann die vorherige Revision aktivieren oder den Workflow mit dem alten Commit erneut starten. Migrationen sind nur additiv (Iteration 2: neue Tabellen für Katalog, Behandlungen, Konsultationen und Fotos), ein Rollback der App braucht kein Rollback der Datenbank.
 
@@ -153,6 +156,56 @@ az containerapp job start -g rg-pain-therapy -n caj-pain-therapy-migrate
 ```
 
 Prüfen: *Katalog → Übungen → 2A* zeigt Hauptbild, Abschnitte, Zeitbedarf und das ganze Blatt. Bilder ersetzen braucht keinen Neustart (die Browser halten sie höchstens eine Stunde im Cache); geänderte Texte brauchen den Job.
+
+## Iteration 4 (Patienten-Zone)
+
+Die Patienten-Zone ist eine zweite Container App (`apps/patient-zone`, Image `pain-therapy-zone`) mit eigener Identität und eigener Datenbankrolle `patient_zone`, die nur die nötigen Spalten lesen und nur eigene Einträge schreiben darf (`prisma/patient-zone-role.sql`). Alles ist additiv: bestehende Ressourcen behalten Namen und Verhalten, die Praxis-App bekommt nur die Variable `PATIENT_ZONE_URL`. Solange sie leer ist (bis der Hostname gebunden ist), bleiben *Link senden* und die Checkbox *Link zur Patienten-Zone mitsenden* ausgeblendet.
+
+### 1. Vor dem ersten Deployment (Praxis)
+
+1. **GitHub-Secret** `PATIENT_ZONE_DB_PASSWORD` in der Umgebung `production` anlegen, nur Buchstaben und Ziffern:
+   ```bash
+   openssl rand -base64 32 | tr -d '/+='
+   ```
+   Fehlt es, bricht der Workflow im ersten Schritt mit der Meldung *Missing secret* ab, ohne etwas zu ändern.
+2. **Rolle der GitHub-App erweitern:** Die neue Identität braucht *Storage Blob Data Reader* (auf `exercise-media`). Ist *User Access Administrator* der Deploy-App auf bestimmte Rollen eingeschränkt (Einrichtung Schritt 5.2), *Storage Blob Data Reader* zur Bedingung hinzufügen. Sonst scheitert das Bicep-Deployment an der Rollenzuweisung.
+3. Optional prüfen, was Bicep ändert (mit den Secrets als Umgebungsvariablen wie in Schritt 2 der Einrichtung, zusätzlich `PATIENT_ZONE_DB_PASSWORD`):
+   ```bash
+   az deployment group what-if -g rg-pain-therapy -n main -f infra/main.bicep -p infra/main.bicepparam
+   ```
+   Erwartet: *Create* Identität `id-pain-therapy-zone`, drei Key-Vault-Secrets, vier Rollenzuweisungen, Container App `ca-pain-therapy-zone`; *Modify* der Container App `ca-pain-therapy` (nur `PATIENT_ZONE_URL`, leer, und das Image) und des Migrationsjobs (Secret und Variable `PATIENT_ZONE_DB_PASSWORD`). Sonst nichts.
+
+### 2. Erstes Deployment: Reihenfolge
+
+Der Workflow erledigt das allein; diese Reihenfolge ist nötig, weil der Migrationsjob vor dem Bicep-Lauf startet und das Passwort der Rolle sonst noch nicht kennt:
+
+1. Prüfen, dass `PATIENT_ZONE_DB_PASSWORD` gesetzt ist.
+2. Beide Images bauen und pushen.
+3. **Nur beim ersten Mal** (der Migrationsjob hat noch keine Variable `PATIENT_ZONE_DB_PASSWORD`): Bicep mit dem Image-Tag, das gerade live ist, und ohne Zonen-Image. Das legt Secrets, Identität, die Variable des Migrationsjobs und eine Platzhalter-Zone an; die Praxis-App läuft mit ihrem bisherigen Image weiter.
+4. Migrationsjob mit dem neuen Image: neue Tabellen, Rolle `patient_zone` mit Passwort und Rechten, Katalog.
+5. Bicep mit beiden neuen Images.
+6. Smoke-Test `/api/health` beider Apps (die Zone skaliert auf 0, der erste Aufruf dauert einige Sekunden).
+
+Ab dem zweiten Deployment entfällt Schritt 3. Von Hand (ohne Workflow) dieselbe Reihenfolge: `IMAGE_TAG=<live-Tag> ZONE_IMAGE_TAG= az deployment group create …`, dann `az containerapp job start -g rg-pain-therapy -n caj-pain-therapy-migrate`, dann `IMAGE_TAG=<neu> ZONE_IMAGE_TAG=<neu> az deployment group create …`.
+
+### 3. DNS und Hostname (später, durch die Praxis)
+
+Erst wenn die Praxis bereit ist, in der Zone `ayanta.ch`:
+
+| Typ | Name | Wert |
+| --- | --- | --- |
+| CNAME | `patient.pain-therapy` | Ausgabe `zoneFqdn` |
+| TXT | `asuid.patient.pain-therapy` | Ausgabe `customDomainVerificationId` (dieselbe wie für die Praxis-App) |
+
+Sobald beide auflösen, wie bei der Praxis-App in zwei Läufen: GitHub-Variable `ZONE_CUSTOM_DOMAIN_MODE` = `add`, Workflow starten; dann `bind`, Workflow erneut starten. Mit `bind` setzt Bicep `PATIENT_ZONE_URL=https://patient.pain-therapy.ayanta.ch` in der Praxis-App, und *Link senden* sowie die Checkbox erscheinen.
+
+### 4. Vor dem Go-live der Zone (Praxis)
+
+- **Datenschutzhinweis** der Zone (`apps/patient-zone/messages/de.json` und `en.json`, Abschnitt `privacy`) und den kurzen Hinweis unter der Bestätigung (`common.privacyShort`) prüfen und bestätigen.
+- **Text der E-Mails** mit dem Link (`messages/de.json` und `en.json`: `accessLinkEmail.body` und `handoutEmail.bodyWithLink`) sowie das Zugangsblatt (`accessSheet`) prüfen und bestätigen.
+- Einmal durchspielen: Übungsblatt mit Link an eine Test-Patientin senden, Link auf dem Telefon öffnen, Geburtsdatum bestätigen, Einträge erfassen, *Heimprogramm* im Cockpit und *Übungstagebuch* in der Akte prüfen, *Link sperren*.
+
+**Rollback:** vorherige Revision beider Apps aktivieren (`az containerapp revision list -n ca-pain-therapy-zone …`). Die neuen Tabellen und die Rolle bleiben; die alte Praxis-App kennt sie nicht und stört sich nicht daran. Die Zone lässt sich jederzeit abschalten, indem `ZONE_CUSTOM_DOMAIN_MODE` auf `off` zurückgeht (blendet die Link-Funktionen aus) oder bis zum nächsten Deployment die Rolle `patient_zone` gesperrt wird (`ALTER ROLE patient_zone NOLOGIN`; der Migrationsjob setzt `LOGIN` wieder).
 
 ## Nach dem Go-live
 

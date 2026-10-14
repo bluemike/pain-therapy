@@ -7,6 +7,9 @@ WORKDIR /app
 
 FROM base AS deps
 COPY package.json package-lock.json ./
+# npm workspaces (iteration 4, design D11): the lockfile also lists the shared package and the patient zone
+COPY packages/shared/package.json ./packages/shared/
+COPY apps/patient-zone/package.json ./apps/patient-zone/
 COPY prisma ./prisma
 RUN npm ci
 

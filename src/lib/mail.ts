@@ -2,12 +2,15 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { config } from './config';
 
-/** Email delivery (design D9): Microsoft Graph sendMail in Azure, a local outbox folder in development. */
+/**
+ * Email delivery (design D9): Microsoft Graph sendMail in Azure, a local outbox folder in development. The link to
+ * the patient zone goes without attachment (iteration 4, design D4).
+ */
 export interface OutgoingMail {
   to: string;
   subject: string;
   text: string;
-  attachment: { name: string; contentType: string; data: Buffer };
+  attachment?: { name: string; contentType: string; data: Buffer };
 }
 
 export interface Mailer {
@@ -19,15 +22,16 @@ class OutboxMailer implements Mailer {
     const dir = path.resolve(config.mail.outboxDir);
     await mkdir(dir, { recursive: true });
     const base = `${new Date().toISOString().replace(/[:.]/g, '-')}-${mail.to.replace(/[^a-z0-9@.]/gi, '_')}`;
+    const { attachment } = mail;
     await writeFile(
       path.join(dir, `${base}.json`),
       JSON.stringify(
-        { ...mail, attachment: { name: mail.attachment.name, bytes: mail.attachment.data.length } },
+        { ...mail, attachment: attachment ? { name: attachment.name, bytes: attachment.data.length } : undefined },
         null,
         2,
       ),
     );
-    await writeFile(path.join(dir, `${base}-${mail.attachment.name}`), mail.attachment.data);
+    if (attachment) await writeFile(path.join(dir, `${base}-${attachment.name}`), attachment.data);
   }
 }
 
@@ -51,14 +55,16 @@ class GraphMailer implements Mailer {
             subject: mail.subject,
             body: { contentType: 'Text', content: mail.text },
             toRecipients: [{ emailAddress: { address: mail.to } }],
-            attachments: [
-              {
-                '@odata.type': '#microsoft.graph.fileAttachment',
-                name: mail.attachment.name,
-                contentType: mail.attachment.contentType,
-                contentBytes: mail.attachment.data.toString('base64'),
-              },
-            ],
+            attachments: mail.attachment
+              ? [
+                  {
+                    '@odata.type': '#microsoft.graph.fileAttachment',
+                    name: mail.attachment.name,
+                    contentType: mail.attachment.contentType,
+                    contentBytes: mail.attachment.data.toString('base64'),
+                  },
+                ]
+              : [],
           },
           saveToSentItems: true,
         }),

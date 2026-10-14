@@ -1,6 +1,19 @@
+import path from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 
 const PORT = Number(process.env.PORT ?? 3000);
+/** Patient zone (apps/patient-zone, iteration 4) with its own database role patient_zone */
+const ZONE_PORT = Number(process.env.ZONE_PORT ?? 3100);
+const ZONE_URL = `http://localhost:${ZONE_PORT}`;
+process.env.ZONE_URL = ZONE_URL;
+// Mails land here (MAIL_DRIVER=outbox); tests/e2e/patient-zone.spec.ts reads the link from them
+process.env.E2E_OUTBOX_DIR ??= path.resolve('data/e2e-outbox');
+const zoneDatabaseUrl = () => {
+  const url = new URL(process.env.DATABASE_URL ?? 'postgresql://app:app@localhost:5432/pain_therapy');
+  url.username = 'patient_zone';
+  url.password = process.env.PATIENT_ZONE_DB_PASSWORD ?? 'patient_zone';
+  return url.toString();
+};
 
 export default defineConfig({
   testDir: 'tests/e2e',
@@ -33,10 +46,27 @@ export default defineConfig({
       },
     },
   ],
-  webServer: {
-    command: process.env.CI ? 'npm run start' : 'npm run dev',
-    url: `http://localhost:${PORT}/api/health`,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  webServer: [
+    {
+      command: process.env.CI ? 'npm run start' : 'npm run dev',
+      url: `http://localhost:${PORT}/api/health`,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+      env: { PATIENT_ZONE_URL: ZONE_URL, MAIL_OUTBOX_DIR: process.env.E2E_OUTBOX_DIR },
+    },
+    {
+      command: process.env.CI
+        ? 'npm run start -w @pain-therapy/patient-zone'
+        : 'npm run dev -w @pain-therapy/patient-zone',
+      url: `${ZONE_URL}/api/health`,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+      env: {
+        DATABASE_URL: zoneDatabaseUrl(),
+        PATIENT_ZONE_SECRET: 'e2e-only-patient-zone-secret',
+        STORAGE_DRIVER: 'local',
+        STORAGE_EXERCISE_LOCAL_DIR: path.resolve('data/exercise-media'),
+      },
+    },
+  ],
 });

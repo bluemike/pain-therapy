@@ -8,6 +8,9 @@ import { formatDate, formatDateZurich } from '@/lib/format';
 import { formatMinutes, programTime, type Repetition } from '@/lib/home-program';
 import { HandoutPanel } from '@/components/HandoutPanel';
 import { HandoutList } from '@/components/HandoutList';
+import { zoneEnabled } from '@/lib/patient-access';
+import { currentProgram } from '@pain-therapy/shared/program';
+import { db } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,6 +42,8 @@ export default async function HandoutPage({
       timing: timingOf(x.exercise.sheet),
     })),
   );
+  // patient-access: the link goes with the sheet only while the patient has an active home program (design D2)
+  const program = zoneEnabled() && p.status === 'ACTIVE' ? await currentProgram(db, p.id) : null;
   const emailNote = !ctx.consent.granted
     ? t('noConsent')
     : !p.email
@@ -81,6 +86,7 @@ export default async function HandoutPage({
                 emailNote={emailNote}
                 previewHref={`${base}/handout/preview`}
                 laterHref={record}
+                zoneEnabled={!!program?.active}
               />
             </div>
           </section>

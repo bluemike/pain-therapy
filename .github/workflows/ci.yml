@@ -39,8 +39,10 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npx prettier --check .
+      # Practice app, shared package and patient zone; the zone tests and tests/unit/patient-zone-role.test.ts
+      # create the role patient_zone (the CI user is a superuser)
       - run: npm test
-      - run: npm run build
+      - run: npm run build:all
         env:
           AUTH_SECRET: ci-build-only-secret-0123456789abcdef
 
@@ -66,6 +68,8 @@ jobs:
       STORAGE_DRIVER: local
       MAIL_DRIVER: outbox
       MAIL_RETRY_DELAY_MS: '200'
+      # Role of the patient zone, created by prisma/patient-zone-role.mjs; playwright.config.ts starts the zone with it
+      PATIENT_ZONE_DB_PASSWORD: patient_zone
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -74,10 +78,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx prisma migrate deploy
+      - run: node prisma/patient-zone-role.mjs
       # Synthetic exercise media (no L&B content), read by catalog:sync and the app
       - run: npm run media:placeholders
       - run: npm run catalog:sync
-      - run: npm run build
+      - run: npm run build:all
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test
       - uses: actions/upload-artifact@v4
@@ -102,6 +107,14 @@ jobs:
           tags: pain-therapy:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/patient-zone/Dockerfile
+          push: false
+          tags: pain-therapy-zone:ci
+          cache-from: type=gha,scope=zone
+          cache-to: type=gha,mode=max,scope=zone
 
   bicep:
     name: Bicep

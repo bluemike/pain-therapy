@@ -119,7 +119,11 @@ export async function getPatient(id: string) {
 
 export async function historyOf(patientId: string) {
   return db.auditEvent.findMany({
-    where: { patientId, action: { notIn: ['patient.viewed', 'document.viewed', 'photo.viewed'] } },
+    // Views stay in the audit log but not in "Verlauf"; the same for page views of the patient zone
+    where: {
+      patientId,
+      action: { notIn: ['patient.viewed', 'document.viewed', 'photo.viewed', 'zone.viewed', 'exerciseLog.viewed'] },
+    },
     orderBy: { at: 'desc' },
     take: 300,
   });

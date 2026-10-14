@@ -1,5 +1,6 @@
 # Local run of the production image with PostgreSQL and Azurite (Blob Storage emulator).
 #   docker compose up --build   →  http://localhost:3000 (developer sign-in, mails land in ./data/outbox)
+#                                   http://localhost:3100 patient zone (iteration 4), with the role patient_zone
 name: pain-therapy
 
 services:
@@ -25,10 +26,11 @@ services:
   migrate:
     build: .
     image: pain-therapy:local
-    # Migrations, then the therapy catalog (prisma/catalog/sync.mjs)
+    # Migrations, the role patient_zone with its grants, then the therapy catalog (prisma/migrate.sh)
     command: ['sh', 'prisma/migrate.sh']
     environment:
       DATABASE_URL: postgresql://app:app@db:5432/pain_therapy
+      PATIENT_ZONE_DB_PASSWORD: ${PATIENT_ZONE_DB_PASSWORD:-patient_zone}
     depends_on:
       db: { condition: service_healthy }
 
@@ -48,7 +50,25 @@ services:
       AZURE_STORAGE_CONNECTION_STRING: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;
       MAIL_DRIVER: outbox
       MAIL_OUTBOX_DIR: /app/data/outbox
+      # Shows "Link senden" and the checkbox on the exercise sheet
+      PATIENT_ZONE_URL: http://localhost:3100
     volumes: [outbox:/app/data]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      azurite: { condition: service_started }
+
+  # Patient zone (iteration 4): own image, own database role, reads the exercise media from Azurite
+  zone:
+    build:
+      context: .
+      dockerfile: apps/patient-zone/Dockerfile
+    image: pain-therapy-zone:local
+    ports: ['3100:3000']
+    environment:
+      DATABASE_URL: postgresql://patient_zone:${PATIENT_ZONE_DB_PASSWORD:-patient_zone}@db:5432/pain_therapy
+      PATIENT_ZONE_SECRET: ${PATIENT_ZONE_SECRET:-local-compose-zone-secret-change-me}
+      STORAGE_DRIVER: azure
+      AZURE_STORAGE_CONNECTION_STRING: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;
     depends_on:
       migrate: { condition: service_completed_successfully }
       azurite: { condition: service_started }

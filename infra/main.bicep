@@ -51,17 +51,41 @@ param defaultPlace string = 'Falera'
 @description('Retention of signed PDFs in days; 7300 days = 20 years after signing.')
 param documentRetentionDays int = 7300
 
+// ---------- Patient zone (iteration 4, design D13) ----------
+
+@description('Public host name of the patient zone (second Container App).')
+param zoneCustomDomain string = 'patient.pain-therapy.ayanta.ch'
+
+@description('''Custom domain on the patient zone, like customDomainMode: off until the DNS records exist, then add,
+then bind. Until bind, PATIENT_ZONE_URL of the practice app stays empty and the link features stay hidden.''')
+@allowed(['off', 'add', 'bind'])
+param zoneCustomDomainMode string = 'off'
+
+@description('Image tag of pain-therapy-zone in the registry. Empty until the first zone image was pushed.')
+param zoneImageTag string = ''
+
+@secure()
+@description('Password of the database role patient_zone, set by the migration job (prisma/patient-zone-role.mjs).')
+param patientZoneDbPassword string
+
 param tags object = { app: 'pain-therapy' }
 
 var suffix = uniqueString(resourceGroup().id)
 var dbName = 'pain_therapy'
 var image = empty(imageTag) ? 'mcr.microsoft.com/k8se/quickstart:latest' : '${registry.properties.loginServer}/pain-therapy:${imageTag}'
 var appPort = empty(imageTag) ? 80 : 3000
+var zoneImage = empty(zoneImageTag)
+  ? 'mcr.microsoft.com/k8se/quickstart:latest'
+  : '${registry.properties.loginServer}/pain-therapy-zone:${zoneImageTag}'
+var zonePort = empty(zoneImageTag) ? 80 : 3000
+// Shown to the practice app only once the host name of the zone is bound (design D13)
+var patientZoneUrl = zoneCustomDomainMode == 'bind' ? 'https://${zoneCustomDomain}' : ''
 
 var roles = {
   acrPull: '7f951dda-4ed3-4680-a7ca-43fe172d538d'
   keyVaultSecretsUser: '4633458b-17de-408a-b874-0445c86b69e6'
   storageBlobDataContributor: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
+  storageBlobDataReader: '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1'
 }
 
 // ---------- Monitoring and identity ----------
@@ -82,6 +106,14 @@ resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' 
   tags: tags
 }
 
+// The patient zone has its own identity with the least rights: pull its image, read its two secrets, read the
+// exercise media (iteration 4, design D13)
+resource zoneIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
+  name: 'id-${name}-zone'
+  location: location
+  tags: tags
+}
+
 // ---------- Container registry ----------
 
 resource registry 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
@@ -97,6 +129,16 @@ resource acrPull 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   scope: registry
   properties: {
     principalId: identity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.acrPull)
+  }
+}
+
+resource zoneAcrPull 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(registry.id, zoneIdentity.id, roles.acrPull)
+  scope: registry
+  properties: {
+    principalId: zoneIdentity.properties.principalId
     principalType: 'ServicePrincipal'
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.acrPull)
   }
@@ -145,6 +187,52 @@ resource secretDatabaseUrl 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   name: 'database-url'
   properties: {
     value: 'postgresql://${postgresAdminLogin}:${uriComponent(postgresAdminPassword)}@${postgres.properties.fullyQualifiedDomainName}:5432/${dbName}?sslmode=require'
+  }
+}
+
+// Patient zone (iteration 4, design D12, D13): own database role patient_zone with column-level grants. The migration
+// job sets the password of the role from patient-zone-db-password; the zone connects with patient-zone-database-url.
+resource secretZoneDbPassword 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: vault
+  name: 'patient-zone-db-password'
+  properties: { value: patientZoneDbPassword }
+}
+
+resource secretZoneDatabaseUrl 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: vault
+  name: 'patient-zone-database-url'
+  properties: {
+    value: 'postgresql://patient_zone:${uriComponent(patientZoneDbPassword)}@${postgres.properties.fullyQualifiedDomainName}:5432/${dbName}?sslmode=require'
+  }
+}
+
+// HMAC key for the IP addresses of confirmation attempts; derived from two secrets, so no further parameter is needed
+resource secretZone 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: vault
+  name: 'patient-zone-secret'
+  properties: {
+    value: '${guid(authSecret, patientZoneDbPassword, 'patient-zone-ip-hash')}${guid(patientZoneDbPassword, authSecret, 'patient-zone-ip-hash')}'
+  }
+}
+
+// Key Vault Secrets User on the two secrets of the zone only, not on the vault
+resource zoneSecretUserDatabaseUrl 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(secretZoneDatabaseUrl.id, zoneIdentity.id, roles.keyVaultSecretsUser)
+  scope: secretZoneDatabaseUrl
+  properties: {
+    principalId: zoneIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.keyVaultSecretsUser)
+  }
+}
+
+resource zoneSecretUserSecret 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(secretZone.id, zoneIdentity.id, roles.keyVaultSecretsUser)
+  scope: secretZone
+  properties: {
+    principalId: zoneIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.keyVaultSecretsUser)
   }
 }
 
@@ -259,6 +347,17 @@ resource blobContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = 
   }
 }
 
+// The patient zone reads the exercise images, nothing else in the storage account
+resource zoneBlobReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(exerciseMedia.id, zoneIdentity.id, roles.storageBlobDataReader)
+  scope: exerciseMedia
+  properties: {
+    principalId: zoneIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.storageBlobDataReader)
+  }
+}
+
 // ---------- Container Apps ----------
 
 resource environment 'Microsoft.App/managedEnvironments@2024-03-01' = {
@@ -288,6 +387,17 @@ resource certificate 'Microsoft.App/managedEnvironments/managedCertificates@2024
   }
 }
 
+resource zoneCertificate 'Microsoft.App/managedEnvironments/managedCertificates@2024-03-01' = if (zoneCustomDomainMode == 'bind') {
+  parent: environment
+  name: 'cert-${replace(zoneCustomDomain, '.', '-')}'
+  location: location
+  tags: tags
+  properties: {
+    subjectName: zoneCustomDomain
+    domainControlValidation: 'CNAME'
+  }
+}
+
 var secrets = [
   { name: 'database-url', keyVaultUrl: secretDatabaseUrl.properties.secretUri, identity: identity.id }
   { name: 'auth-secret', keyVaultUrl: secretAuth.properties.secretUri, identity: identity.id }
@@ -311,6 +421,7 @@ var appEnv = [
   { name: 'MAIL_DRIVER', value: 'graph' }
   { name: 'MAIL_SENDER', value: mailSender }
   { name: 'DEFAULT_PLACE', value: defaultPlace }
+  { name: 'PATIENT_ZONE_URL', value: patientZoneUrl }
 ]
 
 resource app 'Microsoft.App/containerApps@2024-03-01' = {
@@ -385,7 +496,14 @@ resource migrateJob 'Microsoft.App/jobs@2024-03-01' = {
       replicaTimeout: 600
       replicaRetryLimit: 0
       manualTriggerConfig: { parallelism: 1, replicaCompletionCount: 1 }
-      secrets: [secrets[0]]
+      secrets: [
+        secrets[0]
+        {
+          name: 'patient-zone-db-password'
+          keyVaultUrl: secretZoneDbPassword.properties.secretUri
+          identity: identity.id
+        }
+      ]
       registries: [{ server: registry.properties.loginServer, identity: identity.id }]
     }
     template: {
@@ -401,10 +519,78 @@ resource migrateJob 'Microsoft.App/jobs@2024-03-01' = {
             { name: 'STORAGE_DRIVER', value: 'azure' }
             { name: 'AZURE_STORAGE_ACCOUNT_URL', value: storage.properties.primaryEndpoints.blob }
             { name: 'AZURE_STORAGE_EXERCISE_CONTAINER', value: exerciseMedia.name }
+            { name: 'PATIENT_ZONE_DB_PASSWORD', secretRef: 'patient-zone-db-password' }
           ]
           resources: { cpu: json('0.25'), memory: '0.5Gi' }
         }
       ]
+    }
+  }
+}
+
+// Patient zone (iteration 4, design D13): no Entra sign-in, own identity and database role, scales to zero
+resource zoneApp 'Microsoft.App/containerApps@2024-03-01' = {
+  name: 'ca-${name}-zone'
+  location: location
+  tags: tags
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: { '${zoneIdentity.id}': {} }
+  }
+  dependsOn: [zoneAcrPull, zoneSecretUserDatabaseUrl, zoneSecretUserSecret, zoneBlobReader]
+  properties: {
+    environmentId: environment.id
+    workloadProfileName: 'Consumption'
+    configuration: {
+      activeRevisionsMode: 'Single'
+      secrets: [
+        { name: 'database-url', keyVaultUrl: secretZoneDatabaseUrl.properties.secretUri, identity: zoneIdentity.id }
+        { name: 'patient-zone-secret', keyVaultUrl: secretZone.properties.secretUri, identity: zoneIdentity.id }
+      ]
+      registries: [{ server: registry.properties.loginServer, identity: zoneIdentity.id }]
+      ingress: {
+        external: true
+        targetPort: zonePort
+        transport: 'auto'
+        allowInsecure: false
+        customDomains: zoneCustomDomainMode == 'off'
+          ? []
+          : [
+              {
+                name: zoneCustomDomain
+                bindingType: zoneCustomDomainMode == 'bind' ? 'SniEnabled' : 'Disabled'
+                certificateId: zoneCustomDomainMode == 'bind' ? zoneCertificate.id : null
+              }
+            ]
+      }
+    }
+    template: {
+      containers: [
+        {
+          name: 'zone'
+          image: zoneImage
+          resources: { cpu: json('0.25'), memory: '0.5Gi' }
+          env: empty(zoneImageTag)
+            ? []
+            : [
+                { name: 'DATABASE_URL', secretRef: 'database-url' }
+                { name: 'PATIENT_ZONE_SECRET', secretRef: 'patient-zone-secret' }
+                { name: 'FORCE_HTTPS', value: 'true' }
+                { name: 'AZURE_CLIENT_ID', value: zoneIdentity.properties.clientId }
+                { name: 'STORAGE_DRIVER', value: 'azure' }
+                { name: 'AZURE_STORAGE_ACCOUNT_URL', value: storage.properties.primaryEndpoints.blob }
+                { name: 'AZURE_STORAGE_EXERCISE_CONTAINER', value: exerciseMedia.name }
+              ]
+          probes: empty(zoneImageTag)
+            ? []
+            : [
+                { type: 'Liveness', httpGet: { path: '/api/health', port: 3000 }, periodSeconds: 30 }
+                { type: 'Readiness', httpGet: { path: '/api/health', port: 3000 }, periodSeconds: 10 }
+              ]
+        }
+      ]
+      // Scales to zero: a few seconds on the first opening, accepted for lower costs (design D13)
+      scale: { minReplicas: 0, maxReplicas: 2 }
     }
   }
 }
@@ -419,3 +605,6 @@ output identityPrincipalId string = identity.properties.principalId
 output identityClientId string = identity.properties.clientId
 output storageAccountName string = storage.name
 output keyVaultName string = vault.name
+output zoneAppName string = zoneApp.name
+output zoneFqdn string = zoneApp.properties.configuration.ingress.fqdn
+output zoneIdentityClientId string = zoneIdentity.properties.clientId

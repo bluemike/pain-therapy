@@ -8,7 +8,16 @@ import { createHandout, deliverHandout, HandoutError, requestHandoutResend } fro
 
 /** ok: the new handout; error: key of the "handout" namespace */
 export type HandoutState = {
-  ok?: { id: string; number: string; channel: 'EMAIL' | 'PRINT'; to: string | null };
+  ok?: {
+    id: string;
+    number: string;
+    channel: 'EMAIL' | 'PRINT';
+    to: string | null;
+    /** A link to the patient zone went with the sheet (iteration 4, design D4) */
+    withLink: boolean;
+    /** Printout with link: the sheet with the access sheet as last page (base64 PDF), only for this browser */
+    printPdf?: string;
+  };
   error?: string;
 };
 
@@ -24,11 +33,22 @@ export async function createHandoutAction(_prev: HandoutState, fd: FormData): Pr
   const actor = await requireUser();
   const consultationId = String(fd.get('consultationId') ?? '');
   const channel = fd.get('channel') === 'EMAIL' ? 'EMAIL' : 'PRINT';
+  const withLink = fd.get('withLink') === 'on';
   try {
-    const { handout, delivery } = await createHandout(actor, consultationId, channel);
-    if (delivery.status === 'PENDING') after(() => deliverHandout(delivery.id).catch(console.error));
+    const { handout, delivery, access, printPdf } = await createHandout(actor, consultationId, channel, { withLink });
+    if (delivery.status === 'PENDING')
+      after(() => deliverHandout(delivery.id, { accessUrl: access?.url }).catch(console.error));
     revalidatePath(`/patients/${handout.patientId}`);
-    return { ok: { id: handout.id, number: handout.documentNumber, channel, to: delivery.recipient } };
+    return {
+      ok: {
+        id: handout.id,
+        number: handout.documentNumber,
+        channel,
+        to: delivery.recipient,
+        withLink: !!access,
+        printPdf: printPdf?.toString('base64'),
+      },
+    };
   } catch (e) {
     if (e instanceof HandoutError) return { error: ERRORS[e.code] };
     throw e;

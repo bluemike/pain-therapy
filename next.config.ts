@@ -5,6 +5,8 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  // Shared with the patient zone (iteration 4, design D11), TypeScript source in packages/shared
+  transpilePackages: ['@pain-therapy/shared'],
   // The Azure SDKs stay in node_modules (traced into the standalone output) so that prisma/catalog/sync.mjs can load
   // them in the migration job to read exercises-content.json from the container exercise-media
   serverExternalPackages: ['@react-pdf/renderer', '@azure/storage-blob', '@azure/identity'],
