@@ -3,7 +3,7 @@
 import { useActionState, useId, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { NOTE_MAX } from '@pain-therapy/shared/limits';
-import { correctEntryAction, createEntryAction, type EntryState } from '@/app/actions';
+import { correctEntryAction, createEntryAction, type EntryState, type EntryValues } from '@/app/actions';
 
 const RATINGS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
@@ -22,18 +22,47 @@ export function EntryForm({
   mode: 'create' | 'correct';
   code: string;
   entryId?: string;
-  defaults: { done: boolean; rating: number | null; date: string; time: string; note: string };
+  defaults: EntryValues;
+  maxDate: string;
+}) {
+  const t = useTranslations('entry');
+  const [state, action, pending] = useActionState<EntryState, FormData>(
+    mode === 'create' ? createEntryAction : correctEntryAction,
+    {},
+  );
+  // After an error the fields are mounted again with what was entered
+  const values = state.values ?? defaults;
+  return (
+    <form action={action} className="entry" aria-label={t(mode === 'create' ? 'legend' : 'legendCorrect', { code })}>
+      <Fields key={state.attempt ?? 0} values={values} entryId={entryId} code={code} maxDate={maxDate} />
+      {state.error ? (
+        <div className="banner err" role="alert">
+          {t(state.error)}
+        </div>
+      ) : null}
+      <button className="btn btn--gold" disabled={pending}>
+        {pending ? t('working') : t('save')}
+      </button>
+    </form>
+  );
+}
+
+function Fields({
+  values: defaults,
+  entryId,
+  code,
+  maxDate,
+}: {
+  values: EntryValues;
+  entryId?: string;
+  code: string;
   maxDate: string;
 }) {
   const t = useTranslations('entry');
   const id = useId();
   const [note, setNote] = useState(defaults.note);
-  const [state, action, pending] = useActionState<EntryState, FormData>(
-    mode === 'create' ? createEntryAction : correctEntryAction,
-    {},
-  );
   return (
-    <form action={action} className="entry" aria-label={t(mode === 'create' ? 'legend' : 'legendCorrect', { code })}>
+    <>
       <input type="hidden" name="code" value={code} />
       {entryId ? <input type="hidden" name="id" value={entryId} /> : null}
       <fieldset className="seg">
@@ -85,14 +114,6 @@ export function EntryForm({
           {t('count', { n: note.length })}
         </span>
       </label>
-      {state.error ? (
-        <div className="banner err" role="alert">
-          {t(state.error)}
-        </div>
-      ) : null}
-      <button className="btn btn--gold" disabled={pending}>
-        {pending ? t('working') : t('save')}
-      </button>
-    </form>
+    </>
   );
 }

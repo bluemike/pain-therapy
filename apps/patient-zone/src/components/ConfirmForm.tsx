@@ -30,6 +30,7 @@ export function ConfirmForm({ token, locked }: { token: string; locked: boolean 
             <span className="lbl">{t('day')}</span>
             <input
               name="day"
+              defaultValue={state.values?.day}
               inputMode="numeric"
               pattern="[0-9]*"
               maxLength={2}
@@ -42,6 +43,7 @@ export function ConfirmForm({ token, locked }: { token: string; locked: boolean 
             <span className="lbl">{t('month')}</span>
             <input
               name="month"
+              defaultValue={state.values?.month}
               inputMode="numeric"
               pattern="[0-9]*"
               maxLength={2}
@@ -54,6 +56,7 @@ export function ConfirmForm({ token, locked }: { token: string; locked: boolean 
             <span className="lbl">{t('year')}</span>
             <input
               name="year"
+              defaultValue={state.values?.year}
               inputMode="numeric"
               pattern="[0-9]*"
               maxLength={4}

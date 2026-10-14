@@ -10,7 +10,11 @@ import { getZoneSession } from '@/lib/session';
 
 /** Server actions of the patient zone; the rules live in src/lib/access.ts and src/lib/entries.ts */
 
-export type ConfirmState = { error?: Exclude<ConfirmResult, { ok: true }>['error'] };
+export type ConfirmState = {
+  error?: Exclude<ConfirmResult, { ok: true }>['error'];
+  /** What was typed, so the form shows it again after an error (React resets a form after its action) */
+  values?: { day: string; month: string; year: string };
+};
 
 /**
  * Client address as seen by the Azure ingress: it appends the address to X-Forwarded-For, so the last entry is the
@@ -24,14 +28,13 @@ async function clientIp() {
 
 /** Bestätigung mit dem Geburtsdatum; on success the device session cookie, then "/" without the token */
 export async function confirmAction(_prev: ConfirmState, fd: FormData): Promise<ConfirmState> {
-  const result = await confirmLink({
-    token: String(fd.get('token') ?? ''),
-    day: String(fd.get('day') ?? ''),
-    month: String(fd.get('month') ?? ''),
-    year: String(fd.get('year') ?? ''),
-    ip: await clientIp(),
-  });
-  if (!result.ok) return { error: result.error };
+  const values = {
+    day: String(fd.get('day') ?? '').slice(0, 2),
+    month: String(fd.get('month') ?? '').slice(0, 2),
+    year: String(fd.get('year') ?? '').slice(0, 4),
+  };
+  const result = await confirmLink({ token: String(fd.get('token') ?? ''), ...values, ip: await clientIp() });
+  if (!result.ok) return { error: result.error, values };
   (await cookies()).set(SESSION_COOKIE, result.sessionId, {
     httpOnly: true,
     secure: true,
@@ -55,23 +58,38 @@ async function requireSession() {
   return s;
 }
 
-export type EntryState = { error?: EntryError };
+export type EntryValues = { done: boolean; rating: number | null; date: string; time: string; note: string };
+/** After an error the form shows what was entered again (React resets a form after its action) */
+export type EntryState = { error?: EntryError; values?: EntryValues; attempt?: number };
 
-export async function createEntryAction(_prev: EntryState, fd: FormData): Promise<EntryState> {
+function entryValues(fd: FormData): EntryValues {
+  const rating = Number(fd.get('rating'));
+  return {
+    done: fd.get('done') !== 'no',
+    rating: Number.isInteger(rating) && rating >= 1 && rating <= 10 ? rating : null,
+    date: String(fd.get('date') ?? '').slice(0, 10),
+    time: String(fd.get('time') ?? '').slice(0, 5),
+    note: String(fd.get('note') ?? '').slice(0, 2000),
+  };
+}
+
+export async function createEntryAction(prev: EntryState, fd: FormData): Promise<EntryState> {
   const s = await requireSession();
+  const failed = (error: EntryError) => ({ error, values: entryValues(fd), attempt: (prev.attempt ?? 0) + 1 });
   const parsed = parseEntryForm(fd);
-  if (!parsed.ok) return { error: parsed.error };
+  if (!parsed.ok) return failed(parsed.error);
   const error = await createEntry(s, parsed.data);
-  if (error) return { error };
+  if (error) return failed(error);
   redirect('/?ok=saved');
 }
 
-export async function correctEntryAction(_prev: EntryState, fd: FormData): Promise<EntryState> {
+export async function correctEntryAction(prev: EntryState, fd: FormData): Promise<EntryState> {
   const s = await requireSession();
+  const failed = (error: EntryError) => ({ error, values: entryValues(fd), attempt: (prev.attempt ?? 0) + 1 });
   const parsed = parseEntryForm(fd);
-  if (!parsed.ok) return { error: parsed.error };
+  if (!parsed.ok) return failed(parsed.error);
   const error = await correctEntry(s, String(fd.get('id') ?? ''), parsed.data);
-  if (error) return { error };
+  if (error) return failed(error);
   redirect('/?ok=corrected');
 }
 

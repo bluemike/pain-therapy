@@ -76,7 +76,7 @@ export async function ExerciseLogTab({ patientId, log, flash }: { patientId: str
                   })}
                   {!log.active ? ` · ${t('programInactive')}` : ''}
                 </div>
-                <div className="tablewrap-s">
+                <div className="tablewrap-s" role="region" aria-labelledby="h_perExercise" tabIndex={0}>
                   <table className="adhtable">
                     <thead>
                       <tr>

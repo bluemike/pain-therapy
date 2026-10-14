@@ -54,7 +54,7 @@ export async function scrollReaderToEnd(page: Page) {
  */
 export async function createSignedPatient(
   page: Page,
-  p: { first: string; last: string; dob: string; emailConsent?: boolean },
+  p: { first: string; last: string; dob: string; emailConsent?: boolean; email?: string },
 ) {
   await page.goto('/patients/new');
   await fillPatient(page, p);
@@ -74,4 +74,15 @@ export async function createSignedPatient(
   await page.getByRole('link', { name: 'Zur Akte' }).click();
   await expect(page.getByRole('heading', { level: 1, name: `${p.first} ${p.last}` })).toBeVisible();
   await page.goto(page.url().split('?')[0]);
+}
+
+/** ui-foundation: axe check, no WCAG 2.1 AA violations */
+export async function expectNoA11yViolations(page: Page, name: string) {
+  const { default: AxeBuilder } = await import('@axe-core/playwright');
+  // @axe-core/playwright is typed against its own playwright-core copy
+  const { violations } = await new AxeBuilder({ page: page as never })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze();
+  const summary = violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
+  expect(summary, `${name} has accessibility violations`).toEqual([]);
 }
