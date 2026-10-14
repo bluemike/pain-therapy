@@ -72,7 +72,7 @@ Graph-Berechtigung und Beschränkung auf das Absenderpostfach nach [entra.md](en
 ### 5. GitHub: OIDC und Umgebung
 
 1. App-Registrierung für GitHub Actions anlegen (z. B. `github-pain-therapy-deploy`), *Federated credential* → *GitHub Actions deploying Azure resources*: Organisation `bluemike`, Repository `pain-therapy`, Entity *Environment*, Name `production`.
-2. Dieser App auf der Ressourcengruppe die Rollen *Contributor*, *User Access Administrator* (für die Rollenzuweisungen im Bicep, eingeschränkt auf die drei Rollen AcrPull, Key Vault Secrets User, Storage Blob Data Contributor) und auf der Registry *AcrPush* geben.
+2. Dieser App auf der Ressourcengruppe die Rollen *Contributor*, *User Access Administrator* (für die Rollenzuweisungen im Bicep, eingeschränkt auf die vier Rollen AcrPull, Key Vault Secrets User, Storage Blob Data Contributor, Storage Blob Data Reader) und auf der Registry *AcrPush* geben.
 3. Im Repository unter *Settings → Environments* die Umgebung `production` anlegen (empfohlen: *Required reviewers*) mit
    - **Variables:** `AZURE_CLIENT_ID` (GitHub-App), `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP` = `rg-pain-therapy`, `ENTRA_TENANT_ID`, `ENTRA_CLIENT_ID`, `MAIL_SENDER`, `CUSTOM_DOMAIN_MODE`, ab Iteration 4 `ZONE_CUSTOM_DOMAIN_MODE`
    - **Secrets:** `ENTRA_CLIENT_SECRET`, `AUTH_SECRET`, `POSTGRES_ADMIN_PASSWORD`, ab Iteration 4 `PATIENT_ZONE_DB_PASSWORD`
