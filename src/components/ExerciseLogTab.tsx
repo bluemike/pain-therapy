@@ -87,7 +87,6 @@ export async function ExerciseLogTab({ patientId, log, flash }: { patientId: str
                         <th scope="col">{t('colAdherence')}</th>
                         <th scope="col">{t('colRating')}</th>
                         <th scope="col">{t('colLast')}</th>
-                        <th scope="col">{t('colTrend')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -109,24 +108,55 @@ export async function ExerciseLogTab({ patientId, log, flash }: { patientId: str
                               <span className={`pill ${(x.percent ?? 0) < 50 ? 'err' : 'ok'}`}>{x.percent ?? 0} %</span>
                             </td>
                             <td data-l={t('colRating')} className="num">
-                              {x.averageRating?.toFixed(1) ?? '–'}
+                              <span className="rating-cell">
+                                {x.averageRating?.toFixed(1) ?? '–'}
+                                {x.ratings.length > 0 && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className="trendbtn"
+                                      popoverTarget={`trend_${x.exerciseCode}`}
+                                      aria-label={t('showTrend', { code: x.exerciseCode })}
+                                      title={t('showTrend', { code: x.exerciseCode })}
+                                    >
+                                      ↗
+                                    </button>
+                                    <div id={`trend_${x.exerciseCode}`} popover="auto" className="trendpop">
+                                      <div className="trendpop-head">
+                                        <b>
+                                          {x.exerciseCode} {localName(p.exercise, locale)}
+                                        </b>
+                                        <button
+                                          type="button"
+                                          className="trendpop-close"
+                                          popoverTarget={`trend_${x.exerciseCode}`}
+                                          popoverTargetAction="hide"
+                                          aria-label={t('closeTrend')}
+                                        >
+                                          ×
+                                        </button>
+                                      </div>
+                                      <div className="muted small">{t('colTrend')}</div>
+                                      <RatingSparkline
+                                        ratings={x.ratings.map((r) => r.rating)}
+                                        label={t('ratingsOf', {
+                                          code: x.exerciseCode,
+                                          list: x.ratings.map((r) => r.rating).join(', '),
+                                        })}
+                                      />
+                                      <div className="muted small">{x.ratings.map((r) => r.rating).join(' · ')}</div>
+                                    </div>
+                                  </>
+                                )}
+                              </span>
                             </td>
                             <td data-l={t('colLast')} className="num">
                               {x.lastEntryAt ? formatDateTime(x.lastEntryAt) : '–'}
                             </td>
-                            <td>
-                              <RatingSparkline
-                                ratings={x.ratings.map((r) => r.rating)}
-                                label={t('ratingsOf', {
-                                  code: x.exerciseCode,
-                                  list: x.ratings.map((r) => r.rating).join(', '),
-                                })}
-                              />
-                            </td>
                           </tr>
                         );
                       })}
-                      <tr className="total">
+                      <tr className="sumrow">
                         <td>
                           <b>{t('total')}</b>
                         </td>
@@ -145,7 +175,6 @@ export async function ExerciseLogTab({ patientId, log, flash }: { patientId: str
                         <td data-l={t('colRating')} className="num">
                           {a.averageRating?.toFixed(1) ?? '–'}
                         </td>
-                        <td />
                         <td />
                       </tr>
                     </tbody>
