@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup Patienten-Zone</title>
+<!-- Klickbares Mockup zu openspec/changes/iteration-4-patient-zone. Statisch; Bilder der L&B-Blätter sind Platzhalter, Daten erfunden. -->
+<style>
+:root{--gold:#b99438;--gold-text:#8a6a1c;--gold-pale:#f5edd0;--gold-bg:#faf7ee;--ink:#1c1a14;--mid:#5c5040;--muted:#6b6252;--bg:#f7f5ef;--surface:#fff;--border:#e2d9c4;--line:#eee7d6;--ok:#256b42;--ok-bg:#e6f3eb;--warn:#7a5500;--warn-bg:#fdf3d8;--bad:#9b1c22;--bad-bg:#fbe9ea;--info:#33506e;--info-bg:#eef2f7;--bar:#1c1a14;--bar-fg:#ede6d3;--r:8px}
+*{box-sizing:border-box}body{margin:0;font:15px/1.45 Inter,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+header.bar{background:var(--bar);color:var(--bar-fg);display:flex;align-items:center;gap:16px;padding:10px 20px;flex-wrap:wrap}
+.logo{font-weight:800;font-size:20px}.logo i{color:var(--gold);font-style:normal}
+.mocknav{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}.mocknav button{background:#2e2a1e;color:var(--bar-fg);border:1px solid #4a4230;border-radius:20px;padding:5px 12px;font:inherit;font-size:13px;cursor:pointer}
+.mocknav button[aria-pressed=true]{background:var(--gold);color:#1c1a14;border-color:var(--gold)}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 80px}
+.crumb{font-size:13px;color:var(--muted);margin-bottom:6px}.crumb a{color:var(--gold-text);text-decoration:none}
+h1{font-size:26px;margin:0 0 4px}h2{font-size:18px;margin:0 0 10px}h3,.h3{font-size:15px;margin:0 0 8px;text-transform:uppercase;letter-spacing:.04em;color:var(--mid)}
+.sub{color:var(--muted);margin-bottom:14px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:var(--r);padding:9px 16px;font:inherit;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--ink);min-height:44px}
+.btn--gold{background:var(--gold);border-color:var(--gold);color:#1c1a14}.btn--ghost{background:transparent}.btn--block{width:100%}
+.btn--danger{color:var(--bad);border-color:#e7c3c5}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.spacer{flex:1}
+.ph{background:repeating-linear-gradient(135deg,#e9e1cc 0 8px,#f3eddc 8px 16px);border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--mid);font-size:11px;text-align:center;font-weight:600;flex:none}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}.seg button{border:0;border-right:1px solid var(--border);background:#fff;font:inherit;font-size:14px;padding:8px 10px;cursor:pointer;min-height:44px;min-width:44px}.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--gold);font-weight:600}
+.lbl{font-size:12px;color:var(--muted);font-weight:600}
+.info{background:var(--info-bg);color:var(--info);border-radius:6px;padding:10px 12px;font-size:14px;margin-bottom:12px}
+.note{background:var(--warn-bg);color:var(--warn);border-radius:6px;padding:8px 12px;font-size:14px}
+.err{background:var(--bad-bg);color:var(--bad);border-radius:6px;padding:10px 12px;font-size:14px;margin-bottom:12px}
+.pill{display:inline-block;border-radius:12px;padding:2px 9px;font-size:12px;font-weight:600;background:var(--line);color:var(--mid);white-space:nowrap}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}.pill.warn{background:var(--warn-bg);color:var(--warn)}.pill.bad{background:var(--bad-bg);color:var(--bad)}
+input,textarea{font:inherit;border:1px solid var(--border);border-radius:6px;padding:10px;min-height:44px;background:#fff;color:var(--ink);width:100%}
+textarea{min-height:72px;resize:vertical}
+input:focus-visible,textarea:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.mocktoggle{font-size:13px;color:var(--muted);margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+/* Telefon */
+.phone{max-width:420px;margin:0 auto;background:var(--bg);border:1px solid var(--border);border-radius:24px;overflow:hidden;box-shadow:0 2px 14px rgba(28,26,20,.12)}
+.phone .top{background:var(--bar);color:var(--bar-fg);padding:12px 16px;display:flex;align-items:center;gap:10px}
+.phone .top .spacer{flex:1}.phone .top button{background:none;border:0;color:var(--bar-fg);font:inherit;font-size:14px;text-decoration:underline;cursor:pointer;min-height:44px}
+.phone .pbody{padding:16px}
+.phone footer{border-top:1px solid var(--line);padding:12px 16px;font-size:12px;color:var(--muted)}
+.phone footer a{color:var(--gold-text)}
+.dob{display:grid;grid-template-columns:1fr 1fr 1.6fr;gap:8px}.dob label{display:flex;flex-direction:column;gap:4px}
+.ex{border-top:1px solid var(--line);padding:12px 0}.ex:first-of-type{border-top:0}
+.ex .head{display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:center}.ex .ph{width:64px;height:52px}
+.ex .head small{display:block;color:var(--muted)}.ex .prog{display:flex;align-items:center;gap:8px;margin-top:8px}
+.form{background:var(--gold-bg);border:1px solid var(--gold-pale);border-radius:var(--r);padding:12px;margin-top:10px;display:grid;gap:12px}
+.rate{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.rate button{border:1px solid var(--border);background:#fff;border-radius:6px;font:inherit;font-weight:600;min-height:44px;cursor:pointer}
+.rate button[aria-pressed=true]{background:var(--gold);border-color:var(--gold)}
+.scale{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.dt{display:grid;grid-template-columns:1.3fr 1fr;gap:8px}
+.log{list-style:none;margin:0;padding:0}.log li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 0;border-top:1px solid var(--line)}
+.log li:first-child{border-top:0}.log small{color:var(--muted)}.log .acts{grid-column:1/3;display:flex;gap:8px}
+.log .acts button{min-height:44px;background:none;border:0;color:var(--gold-text);font:inherit;font-weight:600;text-decoration:underline;cursor:pointer;padding:0 4px}
+.dayhd{font-size:12px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.04em;margin-top:10px}
+/* Praxis */
+.adh{display:grid;grid-template-columns:minmax(150px,1.3fr) minmax(140px,1.4fr) repeat(3,minmax(70px,.6fr)) minmax(120px,1fr);gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.adh.hd{border-top:0;font-size:12px;color:var(--muted);font-weight:600;padding-top:0}
+.adh .c{white-space:nowrap}.adh a{color:var(--ink);font-weight:600;text-decoration:none}.adh a:hover{color:var(--gold-text)}
+.meter{display:flex;align-items:center;gap:8px}.meter .track{display:block;flex:1;height:10px;background:var(--line);border-radius:5px;overflow:hidden;min-width:60px}.meter .fill{display:block;height:100%;background:var(--gold)}
+.meter .fill.low{background:#c0862a}.meter b{min-width:40px;text-align:right}
+.flags{display:flex;gap:4px;flex-wrap:wrap}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:14px;flex-wrap:wrap}.tabs a{padding:10px 12px;color:var(--muted);text-decoration:none;font-weight:600;border-bottom:3px solid transparent;min-height:44px}
+.tabs a[aria-current=page]{color:var(--ink);border-color:var(--gold)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}.kpis .card{margin:0}.kpis b{display:block;font-size:22px}.kpis span{font-size:12px;color:var(--muted)}
+table.t{width:100%;border-collapse:collapse;font-size:14px}table.t th,table.t td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:middle}table.t th{font-size:12px;color:var(--muted)}
+.two{display:grid;grid-template-columns:2fr 1fr;gap:14px;align-items:start}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px}.kv dt{color:var(--muted)}.kv dd{margin:0;font-weight:600}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ok);color:#fff;padding:10px 18px;border-radius:20px;display:none;max-width:90vw}
+.qr{width:150px;height:150px;margin:8px auto;display:grid;grid-template-columns:repeat(15,1fr);border:6px solid #fff;outline:1px solid var(--border)}.qr i{display:block}
+[hidden]{display:none!important}
+@media(max-width:860px){.adh{grid-template-columns:1fr auto;gap:6px 10px}.adh.hd{display:none}.adh .meter{grid-column:1/3}.adh .c{font-size:13px;color:var(--muted)}.adh .c::before{content:attr(data-l) ': '}.adh .flags{grid-column:1/3}
+ .two{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}
+ table.t.stack thead{display:none}table.t.stack tr{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line);padding:6px 0}table.t.stack td{border:0;padding:3px 6px}
+ table.t.stack td:first-child{grid-column:1/3;font-weight:600}table.t.stack td[data-l]::before{content:attr(data-l) ': ';color:var(--muted);font-size:12px}}
+@media(max-width:440px){main{padding:12px 0 80px}.phone{border-radius:0;border-left:0;border-right:0}main>section>.mocktoggle,main>section>.crumb,main>section>h1,main>section>.sub,main>section>.card,main>section>.tabs,main>section>.kpis,main>section>.two{margin-left:16px;margin-right:16px}}
+</style>
+</head>
+<body>
+<header class="bar"><span class="logo">ayanta<i>.</i></span>
+<nav class="mocknav" aria-label="Mockup-Ansichten"><button data-v="verify" aria-pressed="true">1 Bestätigung</button><button data-v="today">2 Heute</button><button data-v="cockpit">3 Cockpit</button><button data-v="record">4 Akte: Übungstagebuch</button></nav></header>
+<main>
+
+<!-- 1 Bestätigung (Telefon) -->
+<section id="v-verify">
+ <div class="mocktoggle" role="group" aria-label="Zustand der Bestätigung">Zustand:
+  <span class="seg"><button type="button" data-state="ok" aria-pressed="true">Eingabe</button><button type="button" data-state="wrong" aria-pressed="false">Falsch</button><button type="button" data-state="locked" aria-pressed="false">Gesperrt</button><button type="button" data-state="invalid" aria-pressed="false">Ungültiger Link</button></span></div>
+ <div class="phone">
+  <div class="top"><span class="logo">ayanta<i>.</i></span><span>Meine Übungen</span></div>
+  <div class="pbody" id="verifyBody">
+   <div id="vForm">
+    <h1 style="font-size:22px">Willkommen</h1>
+    <p class="sub" style="margin-top:0">Bitte bestätigen Sie mit Ihrem Geburtsdatum, dass dies Ihr persönlicher Link ist.</p>
+    <div class="err" id="vWrong" role="alert" hidden>Die Angabe stimmt nicht.</div>
+    <div class="err" id="vLocked" role="alert" hidden>Zu viele Versuche. Bitte versuchen Sie es später erneut.</div>
+    <fieldset style="border:0;padding:0;margin:0 0 14px"><legend class="lbl" style="margin-bottom:6px">Geburtsdatum</legend>
+     <div class="dob">
+      <label><span class="lbl">Tag (TT)</span><input inputmode="numeric" maxlength="2" autocomplete="bday-day" placeholder="05" id="d1"></label>
+      <label><span class="lbl">Monat (MM)</span><input inputmode="numeric" maxlength="2" autocomplete="bday-month" placeholder="03" id="d2"></label>
+      <label><span class="lbl">Jahr (JJJJ)</span><input inputmode="numeric" maxlength="4" autocomplete="bday-year" placeholder="1980" id="d3"></label>
+     </div></fieldset>
+    <button class="btn btn--gold btn--block" id="vBtn" type="button">Bestätigen</button>
+    <p class="lbl" style="margin-top:12px">Danach bleibt dieses Gerät 30 Tage angemeldet.</p>
+   </div>
+   <div id="vInvalid" hidden>
+    <h1 style="font-size:22px">Link nicht gültig</h1>
+    <p>Dieser Link ist nicht gültig. Bitte wenden Sie sich an die Praxis.</p>
+    <p class="lbl">Ayanta Pain Therapy · pain-therapy@ayanta.ch</p>
+   </div>
+  </div>
+  <footer><b>Datenschutz:</b> Ihre Einträge sehen nur Ihre Therapeutin und die Praxis. Sie dienen der Begleitung Ihres Heimprogramms und werden mit Ihrer Akte aufbewahrt. <a href="#">Mehr zum Datenschutz</a></footer>
+ </div>
+</section>
+
+<!-- 2 Heute (Telefon) -->
+<section id="v-today" hidden>
+ <div class="phone">
+  <div class="top"><span class="logo">ayanta<i>.</i></span><span class="spacer"></span><button type="button" id="logout">Abmelden</button></div>
+  <div class="pbody">
+   <h1 style="font-size:22px">Guten Tag, Anna</h1>
+   <p class="sub" style="margin-top:0" id="todaySub"></p>
+   <button class="btn btn--gold btn--block" type="button" id="quick">Alle heutigen Übungen erledigt</button>
+   <div class="card" style="margin-top:14px;padding:4px 16px">
+    <h2 style="margin:12px 0 0">Ihre Übungen</h2>
+    <div id="exList"></div>
+   </div>
+   <div class="card">
+    <h2>Letzte 14 Tage</h2>
+    <div id="logList"></div>
+    <p class="lbl" style="margin-bottom:0">Einträge lassen sich 24 Stunden lang ändern oder löschen.</p>
+   </div>
+  </div>
+  <footer><a href="#">Datenschutz</a> · Bei Schmerzen oder Fragen wenden Sie sich an die Praxis.</footer>
+ </div>
+</section>
+
+<!-- 3 Cockpit -->
+<section id="v-cockpit" hidden>
+ <div class="crumb"><a href="#">Dashboard</a></div>
+ <h1>Guten Morgen, Christina</h1><div class="sub">… Kacheln aus Iteration 1 (aktive Patienten, offene Unterschriften, neu diesen Monat) …</div>
+ <div class="card">
+  <div class="row" style="margin-bottom:6px"><h2 class="h3" style="margin:0">Heimprogramm</h2><span class="pill" id="ckCount"></span><span class="spacer"></span><span class="lbl">Einhaltung letzte 7 Tage · Hinweise zuerst</span></div>
+  <div class="adh hd"><span>Patientin</span><span>Einhaltung 7 Tage</span><span>Trend</span><span>Letzter Eintrag</span><span>Ø Bewertung</span><span>Link</span></div>
+  <div id="ckRows"></div>
+ </div>
+</section>
+
+<!-- 4 Akte: Übungstagebuch -->
+<section id="v-record" hidden>
+ <div class="crumb"><a href="#">← Patienten</a></div>
+ <h1>Anna Müller</h1><div class="sub">05.03.1980 · Deutsch · aktiv</div>
+ <nav class="tabs" aria-label="Anna Müller"><a href="#">Behandlungen</a><a href="#">Personalien</a><a href="#">Anamnese</a><a href="#">Dokumente</a><a href="#" aria-current="page">Übungstagebuch</a><a href="#">Verlauf</a></nav>
+ <div class="kpis">
+  <div class="card"><b>73 %</b><span>Einhaltung letzte 7 Tage</span></div>
+  <div class="card"><b>19 / 26</b><span>Ausführungen gemacht / verordnet</span></div>
+  <div class="card"><b>6.8</b><span>Ø Bewertung (1–10)</span></div>
+  <div class="card"><b>heute 08:12</b><span>Letzter Eintrag</span></div>
+ </div>
+ <div class="two">
+  <div>
+   <div class="card">
+    <h2 class="h3">Pro Übung</h2>
+    <div class="lbl" style="margin-bottom:8px">Verordnung aus Konsultation Nr. 3 vom 07.10.2026 · 6 Lendenwirbelsäule, Bauch</div>
+    <table class="t stack"><thead><tr><th>Übung</th><th>Wiederholung</th><th>Soll 7 Tage</th><th>Gemacht</th><th>Einhaltung</th><th>Ø Bewertung</th><th>Bewertung im Verlauf</th></tr></thead><tbody id="recRows"></tbody></table>
+   </div>
+   <div class="card">
+    <h2 class="h3">Einträge</h2>
+    <ul class="log" id="recLog"></ul>
+   </div>
+  </div>
+  <div>
+   <div class="card">
+    <h2 class="h3">Link zur Patienten-Zone</h2>
+    <dl class="kv"><dt>Status</dt><dd id="lnkStatus"><span class="pill ok">aktiv</span></dd><dt>Ausgestellt</dt><dd>07.10.2026, per E-Mail</dd><dt>Gültig bis</dt><dd>07.04.2027</dd><dt>Zuletzt genutzt</dt><dd>heute 08:12</dd><dt>Fehlversuche</dt><dd>0</dd></dl>
+    <div class="row" style="margin-top:12px"><button class="btn btn--gold" type="button" id="lnkSend">Link senden</button><button class="btn btn--danger" type="button" id="lnkRevoke">Link sperren</button></div>
+    <div id="qrBox" hidden style="margin-top:12px;text-align:center">
+     <div class="info" style="text-align:left">Keine Einwilligung in unverschlüsselte E-Mail: QR-Code mit dem Telefon der Patientin scannen.</div>
+     <div class="qr" id="qr" aria-label="QR-Code (Platzhalter)" role="img"></div>
+     <button class="btn" type="button">Zugangsblatt drucken</button>
+    </div>
+    <label class="row lbl" style="margin-top:12px"><input type="checkbox" id="noMail" style="width:auto;min-height:0"> Variante: ohne E-Mail-Einwilligung</label>
+    <p class="lbl" style="margin-bottom:0">Ein neuer Link ersetzt den bisherigen. Sperren meldet auch das Telefon der Patientin ab.</p>
+   </div>
+   <div class="note">Nur lesen: Einträge der Patientin lassen sich in der Praxis nicht ändern.</div>
+  </div>
+ </div>
+</section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+<script>
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const pad = n => String(n).padStart(2, '0');
+const now = new Date();
+const dIso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const tIso = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const dDe = d => `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.`;
+function toast(t) { const m = $('#toast'); m.textContent = t; m.style.display = 'block'; setTimeout(() => m.style.display = 'none', 1800); }
+
+// Heimprogramm (Mockup): 2A täglich 2x, 2D wöchentlich 5x, 1F täglich 1x
+const EX = [
+  { code: '2A', name: 'Wirbelsäulen-Übung', rep: 'täglich 2x', daily: 2, min: 4 },
+  { code: '2D', name: 'Bauch-Übung', rep: 'wöchentlich 5x', weekly: 5, min: 4 },
+  { code: '1F', name: 'Rotations-Übung', rep: 'täglich 1x', daily: 1, min: 6 },
+];
+const ago = h => new Date(now.getTime() - h * 3600e3);
+let log = [
+  { code: '2A', at: ago(1.2), done: true, rating: 7, note: '' },
+  { code: '2D', at: ago(26), done: true, rating: 6, note: 'Leichtes Ziehen im Rücken' },
+  { code: '2A', at: ago(30), done: true, rating: 8, note: '' },
+  { code: '1F', at: ago(31), done: false, rating: null, note: 'Keine Zeit' },
+  { code: '2A', at: ago(50), done: true, rating: 6, note: '' },
+];
+let open = null, draft = null;
+const sameDay = (a, b) => dIso(a) === dIso(b);
+const doneToday = c => log.filter(e => e.code === c && e.done && sameDay(e.at, now)).length;
+const doneWeek = c => log.filter(e => e.code === c && e.done && now - e.at < 7 * 864e5).length;
+function renderToday() {
+  const total = EX.filter(e => e.daily).reduce((s, e) => s + e.daily, 0), done = EX.filter(e => e.daily).reduce((s, e) => s + Math.min(e.daily, doneToday(e.code)), 0);
+  $('#todaySub').textContent = `Heute ${done} von ${total} täglichen Ausführungen erfasst.`;
+  $('#exList').innerHTML = EX.map(e => {
+    const st = e.daily ? `heute ${doneToday(e.code)} von ${e.daily}` : `diese Woche ${doneWeek(e.code)} von ${e.weekly}`;
+    const full = e.daily ? doneToday(e.code) >= e.daily : doneWeek(e.code) >= e.weekly;
+    const form = open === e.code ? formHtml(e) : '';
+    return `<div class="ex"><div class="head"><div class="ph">Bild ${e.code}</div><div><b>${e.code}</b> ${e.name}<small>${e.rep} · ${e.min} min pro Ausführung</small></div></div>
+      <div class="prog"><span class="pill ${full ? 'ok' : ''}">${st}</span><span class="spacer"></span>${open === e.code ? '' : `<button class="btn" type="button" data-open="${e.code}">Erfassen</button>`}</div>${form}</div>`;
+  }).join('');
+  const days = {}; log.filter(e => now - e.at < 14 * 864e5).sort((a, b) => b.at - a.at).forEach(e => (days[dIso(e.at)] ||= []).push(e));
+  $('#logList').innerHTML = Object.entries(days).map(([d, es]) => `<div class="dayhd">${sameDay(new Date(d), now) ? 'Heute' : dDe(es[0].at)}</div><ul class="log">${es.map(e => {
+    const i = log.indexOf(e), x = EX.find(y => y.code === e.code), edit = now - e.at < 24 * 3600e3;
+    return `<li><span><b>${e.code}</b> ${x.name}<br><small>${tIso(e.at)} Uhr${e.note ? ' · ' + e.note : ''}</small></span><span>${e.done ? `<span class="pill ok">gemacht</span> ${e.rating ? e.rating + '/10' : '<small>ohne Bewertung</small>'}` : '<span class="pill">nicht gemacht</span>'}</span>
+      ${edit ? `<span class="acts"><button type="button" data-edit="${i}">Ändern</button><button type="button" data-delete="${i}">Löschen</button></span>` : ''}</li>`;
+  }).join('')}</ul>`).join('') || '<p class="lbl">Noch keine Einträge.</p>';
+}
+function formHtml(e) {
+  const d = draft;
+  return `<div class="form" role="group" aria-label="Eintrag ${e.code}">
+    <div><div class="lbl" id="gl">Gemacht?</div><span class="seg" role="group" aria-labelledby="gl"><button type="button" data-done="1" aria-pressed="${d.done}">Ja</button><button type="button" data-done="0" aria-pressed="${!d.done}">Nein</button></span></div>
+    ${d.done ? `<div><div class="lbl" id="rl" style="margin-bottom:6px">Wie gut konnten Sie die Übung ausführen?</div>
+      <div class="rate" role="group" aria-labelledby="rl">${[1,2,3,4,5,6,7,8,9,10].map(n => `<button type="button" data-rate="${n}" aria-pressed="${d.rating === n}">${n}</button>`).join('')}</div>
+      <div class="scale"><span>1 = gar nicht</span><span>10 = sehr gut</span></div></div>` : ''}
+    <div class="dt"><label><span class="lbl">Datum</span><input type="date" id="fDate" value="${dIso(d.at)}" max="${dIso(now)}"></label><label><span class="lbl">Zeit</span><input type="time" id="fTime" value="${tIso(d.at)}"></label></div>
+    <label><span class="lbl">Bemerkung (optional)</span><textarea id="fNote" maxlength="500">${d.note}</textarea><span class="lbl" id="fCount">${d.note.length} / 500</span></label>
+    <div class="note" id="fErr" hidden role="alert"></div>
+    <div class="row"><button class="btn btn--ghost" type="button" data-cancel="1">Abbrechen</button><span class="spacer"></span><button class="btn btn--gold" type="button" data-save="1">Speichern</button></div></div>`;
+}
+// Cockpit
+const PAT = [
+  { n: 'Peter Keller', adh: 29, trend: '↘ 62 % → 29 %', last: 'vor 4 Tagen', rate: '5.1', link: ['aktiv', 'ok'], flags: ['Einhaltung unter 50 %', 'Seit 3 Tagen kein Eintrag'] },
+  { n: 'Lea Brunner', adh: 0, trend: '–', last: 'noch keiner', rate: '–', link: ['QR angezeigt', ''], flags: ['Seit 3 Tagen kein Eintrag'] },
+  { n: 'Anna Müller', adh: 73, trend: '↗ 64 % → 73 %', last: 'heute 08:12', rate: '6.8', link: ['aktiv', 'ok'], flags: [] },
+  { n: 'Marco Rossi', adh: 95, trend: '→ 93 % → 95 %', last: 'gestern 19:40', rate: '7.9', link: ['aktiv', 'ok'], flags: [] },
+  { n: 'Sandra Huber', adh: 57, trend: '↘ 71 % → 57 %', last: 'gestern 07:05', rate: '6.2', link: ['vorüb. gesperrt', 'warn'], flags: [] },
+];
+function renderCockpit() {
+  $('#ckCount').textContent = PAT.length + ' aktiv';
+  $('#ckRows').innerHTML = PAT.map(p => `<div class="adh"><a href="#" data-v="record">${p.n}</a>
+    <span class="meter" aria-label="Einhaltung ${p.adh} %"><span class="track"><span class="fill ${p.adh < 50 ? 'low' : ''}" style="width:${p.adh}%"></span></span><b>${p.adh} %</b></span>
+    <span class="c" data-l="Trend">${p.trend}</span><span class="c" data-l="Letzter Eintrag">${p.last}</span><span class="c" data-l="Ø Bewertung">${p.rate}</span>
+    <span class="flags"><span class="pill ${p.link[1]}">${p.link[0]}</span>${p.flags.map(f => `<span class="pill bad">${f}</span>`).join('')}</span></div>`).join('');
+}
+// Akte
+const REC = [
+  { code: '2A', name: 'Wirbelsäulen-Übung', rep: 'täglich 2x', soll: 14, ist: 10, avg: '6.9', series: [5, 6, 6, 7, 7, 6, 8, 7] },
+  { code: '2D', name: 'Bauch-Übung', rep: 'wöchentlich 5x', soll: 5, ist: 5, avg: '6.4', series: [6, 6, 7, 6, 7] },
+  { code: '1F', name: 'Rotations-Übung', rep: 'täglich 1x', soll: 7, ist: 4, avg: '7.0', series: [6, 7, 7, 8] },
+];
+const spark = s => { const w = 110, h = 28, x = i => 4 + i * (w - 8) / (s.length - 1), y = v => h - 3 - (v - 1) * (h - 6) / 9;
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="Bewertungen ${s.join(', ')}"><polyline fill="none" stroke="#b99438" stroke-width="2" points="${s.map((v, i) => x(i) + ',' + y(v)).join(' ')}"/>${s.map((v, i) => `<circle cx="${x(i)}" cy="${y(v)}" r="2.5" fill="#8a6a1c"/>`).join('')}</svg>`; };
+function renderRecord() {
+  const total = REC.reduce((a, r) => a + r.soll, 0), done = REC.reduce((a, r) => a + Math.min(r.ist, r.soll), 0);
+  $('#recRows').innerHTML = REC.map(r => `<tr><td><b>${r.code}</b> ${r.name}</td><td data-l="Wiederholung">${r.rep}</td><td data-l="Soll">${r.soll}</td><td data-l="Gemacht">${Math.min(r.ist, r.soll)}</td>
+    <td data-l="Einhaltung"><span class="pill ${r.ist / r.soll < .5 ? 'bad' : 'ok'}">${Math.round(100 * Math.min(r.ist, r.soll) / r.soll)} %</span></td><td data-l="Ø Bewertung">${r.avg}</td><td>${spark(r.series)}</td></tr>`).join('')
+    + `<tr><td><b>Gesamt</b></td><td></td><td data-l="Soll">${total}</td><td data-l="Gemacht">${done}</td><td data-l="Einhaltung"><span class="pill ok">${Math.round(100 * done / total)} %</span></td><td></td><td></td></tr>`;
+  $('#recLog').innerHTML = log.slice().sort((a, b) => b.at - a.at).map(e => `<li><span><b>${e.code}</b> ${dDe(e.at)} ${tIso(e.at)} Uhr${e.note ? '<br><small>«' + e.note + '»</small>' : ''}</span><span>${e.done ? `<span class="pill ok">gemacht</span> ${e.rating ? e.rating + '/10' : ''}` : '<span class="pill">nicht gemacht</span>'}</span></li>`).join('');
+  $('#qr').innerHTML = Array.from({ length: 225 }, (_, i) => `<i style="background:${(i * 7919 % 13) < 6 || [0,1,2,15,16,17,30,31,32,12,13,14,27,28,29,42,43,44,180,181,182,195,196,197,210,211,212].includes(i) ? '#1c1a14' : '#fff'}"></i>`).join('');
+}
+function show(v) { $$('main>section').forEach(s => s.hidden = s.id !== 'v-' + v); $$('.mocknav button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === v)); scrollTo(0, 0); }
+function setVerify(st) {
+  $$('[data-state]').forEach(b => b.setAttribute('aria-pressed', b.dataset.state === st));
+  $('#vForm').hidden = st === 'invalid'; $('#vInvalid').hidden = st !== 'invalid';
+  $('#vWrong').hidden = st !== 'wrong'; $('#vLocked').hidden = st !== 'locked';
+  $$('#vForm input').forEach(i => i.disabled = st === 'locked'); $('#vBtn').disabled = st === 'locked';
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest('button,a'); if (!t) return;
+  const d = t.dataset;
+  if (d.v) { e.preventDefault(); show(d.v); }
+  else if (d.state) setVerify(d.state);
+  else if (t.id === 'vBtn') { const ok = $('#d1').value === '05' && $('#d2').value === '03' && $('#d3').value === '1980'; if (ok || !$('#d1').value) { show('today'); } else setVerify('wrong'); }
+  else if (t.id === 'logout') { show('verify'); setVerify('ok'); toast('Abgemeldet. Beim nächsten Öffnen wird das Geburtsdatum verlangt.'); }
+  else if (d.open) { open = d.open; draft = { done: true, rating: null, at: new Date(), note: '' }; renderToday(); }
+  else if (d.done) { draft.done = d.done === '1'; if (!draft.done) draft.rating = null; renderToday(); }
+  else if (d.rate) { draft.rating = +d.rate; renderToday(); }
+  else if (d.cancel) { open = null; renderToday(); }
+  else if (d.save) {
+    const at = new Date($('#fDate').value + 'T' + $('#fTime').value), err = $('#fErr');
+    if (at > new Date()) { err.textContent = 'Datum und Zeit dürfen nicht in der Zukunft liegen.'; err.hidden = false; return; }
+    if (draft.done && !draft.rating) { err.textContent = 'Bitte wählen Sie eine Bewertung von 1 bis 10.'; err.hidden = false; return; }
+    if (draft.idx != null) log[draft.idx] = { code: open, at, done: draft.done, rating: draft.rating, note: draft.note };
+    else log.push({ code: open, at, done: draft.done, rating: draft.rating, note: draft.note });
+    open = null; renderToday(); toast('Gespeichert');
+  }
+  else if (t.id === 'quick') { let n = 0; EX.filter(x => x.daily).forEach(x => { for (let k = doneToday(x.code); k < x.daily; k++) { log.push({ code: x.code, at: new Date(), done: true, rating: null, note: '' }); n++; } }); renderToday(); toast(n ? `${n} ${n === 1 ? "Ausführung" : "Ausführungen"} als gemacht erfasst` : 'Heute ist schon alles erfasst'); }
+  else if (d.edit) { const x = log[+d.edit]; open = x.code; draft = { ...x, idx: +d.edit }; renderToday(); }
+  else if (d.delete) { log.splice(+d.delete, 1); renderToday(); toast('Eintrag gelöscht (bleibt im Protokoll der Praxis)'); }
+  else if (t.id === 'lnkSend') { if ($('#noMail').checked) { $('#qrBox').hidden = false; } else { $('#qrBox').hidden = true; toast('Neuer Link an anna.mueller@example.ch gesendet, alter Link ersetzt (Mockup)'); } $('#lnkStatus').innerHTML = '<span class="pill ok">aktiv</span>'; }
+  else if (t.id === 'lnkRevoke') { $('#lnkStatus').innerHTML = '<span class="pill bad">gesperrt</span>'; $('#qrBox').hidden = true; toast('Link gesperrt, Telefon der Patientin abgemeldet (Mockup)'); }
+});
+document.addEventListener('input', e => {
+  if (!draft) return;
+  if (e.target.id === 'fNote') { draft.note = e.target.value; $('#fCount').textContent = draft.note.length + ' / 500'; }
+  if (e.target.id === 'fDate' || e.target.id === 'fTime') draft.at = new Date($('#fDate').value + 'T' + $('#fTime').value);
+});
+renderToday(); renderCockpit(); renderRecord();
+</script>
+</body>
+</html>
