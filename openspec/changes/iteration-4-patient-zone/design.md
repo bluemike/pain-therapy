@@ -38,7 +38,7 @@ Neue Tabelle `PatientAccessLink` (`id`, `patientId`, `tokenHash` unique, `create
 - **Nicht archiviert:** Das archivierte Übungsblatt-PDF bleibt wie in Iteration 3 ohne Link. Zugangsblatt und E-Mail-Text werden nicht gespeichert, damit das Token nirgends im Klartext liegt. `OutgoingMail.attachment` in `src/lib/mail.ts` wird optional; die Zustellung nutzt die bestehenden Wiederholungen und speichert den Status in einer `HandoutDelivery`-ähnlichen Zeile `AccessLinkDelivery` (ohne Token).
 
 ### D5: Bestätigung mit dem Geburtsdatum
-Beim Öffnen des Links auf einem Gerät ohne gültige Sitzung fragt die App nach dem Geburtsdatum (TT.MM.JJJJ, drei Felder mit numerischer Tastatur) und vergleicht es mit `Patient.dateOfBirth`. Das Geburtsjahr allein hat rund 100 plausible Werte und wäre mit den Sperren unten in wenigen Runden zu erraten; das ganze Datum hat rund 36 500. Siehe offene Fragen.
+Beim Öffnen des Links auf einem Gerät ohne gültige Sitzung fragt die App nach dem Geburtsdatum (TT.MM.JJJJ, drei Felder mit numerischer Tastatur) und vergleicht es mit `Patient.dateOfBirth`. Das Geburtsjahr allein hat rund 100 plausible Werte und wäre mit den Sperren unten in wenigen Runden zu erraten; das ganze Datum hat rund 36 500. Von der Praxis am 14.10.2026 bestätigt.
 - **Sperre pro Link:** nach 5 Fehlversuchen 15 Minuten gesperrt; nach 10 Fehlversuchen blockiert, bis die Praxis einen neuen Link ausstellt. Ein Erfolg setzt den Zähler zurück.
 - **Begrenzung pro IP-Adresse:** höchstens 20 Bestätigungsversuche pro Stunde über alle Links, gespeichert in `PatientZoneAttempt` (`ipHash` als HMAC mit Secret, `linkId`, `success`, `at`; Einträge nach 30 Tagen gelöscht durch den Migrationsjob).
 - **Neutrale Meldungen:** Unbekannter, abgelaufener, ersetzter und gesperrter Link zeigen dieselbe Seite "Dieser Link ist nicht gültig. Bitte wenden Sie sich an die Praxis." Ein falsches Datum zeigt "Die Angabe stimmt nicht.", eine Sperre "Zu viele Versuche. Bitte versuchen Sie es später erneut." Die Seite verrät weder Name noch Existenz der Patientin.
@@ -86,7 +86,7 @@ Der Migrationsjob legt nach `prisma migrate deploy` die Rolle idempotent an und 
 Audit-Ereignisse der Patienten-Zone tragen `userId = "patient-zone"` und `userName = "Patienten-Zone"`, die Patientin über `patientId`, den Link über `details.linkId`.
 
 ### D13: Infrastruktur und Deployment
-- **Bicep:** zweite Container App `ca-pain-therapy-zone` in `cae-pain-therapy`, Ingress extern, Parameter `zoneCustomDomain` (Vorschlag `uebungen.pain-therapy.ayanta.ch`) und `zoneCustomDomainMode` wie bei der Haupt-App, `minReplicas: 0`, `maxReplicas: 2`; eigene Identität `id-pain-therapy-zone` mit `AcrPull`, `Key Vault Secrets User` nur auf ihren Secrets und `Storage Blob Data Reader` nur auf dem Container `exercise-media`.
+- **Bicep:** zweite Container App `ca-pain-therapy-zone` in `cae-pain-therapy`, Ingress extern, Parameter `zoneCustomDomain` (`patient.pain-therapy.ayanta.ch`) und `zoneCustomDomainMode` wie bei der Haupt-App, `minReplicas: 0`, `maxReplicas: 2`; eigene Identität `id-pain-therapy-zone` mit `AcrPull`, `Key Vault Secrets User` nur auf ihren Secrets und `Storage Blob Data Reader` nur auf dem Container `exercise-media`.
 - **Key Vault:** `patient-zone-database-url` (Rolle `patient_zone`), `patient-zone-db-password` (für den Migrationsjob), `patient-zone-secret` (HMAC für IP-Hashes). Neuer Parameter und GitHub-Secret `PATIENT_ZONE_DB_PASSWORD`.
 - **Haupt-App:** neue Variable `PATIENT_ZONE_URL` für Links, E-Mail und QR-Code.
 - **Workflow:** `deploy.yml` baut zwei Images (`pain-therapy`, `pain-therapy-zone`) mit demselben Tag, führt die Migration einmal aus, deployt Bicep mit beiden Images und prüft `/api/health` beider Apps. Die Patienten-Zone führt keine Migrationen aus.
@@ -112,12 +112,16 @@ Mockup: [`mockups/patienten-zone.html`](mockups/patienten-zone.html) (Ansichten 
 
 Additive Migration für die neuen Tabellen und Constraints. Vor dem ersten Deployment: GitHub-Secret `PATIENT_ZONE_DB_PASSWORD` anlegen. Der Workflow baut beide Images, der Migrationsjob legt Tabellen und Rolle an, Bicep erzeugt die zweite Container App zuerst ohne eigenen Hostnamen (`zoneCustomDomainMode = off`), danach DNS durch die Praxis und `bind`. Bis der Hostname gebunden ist, bleiben "Link senden" und die Checkbox ausgeblendet (`PATIENT_ZONE_URL` leer). Rollback: vorherige Revision beider Apps aktivieren; die Tabellen bleiben.
 
+## Decisions confirmed by the practice (14.10.2026)
+
+- **Zweiter Faktor:** das ganze Geburtsdatum, nicht nur das Geburtsjahr.
+- **Hostname:** `patient.pain-therapy.ayanta.ch`.
+- **Dauer des aktiven Heimprogramms:** 12 Wochen nach der letzten Konsultation mit Verordnung.
+- **Link mit dem Übungsblatt:** Checkbox "Link zur Patienten-Zone mitsenden" standardmässig an.
+- **Grenzwerte der Hinweise:** Einhaltung unter 50 % oder kein Eintrag seit 3 Tagen.
+
 ## Open Questions
 
-- **Geburtsjahr oder Geburtsdatum als zweiter Faktor:** Die Anfrage nennt das Geburtsjahr als Beispiel. Empfehlung: das ganze Geburtsdatum (rund 36 500 statt rund 100 mögliche Werte bei gleicher Eingabezeit).
-- **Hostname:** `uebungen.pain-therapy.ayanta.ch` oder ein anderer Name.
-- **Dauer des aktiven Heimprogramms:** Vorschlag 12 Wochen nach der letzten Konsultation mit Verordnung (das L&B-Heimprogramm ist auf 1 Monat ausgelegt).
+Diese Punkte gelten wie beschrieben, bis die Praxis etwas anderes entscheidet:
 - **Sperren:** 5 Fehlversuche → 15 Minuten, 10 → blockiert bis zum neuen Link; Gerätesitzung 30 Tage; Link höchstens 6 Monate.
-- **Link mit dem Übungsblatt vorgewählt:** Checkbox "Link zur Patienten-Zone mitsenden" standardmässig an.
-- **Grenzwerte der Hinweise:** Einhaltung unter 50 %, kein Eintrag seit 3 Tagen.
 - **Parallele Behandlungen:** Das Heimprogramm folgt der jüngsten Konsultation mit Verordnung über alle Behandlungen; Verordnungen einer älteren Behandlung entfallen damit in der Patienten-Zone.

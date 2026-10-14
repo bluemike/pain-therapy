@@ -6,7 +6,7 @@ Seit Iteration 3 bekommt die Patientin am Ende der Konsultation ein persönliche
 
 - Die Patientin bekommt einen Link, über den sie einträgt, ob sie die Übungen gemacht hat und wie gut sie sie ausführen konnte (Skala 1 bis 10), mit Datum und Zeit, die standardmässig aktuell sind.
 - Dieser Bereich ist eine eigene App ohne Entra-Anmeldung, separat deployt, auf derselben Datenbank.
-- Als zweiter Faktor gibt die Patientin ein Detail ein, das nur sie kennt (zum Beispiel das Geburtsjahr).
+- Als zweiter Faktor gibt die Patientin ein Detail ein, das nur sie kennt: ihr ganzes Geburtsdatum.
 - Im Cockpit sieht die Praxis in einer weiteren Übersicht, wie die Patientin unterwegs ist und ob sie die verordneten Wiederholungen einhält.
 
 ## What Changes
@@ -16,7 +16,7 @@ Seit Iteration 3 bekommt die Patientin am Ende der Konsultation ein persönliche
 - **Patienten-Zone (eigene App):** Mobil zuerst, Deutsch oder Englisch nach der Sprache der Patientin. Zeigt das aktuelle Heimprogramm mit Hauptbild, Name, Wiederholung und Dauer jeder Übung.
 - **Übungstagebuch:** Pro Ausführung "gemacht" ja oder nein, "Wie gut konnten Sie die Übung ausführen?" 1 bis 10, Datum und Zeit (vorbelegt mit jetzt) und eine optionale Bemerkung; Schnelleintrag "Alle heutigen Übungen erledigt"; die letzten 14 Tage mit Korrektur innerhalb von 24 Stunden.
 - **Übersicht im Cockpit und in der Akte:** Neue Kachel "Heimprogramm" auf dem Dashboard mit der Einhaltung der letzten 7 Tage, Trend, letztem Eintrag, durchschnittlicher Bewertung und Hinweisen; neuer Reiter "Übungstagebuch" in der Akte mit den Einträgen pro Übung und dem Status des Links.
-- **Betrieb:** Zweite Container App in derselben Umgebung mit eigenem Hostnamen (Vorschlag `uebungen.pain-therapy.ayanta.ch`), eigener verwalteter Identität und einer eigenen Datenbankrolle `patient_zone` mit minimalen Rechten.
+- **Betrieb:** Zweite Container App in derselben Umgebung mit eigenem Hostnamen (`patient.pain-therapy.ayanta.ch`), eigener verwalteter Identität und einer eigenen Datenbankrolle `patient_zone` mit minimalen Rechten.
 
 **Nicht im Umfang (Out of scope), siehe docs/roadmap.md:**
 - Erinnerungen und Push-Benachrichtigungen.

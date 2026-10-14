@@ -64,7 +64,7 @@
 
 ## 10. Praxis
 
-- [ ] 10.1 Offene Fragen aus design.md entscheiden (Geburtsdatum oder Geburtsjahr, Hostname, Dauer des Heimprogramms, Grenzwerte)
+- [x] 10.1 Offene Fragen aus design.md entscheiden (Geburtsdatum, Hostname `patient.pain-therapy.ayanta.ch`, 12 Wochen, Checkbox an, Grenzwerte; bestätigt am 14.10.2026)
 - [ ] 10.2 DNS: CNAME und TXT-Eintrag für den Hostnamen der Patienten-Zone, danach `zoneCustomDomainMode = bind` (Mike Franz)
 - [ ] 10.3 Datenschutzhinweis und Text der E-Mail mit dem Link bestätigen
 - [ ] 10.4 Abnahme auf einem Telefon (Link per E-Mail und per QR-Code, Bestätigung, Einträge) und im Cockpit auf dem iPad
