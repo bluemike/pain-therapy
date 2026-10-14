@@ -199,8 +199,9 @@ export function linkStatusOf(
   const state = linkState(link, ctx, now);
   if (state !== 'valid') return state;
   if (link.lastUsedAt) return 'active';
-  const first = link.deliveries.at(-1);
-  return first?.channel === 'EMAIL' ? 'sent' : first?.channel === 'PRINT' ? 'printed' : first ? 'shown' : 'sent';
+  // Deliveries are newest first: the latest way the link went to the patient
+  const latest = link.deliveries[0];
+  return latest?.channel === 'PRINT' ? 'printed' : latest?.channel === 'SCREEN' ? 'shown' : 'sent';
 }
 
 /** Newest link of a patient with its deliveries, newest first */
