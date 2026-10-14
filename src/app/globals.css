@@ -2704,15 +2704,64 @@ table.adhtable tr.sumrow td {
   background: var(--gold-bg);
 }
 .trendpop {
+  position: fixed;
+  inset: auto;
+  margin: 0;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 14px 16px;
-  min-width: 220px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+  padding: 20px 24px;
+  width: min(640px, 94vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
 }
-.trendpop svg.spark {
+.trendpop:not([data-placed]) {
+  visibility: hidden;
+}
+.trendpop::backdrop {
+  background: rgba(0, 0, 0, 0.25);
+}
+svg.trendchart {
   display: block;
-  margin: 8px 0;
+  width: 100%;
+  height: auto;
+  margin: 12px 0 8px;
+}
+svg.trendchart .grid {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+svg.trendchart .axis {
+  stroke: var(--muted);
+  stroke-width: 1;
+}
+svg.trendchart text {
+  font-size: 12px;
+  fill: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+svg.trendchart polyline {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 2.5;
+}
+svg.trendchart circle {
+  fill: var(--gold);
+}
+.trendlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 180px;
+  overflow-y: auto;
+  border-top: 1px solid var(--line);
+}
+.trendlist li {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 2px;
+  border-bottom: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
 }
 .trendpop-head {
   display: flex;
