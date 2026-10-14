@@ -9,6 +9,10 @@ import { createHandoutAction, type HandoutState } from '@/app/(app)/handout-acti
 /**
  * exercise-handout: Versand oder Ausdruck (design D6, mockup view 2). Email only with consent and address, otherwise
  * print. "Drucken" opens the archived PDF in a new tab; the tab is opened on the tap itself so it is not blocked.
+ *
+ * patient-access: "Link zur Patienten-Zone mitsenden" (iteration 4, design D4), selected by default and shown only
+ * once the patient zone is set up. A printout with link opens the copy with the access sheet, which exists only in
+ * this browser; the archived PDF has no link.
  */
 export function HandoutPanel({
   consultationId,
@@ -17,6 +21,7 @@ export function HandoutPanel({
   emailNote,
   previewHref,
   laterHref,
+  zoneEnabled,
 }: {
   consultationId: string;
   canEmail: boolean;
@@ -25,6 +30,8 @@ export function HandoutPanel({
   emailNote: string;
   previewHref: string;
   laterHref: string;
+  /** PATIENT_ZONE_URL is set and the patient has an active home program */
+  zoneEnabled: boolean;
 }) {
   const t = useTranslations('handout');
   const router = useRouter();
@@ -34,8 +41,12 @@ export function HandoutPanel({
 
   useEffect(() => {
     if (state.ok) {
-      if (state.ok.channel === 'PRINT' && printWindow.current)
-        printWindow.current.location.href = `/documents/${state.ok.id}`;
+      if (state.ok.channel === 'PRINT' && printWindow.current) {
+        if (state.ok.printPdf) {
+          const bytes = Uint8Array.from(atob(state.ok.printPdf), (c) => c.charCodeAt(0));
+          printWindow.current.location.href = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+        } else printWindow.current.location.href = `/documents/${state.ok.id}`;
+      }
       printWindow.current = null;
       router.refresh();
     } else if (state.error) {
@@ -60,6 +71,7 @@ export function HandoutPanel({
             {state.ok.channel === 'EMAIL'
               ? t('sent', { number: state.ok.number, to: state.ok.to ?? '' })
               : t('printed', { number: state.ok.number })}
+            {state.ok.withLink ? ` ${state.ok.channel === 'EMAIL' ? t('linkSent') : t('linkPrinted')}` : ''}
           </p>
           {state.ok.channel === 'PRINT' ? (
             <a className="btn btn--ghost" href={`/documents/${state.ok.id}`} target="_blank" rel="noopener">
@@ -105,6 +117,15 @@ export function HandoutPanel({
           </span>
         </label>
       </fieldset>
+      {zoneEnabled ? (
+        <label className="check">
+          <input type="checkbox" name="withLink" defaultChecked />
+          <span>
+            <b>{t('withLink')}</b>
+            <small>{channel === 'EMAIL' ? t('withLinkEmail') : t('withLinkPrint')}</small>
+          </span>
+        </label>
+      ) : null}
       <p className="hint">{t('onDemand')}</p>
       <div className="formbar">
         <a className="btn btn--ghost" href={previewHref} target="_blank" rel="noopener">

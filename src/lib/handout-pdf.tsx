@@ -7,6 +7,7 @@ import { formatMinutes, repetitionParts, sheetFields, stepsLabel, type Repetitio
 import { translator } from './i18n-server';
 import { BORDER, GOLD, INK, MID, registerFonts } from './pdf';
 import type { SheetContent } from './exercise-sheets';
+import { AccessSheetPage, type AccessSheetInput } from './access-sheet-pdf';
 
 /**
  * exercise-handout: Inhalt des Übungsblatts (design D5). Cover page with the programme and the total time, then the
@@ -112,6 +113,11 @@ export interface HandoutPdfInput {
   therapist: string;
   items: HandoutItem[];
   total: { weekMinutes: number; dayMinutes: number; incomplete: string[] };
+  /**
+   * Printed copy with the link to the patient zone (iteration 4, design D4): the access sheet as last page with its QR
+   * code (PNG data URL). Never set for the archived PDF.
+   */
+  accessSheet?: AccessSheetInput & { qr: string };
 }
 
 /** react-pdf reads PNG and JPEG; anything else counts as missing */
@@ -287,6 +293,7 @@ export function HandoutPdf({ input }: { input: HandoutPdfInput }) {
           </Page>
         );
       })}
+      {input.accessSheet ? <AccessSheetPage input={input.accessSheet} qr={input.accessSheet.qr} /> : null}
     </Document>
   );
 }

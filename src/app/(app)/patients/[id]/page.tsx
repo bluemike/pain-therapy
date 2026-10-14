@@ -13,11 +13,13 @@ import { PlusIcon, TabletIcon } from '@/components/Icons';
 import { DeactivateDialog } from '@/components/DeactivateDialog';
 import { HandoutList } from '@/components/HandoutList';
 import { handoutsOf } from '@/lib/handouts';
+import { exerciseLogOf } from '@/lib/exercise-log';
+import { ExerciseLogTab } from '@/components/ExerciseLogTab';
 import { handOver, reactivatePatient, resendEmail } from '../../actions';
 
 export const dynamic = 'force-dynamic';
 
-type Tab = 'treatments' | 'personal' | 'anamnesis' | 'documents' | 'history';
+type Tab = 'treatments' | 'personal' | 'anamnesis' | 'documents' | 'log' | 'history';
 
 export default async function PatientRecord({
   params,
@@ -31,7 +33,7 @@ export default async function PatientRecord({
   const sp = await searchParams;
   // patient-records: Behandlungen in der Akte, first tab and default view (iteration 2, design D7)
   const tab: Tab =
-    (['personal', 'anamnesis', 'documents', 'history'] as const).find((x) => x === sp.tab) ?? 'treatments';
+    (['personal', 'anamnesis', 'documents', 'log', 'history'] as const).find((x) => x === sp.tab) ?? 'treatments';
   const p = await viewPatient(actor, id);
   if (!p) notFound();
   const [t, tc, tf, te, td, tp] = await Promise.all([
@@ -92,6 +94,7 @@ export default async function PatientRecord({
     ['personal', t('tabPersonal')],
     ['anamnesis', t('tabAnamnesis')],
     ['documents', t('tabDocuments')],
+    ['log', t('tabLog')],
     ['history', t('tabHistory')],
   ];
 
@@ -228,6 +231,9 @@ export default async function PatientRecord({
             </section>
           ) : null}
         </>
+      ) : null}
+      {tab === 'log' ? (
+        <ExerciseLogTab patientId={p.id} log={await exerciseLogOf(actor, p.id)} flash={sp.flash} />
       ) : null}
       {tab === 'history' ? <History events={await historyOf(p.id)} regions={await listRegions()} /> : null}
     </>
@@ -653,7 +659,8 @@ async function History({
   const ts = await getTranslations('scales');
   const th = await getTranslations('home');
   const locale = await getLocale();
-  const detail = (e: AuditEvent) => (e.details ?? {}) as { regionId?: number; number?: number };
+  const detail = (e: AuditEvent) =>
+    (e.details ?? {}) as { regionId?: number; number?: number; kind?: string; exerciseCode?: string };
   const region = (e: AuditEvent) => {
     const r = regions.find((x) => x.id === detail(e).regionId);
     return r ? `${regionLabel(r, locale)} · ` : '';
@@ -693,9 +700,38 @@ async function History({
       case 'signing.completed':
         return t('signed');
       case 'email.sent':
-        return t('emailSent');
+        return detail(e).kind === 'accessLink' ? t('linkEmailSent') : t('emailSent');
       case 'email.failed':
-        return t('emailFailed');
+        return detail(e).kind === 'accessLink' ? t('linkEmailFailed') : t('emailFailed');
+      // patient-access and exercise-log (iteration 4): link events and entries of the patient zone
+      case 'accessLink.issued':
+        return t('linkIssued');
+      case 'accessLink.replaced':
+        return t('linkReplaced');
+      case 'accessLink.sent':
+        return t('linkSent');
+      case 'accessLink.shown':
+        return t('linkShown');
+      case 'accessLink.printed':
+        return t('linkPrinted');
+      case 'accessLink.revoked':
+        return t('linkRevoked');
+      case 'accessLink.confirmed':
+        return t('linkConfirmed');
+      case 'accessLink.confirmFailed':
+        return t('linkConfirmFailed');
+      case 'accessLink.locked':
+        return t('linkLocked');
+      case 'accessLink.blocked':
+        return t('linkBlocked');
+      case 'zone.signedOut':
+        return t('zoneSignedOut');
+      case 'exerciseLog.created':
+        return t('logCreated', { code: detail(e).exerciseCode ?? '' });
+      case 'exerciseLog.corrected':
+        return t('logCorrected', { code: detail(e).exerciseCode ?? '' });
+      case 'exerciseLog.deleted':
+        return t('logDeleted', { code: detail(e).exerciseCode ?? '' });
       case 'email.resend':
         return t('emailResend');
       default:

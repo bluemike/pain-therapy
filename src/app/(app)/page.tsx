@@ -6,6 +6,8 @@ import { formatDate, formatDateTime, greetingKey, hourInZurich } from '@/lib/for
 import { ConsentPill } from '@/components/Pills';
 import { SearchBox } from '@/components/SearchBox';
 import { PlusIcon, TabletIcon } from '@/components/Icons';
+import { HomeProgramTile } from '@/components/HomeProgramTile';
+import { homeProgramOverview } from '@/lib/exercise-log';
 import { handOver } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -20,9 +22,10 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const tcs = await getTranslations('consentStatus');
   const tp = await getTranslations('patients');
   const { q = '' } = await searchParams;
-  const [data, hits] = await Promise.all([
+  const [data, hits, homeProgram] = await Promise.all([
     dashboardData(),
     q.trim() ? listPatients({ q, filter: 'active' }) : Promise.resolve([]),
+    homeProgramOverview(),
   ]);
   const hour = hourInZurich();
   const first = user.name.split(' ')[0];
@@ -178,6 +181,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           </section>
         </div>
       )}
+
+      {empty ? null : <HomeProgramTile rows={homeProgram} />}
     </>
   );
 }

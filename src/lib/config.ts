@@ -39,6 +39,11 @@ export const config = {
     maxAttempts: 3,
     retryDelayMs: Number(process.env.MAIL_RETRY_DELAY_MS ?? 2000),
   },
+  /**
+   * Address of the patient zone (iteration 4, design D13), e.g. https://patient.pain-therapy.ayanta.ch. Empty until
+   * its host name is bound: then "Link senden" and "Link zur Patienten-Zone mitsenden" stay hidden.
+   */
+  patientZone: { url: (process.env.PATIENT_ZONE_URL ?? '').trim() },
   defaultPlace: process.env.DEFAULT_PLACE ?? 'Falera',
   /** Printed in the header of every signed PDF */
   practiceAddress: 'Pain Therapy | Via Prau da Cuort 5 | 7153 Falera',

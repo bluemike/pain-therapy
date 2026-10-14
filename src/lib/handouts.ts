@@ -11,6 +11,9 @@ import { sendWithRetry } from './mail';
 import { nextDocumentNumber } from './signing';
 import { documentStore, exerciseMediaStore, sha256 } from './storage';
 import type { Actor } from './session';
+import { emailConsentOf } from './email-consent';
+import { AccessLinkError, issueAccessLink, zoneEnabled } from './patient-access';
+import { qrPng, type AccessSheetInput } from './access-sheet-pdf';
 
 /** exercise-handout: Übungsblatt erstellen, ablegen, senden oder drucken (design D5, D6). */
 
@@ -20,21 +23,7 @@ export class HandoutError extends Error {
   }
 }
 
-/**
- * Consent to unencrypted email from the valid signature, i.e. the most recent signed document (the same document
- * that decides "Unterschrift gültig").
- */
-export async function emailConsentOf(patientId: string) {
-  const doc = await db.signedDocument.findFirst({
-    where: { patientId },
-    orderBy: { createdAt: 'desc' },
-    include: { session: { include: { consents: true } } },
-  });
-  return {
-    granted: doc?.session.consents.find((c) => c.kind === 'UNENCRYPTED_EMAIL')?.granted ?? false,
-    signedAt: doc ? (doc.session.completedAt ?? doc.createdAt) : null,
-  };
-}
+export { emailConsentOf };
 
 /** Everything the Abschluss page and the PDF need about one consultation */
 export async function handoutContext(consultationId: string) {
@@ -98,8 +87,16 @@ async function handoutItems(ctx: Context, language: Language): Promise<HandoutIt
   );
 }
 
-/** Renders the exercise sheet of a consultation; `documentNumber` and `version` are printed on every page. */
-export async function buildHandout(ctx: Context, documentNumber: string, version: number) {
+/**
+ * Renders the exercise sheet of a consultation; `documentNumber` and `version` are printed on every page. With
+ * `accessSheet` the printed copy ends with the access sheet to the patient zone (never archived, design D4).
+ */
+export async function buildHandout(
+  ctx: Context,
+  documentNumber: string,
+  version: number,
+  accessSheet?: Omit<AccessSheetInput, 'language' | 'patient'>,
+) {
   const language = ctx.patient.preferredLanguage;
   const items = await handoutItems(ctx, language);
   const total = programTime(
@@ -119,6 +116,9 @@ export async function buildHandout(ctx: Context, documentNumber: string, version
     therapist: ctx.consultation.createdBy,
     items,
     total,
+    accessSheet: accessSheet
+      ? { ...accessSheet, language, patient: ctx.patient, qr: await qrPng(accessSheet.url) }
+      : undefined,
   };
   const pdf = await renderHandoutPdf(input);
   const snapshot = items.map(({ code, name, repetition, intensity, steps, note, seconds, stretchMissing }) => ({
@@ -137,8 +137,18 @@ export async function buildHandout(ctx: Context, documentNumber: string, version
 /**
  * exercise-handout: Übungsblatt auf Knopfdruck. Renders, archives with a document number as the next version of this
  * consultation, and records the email (PENDING, sent by deliverHandout) or the printout.
+ *
+ * patient-access: Link mit dem Übungsblatt (iteration 4, design D4). With `withLink` a new link to the patient zone is
+ * issued: by email it goes into the text of the email (`access.url` for deliverHandout), for a printout the result
+ * has `printPdf`, a copy of the sheet with the access sheet as last page. The archived PDF never contains the link.
+ * Without an active home program or with the patient zone not yet set up, the sheet goes without link.
  */
-export async function createHandout(actor: Actor, consultationId: string, channel: 'EMAIL' | 'PRINT') {
+export async function createHandout(
+  actor: Actor,
+  consultationId: string,
+  channel: 'EMAIL' | 'PRINT',
+  opts: { withLink?: boolean } = {},
+) {
   const ctx = await handoutContext(consultationId);
   if (!ctx) throw new HandoutError('notFound');
   if (!ctx.prescriptions.length) throw new HandoutError('noPrescription');
@@ -157,7 +167,7 @@ export async function createHandout(actor: Actor, consultationId: string, channe
     treatmentId: ctx.consultation.treatmentId,
     version,
   };
-  return db.$transaction(async (tx) => {
+  const result = await db.$transaction(async (tx) => {
     const handout = await tx.exerciseHandout.create({
       data: {
         documentNumber,
@@ -189,12 +199,57 @@ export async function createHandout(actor: Actor, consultationId: string, channe
     );
     if (channel === 'PRINT')
       await audit(actor, 'handout.printed', { patientId: ctx.patient.id, after: documentNumber, details }, tx);
-    return { handout, delivery };
+    let access: { url: string; linkId: string; expiresAt: Date } | null = null;
+    if (opts.withLink && zoneEnabled()) {
+      try {
+        const issued = await issueAccessLink(actor, ctx.patient.id, tx);
+        access = { url: issued.url, linkId: issued.link.id, expiresAt: issued.link.expiresAt };
+      } catch (e) {
+        if (!(e instanceof AccessLinkError)) throw e;
+      }
+    }
+    if (access) {
+      await tx.accessLinkDelivery.create({
+        data: {
+          linkId: access.linkId,
+          channel,
+          handoutId: handout.id,
+          recipient: delivery.recipient,
+          status: channel === 'EMAIL' ? 'PENDING' : null,
+          requestedBy: actor.name,
+        },
+      });
+      await audit(
+        actor,
+        channel === 'EMAIL' ? 'accessLink.sent' : 'accessLink.printed',
+        {
+          patientId: ctx.patient.id,
+          after: channel === 'EMAIL' ? delivery.recipient : null,
+          details: { linkId: access.linkId, handoutId: handout.id },
+        },
+        tx,
+      );
+    }
+    return { handout, delivery, access };
   });
+  // The printed copy with the access sheet is rendered once more, only for this printout
+  const printPdf =
+    channel === 'PRINT' && result.access
+      ? (
+          await buildHandout(ctx, documentNumber, version, {
+            url: result.access.url,
+            expiresAt: result.access.expiresAt,
+          })
+        ).pdf
+      : null;
+  return { ...result, printPdf };
 }
 
-/** Sends a handout by email with the retries of the signed form; status and attempts on the delivery row. */
-export async function deliverHandout(deliveryId: string, opts: { retryDelayMs?: number } = {}) {
+/**
+ * Sends a handout by email with the retries of the signed form; status and attempts on the delivery row. With
+ * `accessUrl` the link to the patient zone is in the text, and the link's delivery row gets the same status.
+ */
+export async function deliverHandout(deliveryId: string, opts: { retryDelayMs?: number; accessUrl?: string } = {}) {
   const delivery = await db.handoutDelivery.findUnique({
     where: { id: deliveryId },
     include: { handout: { include: { patient: true, consultation: true } } },
@@ -209,10 +264,16 @@ export async function deliverHandout(deliveryId: string, opts: { retryDelayMs?: 
     {
       to: delivery.recipient,
       subject: t('subject', { number: handout.documentNumber }),
-      text: t('body', {
-        name: `${handout.patient.firstName} ${handout.patient.lastName}`,
-        date: formatDateZurich(handout.consultation.at),
-      }),
+      text: opts.accessUrl
+        ? t('bodyWithLink', {
+            name: `${handout.patient.firstName} ${handout.patient.lastName}`,
+            date: formatDateZurich(handout.consultation.at),
+            url: opts.accessUrl,
+          })
+        : t('body', {
+            name: `${handout.patient.firstName} ${handout.patient.lastName}`,
+            date: formatDateZurich(handout.consultation.at),
+          }),
       attachment: { name: `${handout.documentNumber}.pdf`, contentType: 'application/pdf', data },
     },
     {
@@ -223,14 +284,25 @@ export async function deliverHandout(deliveryId: string, opts: { retryDelayMs?: 
     },
   );
   const details = { document: handout.documentNumber };
+  const linkDelivery = { handoutId: handout.id, channel: 'EMAIL' as const, status: 'PENDING' as const };
   if (result.ok) {
     await db.handoutDelivery.update({
       where: { id: deliveryId },
       data: { status: 'SENT', attempts: result.attempts, sentAt: new Date(), lastError: null },
     });
+    if (opts.accessUrl)
+      await db.accessLinkDelivery.updateMany({
+        where: linkDelivery,
+        data: { status: 'SENT', attempts: result.attempts, sentAt: new Date() },
+      });
     await audit(SYSTEM_ACTOR, 'email.sent', { patientId: handout.patientId, after: delivery.recipient, details });
   } else {
     await db.handoutDelivery.update({ where: { id: deliveryId }, data: { status: 'FAILED' } });
+    if (opts.accessUrl)
+      await db.accessLinkDelivery.updateMany({
+        where: linkDelivery,
+        data: { status: 'FAILED', attempts: result.attempts, lastError: result.lastError.slice(0, 300) },
+      });
     await audit(SYSTEM_ACTOR, 'email.failed', {
       patientId: handout.patientId,
       after: result.lastError.slice(0, 300),
