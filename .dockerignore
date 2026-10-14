@@ -1,6 +1,8 @@
 .git
 .next
 node_modules
+**/.next
+**/node_modules
 data
 test-results
 playwright-report
