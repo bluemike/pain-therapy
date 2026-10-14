@@ -7,7 +7,8 @@ import type { exerciseLogOf } from '@/lib/exercise-log';
 import { regionLabel } from '@/lib/catalog';
 import { AccessLinkPanel } from './AccessLinkPanel';
 import { LinkStatusPill } from './LinkStatusPill';
-import { RatingSparkline } from './RatingSparkline';
+import { RatingTrendChart } from './RatingSparkline';
+import { TrendPopover } from './TrendPopover';
 
 type Log = Awaited<ReturnType<typeof exerciseLogOf>>;
 
@@ -111,42 +112,32 @@ export async function ExerciseLogTab({ patientId, log, flash }: { patientId: str
                               <span className="rating-cell">
                                 {x.averageRating?.toFixed(1) ?? '–'}
                                 {x.ratings.length > 0 && (
-                                  <>
-                                    <button
-                                      type="button"
-                                      className="trendbtn"
-                                      popoverTarget={`trend_${x.exerciseCode}`}
-                                      aria-label={t('showTrend', { code: x.exerciseCode })}
-                                      title={t('showTrend', { code: x.exerciseCode })}
-                                    >
-                                      ↗
-                                    </button>
-                                    <div id={`trend_${x.exerciseCode}`} popover="auto" className="trendpop">
-                                      <div className="trendpop-head">
-                                        <b>
-                                          {x.exerciseCode} {localName(p.exercise, locale)}
-                                        </b>
-                                        <button
-                                          type="button"
-                                          className="trendpop-close"
-                                          popoverTarget={`trend_${x.exerciseCode}`}
-                                          popoverTargetAction="hide"
-                                          aria-label={t('closeTrend')}
-                                        >
-                                          ×
-                                        </button>
-                                      </div>
-                                      <div className="muted small">{t('colTrend')}</div>
-                                      <RatingSparkline
-                                        ratings={x.ratings.map((r) => r.rating)}
-                                        label={t('ratingsOf', {
-                                          code: x.exerciseCode,
-                                          list: x.ratings.map((r) => r.rating).join(', '),
-                                        })}
-                                      />
-                                      <div className="muted small">{x.ratings.map((r) => r.rating).join(' · ')}</div>
-                                    </div>
-                                  </>
+                                  <TrendPopover
+                                    id={`trend_${x.exerciseCode}`}
+                                    title={`${x.exerciseCode} ${localName(p.exercise, locale)}`}
+                                    openLabel={t('showTrend', { code: x.exerciseCode })}
+                                    closeLabel={t('closeTrend')}
+                                  >
+                                    <RatingTrendChart
+                                      ratings={x.ratings}
+                                      formatAt={formatDateTime}
+                                      label={t('ratingsOf', {
+                                        code: x.exerciseCode,
+                                        list: x.ratings.map((r) => r.rating).join(', '),
+                                      })}
+                                    />
+                                    <ol className="trendlist">
+                                      {x.ratings
+                                        .slice()
+                                        .reverse()
+                                        .map((r, i) => (
+                                          <li key={i}>
+                                            <span className="muted">{formatDateTime(r.at)}</span>
+                                            <b>{r.rating}</b>
+                                          </li>
+                                        ))}
+                                    </ol>
+                                  </TrendPopover>
                                 )}
                               </span>
                             </td>
