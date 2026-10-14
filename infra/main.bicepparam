@@ -12,3 +12,9 @@ param authSecret = readEnvironmentVariable('AUTH_SECRET')
 param postgresAdminPassword = readEnvironmentVariable('POSTGRES_ADMIN_PASSWORD')
 param mailSender = readEnvironmentVariable('MAIL_SENDER')
 param defaultPlace = 'Falera'
+
+// Patient zone (iteration 4)
+param zoneCustomDomain = 'patient.pain-therapy.ayanta.ch'
+param zoneCustomDomainMode = readEnvironmentVariable('ZONE_CUSTOM_DOMAIN_MODE', 'off')
+param zoneImageTag = readEnvironmentVariable('ZONE_IMAGE_TAG', '')
+param patientZoneDbPassword = readEnvironmentVariable('PATIENT_ZONE_DB_PASSWORD')
