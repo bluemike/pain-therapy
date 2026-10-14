@@ -718,6 +718,8 @@
     "colRating": "Ø Bewertung",
     "colLast": "Letzter Eintrag",
     "colTrend": "Trend",
+    "showTrend": "Bewertungsverlauf {code} anzeigen",
+    "closeTrend": "Schliessen",
     "ratingsOf": "Bewertungen {code}: {list}",
     "total": "Gesamt",
     "entries": "Einträge",

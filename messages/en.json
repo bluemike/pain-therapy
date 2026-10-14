@@ -718,6 +718,8 @@
     "colRating": "Ø rating",
     "colLast": "Last entry",
     "colTrend": "Trend",
+    "showTrend": "Show rating trend {code}",
+    "closeTrend": "Close",
     "ratingsOf": "Ratings {code}: {list}",
     "total": "Total",
     "entries": "Entries",

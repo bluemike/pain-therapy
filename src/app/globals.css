@@ -2648,8 +2648,10 @@ table.adhtable th:first-child,
 table.adhtable td:first-child {
   padding-left: 20px;
 }
-table.adhtable tr.total td {
+table.adhtable tr.sumrow td {
   border-bottom: 0;
+  border-top: 2px solid var(--line);
+  font-weight: 600;
 }
 @media (max-width: 640px) {
   table.adhtable thead {
@@ -2676,6 +2678,55 @@ table.adhtable tr.total td {
   table.adhtable td:empty {
     display: none;
   }
+  table.adhtable tr.sumrow td {
+    border: 0;
+  }
+}
+.rating-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.trendbtn {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--gold);
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.trendbtn:hover,
+.trendbtn:focus-visible {
+  background: var(--gold-bg);
+}
+.trendpop {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  min-width: 220px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+}
+.trendpop svg.spark {
+  display: block;
+  margin: 8px 0;
+}
+.trendpop-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.trendpop-close {
+  border: 0;
+  background: transparent;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--muted);
 }
 svg.spark polyline {
   fill: none;
