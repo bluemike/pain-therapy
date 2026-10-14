@@ -24,7 +24,28 @@ export type AuditAction =
   | 'photo.removed'
   | 'photo.viewed'
   | 'handout.created'
-  | 'handout.printed';
+  | 'handout.printed'
+  // patient-access (iteration 4, design D3): link issued, replaced by a new one, sent by email, shown as QR code,
+  // access sheet printed, revoked by the practice
+  | 'accessLink.issued'
+  | 'accessLink.replaced'
+  | 'accessLink.sent'
+  | 'accessLink.shown'
+  | 'accessLink.printed'
+  | 'accessLink.revoked'
+  // Written by the patient zone (user "Patienten-Zone", design D12): confirmation with the date of birth, locks,
+  // device session and the exercise log
+  | 'accessLink.confirmed'
+  | 'accessLink.confirmFailed'
+  | 'accessLink.locked'
+  | 'accessLink.blocked'
+  | 'zone.viewed'
+  | 'zone.signedOut'
+  | 'exerciseLog.created'
+  | 'exerciseLog.corrected'
+  | 'exerciseLog.deleted'
+  // adherence-overview: the practice opened the tab "Übungstagebuch"
+  | 'exerciseLog.viewed';
 
 type Tx = Prisma.TransactionClient | PrismaClient;
 

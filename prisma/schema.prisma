@@ -112,6 +112,9 @@ model Patient {
   auditEvents       AuditEvent[]
   treatments        Treatment[]
   handouts          ExerciseHandout[]
+  accessLinks       PatientAccessLink[]
+  zoneSessions      PatientZoneSession[]
+  exerciseLog       ExerciseLogEntry[]
 
   @@index([lastName, dateOfBirth])
   @@index([status, lastName])
@@ -532,6 +535,8 @@ model HomePrescription {
   steps          Int?
   note           String?
 
+  logEntries ExerciseLogEntry[]
+
   @@id([consultationId, exerciseCode])
 }
 
@@ -580,4 +585,125 @@ model HandoutDelivery {
   requestedBy String
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+}
+
+// ---------- Patient zone (patient-access, exercise-log; iteration 4 design D3 to D8) ----------
+// Read and written by the separate app apps/patient-zone with the database role `patient_zone`
+// (prisma/patient-zone-role.sql). The token of a link is never stored, only its SHA-256.
+
+/// Personal link to the patient zone. One valid link per patient: a new link replaces the previous one.
+model PatientAccessLink {
+  id             String    @id @default(cuid())
+  patientId      String
+  patient        Patient   @relation(fields: [patientId], references: [id])
+  /// SHA-256 (hex) of the token in https://<host>/l/<token>
+  tokenHash      String    @unique
+  createdBy      String
+  createdAt      DateTime  @default(now())
+  /// Issued + 6 months
+  expiresAt      DateTime
+  revokedAt      DateTime?
+  revokedBy      String?
+  /// Set when a newer link of the same patient was issued; sessions opened with it stay valid
+  replacedAt     DateTime?
+  /// Failed confirmations with the date of birth since the last success
+  failedAttempts Int       @default(0)
+  /// 15 minutes after 5 failed confirmations
+  lockedUntil    DateTime?
+  /// After 10 failed confirmations, until the practice issues a new link
+  blockedAt      DateTime?
+  lastUsedAt     DateTime?
+
+  deliveries AccessLinkDelivery[]
+  sessions   PatientZoneSession[]
+  attempts   PatientZoneAttempt[]
+
+  @@index([patientId, createdAt])
+}
+
+/// "Link senden": by email (no attachment), shown as QR code on screen or printed as access sheet
+enum AccessLinkChannel {
+  EMAIL
+  SCREEN
+  PRINT
+}
+
+/// How a link reached the patient, with the email status like HandoutDelivery; never contains the token
+model AccessLinkDelivery {
+  id          String            @id @default(cuid())
+  linkId      String
+  link        PatientAccessLink @relation(fields: [linkId], references: [id])
+  channel     AccessLinkChannel
+  /// Set when the link went out with an exercise sheet (in the text of its email, or as access sheet with the print)
+  handoutId   String?
+  recipient   String?
+  /// Email only; null for screen and print
+  status      EmailStatus?
+  attempts    Int               @default(0)
+  lastError   String?
+  sentAt      DateTime?
+  requestedBy String
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([linkId, createdAt])
+}
+
+/// Device signed in after the confirmation with the date of birth (cookie with a random id, stored as SHA-256)
+model PatientZoneSession {
+  id         String            @id @default(cuid())
+  idHash     String            @unique
+  linkId     String
+  link       PatientAccessLink @relation(fields: [linkId], references: [id])
+  patientId  String
+  patient    Patient           @relation(fields: [patientId], references: [id])
+  createdAt  DateTime          @default(now())
+  /// createdAt + 30 days
+  expiresAt  DateTime
+  /// "Abmelden", link revoked or expired
+  endedAt    DateTime?
+  lastSeenAt DateTime?
+
+  entries ExerciseLogEntry[]
+
+  @@index([patientId])
+}
+
+/// Confirmation attempt, for the limit per IP address (20 per hour). Deleted after 30 days by the migration job.
+model PatientZoneAttempt {
+  id      String             @id @default(cuid())
+  /// HMAC-SHA-256 of the IP address with PATIENT_ZONE_SECRET
+  ipHash  String
+  linkId  String?
+  link    PatientAccessLink? @relation(fields: [linkId], references: [id])
+  success Boolean
+  at      DateTime           @default(now())
+
+  @@index([ipHash, at])
+}
+
+/// Übungstagebuch: one execution recorded by the patient. Deleting only sets deletedAt; the practice reads only.
+model ExerciseLogEntry {
+  id             String              @id @default(cuid())
+  patientId      String
+  patient        Patient             @relation(fields: [patientId], references: [id])
+  consultationId String
+  exerciseCode   String
+  prescription   HomePrescription    @relation(fields: [consultationId, exerciseCode], references: [consultationId, exerciseCode])
+  sessionId      String?
+  session        PatientZoneSession? @relation(fields: [sessionId], references: [id])
+  performedAt    DateTime
+  done           Boolean
+  /// 1 (gar nicht) to 10 (sehr gut); only when done
+  rating         Int?
+  /// At most 500 characters
+  note           String?
+  /// "Alle heutigen Übungen erledigt"
+  quick          Boolean             @default(false)
+  createdAt      DateTime            @default(now())
+  correctedAt    DateTime?
+  deletedAt      DateTime?
+
+  @@index([patientId, performedAt])
+  @@index([consultationId, exerciseCode])
 }

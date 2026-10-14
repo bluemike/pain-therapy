@@ -26,6 +26,7 @@ function knownError(e: unknown): TreatmentFormState | null {
     if (e.code === 'inactive') return { error: 'patientInactive' };
     if (e.code === 'consent') return { error: 'consent' };
     if (e.code === 'catalog') return { error: 'catalog' };
+    if (e.code === 'prescriptionLogged') return { error: 'prescriptionLogged' };
     return { error: 'generic' };
   }
   return null;
