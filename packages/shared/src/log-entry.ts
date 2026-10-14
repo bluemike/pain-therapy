@@ -1,16 +1,12 @@
 import { z } from 'zod';
 import { DAY_MS, fromZurichInputs } from './time';
+import { EDIT_HOURS, HISTORY_DAYS, NOTE_MAX, RATING_MAX, RATING_MIN } from './limits';
 
 /**
  * exercise-log: Ausführung erfassen, Datum und Zeit, Korrektur (iteration 4, design D7, D8). The same limits are
  * enforced by the database (ExerciseLogEntry_*_check).
  */
-export const NOTE_MAX = 500;
-export const RATING_MIN = 1;
-export const RATING_MAX = 10;
-export const EDIT_HOURS = 24;
-/** "Letzte 14 Tage" in the patient zone */
-export const HISTORY_DAYS = 14;
+export * from './limits';
 
 const blankToNull = (v: unknown) => (v === '' || v === undefined ? null : v);
 
