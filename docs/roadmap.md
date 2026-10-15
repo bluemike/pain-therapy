@@ -18,6 +18,10 @@ Digitalisierte Übungsblätter (27 Übungen mit Hauptbild, Blatt, Inhalten und Z
 
 Patienten-Zone als eigene App ohne Entra-Anmeldung auf derselben Datenbank: persönlicher Link mit Bestätigung über das Geburtsdatum, Übungstagebuch der Patientin (gemacht ja/nein, Bewertung 1 bis 10, Datum und Zeit, Bemerkung), Kachel "Heimprogramm" im Cockpit und Reiter "Übungstagebuch" in der Akte mit der Einhaltung der verordneten Wiederholungen. Siehe `openspec/changes/iteration-4-patient-zone`.
 
+## Iteration 5 (spezifiziert)
+
+Haftungsausschluss in der Patienten-Zone: Einladung zur Unterschrift per E-Mail oder QR-Code, Unterschrift auf dem eigenen Telefon vor den Übungen, PDF, Archiv und Zustellung durch die Praxis-App wie bisher; der Patientenmodus auf dem iPad bleibt als Ausweg. Siehe `openspec/changes/iteration-5-zone-consent`.
+
 ## Später (noch nicht eingeplant)
 
 - **Schmerzbeschwerden:** bis zu 3 aktive Beschwerden pro Patient mit Ort, Qualität, Intensität, Tiefe, Verlauf, Körperschema, SZ-Geschichte, Zusammenhängen und SZ-Referenzen.
@@ -26,5 +30,7 @@ Patienten-Zone als eigene App ohne Entra-Anmeldung auf derselben Datenbank: pers
 - **Erfolgsprotokoll und Verlauf:** Bewertungen nach Stunden, erster Nacht, Tag 1 und Tag 2, Verlauf pro Beschwerde, Hinweis ab der fünften Behandlung, neutrale Darstellung ohne Heilversprechen.
 - **Aufbewahrung und Datenschutz:** 20 Jahre nach der letzten Behandlung, Datenexport (JSON und PDF), Berichtigung und Bestreitungsvermerk.
 - **Patienten-Zone erweitern:** Erinnerungen an die Übungen und Erfolgsprotokoll der Patientin nach Stunden, erster Nacht, Tag 1 und Tag 2.
+- **Anamnese in der Patienten-Zone:** Fragebogen zur Anamnese vor dem ersten Termin, Personalien durch die Patientin ändern.
+- **Row-Level-Security** für die Rolle der Patienten-Zone.
 - **Zugang ausserhalb von Ayanta:** weitere Tenants oder Praxen.
 

@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Mockup Unterschrift Patienten-Zone</title>
+<!-- Klickbares Mockup zu openspec/changes/iteration-5-zone-consent. Statisch, Daten erfunden, Formulartext gekürzt. -->
+<style>
+:root{--gold:#b99438;--gold-text:#8a6a1c;--gold-pale:#f5edd0;--gold-bg:#faf7ee;--ink:#1c1a14;--mid:#5c5040;--muted:#6b6252;--bg:#f7f5ef;--surface:#fff;--border:#e2d9c4;--line:#eee7d6;--ok:#256b42;--ok-bg:#e6f3eb;--warn:#7a5500;--warn-bg:#fdf3d8;--bad:#9b1c22;--bad-bg:#fbe9ea;--info:#33506e;--info-bg:#eef2f7;--bar:#1c1a14;--bar-fg:#ede6d3;--r:8px}
+*{box-sizing:border-box}body{margin:0;font:15px/1.45 Inter,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+header.bar{background:var(--bar);color:var(--bar-fg);display:flex;align-items:center;gap:16px;padding:10px 20px;flex-wrap:wrap}
+.logo{font-weight:800;font-size:20px}.logo i{color:var(--gold);font-style:normal}
+.mocknav{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}.mocknav button{background:#2e2a1e;color:var(--bar-fg);border:1px solid #4a4230;border-radius:20px;padding:5px 12px;font:inherit;font-size:13px;cursor:pointer}
+.mocknav button[aria-pressed=true]{background:var(--gold);color:#1c1a14;border-color:var(--gold)}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 80px}
+.crumb{font-size:13px;color:var(--muted);margin-bottom:6px}.crumb a{color:var(--gold-text);text-decoration:none}
+h1{font-size:26px;margin:0 0 4px}h2{font-size:18px;margin:0 0 10px}h3,.h3{font-size:15px;margin:0 0 8px;text-transform:uppercase;letter-spacing:.04em;color:var(--mid)}
+.sub{color:var(--muted);margin-bottom:14px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:var(--r);padding:9px 16px;font:inherit;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--ink);min-height:44px}
+.btn--gold{background:var(--gold);border-color:var(--gold);color:#1c1a14}.btn--ghost{background:transparent}.btn--block{width:100%}
+.btn--danger{color:var(--bad);border-color:#e7c3c5}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.spacer{flex:1}
+.ph{background:repeating-linear-gradient(135deg,#e9e1cc 0 8px,#f3eddc 8px 16px);border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--mid);font-size:11px;text-align:center;font-weight:600;flex:none}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}.seg button{border:0;border-right:1px solid var(--border);background:#fff;font:inherit;font-size:14px;padding:8px 10px;cursor:pointer;min-height:44px;min-width:44px}.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--gold);font-weight:600}
+.lbl{font-size:12px;color:var(--muted);font-weight:600}
+.info{background:var(--info-bg);color:var(--info);border-radius:6px;padding:10px 12px;font-size:14px;margin-bottom:12px}
+.note{background:var(--warn-bg);color:var(--warn);border-radius:6px;padding:8px 12px;font-size:14px}
+.err{background:var(--bad-bg);color:var(--bad);border-radius:6px;padding:10px 12px;font-size:14px;margin-bottom:12px}
+.pill{display:inline-block;border-radius:12px;padding:2px 9px;font-size:12px;font-weight:600;background:var(--line);color:var(--mid);white-space:nowrap}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}.pill.warn{background:var(--warn-bg);color:var(--warn)}.pill.bad{background:var(--bad-bg);color:var(--bad)}
+input,textarea{font:inherit;border:1px solid var(--border);border-radius:6px;padding:10px;min-height:44px;background:#fff;color:var(--ink);width:100%}
+textarea{min-height:72px;resize:vertical}
+input:focus-visible,textarea:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.mocktoggle{font-size:13px;color:var(--muted);margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+/* Telefon */
+.phone{max-width:420px;margin:0 auto;background:var(--bg);border:1px solid var(--border);border-radius:24px;overflow:hidden;box-shadow:0 2px 14px rgba(28,26,20,.12)}
+.phone .top{background:var(--bar);color:var(--bar-fg);padding:12px 16px;display:flex;align-items:center;gap:10px}
+.phone .top .spacer{flex:1}.phone .top button{background:none;border:0;color:var(--bar-fg);font:inherit;font-size:14px;text-decoration:underline;cursor:pointer;min-height:44px}
+.phone .pbody{padding:16px}
+.phone footer{border-top:1px solid var(--line);padding:12px 16px;font-size:12px;color:var(--muted)}
+.phone footer a{color:var(--gold-text)}
+.dob{display:grid;grid-template-columns:1fr 1fr 1.6fr;gap:8px}.dob label{display:flex;flex-direction:column;gap:4px}
+.ex{border-top:1px solid var(--line);padding:12px 0}.ex:first-of-type{border-top:0}
+.ex .head{display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:center}.ex .ph{width:64px;height:52px}
+.ex .head small{display:block;color:var(--muted)}.ex .prog{display:flex;align-items:center;gap:8px;margin-top:8px}
+.form{background:var(--gold-bg);border:1px solid var(--gold-pale);border-radius:var(--r);padding:12px;margin-top:10px;display:grid;gap:12px}
+.rate{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.rate button{border:1px solid var(--border);background:#fff;border-radius:6px;font:inherit;font-weight:600;min-height:44px;cursor:pointer}
+.rate button[aria-pressed=true]{background:var(--gold);border-color:var(--gold)}
+.scale{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.dt{display:grid;grid-template-columns:1.3fr 1fr;gap:8px}
+.log{list-style:none;margin:0;padding:0}.log li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 0;border-top:1px solid var(--line)}
+.log li:first-child{border-top:0}.log small{color:var(--muted)}.log .acts{grid-column:1/3;display:flex;gap:8px}
+.log .acts button{min-height:44px;background:none;border:0;color:var(--gold-text);font:inherit;font-weight:600;text-decoration:underline;cursor:pointer;padding:0 4px}
+.dayhd{font-size:12px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.04em;margin-top:10px}
+/* Praxis */
+.adh{display:grid;grid-template-columns:minmax(150px,1.3fr) minmax(140px,1.4fr) repeat(3,minmax(70px,.6fr)) minmax(120px,1fr);gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.adh.hd{border-top:0;font-size:12px;color:var(--muted);font-weight:600;padding-top:0}
+.adh .c{white-space:nowrap}.adh a{color:var(--ink);font-weight:600;text-decoration:none}.adh a:hover{color:var(--gold-text)}
+.meter{display:flex;align-items:center;gap:8px}.meter .track{display:block;flex:1;height:10px;background:var(--line);border-radius:5px;overflow:hidden;min-width:60px}.meter .fill{display:block;height:100%;background:var(--gold)}
+.meter .fill.low{background:#c0862a}.meter b{min-width:40px;text-align:right}
+.flags{display:flex;gap:4px;flex-wrap:wrap}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:14px;flex-wrap:wrap}.tabs a{padding:10px 12px;color:var(--muted);text-decoration:none;font-weight:600;border-bottom:3px solid transparent;min-height:44px}
+.tabs a[aria-current=page]{color:var(--ink);border-color:var(--gold)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}.kpis .card{margin:0}.kpis b{display:block;font-size:22px}.kpis span{font-size:12px;color:var(--muted)}
+table.t{width:100%;border-collapse:collapse;font-size:14px}table.t th,table.t td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:middle}table.t th{font-size:12px;color:var(--muted)}
+.two{display:grid;grid-template-columns:2fr 1fr;gap:14px;align-items:start}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px}.kv dt{color:var(--muted)}.kv dd{margin:0;font-weight:600}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ok);color:#fff;padding:10px 18px;border-radius:20px;display:none;max-width:90vw}
+.qr{width:150px;height:150px;margin:8px auto;display:grid;grid-template-columns:repeat(15,1fr);border:6px solid #fff;outline:1px solid var(--border)}.qr i{display:block}
+[hidden]{display:none!important}
+@media(max-width:860px){.adh{grid-template-columns:1fr auto;gap:6px 10px}.adh.hd{display:none}.adh .meter{grid-column:1/3}.adh .c{font-size:13px;color:var(--muted)}.adh .c::before{content:attr(data-l) ': '}.adh .flags{grid-column:1/3}
+ .two{grid-template-columns:1fr}.kpis{grid-template-columns:1fr 1fr}
+ table.t.stack thead{display:none}table.t.stack tr{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line);padding:6px 0}table.t.stack td{border:0;padding:3px 6px}
+ table.t.stack td:first-child{grid-column:1/3;font-weight:600}table.t.stack td[data-l]::before{content:attr(data-l) ': ';color:var(--muted);font-size:12px}}
+@media(max-width:440px){main{padding:12px 0 80px}.phone{border-radius:0;border-left:0;border-right:0}main>section>.mocktoggle,main>section>.crumb,main>section>h1,main>section>.sub,main>section>.card,main>section>.tabs,main>section>.kpis,main>section>.two{margin-left:16px;margin-right:16px}}
+</style>
+
+<style>
+.sigwrap{border:1px dashed var(--gold);border-radius:var(--r);background:#fff;position:relative}
+.sigwrap canvas{display:block;width:100%;height:180px;touch-action:none}
+.sigwrap .base{position:absolute;left:16px;right:16px;bottom:36px;border-bottom:1px solid var(--border);pointer-events:none}
+.sigwrap.locked{opacity:.45;pointer-events:none}
+.legal{max-height:none;font-size:15px;line-height:1.55}.legal h4{margin:18px 0 6px;font-size:15px}
+.legal p{margin:0 0 10px}
+.progress{position:sticky;top:0;background:var(--bg);padding:8px 0;z-index:2;font-size:12px;color:var(--muted)}
+.progress .track{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:4px}.progress .fill{height:100%;background:var(--gold);width:0}
+.chk{display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:start;padding:10px 0;border-top:1px solid var(--line)}
+.chk input{width:24px;height:24px;min-height:24px;margin:2px 0 0;accent-color:var(--gold)}
+.chk small{display:block;color:var(--muted)}
+.kvp{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:14px}.kvp dt{color:var(--muted)}.kvp dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.status{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.dialog{background:#fff;border:1px solid var(--border);border-radius:var(--r);box-shadow:0 12px 40px rgba(0,0,0,.18);padding:18px;max-width:520px}
+.choice{display:grid;gap:8px}.choice .btn{justify-content:flex-start;text-align:left}
+.mail{background:#fff;border:1px solid var(--border);border-radius:var(--r);max-width:620px}
+.mail .mh{padding:12px 16px;border-bottom:1px solid var(--line);font-size:13px;color:var(--muted)}.mail .mh b{color:var(--ink)}
+.mail .mb{padding:16px;line-height:1.55}.mail .mb a.btn{text-decoration:none}
+.hint{background:var(--warn-bg);color:var(--warn);border-radius:6px;padding:10px 12px;font-size:14px;display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.task{background:var(--gold-bg);border:1px solid var(--gold-pale);border-radius:var(--r);padding:16px}
+.task .ic{font-size:28px}
+.big{font-size:22px;margin:4px 0 8px}
+</style>
+
+</head>
+<body>
+<header class="bar"><span class="logo">pain<i>·</i>therapy</span><span>Mockup Iteration 5: Haftungsausschluss in der Patienten-Zone</span>
+<nav class="mocknav" aria-label="Mockup-Ansichten">
+<button data-v="record" aria-pressed="true">1 Akte: Einladen</button>
+<button data-v="mail">2 E-Mail</button>
+<button data-v="task">3 Zone: Aufgabe</button>
+<button data-v="form">4 Zone: Formular</button>
+<button data-v="thanks">5 Zone: Dank</button>
+<button data-v="after">6 Akte: Unterschrieben</button>
+<button data-v="cockpit">7 Cockpit</button>
+</nav></header>
+<main>
+
+<!-- 1 Akte -->
+<section id="v-record">
+<div class="crumb"><a href="#">Patienten</a> / Anna Muster</div>
+<h1>Anna Muster</h1>
+<div class="sub">geb. 12.03.1978 · Deutsch · erfasst heute 09:12</div>
+<div class="card">
+ <div class="status"><span class="pill warn">Unterschrift ausstehend</span><span class="lbl">nicht eingeladen</span><span class="spacer"></span>
+ <button class="btn btn--gold" id="openInvite">Zur Unterschrift einladen</button><button class="btn">An Patient übergeben (iPad)</button></div>
+</div>
+<div class="dialog" id="invite" hidden>
+ <h2>Zur Unterschrift einladen</h2>
+ <p class="sub">Anna Muster erhält einen persönlichen Link zur Patienten-Zone. Sie liest und unterschreibt den Haftungsausschluss auf dem eigenen Telefon und bestätigt den Zugang mit ihrem Geburtsdatum. Ein früherer Link wird ersetzt.</p>
+ <div class="choice">
+  <button class="btn" data-go="mail">✉️&nbsp; Per E-Mail an anna.muster@example.ch</button>
+  <button class="btn" id="showQr">▦&nbsp; QR-Code anzeigen (Patientin scannt in der Praxis)</button>
+  <button class="btn">🖨&nbsp; Zugangsblatt drucken</button>
+ </div>
+ <div id="qrbox" hidden style="text-align:center;margin-top:12px"><div class="qr" id="qr"></div><div class="lbl">Mit der Kamera scannen · gültig höchstens 6 Monate</div></div>
+ <p class="lbl" style="margin-top:12px">Die Einladung enthält nur den Praxisnamen und den Link, keine Gesundheitsdaten.</p>
+</div>
+<div class="tabs"><a href="#" aria-current="page">Personalien</a><a href="#">Behandlungen</a><a href="#">Dokumente</a><a href="#">Übungstagebuch</a><a href="#">Verlauf</a></div>
+<div class="card"><dl class="kvp"><dt>Adresse</dt><dd>Via Prau 3, 7153 Falera</dd><dt>Mobile</dt><dd>079 123 45 67</dd><dt>E-Mail</dt><dd>anna.muster@example.ch</dd><dt>Versicherer</dt><dd>Helsana · 756.1234.5678.90</dd></dl></div>
+</section>
+
+<!-- 2 E-Mail -->
+<section id="v-mail" hidden>
+<h1>E-Mail an die Patientin</h1>
+<div class="sub">Entwurf des Texts, von der Praxis zu bestätigen (Aufgabe 5.3).</div>
+<div class="mail">
+ <div class="mh">Von <b>Pain Therapy &lt;pain-therapy@ayanta.ch&gt;</b><br>An <b>anna.muster@example.ch</b><br>Betreff <b>Bitte unterschreiben Sie den Haftungsausschluss</b></div>
+ <div class="mb">
+ <p>Guten Tag Anna Muster</p>
+ <p>Vor Ihrer ersten Behandlung bitten wir Sie, die Patienteninformation, den Haftungsausschluss und den Datenschutzhinweis zu lesen und online zu unterschreiben. Das dauert etwa 5 Minuten.</p>
+ <p><a class="btn btn--gold" href="#" data-go="task">Formular öffnen</a></p>
+ <p>Zur Sicherheit fragen wir beim Öffnen nach Ihrem Geburtsdatum. Der Link ist persönlich, bitte leiten Sie ihn nicht weiter.</p>
+ <p>Freundliche Grüsse<br>Pain Therapy · Via Prau da Cuort 5 · 7153 Falera</p>
+ </div>
+</div>
+</section>
+
+<!-- 3 Zone Aufgabe -->
+<section id="v-task" hidden>
+<div class="mocktoggle">Patienten-Zone auf dem Telefon, nach der Bestätigung mit dem Geburtsdatum (wie Iteration 4).</div>
+<div class="phone"><div class="top"><span class="logo">pain<i>·</i>therapy</span><span class="spacer"></span><button>Abmelden</button></div>
+<div class="pbody">
+ <p class="big">Guten Tag Anna</p>
+ <div class="task"><div class="ic">✍️</div><h2>Haftungsausschluss unterschreiben</h2>
+ <p>Bevor wir Sie behandeln, brauchen wir Ihre Unterschrift unter die Patienteninformation, den Haftungsausschluss und den Datenschutzhinweis. Bitte nehmen Sie sich etwa 5 Minuten Zeit.</p>
+ <button class="btn btn--gold btn--block" data-go="form">Formular öffnen</button></div>
+ <p class="lbl" style="margin-top:14px">Ihre Übungen erscheinen hier, sobald die Praxis sie Ihnen verordnet hat.</p>
+</div>
+<footer>Ihre Angaben sieht nur die Praxis Pain Therapy. <a href="#">Datenschutz</a></footer></div>
+</section>
+
+<!-- 4 Zone Formular -->
+<section id="v-form" hidden>
+<div class="mocktoggle">Lesen bis zum Ende schaltet Einwilligungen und Unterschrift frei. Das Unterschriftsfeld funktioniert mit Maus oder Finger.</div>
+<div class="phone"><div class="top"><span class="logo">pain<i>·</i>therapy</span><span class="spacer"></span><button data-go="task">Zurück</button></div>
+<div class="pbody">
+ <h2>Ihre Angaben</h2>
+ <dl class="kvp"><dt>Name</dt><dd>Anna Muster</dd><dt>Geburtsdatum</dt><dd>12.03.1978</dd><dt>Adresse</dt><dd>Via Prau 3, 7153 Falera</dd><dt>Mobile</dt><dd>079 123 45 67</dd><dt>E-Mail</dt><dd>anna.muster@example.ch</dd><dt>Versicherer</dt><dd>Helsana</dd><dt>Vers.-Nr.</dt><dd>756.1234.5678.90</dd></dl>
+ <label style="display:block;margin:12px 0 18px"><span class="lbl">Anmerkung zu meinen Angaben (optional)</span><textarea id="note" maxlength="500" placeholder="Zum Beispiel: neue Telefonnummer"></textarea></label>
+ <div class="progress" aria-live="polite"><span id="progtxt">Bitte lesen Sie den Text bis zum Ende</span><div class="track"><div class="fill" id="progfill"></div></div></div>
+ <article class="legal" id="legal">
+ <h4>Patienteninformation zur L&amp;B-Schmerztherapie</h4>
+ <p>Die Methode setzt auf Ihre Eigenverantwortung. Bitte führen Sie die verordneten Engpassdehnungen regelmässig durch…</p>
+ <p>Nach der Osteopressur können blaue Flecken, Druckempfindlichkeit und in den ersten 24 Stunden eine vorübergehende Verstärkung der Beschwerden auftreten…</p>
+ <h4>Haftungsausschluss</h4>
+ <p>Das Zentrum und die Therapeutin übernehmen keine Haftung für… (Text der gültigen Version 3, gekürzt im Mockup)</p>
+ <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
+ <h4>Datenschutzhinweis</h4>
+ <p>Verantwortlich ist Pain Therapy, Via Prau da Cuort 5, 7153 Falera. Wir bearbeiten Ihre Personalien, Kontakt- und Versicherungsdaten sowie Gesundheitsdaten (Anamnese, Diagnosen, Befunde, Verlauf)…</p>
+ <p>Aufbewahrung 20 Jahre nach der letzten Behandlung. Sie haben das Recht auf Auskunft, Herausgabe, Berichtigung und Widerruf Ihrer Einwilligung…</p>
+ <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+ <p id="endmark"><b>Ende des Textes.</b></p>
+ </article>
+ <h2 style="margin-top:18px">Einwilligungen</h2>
+ <div id="consents" class="sigwrap locked" style="border:0;background:none">
+  <label class="chk"><input type="checkbox" id="c1"><span>Ich habe den Haftungsausschluss gelesen und bin einverstanden. <small>Pflicht</small></span></label>
+  <label class="chk"><input type="checkbox" id="c2"><span>Ich willige in die Bearbeitung meiner Daten gemäss Datenschutzhinweis ein. <small>Pflicht: Ohne diese Einwilligung ist eine Behandlung nicht möglich.</small></span></label>
+  <label class="chk"><input type="checkbox" id="c3"><span>Die Praxis darf mir Dokumente und Mitteilungen per unverschlüsselter E-Mail senden. <small>Freiwillig</small></span></label>
+ </div>
+ <h2 style="margin-top:14px">Unterschrift</h2>
+ <div class="sigwrap locked" id="sigwrap"><canvas id="sig" aria-label="Unterschriftsfeld"></canvas><div class="base"></div></div>
+ <div class="row" style="margin-top:8px"><button class="btn btn--ghost" id="clear">Unterschrift löschen</button></div>
+ <div class="err" id="ferr" hidden style="margin-top:10px"></div>
+ <button class="btn btn--gold btn--block" id="submit" style="margin-top:12px">Unterschreiben</button>
+</div>
+<footer>Online unterschrieben in der Patienten-Zone. <a href="#">Datenschutz</a></footer></div>
+</section>
+
+<!-- 5 Danke -->
+<section id="v-thanks" hidden>
+<div class="phone"><div class="top"><span class="logo">pain<i>·</i>therapy</span><span class="spacer"></span><button>Abmelden</button></div>
+<div class="pbody">
+ <p class="big">Vielen Dank, Anna</p>
+ <div class="info">Ihre Unterschrift ist bei der Praxis. Das unterschriebene Dokument erhalten Sie per E-Mail, oder die Praxis gibt es Ihnen beim nächsten Termin.</div>
+ <p class="lbl">Mit Heimprogramm steht hier zusätzlich:</p>
+ <button class="btn btn--gold btn--block">Weiter zu Ihren Übungen</button>
+</div>
+<footer>Ihre Angaben sieht nur die Praxis Pain Therapy. <a href="#">Datenschutz</a></footer></div>
+</section>
+
+<!-- 6 Akte nach Unterschrift -->
+<section id="v-after" hidden>
+<div class="crumb"><a href="#">Patienten</a> / Anna Muster</div>
+<h1>Anna Muster</h1>
+<div class="sub">geb. 12.03.1978 · Deutsch</div>
+<div class="card"><div class="status"><span class="pill ok">Unterschrieben</span><span class="lbl">online in der Patienten-Zone am 15.10.2026 19:42 · Version 3</span></div></div>
+<div class="hint"><b>Anmerkung der Patientin:</b><span style="flex:1">„Neue Mobile-Nummer: 079 765 43 21“</span><button class="btn">Erledigt</button></div>
+<div class="tabs" style="margin-top:14px"><a href="#">Personalien</a><a href="#">Behandlungen</a><a href="#" aria-current="page">Dokumente</a><a href="#">Übungstagebuch</a><a href="#">Verlauf</a></div>
+<div class="card"><table class="t"><thead><tr><th>Dokument</th><th>Datum</th><th>Version</th><th>Kanal</th><th>E-Mail</th></tr></thead><tbody>
+<tr><td><a href="#">PT-2026-00042</a> <span class="pill ok">gültig</span></td><td>15.10.2026 19:42</td><td>3</td><td>Patienten-Zone</td><td><span class="pill ok">gesendet 19:43</span></td></tr>
+</tbody></table></div>
+<div class="card"><h3>Verlauf</h3><table class="t"><tbody>
+<tr><td>15.10.2026 19:43</td><td>Dokument PT-2026-00042 per E-Mail zugestellt</td><td>System</td></tr>
+<tr><td>15.10.2026 19:42</td><td>Haftungsausschluss unterschrieben (Patienten-Zone, Version 3)</td><td>Patienten-Zone</td></tr>
+<tr><td>15.10.2026 19:35</td><td>Link geöffnet, Geburtsdatum bestätigt</td><td>Patienten-Zone</td></tr>
+<tr><td>15.10.2026 09:13</td><td>Einladung zur Unterschrift per E-Mail zugestellt</td><td>Mike Franz</td></tr>
+</tbody></table></div>
+</section>
+
+<!-- 7 Cockpit -->
+<section id="v-cockpit" hidden>
+<h1>Cockpit</h1>
+<div class="card"><h3>Unterschrift ausstehend</h3><table class="t stack"><thead><tr><th>Patient:in</th><th>Grund</th><th>Einladung</th><th></th></tr></thead><tbody>
+<tr><td><a href="#">Anna Muster</a></td><td data-l="Grund">neu</td><td data-l="Einladung"><span class="pill">Link geöffnet 19:35</span></td><td></td></tr>
+<tr><td><a href="#">Beat Keller</a></td><td data-l="Grund">neue Version 3</td><td data-l="Einladung"><span class="pill">E-Mail versendet 14.10.</span></td><td></td></tr>
+<tr><td><a href="#">Carla Rossi</a></td><td data-l="Grund">neu</td><td data-l="Einladung"><span class="pill bad">nicht zugestellt</span></td><td><button class="btn">Erneut einladen</button></td></tr>
+<tr><td><a href="#">Dario Brunner</a></td><td data-l="Grund">neu</td><td data-l="Einladung"><span class="lbl">nicht eingeladen</span></td><td><button class="btn btn--gold">Einladen</button></td></tr>
+</tbody></table></div>
+</section>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+function show(v) { $$('main>section').forEach(s => s.hidden = s.id !== 'v-' + v); $$('.mocknav button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === v)); scrollTo(0, 0); if (v === 'form') sizeCanvas(); }
+$$('.mocknav button').forEach(b => b.onclick = () => show(b.dataset.v));
+document.addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g) { e.preventDefault(); show(g.dataset.go); } });
+$('#openInvite').onclick = () => { $('#invite').hidden = false; };
+$('#showQr').onclick = () => { $('#qrbox').hidden = false; };
+// QR placeholder
+const q = $('#qr'); for (let i = 0; i < 225; i++) { const c = document.createElement('i'); const x = i % 15, y = (i / 15) | 0; const finder = (x < 4 && y < 4) || (x > 10 && y < 4) || (x < 4 && y > 10); c.style.background = (finder ? ((x % 3 === 0 || y % 3 === 0) && !(x===1&&y===1)) : ((x * 7 + y * 13 + x * y) % 3 === 0)) ? '#1c1a14' : '#fff'; q.appendChild(c); }
+// read to end
+let read = false;
+function onScroll() { const el = $('#legal'); const r = el.getBoundingClientRect(); const total = r.height; const seen = Math.min(total, Math.max(0, innerHeight - r.top)); const pct = Math.round(seen / total * 100); $('#progfill').style.width = pct + '%'; if (pct >= 99 && !read) { read = true; $('#progtxt').textContent = 'Gelesen. Bitte willigen Sie ein und unterschreiben Sie.'; $('#sigwrap').classList.remove('locked'); $('#consents').classList.remove('locked'); } }
+addEventListener('scroll', onScroll, { passive: true });
+// signature
+const cv = $('#sig'); const ctx = cv.getContext('2d'); let drawing = false, has = false;
+function sizeCanvas() { const r = cv.getBoundingClientRect(); if (!r.width) return; const d = devicePixelRatio || 1; cv.width = r.width * d; cv.height = 180 * d; ctx.scale(d, d); ctx.lineWidth = 2.4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#1c1a14'; has = false; }
+const pos = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+cv.addEventListener('pointerdown', e => { drawing = true; cv.setPointerCapture(e.pointerId); ctx.beginPath(); ctx.moveTo(...pos(e)); });
+cv.addEventListener('pointermove', e => { if (!drawing) return; ctx.lineTo(...pos(e)); ctx.stroke(); has = true; });
+cv.addEventListener('pointerup', () => drawing = false);
+$('#clear').onclick = () => { ctx.clearRect(0, 0, cv.width, cv.height); has = false; };
+$('#submit').onclick = () => { const err = $('#ferr'); let msg = '';
+ if (!read) msg = 'Bitte lesen Sie den Text bis zum Ende.';
+ else if (!$('#c1').checked) msg = 'Bitte bestätigen Sie den Haftungsausschluss.';
+ else if (!$('#c2').checked) msg = 'Ohne Einwilligung in die Datenbearbeitung ist eine Behandlung nicht möglich.';
+ else if (!has) msg = 'Bitte unterschreiben Sie im Feld.';
+ err.hidden = !msg; err.textContent = msg; if (!msg) show('thanks'); };
+addEventListener('resize', () => { if (!$('#v-form').hidden) sizeCanvas(); });
+</script>
+</body>
+</html>
