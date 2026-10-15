@@ -15,7 +15,10 @@ import { HandoutList } from '@/components/HandoutList';
 import { handoutsOf } from '@/lib/handouts';
 import { exerciseLogOf } from '@/lib/exercise-log';
 import { ExerciseLogTab } from '@/components/ExerciseLogTab';
+import { SignatureInvite } from '@/components/SignatureInvite';
+import { inviteStatusOf, zoneEnabled, type InviteStatus } from '@/lib/patient-access';
 import { handOver, reactivatePatient, resendEmail } from '../../actions';
+import { resolveNoteAction } from '../../access-link-actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +29,7 @@ export default async function PatientRecord({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string; flash?: string; error?: string; n?: string }>;
+  searchParams: Promise<{ tab?: string; flash?: string; error?: string; n?: string; invite?: string }>;
 }) {
   const actor = await requireUser();
   const { id } = await params;
@@ -36,18 +39,26 @@ export default async function PatientRecord({
     (['personal', 'anamnesis', 'documents', 'log', 'history'] as const).find((x) => x === sp.tab) ?? 'treatments';
   const p = await viewPatient(actor, id);
   if (!p) notFound();
-  const [t, tc, tf, te, td, tp] = await Promise.all([
+  const [t, tc, tf, te, td, tp, tsi] = await Promise.all([
     getTranslations('record'),
     getTranslations('common'),
     getTranslations('form'),
     getTranslations('errors'),
     getTranslations('deactivate'),
     getTranslations('patients'),
+    getTranslations('signatureInvite'),
   ]);
   const [treatments, handouts] = await Promise.all([treatmentsOf(p.id), handoutsOf(p.id)]);
   const name = `${p.firstName} ${p.lastName}`;
   const active = p.status === 'ACTIVE';
   const lastSession = p.signatureSessions[0];
+  // zone-consent-invitation (iteration 5, design D3, D9): invite to sign in the patient zone, state of the invitation
+  const canInvite = active && p.consent !== 'signed' && zoneEnabled();
+  const invite = active && zoneEnabled() ? await inviteStatusOf(p.id, p.consent !== 'signed') : null;
+  const inviteButton = (variant: 'gold' | 'ghost', openOnLoad = false) =>
+    canInvite ? (
+      <SignatureInvite patientId={p.id} name={name} email={p.email} variant={variant} openOnLoad={openOnLoad} />
+    ) : null;
   const handOverForm = (
     <form action={handOver}>
       <input type="hidden" name="id" value={p.id} />
@@ -63,7 +74,13 @@ export default async function PatientRecord({
       ? {
           kind: 'ok',
           text: t('createdFlash', { name }),
-          action: active && p.consent !== 'signed' ? handOverForm : null,
+          action:
+            active && p.consent !== 'signed' ? (
+              <div className="actions">
+                {inviteButton('gold')}
+                {handOverForm}
+              </div>
+            ) : null,
         }
       : sp.flash === 'saved'
         ? { kind: 'ok', text: t('savedFlash') }
@@ -132,18 +149,41 @@ export default async function PatientRecord({
             {lastSession?.status === 'ABORTED'
               ? ` · ${t('abortedNote', { at: formatDateTime(lastSession.abortedAt) })}`
               : ''}
+            {invite ? <InviteLine invite={invite} t={tsi} /> : null}
           </p>
-          {handOverForm}
+          <div className="actions">
+            {inviteButton('gold', sp.invite === '1')}
+            {handOverForm}
+          </div>
         </div>
       ) : p.consent === 'resign' ? (
         <div className="banner warn">
-          <p>{t('resignBanner', { version: p.currentVersion })}</p>
-          {handOverForm}
+          <p>
+            {t('resignBanner', { version: p.currentVersion })}
+            {invite ? <InviteLine invite={invite} t={tsi} /> : null}
+          </p>
+          <div className="actions">
+            {inviteButton('gold', sp.invite === '1')}
+            {handOverForm}
+          </div>
+        </div>
+      ) : invite?.kind === 'signedOnline' ? (
+        <div className="banner ok" role="status">
+          <p>
+            <InviteLine invite={invite} t={tsi} />
+          </p>
         </div>
       ) : null}
-      {p.documents[0]?.session.patientNote && tab !== 'documents' ? (
-        <div className="banner info">
-          <p>{t('patientNoteBanner', { name: p.firstName, note: p.documents[0].session.patientNote })}</p>
+      {p.unresolvedNote?.patientNote ? (
+        <div className="banner info notebox" data-testid="patient-note">
+          <p>
+            <b>{tsi('noteTitle', { name: p.firstName })}</b> <q>{p.unresolvedNote.patientNote}</q>
+          </p>
+          <form action={resolveNoteAction}>
+            <input type="hidden" name="patientId" value={p.id} />
+            <input type="hidden" name="sessionId" value={p.unresolvedNote.id} />
+            <button className="btn btn--ghost">{tsi('noteDone')}</button>
+          </form>
         </div>
       ) : null}
 
@@ -178,6 +218,7 @@ export default async function PatientRecord({
           </Link>
           {active ? (
             <>
+              {inviteButton('ghost')}
               <form action={handOver}>
                 <input type="hidden" name="id" value={p.id} />
                 <button className="btn btn--ghost">
@@ -242,6 +283,28 @@ export default async function PatientRecord({
 
 type T = Awaited<ReturnType<typeof getTranslations>>;
 type Rec = NonNullable<Awaited<ReturnType<typeof viewPatient>>>;
+
+/** zone-consent-invitation: Stand der Einladung in der Akte (design D9) */
+function InviteLine({ invite, t }: { invite: InviteStatus; t: T }) {
+  const text =
+    invite.kind === 'notInvited'
+      ? t('notInvited')
+      : invite.kind === 'sent'
+        ? t(`sent${invite.channel}`, { at: formatDateTime(invite.at) })
+        : invite.kind === 'failed'
+          ? t('failed')
+          : invite.kind === 'opened'
+            ? t('opened', { at: formatDateTime(invite.at) })
+            : t('signedOnline', { at: formatDateTime(invite.at), version: invite.version });
+  return invite.kind === 'signedOnline' ? (
+    <span data-testid="invite-state">{text}</span>
+  ) : (
+    <span className="sigstate" data-testid="invite-state">
+      {' · '}
+      {text}
+    </span>
+  );
+}
 
 function KV({ rows }: { rows: [string, React.ReactNode][] }) {
   return (
@@ -585,12 +648,28 @@ async function Documents({ p, active, handOverForm }: { p: Rec; active: boolean;
           <div className="act">{active ? handOverForm : null}</div>
         </div>
       ) : null}
+      {p.finalizing.map((f) => (
+        <div className="doc" key={f.id} data-testid="doc-finalizing">
+          <div className="ico" style={{ color: 'var(--muted)' }}>
+            PDF
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <b>{t('title')}</b> <span className="pill warn">{t('finalizing')}</span>
+            <div className="meta num">
+              <span>{t('finalizingMeta', { at: formatDateTime(f.completedAt), version: f.textVersion.version })}</span>
+              <span>
+                {t('channel')}: {t(`channel${f.channel}`)}
+              </span>
+            </div>
+          </div>
+        </div>
+      ))}
       {p.documents.map((d, i) => (
         <div className="doc" key={d.id}>
           <div className="ico">PDF</div>
           <div style={{ minWidth: 0 }}>
             <b>{t('title')}</b>{' '}
-            {i === 0 ? (
+            {i === 0 && !p.finalizing.length ? (
               <span className="pill ok">{t('valid')}</span>
             ) : (
               <span className="pill off">{t('superseded')}</span>
@@ -600,6 +679,9 @@ async function Documents({ p, active, handOverForm }: { p: Rec; active: boolean;
               <span>{t('textVersion', { version: d.textVersion })}</span>
               <span>{t('documentNumber', { number: d.documentNumber })}</span>
               <span>{d.language.toUpperCase()}</span>
+              <span>
+                {t('channel')}: {t(`channel${d.session.channel}`)}
+              </span>
             </div>
             <div className="del">
               <DeliveryLine d={d.deliveries[0]} documentId={d.id} patientId={p.id} />
@@ -612,7 +694,9 @@ async function Documents({ p, active, handOverForm }: { p: Rec; active: boolean;
           </div>
         </div>
       ))}
-      {!p.documents.length && p.consent === 'signed' ? <div className="body muted">{t('none')}</div> : null}
+      {!p.documents.length && !p.finalizing.length && p.consent === 'signed' ? (
+        <div className="body muted">{t('none')}</div>
+      ) : null}
     </section>
   );
 }
@@ -660,7 +744,7 @@ async function History({
   const th = await getTranslations('home');
   const locale = await getLocale();
   const detail = (e: AuditEvent) =>
-    (e.details ?? {}) as { regionId?: number; number?: number; kind?: string; exerciseCode?: string };
+    (e.details ?? {}) as { regionId?: number; number?: number; kind?: string; exerciseCode?: string; channel?: string };
   const region = (e: AuditEvent) => {
     const r = regions.find((x) => x.id === detail(e).regionId);
     return r ? `${regionLabel(r, locale)} · ` : '';
@@ -698,11 +782,28 @@ async function History({
       case 'signing.aborted':
         return t('signingAborted');
       case 'signing.completed':
-        return t('signed');
+        return detail(e).channel === 'PATIENT_ZONE' ? t('signedZone') : t('signed');
+      case 'document.archived':
+        return t('documentArchived');
       case 'email.sent':
-        return detail(e).kind === 'accessLink' ? t('linkEmailSent') : t('emailSent');
+        return detail(e).kind === 'accessLink'
+          ? t('linkEmailSent')
+          : detail(e).kind === 'signatureInvite'
+            ? t('inviteEmailSent')
+            : t('emailSent');
       case 'email.failed':
-        return detail(e).kind === 'accessLink' ? t('linkEmailFailed') : t('emailFailed');
+        return detail(e).kind === 'accessLink'
+          ? t('linkEmailFailed')
+          : detail(e).kind === 'signatureInvite'
+            ? t('inviteEmailFailed')
+            : t('emailFailed');
+      // zone-consent-invitation and zone-consent-signing (iteration 5)
+      case 'accessLink.invited':
+        return t('linkInvited');
+      case 'signing.noteResolved':
+        return t('noteResolved');
+      case 'signing.formOpened':
+        return t('formOpened');
       // patient-access and exercise-log (iteration 4): link events and entries of the patient zone
       case 'accessLink.issued':
         return t('linkIssued');

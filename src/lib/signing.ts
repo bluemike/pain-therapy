@@ -1,4 +1,6 @@
-import type { Language } from '@prisma/client';
+import type { ConsentKind, Language } from '@prisma/client';
+import { ZONE_ACTOR } from '@pain-therapy/shared/access';
+import { recordSignature, SignatureRecordError, signatureSize, zonePlace } from '@pain-therapy/shared/signing';
 import { db } from './db';
 import { audit, SYSTEM_ACTOR } from './audit';
 import { currentText } from './consent-texts';
@@ -6,7 +8,7 @@ import { formatDateTime } from './format';
 import { translator } from './i18n-server';
 import { sendWithRetry } from './mail';
 import { renderSignedFormPdf } from './pdf';
-import { signatureSvg } from './signature';
+import { signatureSvg, type Stroke } from './signature';
 import { documentStore, sha256 } from './storage';
 import type { SigningInput } from './schemas';
 import type { Actor } from './session';
@@ -76,102 +78,147 @@ export async function nextDocumentNumber(): Promise<string> {
   return `PT-${year}-${String(row.last).padStart(5, '0')}`;
 }
 
-/** consent-signing: Abschluss der Unterschrift, then consent-documents: PDF, Archiv, E-Mail */
+/**
+ * consent-signing: Abschluss der Unterschrift on the iPad. Step 1 stores the signature (shared with the patient zone),
+ * step 2 creates PDF, archive and email (iteration 5, design D7). When step 2 fails the signature still counts and
+ * the finalize job creates the PDF a few minutes later; the result then has no document.
+ */
 export async function completeSigning(actor: Actor, sid: string, input: SigningInput) {
-  const session = await getSession(sid);
+  const session = await db.signatureSession.findUnique({ where: { id: sid }, include: { patient: true } });
   if (!session) throw new SigningError('notFound');
   if (session.status !== 'OPEN') throw new SigningError('notOpen');
-  const { patient, textVersion } = session;
-  const signedAt = new Date();
-  const signedAtText = formatDateTime(signedAt);
-  const { svg, paths } = signatureSvg(input.strokes, input.width, input.height);
-  const documentNumber = await nextDocumentNumber();
-
-  const pdf = await renderSignedFormPdf({
-    language: session.language,
-    documentNumber,
-    textVersion: textVersion.version,
-    title: textVersion.title,
-    body: textVersion.body,
-    patient,
-    consents: { liability: true, dataProcessing: true, unencryptedEmail: input.unencryptedEmail },
-    note: input.note,
-    place: input.place,
-    signedAtText,
-    signature: { paths, width: input.width, height: input.height },
-  });
-  const hash = sha256(pdf);
-  const blobPath = `${patient.id}/${documentNumber}.pdf`;
-  await documentStore().put(blobPath, pdf, 'application/pdf');
-
-  const emailStatus = !input.unencryptedEmail
-    ? 'SKIPPED_NO_CONSENT'
-    : !patient.email
-      ? 'SKIPPED_NO_ADDRESS'
-      : 'PENDING';
-  const patientActor = {
-    id: actor.id,
-    name: `${patient.firstName} ${patient.lastName} (${actor.name}, Patientenmodus)`,
-  };
-
-  const result = await db.$transaction(async (tx) => {
-    const updated = await tx.signatureSession.updateMany({
-      where: { id: sid, status: 'OPEN' },
-      data: {
-        status: 'SIGNED',
-        completedAt: signedAt,
-        patientNote: input.note,
-        place: input.place,
-        signaturePoints: input.strokes,
-        signatureSvg: svg,
-      },
+  const { patient } = session;
+  try {
+    await recordSignature(db, {
+      sid,
+      input,
+      actor: { id: actor.id, name: `${patient.firstName} ${patient.lastName} (${actor.name}, Patientenmodus)` },
     });
-    if (updated.count !== 1) throw new SigningError('notOpen');
-    await tx.consent.createMany({
-      data: [
-        { sessionId: sid, kind: 'LIABILITY_WAIVER', granted: true },
-        { sessionId: sid, kind: 'DATA_PROCESSING', granted: true },
-        { sessionId: sid, kind: 'UNENCRYPTED_EMAIL', granted: input.unencryptedEmail },
-      ],
-    });
-    const document = await tx.signedDocument.create({
-      data: {
-        documentNumber,
-        patientId: patient.id,
-        sessionId: sid,
-        textVersion: textVersion.version,
+  } catch (e) {
+    if (e instanceof SignatureRecordError) throw new SigningError(e.code === 'notOpen' ? 'notOpen' : 'notFound');
+    throw e;
+  }
+  try {
+    return (await finalizeSignature(sid)) ?? { document: null, delivery: null };
+  } catch (e) {
+    console.error(`finalizeSignature ${sid} failed, the finalize job retries`, e);
+    return { document: null, delivery: null };
+  }
+}
+
+/**
+ * zone-consent-signing: PDF, Archiv und Zustellung, step 2 of 2 (design D7). Renders the PDF of a SIGNED session,
+ * archives it immutably, creates SignedDocument and EmailDelivery. Idempotent: a session that already has a
+ * document is left alone, and an advisory lock per session serialises concurrent calls (the zone, the job and the
+ * iPad). Returns null when there is nothing to do. The caller starts the email with deliverEmail().
+ */
+export async function finalizeSignature(sid: string) {
+  return db.$transaction(
+    async (tx) => {
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`finalize:${sid}`}))::text`;
+      const session = await tx.signatureSession.findUnique({
+        where: { id: sid },
+        include: { patient: true, textVersion: true, consents: true, document: true, zoneSession: true },
+      });
+      if (!session || session.status !== 'SIGNED' || session.document) return null;
+      const { patient, textVersion } = session;
+      const consent = (kind: ConsentKind) => session.consents.find((c) => c.kind === kind)?.granted ?? false;
+      const consents = {
+        liability: consent('LIABILITY_WAIVER'),
+        dataProcessing: consent('DATA_PROCESSING'),
+        unencryptedEmail: consent('UNENCRYPTED_EMAIL'),
+      };
+      const zone = session.channel === 'PATIENT_ZONE';
+      const strokes = (session.signaturePoints ?? []) as Stroke[];
+      const size = signatureSize(session.signatureSvg);
+      const { paths } = signatureSvg(strokes, size.width, size.height);
+      // Taken outside the transaction: a failed run leaves a gap in the numbers, never a number used twice
+      const documentNumber = await nextDocumentNumber();
+      const pdf = await renderSignedFormPdf({
         language: session.language,
-        blobPath,
-        sha256: hash,
-        sizeBytes: pdf.length,
-      },
-    });
-    const delivery = await tx.emailDelivery.create({
-      data: {
-        documentId: document.id,
-        recipient: emailStatus === 'PENDING' ? patient.email : null,
-        status: emailStatus,
-        requestedBy: actor.name,
-      },
-    });
-    await audit(
-      patientActor,
-      'signing.completed',
-      {
-        patientId: patient.id,
-        after: documentNumber,
-        details: {
+        documentNumber,
+        textVersion: textVersion.version,
+        title: textVersion.title,
+        body: textVersion.body,
+        patient,
+        consents,
+        note: session.patientNote,
+        place: session.place ?? (zone ? zonePlace(session.language) : ''),
+        signedAtText: formatDateTime(session.completedAt ?? new Date()),
+        signature: { paths, width: size.width, height: size.height },
+        online:
+          zone && session.zoneSession ? { confirmedAtText: formatDateTime(session.zoneSession.createdAt) } : undefined,
+      });
+      const hash = sha256(pdf);
+      const blobPath = `${patient.id}/${documentNumber}.pdf`;
+      await documentStore().put(blobPath, pdf, 'application/pdf');
+
+      const emailStatus = !consents.unencryptedEmail
+        ? 'SKIPPED_NO_CONSENT'
+        : !patient.email
+          ? 'SKIPPED_NO_ADDRESS'
+          : 'PENDING';
+      const requestedBy = zone ? ZONE_ACTOR.name : session.startedBy;
+      const document = await tx.signedDocument.create({
+        data: {
+          documentNumber,
+          patientId: patient.id,
           sessionId: sid,
-          version: textVersion.version,
-          unencryptedEmail: input.unencryptedEmail,
+          textVersion: textVersion.version,
+          language: session.language,
+          blobPath,
           sha256: hash,
+          sizeBytes: pdf.length,
         },
-      },
-      tx,
-    );
-    return { document, delivery };
+      });
+      const delivery = await tx.emailDelivery.create({
+        data: {
+          documentId: document.id,
+          recipient: emailStatus === 'PENDING' ? patient.email : null,
+          status: emailStatus,
+          requestedBy,
+        },
+      });
+      await audit(
+        SYSTEM_ACTOR,
+        'document.archived',
+        {
+          patientId: patient.id,
+          after: documentNumber,
+          details: { sessionId: sid, sha256: hash, channel: session.channel },
+        },
+        tx,
+      );
+      return { document, delivery };
+    },
+    { maxWait: 10_000, timeout: 60_000 },
+  );
+}
+
+/**
+ * Rückfall (design D7): SIGNED sessions without a document that are older than a minute, e.g. because the practice
+ * app restarted while the patient signed in the zone. Called by the job caj-pain-therapy-finalize every 5 minutes.
+ */
+export async function finalizePending(now = new Date()) {
+  const open = await db.signatureSession.findMany({
+    where: { status: 'SIGNED', document: null, completedAt: { lt: new Date(now.getTime() - 60_000) } },
+    select: { id: true },
+    orderBy: { completedAt: 'asc' },
+    take: 50,
   });
-  return result;
+  let done = 0;
+  for (const { id } of open) {
+    try {
+      const result = await finalizeSignature(id);
+      if (result) {
+        done++;
+        if (result.delivery.status === 'PENDING') await deliverEmail(result.delivery.id).catch(console.error);
+      }
+    } catch (e) {
+      console.error(`finalizeSignature ${id} failed`, e);
+    }
+  }
+  return { found: open.length, done };
 }
 
 /** Sends the signed PDF, retrying up to 3 times (consent-documents: Zustellung, Fehlgeschlagener Versand). */
@@ -240,4 +287,15 @@ export async function requestResend(actor: Actor, documentId: string) {
     details: { document: doc.documentNumber },
   });
   return delivery;
+}
+
+/** zone-consent-invitation: Anmerkung zu den Personalien "Erledigt" (design D9) */
+export async function resolvePatientNote(actor: Actor, patientId: string, sid: string) {
+  await db.$transaction(async (tx) => {
+    const done = await tx.signatureSession.updateMany({
+      where: { id: sid, patientId, status: 'SIGNED', noteResolvedAt: null, patientNote: { not: null } },
+      data: { noteResolvedAt: new Date(), noteResolvedBy: actor.name },
+    });
+    if (done.count) await audit(actor, 'signing.noteResolved', { patientId, details: { sessionId: sid } }, tx);
+  });
 }

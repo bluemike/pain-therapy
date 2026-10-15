@@ -4,9 +4,11 @@
  */
 export * from './access';
 export * from './adherence';
+export * from './consent-blocks';
 export * from './home-program';
 export * from './log-entry';
 export * from './program';
+export * from './signing';
 export * from './time';
 export * from './tokens';
 export { createPrismaClient } from './db';

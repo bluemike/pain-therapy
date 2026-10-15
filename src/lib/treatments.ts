@@ -34,13 +34,22 @@ export async function openingBlocker(patientId: string): Promise<'inactive' | 'c
   const [p, current] = await Promise.all([
     db.patient.findUnique({
       where: { id: patientId },
-      select: { status: true, documents: { orderBy: { createdAt: 'desc' }, take: 1, select: { textVersion: true } } },
+      select: {
+        status: true,
+        // The latest completed signature, also before its PDF exists (iteration 5, design D2)
+        signatureSessions: {
+          where: { status: 'SIGNED' },
+          orderBy: { completedAt: 'desc' },
+          take: 1,
+          select: { textVersion: { select: { version: true } } },
+        },
+      },
     }),
     currentVersionNumber(),
   ]);
   if (!p) throw new TreatmentError('notFound');
   if (p.status !== 'ACTIVE') return 'inactive';
-  return consentStatusOf(p.documents[0]?.textVersion, current) === 'signed' ? null : 'consent';
+  return consentStatusOf(p.signatureSessions[0]?.textVersion.version, current) === 'signed' ? null : 'consent';
 }
 
 async function assertOpenable(patientId: string) {

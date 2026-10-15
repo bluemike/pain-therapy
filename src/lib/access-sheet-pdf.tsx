@@ -33,6 +33,8 @@ export interface AccessSheetInput {
   patient: { firstName: string; lastName: string };
   url: string;
   expiresAt: Date;
+  /** Invitation to sign (iteration 5): other intro, third step and validity */
+  purpose?: 'EXERCISES' | 'SIGNATURE';
 }
 
 /** QR code of the link as PNG data URL (error correction M, quiet zone of one module) */
@@ -47,6 +49,7 @@ export async function qrSvg(url: string) {
 
 export function AccessSheetPage({ input, qr }: { input: AccessSheetInput; qr: string }) {
   const t = translator(input.language, 'accessSheet');
+  const sign = input.purpose === 'SIGNATURE';
   return (
     <Page size="A4" style={s.page}>
       <View style={s.header}>
@@ -56,20 +59,20 @@ export function AccessSheetPage({ input, qr }: { input: AccessSheetInput; qr: st
         <Text style={s.muted}>{config.practiceAddress}</Text>
       </View>
       <Text style={s.title}>{t('title')}</Text>
-      <Text>{t('intro', { name: `${input.patient.firstName} ${input.patient.lastName}` })}</Text>
+      <Text>{t(sign ? 'introSign' : 'intro', { name: `${input.patient.firstName} ${input.patient.lastName}` })}</Text>
       <View style={s.qrBox}>
         {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf image, no alt attribute */}
         <Image src={qr} style={s.qr} />
         <Text style={s.url}>{input.url}</Text>
       </View>
-      {[t('step1'), t('step2'), t('step3')].map((text, i) => (
+      {[t('step1'), t('step2'), t(sign ? 'step3Sign' : 'step3')].map((text, i) => (
         <View style={s.step} key={i}>
           <Text style={s.n}>{i + 1}.</Text>
           <Text style={{ flex: 1 }}>{text}</Text>
         </View>
       ))}
       <View style={s.box}>
-        <Text>{t('validity', { date: formatDateZurich(input.expiresAt) })}</Text>
+        <Text>{t(sign ? 'validitySign' : 'validity', { date: formatDateZurich(input.expiresAt) })}</Text>
         <Text style={s.muted}>{t('keep')}</Text>
       </View>
       <Text style={s.footer}>{t('footer')}</Text>

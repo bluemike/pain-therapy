@@ -105,6 +105,8 @@ export interface PdfInput {
   place: string;
   signedAtText: string;
   signature: { paths: string[]; width: number; height: number };
+  /** Signed in the patient zone (iteration 5, design D7): when the device session was confirmed with the birth date */
+  online?: { confirmedAtText: string };
 }
 
 export function SignedFormPdf({ input }: { input: PdfInput }) {
@@ -213,6 +215,9 @@ export function SignedFormPdf({ input }: { input: PdfInput }) {
               <Text style={[s.muted, { marginTop: 3 }]}>{t('placeDate')}</Text>
             </View>
           </View>
+          {input.online ? (
+            <Text style={[s.muted, { marginTop: 8 }]}>{t('online', { at: input.online.confirmedAtText })}</Text>
+          ) : null}
         </View>
         <View style={s.footer} fixed>
           <Text

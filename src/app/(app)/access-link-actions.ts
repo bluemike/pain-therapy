@@ -8,9 +8,11 @@ import {
   AccessLinkError,
   accessSheetPrinted,
   deliverAccessLink,
+  inviteToSign,
   revokeAccessLink,
   sendAccessLink,
 } from '@/lib/patient-access';
+import { resolvePatientNote } from '@/lib/signing';
 
 /**
  * patient-access: "Link senden", "Zugangsblatt drucken" and "Link sperren" in the tab "Übungstagebuch" (iteration 4,
@@ -29,6 +31,8 @@ const ERRORS: Record<AccessLinkError['code'], string> = {
   inactive: 'linkErrorInactive',
   noProgram: 'linkErrorNoProgram',
   disabled: 'linkErrorDisabled',
+  notPending: 'linkError',
+  noEmail: 'linkError',
 };
 
 export async function sendAccessLinkAction(_prev: AccessLinkState, fd: FormData): Promise<AccessLinkState> {
@@ -54,8 +58,50 @@ export async function sendAccessLinkAction(_prev: AccessLinkState, fd: FormData)
 export async function accessSheetPrintedAction(fd: FormData) {
   const actor = await requireUser();
   const patientId = String(fd.get('patientId') ?? '');
-  await accessSheetPrinted(actor, patientId, String(fd.get('linkId') ?? ''));
+  const purpose = fd.get('purpose') === 'SIGNATURE' ? 'SIGNATURE' : 'EXERCISES';
+  await accessSheetPrinted(actor, patientId, String(fd.get('linkId') ?? ''), undefined, purpose);
   revalidatePath(`/patients/${patientId}`);
+}
+
+/** zone-consent-invitation: "Zur Unterschrift einladen" per E-Mail or as QR code (iteration 5, design D3) */
+const INVITE_ERRORS: Record<AccessLinkError['code'], string> = {
+  notFound: 'errGeneric',
+  inactive: 'errInactive',
+  noProgram: 'errNotPending',
+  disabled: 'errDisabled',
+  notPending: 'errNotPending',
+  noEmail: 'errNoEmail',
+};
+
+/** Same shape as AccessLinkState; error keys of the "signatureInvite" namespace */
+export async function inviteToSignAction(_prev: AccessLinkState, fd: FormData): Promise<AccessLinkState> {
+  const actor = await requireUser();
+  const patientId = String(fd.get('patientId') ?? '');
+  const channel = fd.get('channel') === 'EMAIL' ? 'EMAIL' : 'SCREEN';
+  try {
+    const sent = await inviteToSign(actor, patientId, channel);
+    revalidatePath(`/patients/${patientId}`);
+    revalidatePath('/');
+    if (sent.channel === 'EMAIL') {
+      after(() => deliverAccessLink(sent.deliveryId, sent.url).catch(console.error));
+      return { ok: { channel: 'EMAIL', to: sent.to } };
+    }
+    return {
+      ok: { channel: 'SCREEN', linkId: sent.linkId, qr: sent.qr, accessSheet: sent.accessSheet.toString('base64') },
+    };
+  } catch (e) {
+    if (e instanceof AccessLinkError) return { error: INVITE_ERRORS[e.code] };
+    throw e;
+  }
+}
+
+/** "Erledigt" on the patient's remark about her personal details (design D9) */
+export async function resolveNoteAction(fd: FormData) {
+  const actor = await requireUser();
+  const patientId = String(fd.get('patientId') ?? '');
+  await resolvePatientNote(actor, patientId, String(fd.get('sessionId') ?? ''));
+  revalidatePath(`/patients/${patientId}`);
+  revalidatePath('/');
 }
 
 export async function revokeAccessLinkAction(fd: FormData) {

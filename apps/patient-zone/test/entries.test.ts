@@ -3,7 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { adherence } from '@pain-therapy/shared/adherence';
 import { db } from '@/lib/db';
-import { confirmLink, resolveSession, type ZoneSession } from '@/lib/access';
+import { confirmLink, programSession, resolveSession, type ProgramSession } from '@/lib/access';
 import {
   correctEntry,
   createEntry,
@@ -28,7 +28,7 @@ async function signedIn(opts: { language?: 'de' | 'en' } = {}) {
   const s = await setup(opts);
   const r = await confirmLink({ token: s.token, ...DOB, ip: '203.0.113.9' }, ago(0, 3));
   if (!r.ok) throw new Error('not signed in');
-  return { ...s, zone: (await resolveSession(r.sessionId, now))! };
+  return { ...s, zone: programSession(await resolveSession(r.sessionId, now))! };
 }
 
 const form = (x: Record<string, string>) => {
@@ -73,7 +73,7 @@ describe('today (Heimprogramm in der Patienten-Zone)', () => {
     const { zone, patient: p, consultation: c } = await signedIn();
     await createEntry(zone, input({ time: '09:00' }), now);
     const newer = await consultation(p.id, ago(0, 2), [['4B', 'DAILY_1']]);
-    const z = (await resolveSession(undefined, now)) ?? (await refreshed(zone));
+    const z = programSession(await resolveSession(undefined, now)) ?? (await refreshed(zone));
     expect(z.program.consultationId).toBe(newer.id);
     expect((await today(z, now)).items.map((i) => i.code)).toEqual(['4B']);
     expect(await admin.exerciseLogEntry.count({ where: { consultationId: c.id } })).toBe(1);
@@ -82,7 +82,7 @@ describe('today (Heimprogramm in der Patienten-Zone)', () => {
 });
 
 /** The session of `zone` loaded again, e.g. after a new prescription */
-async function refreshed(zone: ZoneSession) {
+async function refreshed(zone: ProgramSession) {
   const s = await db.patientZoneSession.findUniqueOrThrow({ where: { id: zone.session.id }, select: { idHash: true } });
   const { currentProgram } = await import('@pain-therapy/shared/program');
   return { ...zone, program: (await currentProgram(db, zone.patient.id, now))!, idHash: s.idHash };

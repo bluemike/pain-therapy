@@ -7,7 +7,8 @@ import {
   sessionLinkOk,
   type LinkState,
 } from '@pain-therapy/shared/access';
-import { currentProgram } from '@pain-therapy/shared/program';
+import { currentProgram, type CurrentProgram } from '@pain-therapy/shared/program';
+import { signatureStateOf } from '@pain-therapy/shared/signing';
 import { DAY_MS } from '@pain-therapy/shared/time';
 import { hashIp, hashToken, isTokenShaped, newToken } from '@pain-therapy/shared/tokens';
 import { db } from './db';
@@ -30,10 +31,14 @@ export async function lookupLink(token: string, now = new Date()) {
     include: { patient: { select: PATIENT } },
   });
   if (!link) return null;
-  const program = await currentProgram(db, link.patientId, now);
+  const [program, signature] = await Promise.all([
+    currentProgram(db, link.patientId, now),
+    signatureStateOf(db, link.patientId),
+  ]);
+  // A pending signature also keeps the link valid (iteration 5, design D4)
   const state = linkState(
     link,
-    { patientActive: link.patient.status === 'ACTIVE', programActive: !!program?.active },
+    { patientActive: link.patient.status === 'ACTIVE', purposeActive: !!program?.active || signature.pending },
     now,
   );
   return { link, state };
@@ -142,9 +147,10 @@ export async function confirmLink(
 }
 
 /**
- * Gerätesitzung: valid for 30 days unless ended ("Abmelden"), the link revoked, blocked or expired, or the patient
- * or her home program no longer active. An invalid session is ended in the database. Returns the patient and the
- * current program.
+ * Gerätesitzung: valid for 30 days unless ended ("Abmelden"), the link revoked, blocked or expired, the patient no
+ * longer active, or neither a home program active nor a signature pending (iteration 5, design D4). An invalid
+ * session is ended in the database. Returns the patient, the current program (may be null or inactive while a
+ * signature is pending) and whether a signature is pending.
  */
 export async function resolveSession(sessionId: string | undefined, now = new Date()) {
   if (!sessionId || !isTokenShaped(sessionId)) return null;
@@ -153,16 +159,19 @@ export async function resolveSession(sessionId: string | undefined, now = new Da
     include: { link: true, patient: { select: PATIENT } },
   });
   if (!session || session.endedAt || session.expiresAt <= now) return null;
-  const program = await currentProgram(db, session.patientId, now);
+  const [program, signature] = await Promise.all([
+    currentProgram(db, session.patientId, now),
+    signatureStateOf(db, session.patientId),
+  ]);
   const ok = sessionLinkOk(
     session.link,
     {
       patientActive: session.patient.status === 'ACTIVE',
-      programActive: !!program?.active,
+      purposeActive: !!program?.active || signature.pending,
     },
     now,
   );
-  if (!ok || !program) {
+  if (!ok) {
     await db.patientZoneSession.update({ where: { id: session.id }, data: { endedAt: now }, select: { id: true } });
     return null;
   }
@@ -170,9 +179,19 @@ export async function resolveSession(sessionId: string | undefined, now = new Da
     session: { id: session.id, linkId: session.linkId, createdAt: session.createdAt },
     patient: session.patient,
     program,
+    signaturePending: signature.pending,
   };
 }
 export type ZoneSession = NonNullable<Awaited<ReturnType<typeof resolveSession>>>;
+export type ProgramSession = ZoneSession & { program: CurrentProgram };
+
+/**
+ * zone-consent-signing: Unterschrift vor den Übungen. Home program, entries and images only with an active program
+ * and no pending signature; otherwise null.
+ */
+export function programSession(s: ZoneSession | null): ProgramSession | null {
+  return s && !s.signaturePending && s.program?.active ? (s as ProgramSession) : null;
+}
 
 /** Marks the session as seen and the link as used ("Zuletzt genutzt" in the record) */
 export async function touchSession(s: ZoneSession, now = new Date()) {

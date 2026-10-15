@@ -27,35 +27,36 @@ export type LinkFields = {
 };
 
 /**
- * State of a link. `expired` also covers an inactive patient and a home program that is no longer active (spec: the
- * record shows the link as expired). Only `valid` and `locked` links get the confirmation page; every other state
+ * State of a link. `expired` also covers an inactive patient and a link without purpose: no active home program and
+ * no pending signature (iteration 5, design D4: purposeActive = homeProgramActive || signaturePending; the record
+ * shows the link as expired). Only `valid` and `locked` links get the confirmation page; every other state
  * shows the same neutral page as an unknown token.
  */
 export type LinkState = 'valid' | 'locked' | 'blocked' | 'revoked' | 'replaced' | 'expired';
 
 export function linkState(
   link: LinkFields,
-  ctx: { patientActive: boolean; programActive: boolean },
+  ctx: { patientActive: boolean; purposeActive: boolean },
   now = new Date(),
 ): LinkState {
   if (link.revokedAt) return 'revoked';
   if (link.blockedAt) return 'blocked';
   if (link.replacedAt) return 'replaced';
-  if (link.expiresAt <= now || !ctx.patientActive || !ctx.programActive) return 'expired';
+  if (link.expiresAt <= now || !ctx.patientActive || !ctx.purposeActive) return 'expired';
   if (link.lockedUntil && link.lockedUntil > now) return 'locked';
   return 'valid';
 }
 
 /**
  * Sessions stay valid when a link is only replaced by a new one (design D6), but end when it is revoked, blocked or
- * expires, or when the patient or her home program is no longer active.
+ * expires, or when the patient is no longer active or the link has no purpose any more (design D4).
  */
 export function sessionLinkOk(
   link: LinkFields,
-  ctx: { patientActive: boolean; programActive: boolean },
+  ctx: { patientActive: boolean; purposeActive: boolean },
   now = new Date(),
 ) {
-  return !link.revokedAt && !link.blockedAt && link.expiresAt > now && ctx.patientActive && ctx.programActive;
+  return !link.revokedAt && !link.blockedAt && link.expiresAt > now && ctx.patientActive && ctx.purposeActive;
 }
 
 /** Consequence of a failed confirmation, given the new number of failures since the last success */

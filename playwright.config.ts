@@ -8,6 +8,8 @@ const ZONE_URL = `http://localhost:${ZONE_PORT}`;
 process.env.ZONE_URL = ZONE_URL;
 // Mails land here (MAIL_DRIVER=outbox); tests/e2e/patient-zone.spec.ts reads the link from them
 process.env.E2E_OUTBOX_DIR ??= path.resolve('data/e2e-outbox');
+// Key of the internal calls from the zone to the practice app (iteration 5, design D7)
+const INTERNAL_SECRET = 'e2e-only-zone-internal-secret';
 const zoneDatabaseUrl = () => {
   const url = new URL(process.env.DATABASE_URL ?? 'postgresql://app:app@localhost:5432/pain_therapy');
   url.username = 'patient_zone';
@@ -52,7 +54,11 @@ export default defineConfig({
       url: `http://localhost:${PORT}/api/health`,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
-      env: { PATIENT_ZONE_URL: ZONE_URL, MAIL_OUTBOX_DIR: process.env.E2E_OUTBOX_DIR },
+      env: {
+        PATIENT_ZONE_URL: ZONE_URL,
+        MAIL_OUTBOX_DIR: process.env.E2E_OUTBOX_DIR,
+        ZONE_INTERNAL_SECRET: INTERNAL_SECRET,
+      },
     },
     {
       command: process.env.CI
@@ -66,6 +72,8 @@ export default defineConfig({
         PATIENT_ZONE_SECRET: 'e2e-only-patient-zone-secret',
         STORAGE_DRIVER: 'local',
         STORAGE_EXERCISE_LOCAL_DIR: path.resolve('data/exercise-media'),
+        PRACTICE_INTERNAL_URL: `http://localhost:${PORT}`,
+        ZONE_INTERNAL_SECRET: INTERNAL_SECRET,
       },
     },
   ],

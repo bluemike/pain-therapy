@@ -73,7 +73,8 @@
     "emptyText": "Legen Sie die erste Patientin oder den ersten Patienten an. Danach erscheinen hier Kennzahlen und offene Unterschriften.",
     "searchResults": "Treffer für «{q}»",
     "changedBy": "{when} · {user}",
-    "morePending": "{count} weitere in der Patientenliste"
+    "morePending": "{count} weitere in der Patientenliste",
+    "colInvite": "Einladung"
   },
   "consentStatus": {
     "signed": "Unterschrieben",
@@ -207,7 +208,6 @@
     "pendingBanner": "Der Haftungsausschluss ist noch nicht unterschrieben.",
     "resignBanner": "Der Formulartext wurde aktualisiert (Version {version}). Bitte neu unterschreiben lassen.",
     "abortedNote": "Unterschrift am {at} abgebrochen",
-    "patientNoteBanner": "Anmerkung von {name} beim Unterschreiben: «{note}»",
     "tabTreatments": "Behandlungen",
     "treatmentCreatedFlash": "Behandlung eröffnet.",
     "treatmentSavedFlash": "Änderungen an der Behandlung gespeichert.",
@@ -236,7 +236,12 @@
     "createdOn": "Erstellt {at}",
     "version": "Version {version}",
     "printed": "Ausgedruckt {at}",
-    "handouts": "Übungsblätter"
+    "handouts": "Übungsblätter",
+    "channel": "Kanal",
+    "channelIPAD": "iPad",
+    "channelPATIENT_ZONE": "Patienten-Zone",
+    "finalizing": "PDF wird erstellt …",
+    "finalizingMeta": "Unterschrieben am {at} · Textversion {version}"
   },
   "history": {
     "note": "Jede Änderung wird mit altem und neuem Wert gespeichert und kann nicht gelöscht werden.",
@@ -301,7 +306,14 @@
     "zoneSignedOut": "Patienten-Zone: abgemeldet",
     "logCreated": "Übungstagebuch {code}: Eintrag erfasst",
     "logCorrected": "Übungstagebuch {code}: Eintrag korrigiert",
-    "logDeleted": "Übungstagebuch {code}: Eintrag gelöscht"
+    "logDeleted": "Übungstagebuch {code}: Eintrag gelöscht",
+    "signedZone": "Haftungsausschluss in der Patienten-Zone unterschrieben",
+    "documentArchived": "PDF des Haftungsausschlusses archiviert",
+    "linkInvited": "Zur Unterschrift in der Patienten-Zone eingeladen",
+    "inviteEmailSent": "E-Mail mit der Einladung zur Unterschrift gesendet",
+    "inviteEmailFailed": "E-Mail mit der Einladung zur Unterschrift fehlgeschlagen",
+    "noteResolved": "Anmerkung zu den Personalien erledigt",
+    "formOpened": "Patienten-Zone: Formular zur Unterschrift geöffnet"
   },
   "deactivate": {
     "title": "{name} deaktivieren?",
@@ -393,7 +405,8 @@
     "signature": "Unterschrift: {name}",
     "placeDate": "Ort und Datum",
     "footer": "Dokument {number} · Seite {page} von {pages}",
-    "signedAt": "Unterschrieben am {at}"
+    "signedAt": "Unterschrieben am {at}",
+    "online": "Unterschrieben online in der Patienten-Zone, Zugang bestätigt mit Geburtsdatum am {at}"
   },
   "email": {
     "subject": "Ihr unterschriebener Haftungsausschluss ({number})",
@@ -690,7 +703,10 @@
     "step3": "Nach jeder Übung eintragen: gemacht oder nicht, und wie gut Sie sie ausführen konnten (1 bis 10).",
     "validity": "Gültig bis {date}, solange Ihr Heimprogramm läuft.",
     "keep": "Bitte bewahren Sie dieses Blatt sorgfältig auf und geben Sie es nicht weiter. Ein neues Zugangsblatt ersetzt dieses.",
-    "footer": "Ihre Einträge sehen nur Ihre Therapeutin und die Praxis. Fragen: pain-therapy@ayanta.ch"
+    "footer": "Ihre Einträge sehen nur Ihre Therapeutin und die Praxis. Fragen: pain-therapy@ayanta.ch",
+    "introSign": "Für {name}: Bitte lesen und unterschreiben Sie den Haftungsausschluss mit Patienteninformation und Datenschutzhinweis auf Ihrem Telefon.",
+    "step3Sign": "Den Text bis zum Ende lesen, die Einwilligungen bestätigen und mit dem Finger unterschreiben. Das dauert etwa 5 Minuten.",
+    "validitySign": "Gültig bis {date}, solange Ihre Unterschrift aussteht oder Ihr Heimprogramm läuft."
   },
   "exerciseLog": {
     "tile": "Heimprogramm",
@@ -766,5 +782,46 @@
     "revoked": "gesperrt",
     "replaced": "ersetzt",
     "expired": "abgelaufen"
+  },
+  "signatureInviteEmail": {
+    "subject": "Bitte unterschreiben Sie den Haftungsausschluss",
+    "body": "Guten Tag {name}\n\nVor Ihrer Behandlung bitten wir Sie, die Patienteninformation, den Haftungsausschluss und den Datenschutzhinweis zu lesen und online zu unterschreiben. Das dauert etwa 5 Minuten:\n{url}\n\nZur Sicherheit fragen wir beim Öffnen nach Ihrem Geburtsdatum. Der Link ist persönlich, bitte leiten Sie ihn nicht weiter.\n\nFreundliche Grüsse\nPain Therapy · Via Prau da Cuort 5 · 7153 Falera"
+  },
+  "signatureInvite": {
+    "invite": "Zur Unterschrift einladen",
+    "intro": "{name} erhält einen persönlichen Link zur Patienten-Zone, liest und unterschreibt den Haftungsausschluss auf dem eigenen Telefon und bestätigt den Zugang mit dem Geburtsdatum. Ein früherer Link wird ersetzt.",
+    "byEmail": "Per E-Mail an {email}",
+    "noEmail": "Per E-Mail (keine Adresse erfasst)",
+    "showQr": "QR-Code anzeigen (Scannen in der Praxis)",
+    "printSheet": "Zugangsblatt drucken",
+    "qrInfo": "Mit der Kamera des Telefons scannen. Der Link ist höchstens 6 Monate gültig.",
+    "qrLabel": "QR-Code mit dem Link zur Unterschrift",
+    "privacy": "Die Einladung enthält nur den Praxisnamen und den Link, keine Gesundheitsdaten.",
+    "sentFlash": "Die Einladung geht per E-Mail an {to}.",
+    "close": "Schliessen",
+    "errGeneric": "Die Einladung konnte nicht erstellt werden.",
+    "errInactive": "Die Akte ist deaktiviert.",
+    "errNotPending": "Es ist keine Unterschrift ausstehend.",
+    "errDisabled": "Die Patienten-Zone ist noch nicht eingerichtet.",
+    "errNoEmail": "Es ist keine E-Mail-Adresse erfasst.",
+    "pending": "Unterschrift ausstehend",
+    "notInvited": "nicht eingeladen",
+    "sentEMAIL": "Einladung per E-Mail versendet am {at}",
+    "sentSCREEN": "QR-Code angezeigt am {at}",
+    "sentPRINT": "Zugangsblatt gedruckt am {at}",
+    "failed": "Einladung nicht zugestellt",
+    "opened": "Link geöffnet am {at}, noch nicht unterschrieben",
+    "signedOnline": "Unterschrieben online in der Patienten-Zone am {at} · Version {version}",
+    "reinvite": "Erneut einladen",
+    "shortNotInvited": "nicht eingeladen",
+    "shortSentEMAIL": "E-Mail versendet {at}",
+    "shortSentSCREEN": "QR-Code angezeigt {at}",
+    "shortSentPRINT": "Zugangsblatt gedruckt {at}",
+    "shortFailed": "nicht zugestellt",
+    "shortOpened": "Link geöffnet {at}",
+    "inviteShort": "Einladen",
+    "noteTitle": "Anmerkung von {name} zu den Personalien",
+    "noteDone": "Erledigt",
+    "noteHint": "Anmerkung zu den Personalien offen"
   }
 }

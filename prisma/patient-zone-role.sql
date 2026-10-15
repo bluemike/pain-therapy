@@ -4,8 +4,9 @@
 -- list below. The password comes from the session setting pain_therapy.patient_zone_password (set by the runner
 -- from PATIENT_ZONE_DB_PASSWORD); without it the role keeps its password, or stays without login when new.
 --
--- No DELETE anywhere, no access to anamnesis, diagnoses, pain values, photos, documents, contact data or the notes
--- of the therapist. tests/unit/patient-zone-role.test.ts compares the result with the same list.
+-- No DELETE anywhere, no access to anamnesis, diagnoses, pain values, photos, documents, signature images or the
+-- notes of the therapist. Contact data only as far as the consent form shows it for checking (iteration 5, design D8).
+-- tests/unit/patient-zone-role.test.ts compares the result with the same list.
 DO $$
 DECLARE
   pw text := current_setting('pain_therapy.patient_zone_password', true);
@@ -23,8 +24,11 @@ BEGIN
   EXECUTE format('GRANT CONNECT ON DATABASE %I TO patient_zone', current_database());
   GRANT USAGE ON SCHEMA public TO patient_zone;
 
-  -- Patient: first name for the greeting, language, date of birth for the confirmation, status
-  GRANT SELECT ("id", "firstName", "preferredLanguage", "dateOfBirth", "status") ON "Patient" TO patient_zone;
+  -- Patient: first name for the greeting, language, date of birth for the confirmation, status; for the consent form
+  -- the personal details the patient checks (iteration 5, design D8), but not the emergency contact, GP or occupation
+  GRANT SELECT ("id", "firstName", "preferredLanguage", "dateOfBirth", "status",
+                "lastName", "street", "zip", "city", "phone", "mobile", "email", "insurer", "insuranceNumber")
+    ON "Patient" TO patient_zone;
   -- The current home program (design D2): newest consultation with a prescription over all treatments
   GRANT SELECT ("id", "patientId") ON "Treatment" TO patient_zone;
   GRANT SELECT ("id", "treatmentId", "at") ON "Consultation" TO patient_zone;
@@ -40,6 +44,17 @@ BEGIN
   GRANT SELECT, INSERT, UPDATE ON "PatientZoneSession" TO patient_zone;
   GRANT SELECT, INSERT, UPDATE ON "ExerciseLogEntry" TO patient_zone;
   GRANT SELECT, INSERT ON "PatientZoneAttempt" TO patient_zone;
+  -- Signature in the patient zone (iteration 5, design D8): the current text, the own signature state, and writing a
+  -- signature with its consents. No SELECT on the signature images, the remark or SignedDocument; inserts without
+  -- RETURNING (createMany), so INSERT needs no SELECT on the other columns
+  GRANT SELECT ("id", "version", "language", "title", "body") ON "ConsentTextVersion" TO patient_zone;
+  GRANT SELECT ("id", "patientId", "textVersionId", "language", "status", "channel", "zoneSessionId", "startedAt",
+                "completedAt") ON "SignatureSession" TO patient_zone;
+  GRANT INSERT ON "SignatureSession" TO patient_zone;
+  GRANT UPDATE ("status", "completedAt", "abortedAt", "patientNote", "place", "signaturePoints", "signatureSvg")
+    ON "SignatureSession" TO patient_zone;
+  GRANT INSERT ON "Consent" TO patient_zone;
+
   -- Append only, without reading back (the zone inserts without RETURNING)
   GRANT INSERT ON "AuditEvent" TO patient_zone;
 END

@@ -25,7 +25,7 @@ describe('confirmation with the date of birth', () => {
     const sessionId = r.ok ? r.sessionId : '';
     const session = await resolveSession(sessionId, now);
     expect(session?.patient.firstName).toBe('Anna');
-    expect(session?.program.prescriptions.map((x) => x.exerciseCode).sort()).toEqual(['1F', '2A', '2D']);
+    expect(session?.program?.prescriptions.map((x) => x.exerciseCode).sort()).toEqual(['1F', '2A', '2D']);
 
     // Kein Token in der Datenbank: neither the link token nor the session id appear anywhere
     const dump = JSON.stringify(

@@ -7,6 +7,14 @@ export const config = {
   secret:
     process.env.PATIENT_ZONE_SECRET ??
     (process.env.NODE_ENV === 'production' ? '' : 'local-development-patient-zone-secret'),
+  /**
+   * Internal address of the practice app and the key of its internal routes (iteration 5, design D7, D11): after a
+   * signature the zone asks the practice app to create the PDF. Key Vault secret zone-internal-secret in Azure.
+   */
+  practiceInternalUrl: (process.env.PRACTICE_INTERNAL_URL ?? '').trim().replace(/\/+$/, ''),
+  internalSecret:
+    process.env.ZONE_INTERNAL_SECRET ??
+    (process.env.NODE_ENV === 'production' ? '' : 'local-development-zone-internal-secret'),
   storage: {
     driver: (process.env.STORAGE_DRIVER ?? 'local') as 'local' | 'azure',
     /** Same folder as the practice app locally (npm run media:placeholders writes there) */

@@ -14,7 +14,7 @@ Ziel: `https://pain-therapy.ayanta.ch`, alle Daten in **Switzerland North**. Die
 | Storage Account (ZRS), Container `signed-documents` | PDF-Archiv mit Versionierung und unveränderlicher Aufbewahrung (20 Jahre) |
 | Container `clinical-photos` im selben Storage Account | Fotos von Behandlungen und Konsultationen, privat, Versionierung und Soft Delete (365 Tage), ohne Unveränderlichkeit; *Entfernen* in der App blendet nur aus |
 | Container `exercise-media` im selben Storage Account | Bilder und Texte der digitalisierten L&B-Übungsblätter, privat, von Hand geladen (siehe Iteration 3); die App liefert die Bilder nur an angemeldete Benutzer:innen aus |
-| Key Vault | `AUTH_SECRET`, Client Secret, Datenbank-URL; ab Iteration 4 `patient-zone-database-url`, `patient-zone-db-password`, `patient-zone-secret` |
+| Key Vault | `AUTH_SECRET`, Client Secret, Datenbank-URL; ab Iteration 4 `patient-zone-database-url`, `patient-zone-db-password`, `patient-zone-secret`; ab Iteration 5 `zone-internal-secret` |
 | User-assigned Managed Identity `id-pain-therapy` | Zugriff auf Registry, Key Vault, Blob Storage und Graph (E-Mail) |
 | User-assigned Managed Identity `id-pain-therapy-zone` | nur für die Patienten-Zone: *AcrPull*, *Key Vault Secrets User* nur auf ihren zwei Secrets, *Storage Blob Data Reader* nur auf `exercise-media` |
 | Log Analytics | Logs der Container Apps, 90 Tage |
@@ -206,6 +206,22 @@ Sobald beide auflösen, wie bei der Praxis-App in zwei Läufen: GitHub-Variable 
 - Einmal durchspielen: Übungsblatt mit Link an eine Test-Patientin senden, Link auf dem Telefon öffnen, Geburtsdatum bestätigen, Einträge erfassen, *Heimprogramm* im Cockpit und *Übungstagebuch* in der Akte prüfen, *Link sperren*.
 
 **Rollback:** vorherige Revision beider Apps aktivieren (`az containerapp revision list -n ca-pain-therapy-zone …`). Die neuen Tabellen und die Rolle bleiben; die alte Praxis-App kennt sie nicht und stört sich nicht daran. Die Zone lässt sich jederzeit abschalten, indem `ZONE_CUSTOM_DOMAIN_MODE` auf `off` zurückgeht (blendet die Link-Funktionen aus) oder bis zum nächsten Deployment die Rolle `patient_zone` gesperrt wird (`ALTER ROLE patient_zone NOLOGIN`; der Migrationsjob setzt `LOGIN` wieder).
+
+## Iteration 5 (Unterschrift in der Patienten-Zone)
+
+Die Patientin unterschreibt den Haftungsausschluss auf dem eigenen Telefon. Die Zone speichert nur Unterschrift und Einwilligungen; PDF, Archiv und E-Mail macht weiterhin die Praxis-App. Alles ist additiv, ohne neuen Parameter und ohne neues GitHub-Secret:
+
+- **Key Vault:** Secret `zone-internal-secret` (aus `AUTH_SECRET` und `PATIENT_ZONE_DB_PASSWORD` abgeleitet), gelesen von der Praxis-App (Rolle auf dem Vault wie bisher) und von der Zone (neue Rollenzuweisung *Key Vault Secrets User* nur auf diesem Secret).
+- **Praxis-App:** Variable `ZONE_INTERNAL_SECRET`. Die Routen `/api/internal/signatures/…` sind von der Entra-Anmeldung ausgenommen und nehmen nur Aufrufe mit gültigem HMAC an.
+- **Zone:** Variablen `ZONE_INTERNAL_SECRET` und `PRACTICE_INTERNAL_URL` (Standard-Hostname `ca-pain-therapy.<Umgebung>.azurecontainerapps.io`, unabhängig vom eigenen Hostnamen). Nach einer Unterschrift ruft sie die Praxis-App auf, die das PDF erzeugt.
+- **Job** `caj-pain-therapy-finalize` (Zeitplan alle 5 Minuten, Image und Identität der Praxis-App, `node scripts/finalize-pending.mjs`): erzeugt das PDF für Unterschriften, bei denen der direkte Aufruf nicht geklappt hat.
+- **Datenbank:** additive Migration `20261015120000_zone_consent`; der Migrationsjob erweitert die Rechte der Rolle `patient_zone` (Personalien zur Prüfung, Formulartexte, Unterschrift schreiben; keine Dokumente, keine Unterschriftsbilder).
+
+`az deployment group what-if` erwartet: *Create* Secret `zone-internal-secret`, eine Rollenzuweisung, Job `caj-pain-therapy-finalize`; *Modify* der beiden Container Apps (Secret und Variablen). Die Einladung erscheint in der Akte nur, wenn `PATIENT_ZONE_URL` gesetzt ist.
+
+**Vor dem Go-live (Praxis):** Texte der Einladungs-E-Mail (`messages/*.json`, `signatureInviteEmail`), des Zugangsblatts zur Unterschrift (`accessSheet.introSign`, `step3Sign`, `validitySign`) und der Seiten in der Zone (`apps/patient-zone/messages/*.json`, `signTask`, `signForm`, `signThanks`) bestätigen. Einmal durchspielen: neue Test-Patientin per E-Mail einladen, auf dem Telefon unterschreiben, PDF unter *Dokumente* (Kanal *Patienten-Zone*) und die E-Mail prüfen.
+
+**Rollback:** vorherige Revisionen beider Apps aktivieren. Unterschriften aus der Zone ohne PDF verarbeitet der Job nach dem erneuten Ausrollen; der Job selbst lässt sich mit `az containerapp job stop`/`update --trigger-type Manual` anhalten.
 
 ## Nach dem Go-live
 

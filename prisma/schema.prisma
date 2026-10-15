@@ -50,6 +50,12 @@ enum SignatureStatus {
   SIGNED
 }
 
+/// Where the patient signed (iteration 5, design D6)
+enum SignatureChannel {
+  IPAD
+  PATIENT_ZONE
+}
+
 enum ConsentKind {
   LIABILITY_WAIVER
   DATA_PROCESSING
@@ -164,26 +170,34 @@ model ConsentTextVersion {
 }
 
 model SignatureSession {
-  id              String             @id @default(cuid())
+  id              String              @id @default(cuid())
   patientId       String
-  patient         Patient            @relation(fields: [patientId], references: [id])
+  patient         Patient             @relation(fields: [patientId], references: [id])
   textVersionId   String
-  textVersion     ConsentTextVersion @relation(fields: [textVersionId], references: [id])
+  textVersion     ConsentTextVersion  @relation(fields: [textVersionId], references: [id])
   language        Language
-  status          SignatureStatus    @default(OPEN)
+  status          SignatureStatus     @default(OPEN)
   startedBy       String
-  startedAt       DateTime           @default(now())
+  startedAt       DateTime            @default(now())
   completedAt     DateTime?
   abortedAt       DateTime?
   patientNote     String?
   place           String?
   signaturePoints Json?
   signatureSvg    String?
+  channel         SignatureChannel    @default(IPAD)
+  /// Device session of the patient zone that opened the form (channel PATIENT_ZONE)
+  zoneSessionId   String?
+  zoneSession     PatientZoneSession? @relation(fields: [zoneSessionId], references: [id])
+  /// "Erledigt" on the patient's remark about her personal details
+  noteResolvedAt  DateTime?
+  noteResolvedBy  String?
 
   consents Consent[]
   document SignedDocument?
 
   @@index([patientId, startedAt])
+  @@index([status, completedAt])
 }
 
 model Consent {
@@ -629,11 +643,18 @@ enum AccessLinkChannel {
 }
 
 /// How a link reached the patient, with the email status like HandoutDelivery; never contains the token
+/// Why a link went out: the home program (iteration 4) or the invitation to sign (iteration 5, design D3)
+enum AccessLinkPurpose {
+  EXERCISES
+  SIGNATURE
+}
+
 model AccessLinkDelivery {
   id          String            @id @default(cuid())
   linkId      String
   link        PatientAccessLink @relation(fields: [linkId], references: [id])
   channel     AccessLinkChannel
+  purpose     AccessLinkPurpose @default(EXERCISES)
   /// Set when the link went out with an exercise sheet (in the text of its email, or as access sheet with the print)
   handoutId   String?
   recipient   String?
@@ -664,7 +685,8 @@ model PatientZoneSession {
   endedAt    DateTime?
   lastSeenAt DateTime?
 
-  entries ExerciseLogEntry[]
+  entries           ExerciseLogEntry[]
+  signatureSessions SignatureSession[]
 
   @@index([patientId])
 }

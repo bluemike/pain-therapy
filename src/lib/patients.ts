@@ -3,6 +3,7 @@ import { db } from './db';
 import { audit } from './audit';
 import { formatDate, parseSwissDate } from './format';
 import { ANAMNESIS_FIELDS, PATIENT_FIELDS, type PatientInput } from './schemas';
+import { latestSignedVersion } from '@pain-therapy/shared/signing';
 import { currentVersionNumber } from './consent-texts';
 import type { Actor } from './session';
 
@@ -15,14 +16,26 @@ export function consentStatusOf(latestSignedVersion: number | null | undefined, 
   return latestSignedVersion < currentVersion ? 'resign' : 'signed';
 }
 
-const withLatestDoc = {
-  documents: { orderBy: { createdAt: 'desc' }, take: 1, select: { textVersion: true, createdAt: true } },
+/**
+ * The latest completed signature counts, not the latest PDF (iteration 5, design D2): a signature in the patient zone
+ * is valid at once, while the practice app may still be creating its PDF.
+ */
+const withLatestSignature = {
+  signatureSessions: {
+    where: { status: 'SIGNED' },
+    orderBy: { completedAt: 'desc' },
+    take: 1,
+    select: { completedAt: true, textVersion: { select: { version: true } } },
+  },
 } satisfies Prisma.PatientInclude;
 
 export type PatientListItem = Patient & { consent: ConsentStatus };
 
-function decorate<T extends Patient & { documents: { textVersion: number }[] }>(p: T, current: number) {
-  return { ...p, consent: consentStatusOf(p.documents[0]?.textVersion, current) };
+function decorate<T extends Patient & { signatureSessions: { textVersion: { version: number } }[] }>(
+  p: T,
+  current: number,
+) {
+  return { ...p, consent: consentStatusOf(p.signatureSessions[0]?.textVersion.version, current) };
 }
 
 /** patient-records: Patientenliste und Suche (name, date of birth or insurance number) */
@@ -46,7 +59,7 @@ export async function listPatients(opts: { q?: string; filter?: 'active' | 'inac
   const [rows, current] = await Promise.all([
     db.patient.findMany({
       where,
-      include: withLatestDoc,
+      include: withLatestSignature,
       orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
       take: 500,
     }),
@@ -68,22 +81,30 @@ export async function dashboardData() {
   startOfMonth.setUTCDate(1);
   startOfMonth.setUTCHours(0, 0, 0, 0);
   const [active, current, newThisMonth, recent] = await Promise.all([
-    db.patient.findMany({ where: { status: 'ACTIVE' }, include: withLatestDoc, orderBy: { lastName: 'asc' } }),
+    db.patient.findMany({ where: { status: 'ACTIVE' }, include: withLatestSignature, orderBy: { lastName: 'asc' } }),
     currentVersionNumber(),
     db.patient.count({ where: { createdAt: { gte: startOfMonth } } }),
     db.patient.findMany({
       where: { status: 'ACTIVE' },
-      include: withLatestDoc,
+      include: withLatestSignature,
       orderBy: { updatedAt: 'desc' },
       take: 5,
     }),
   ]);
   const decorated = active.map((p) => decorate(p, current));
+  // zone-consent-invitation: remarks of patients on their personal details, until marked as done (design D9)
+  const openNotes = await db.signatureSession.findMany({
+    where: { status: 'SIGNED', patientNote: { not: null }, noteResolvedAt: null, patient: { status: 'ACTIVE' } },
+    orderBy: { completedAt: 'desc' },
+    take: 20,
+    select: { id: true, patient: { select: { id: true, firstName: true, lastName: true } } },
+  });
   return {
     activeCount: active.length,
     newThisMonth,
     pending: decorated.filter((p) => p.consent !== 'signed'),
     recent: recent.map((p) => decorate(p, current)),
+    openNotes: openNotes.map((n) => n.patient),
   };
 }
 
@@ -109,8 +130,29 @@ export async function viewPatient(actor: Actor, id: string) {
   });
   if (!patient) return null;
   await audit(actor, 'patient.viewed', { patientId: id });
-  const current = await currentVersionNumber();
-  return { ...patient, consent: consentStatusOf(patient.documents[0]?.textVersion, current), currentVersion: current };
+  const [current, latest, unresolvedNote, finalizing] = await Promise.all([
+    currentVersionNumber(),
+    latestSignedVersion(db, id),
+    // zone-consent-invitation: Anmerkung zu den Personalien, shown until a user marks it as done (design D9)
+    db.signatureSession.findFirst({
+      where: { patientId: id, status: 'SIGNED', patientNote: { not: null }, noteResolvedAt: null },
+      orderBy: { completedAt: 'desc' },
+      select: { id: true, patientNote: true, channel: true, completedAt: true },
+    }),
+    // Signed, PDF still being created (design D7, D9: "wird erstellt …")
+    db.signatureSession.findMany({
+      where: { patientId: id, status: 'SIGNED', document: null },
+      orderBy: { completedAt: 'desc' },
+      select: { id: true, channel: true, completedAt: true, textVersion: { select: { version: true } } },
+    }),
+  ]);
+  return {
+    ...patient,
+    consent: consentStatusOf(latest, current),
+    currentVersion: current,
+    unresolvedNote,
+    finalizing,
+  };
 }
 
 export async function getPatient(id: string) {

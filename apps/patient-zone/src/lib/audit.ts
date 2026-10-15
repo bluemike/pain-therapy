@@ -10,6 +10,7 @@ export type ZoneAuditAction =
   | 'accessLink.blocked'
   | 'zone.viewed'
   | 'zone.signedOut'
+  | 'signing.formOpened'
   | 'exerciseLog.created'
   | 'exerciseLog.corrected'
   | 'exerciseLog.deleted';

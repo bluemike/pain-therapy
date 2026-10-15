@@ -197,30 +197,8 @@ export function formDataToObject(fd: FormData): Record<string, string> {
   return obj;
 }
 
-export const signingSchema = z.object({
-  note: z
-    .string()
-    .trim()
-    .max(1000)
-    .transform((v) => (v === '' ? null : v)),
-  place: z.string().trim().min(1).max(100),
-  readToEnd: z.literal(true),
-  liability: z.literal(true),
-  dataProcessing: z.literal(true),
-  unencryptedEmail: z.boolean(),
-  strokes: z
-    .array(
-      z
-        .array(z.tuple([z.number(), z.number(), z.number()]))
-        .min(1)
-        .max(5000),
-    )
-    .min(1)
-    .max(200),
-  width: z.number().positive().max(4000),
-  height: z.number().positive().max(4000),
-});
-export type SigningInput = z.infer<typeof signingSchema>;
+// Shared with the patient zone (iteration 5, design D10)
+export { signingSchema, type SigningInput } from '@pain-therapy/shared/signing';
 
 export type PatientFormValues = Record<string, string | boolean>;
 

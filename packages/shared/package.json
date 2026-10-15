@@ -2,7 +2,7 @@
   "name": "@pain-therapy/shared",
   "version": "0.1.0",
   "private": true,
-  "description": "Code shared by the practice app and the patient zone: repetitions, adherence, tokens, entries",
+  "description": "Code shared by the practice app and the patient zone: repetitions, adherence, tokens, entries, signatures",
   "exports": {
     ".": "./src/index.ts",
     "./*": "./src/*.ts"
@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "perfect-freehand": "^1.2.3",
     "zod": "^4.6.6"
   },
   "peerDependencies": {

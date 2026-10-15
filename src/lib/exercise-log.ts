@@ -1,5 +1,6 @@
 import { adherence, type Adherence } from '@pain-therapy/shared/adherence';
 import { PROGRAM_ACTIVE_WEEKS, currentProgram, programActive } from '@pain-therapy/shared/program';
+import { signatureStateOf } from '@pain-therapy/shared/signing';
 import type { Repetition } from '@pain-therapy/shared/home-program';
 import { DAY_MS } from '@pain-therapy/shared/time';
 import { db } from './db';
@@ -19,7 +20,7 @@ const ENTRIES_SHOWN = 200;
 export async function exerciseLogOf(actor: Actor, patientId: string, now = new Date()) {
   const patient = await db.patient.findUniqueOrThrow({ where: { id: patientId }, select: { status: true } });
   const program = await currentProgram(db, patientId, now);
-  const [consultation, entries, link] = await Promise.all([
+  const [consultation, entries, link, signature] = await Promise.all([
     program
       ? db.consultation.findUnique({
           where: { id: program.consultationId },
@@ -41,6 +42,7 @@ export async function exerciseLogOf(actor: Actor, patientId: string, now = new D
       include: { prescription: { include: { exercise: { select: { nameDe: true, nameEn: true } } } } },
     }),
     latestLinkOf(patientId),
+    signatureStateOf(db, patientId),
   ]);
   await audit(actor, 'exerciseLog.viewed', { patientId });
   const active = patient.status === 'ACTIVE' && !!program?.active;
@@ -63,7 +65,8 @@ export async function exerciseLogOf(actor: Actor, patientId: string, now = new D
     link,
     linkStatus: linkStatusOf(
       link,
-      { patientActive: patient.status === 'ACTIVE', programActive: !!program?.active },
+      // A pending signature also keeps the link valid (iteration 5, design D4)
+      { patientActive: patient.status === 'ACTIVE', purposeActive: !!program?.active || signature.pending },
       now,
     ),
   };
@@ -125,7 +128,7 @@ export async function homeProgramOverview(now = new Date()): Promise<HomeProgram
         c.at,
         now,
       ),
-      linkStatus: linkStatusOf(link, { patientActive: true, programActive: true }, now),
+      linkStatus: linkStatusOf(link, { patientActive: true, purposeActive: true }, now),
     };
   });
   return rows.sort(

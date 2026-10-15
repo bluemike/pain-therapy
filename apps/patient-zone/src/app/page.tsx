@@ -1,7 +1,8 @@
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { repetitionParts } from '@pain-therapy/shared/home-program';
 import { dayKey, zurichInputs } from '@pain-therapy/shared/time';
-import { touchSession } from '@/lib/access';
+import { redirect } from 'next/navigation';
+import { programSession, touchSession } from '@/lib/access';
 import { zoneAudit } from '@/lib/audit';
 import { recentEntries, today } from '@/lib/entries';
 import { getZoneSession } from '@/lib/session';
@@ -18,7 +19,10 @@ export default async function Home({
   searchParams: Promise<{ ok?: string; n?: string; err?: string; out?: string }>;
 }) {
   const sp = await searchParams;
-  const s = await getZoneSession();
+  const zone = await getZoneSession();
+  // zone-consent-signing: Unterschrift vor den Übungen (iteration 5, design D5)
+  if (zone?.signaturePending) redirect('/unterschrift');
+  const s = programSession(zone);
   if (!s) {
     const t = await getTranslations('start');
     return (
