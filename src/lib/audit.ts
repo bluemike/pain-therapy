@@ -11,6 +11,8 @@ export type AuditAction =
   | 'signing.started'
   | 'signing.aborted'
   | 'signing.completed'
+  // Iteration 5 (design D7): the PDF of a signature was created and archived (iPad and patient zone)
+  | 'document.archived'
   | 'document.viewed'
   | 'email.sent'
   | 'email.failed'
@@ -33,6 +35,9 @@ export type AuditAction =
   | 'accessLink.shown'
   | 'accessLink.printed'
   | 'accessLink.revoked'
+  // zone-consent-invitation (iteration 5, design D3, D9): invitation to sign, remark of the patient marked as done
+  | 'accessLink.invited'
+  | 'signing.noteResolved'
   // Written by the patient zone (user "Patienten-Zone", design D12): confirmation with the date of birth, locks,
   // device session and the exercise log
   | 'accessLink.confirmed'
@@ -41,6 +46,7 @@ export type AuditAction =
   | 'accessLink.blocked'
   | 'zone.viewed'
   | 'zone.signedOut'
+  | 'signing.formOpened'
   | 'exerciseLog.created'
   | 'exerciseLog.corrected'
   | 'exerciseLog.deleted'

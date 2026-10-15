@@ -26,7 +26,7 @@ export async function submitSignature(sid: string, payload: unknown): Promise<Si
       sid,
       parsed.data,
     );
-    if (delivery.status === 'PENDING') after(() => deliverEmail(delivery.id).catch(console.error));
+    if (delivery?.status === 'PENDING') after(() => deliverEmail(delivery.id).catch(console.error));
   } catch (e) {
     if (e instanceof SigningError) return { error: e.code };
     console.error(e);

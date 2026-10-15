@@ -14,11 +14,11 @@ Behandlungen (1 bis n pro Patient, je Bereich) mit Diagnose, Bereich, Schmerzgra
 
 Digitalisierte Übungsblätter (27 Übungen mit Hauptbild, Blatt, Inhalten und Zeitbedarf), Block "Selbstausführung" in der Konsultation mit Wiederholungen und Gesamtzeitbedarf, persönliches Übungsblatt als PDF per E-Mail oder Ausdruck. Siehe `openspec/changes/iteration-3-home-exercises`.
 
-## Iteration 4 (spezifiziert)
+## Iteration 4 (in Betrieb)
 
 Patienten-Zone als eigene App ohne Entra-Anmeldung auf derselben Datenbank: persönlicher Link mit Bestätigung über das Geburtsdatum, Übungstagebuch der Patientin (gemacht ja/nein, Bewertung 1 bis 10, Datum und Zeit, Bemerkung), Kachel "Heimprogramm" im Cockpit und Reiter "Übungstagebuch" in der Akte mit der Einhaltung der verordneten Wiederholungen. Siehe `openspec/changes/iteration-4-patient-zone`.
 
-## Iteration 5 (spezifiziert)
+## Iteration 5 (umgesetzt)
 
 Haftungsausschluss in der Patienten-Zone: Einladung zur Unterschrift per E-Mail oder QR-Code, Unterschrift auf dem eigenen Telefon vor den Übungen, PDF, Archiv und Zustellung durch die Praxis-App wie bisher; der Patientenmodus auf dem iPad bleibt als Ausweg. Siehe `openspec/changes/iteration-5-zone-consent`.
 

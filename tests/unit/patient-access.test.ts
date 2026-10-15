@@ -183,7 +183,7 @@ describe('access link from the record (Link senden aus der Akte)', () => {
     expect(link?.tokenHash).toBe(sha(tokenOf(r.url)));
     // Valid for six months
     expect(Math.round((link!.expiresAt.getTime() - link!.createdAt.getTime()) / DAY)).toBeGreaterThanOrEqual(181);
-    expect(linkStatusOf(link, { patientActive: true, programActive: true })).toBe('sent');
+    expect(linkStatusOf(link, { patientActive: true, purposeActive: true })).toBe('sent');
     await expectTokenNotStored(tokenOf(r.url));
     const actions = (await historyOf(p.id)).map((e) => e.action);
     expect(actions).toEqual(expect.arrayContaining(['accessLink.issued', 'accessLink.sent', 'email.sent']));
@@ -199,9 +199,9 @@ describe('access link from the record (Link senden aus der Akte)', () => {
     expect(sheet.pages).toBe(1);
     expect(sheet.text).toContain('Anna Qr');
     expect(sent).toHaveLength(0);
-    expect(linkStatusOf(await latestLinkOf(p.id), { patientActive: true, programActive: true })).toBe('shown');
+    expect(linkStatusOf(await latestLinkOf(p.id), { patientActive: true, purposeActive: true })).toBe('shown');
     await accessSheetPrinted(actor, p.id, r.linkId);
-    expect(linkStatusOf(await latestLinkOf(p.id), { patientActive: true, programActive: true })).toBe('printed');
+    expect(linkStatusOf(await latestLinkOf(p.id), { patientActive: true, purposeActive: true })).toBe('printed');
     expect((await historyOf(p.id)).map((e) => e.action)).toContain('accessLink.printed');
   });
 
@@ -211,7 +211,7 @@ describe('access link from the record (Link senden aus der Akte)', () => {
     await sendAccessLink(actor, p.id);
     const links = await db.patientAccessLink.findMany({ where: { patientId: p.id }, orderBy: { createdAt: 'asc' } });
     expect(links).toHaveLength(2);
-    const ctx = { patientActive: true, programActive: true };
+    const ctx = { patientActive: true, purposeActive: true };
     expect(linkState(links[0], ctx)).toBe('replaced');
     expect(linkState(links[1], ctx)).toBe('valid');
     expect((await historyOf(p.id)).map((e) => e.action)).toContain('accessLink.replaced');
@@ -232,7 +232,7 @@ describe('access link from the record (Link senden aus der Akte)', () => {
     const revoked = await revokeAccessLink(actor, p.id);
     expect(revoked?.revokedBy).toBe(actor.name);
     expect((await db.patientZoneSession.findUniqueOrThrow({ where: { id: session.id } })).endedAt).not.toBeNull();
-    expect(linkStatusOf(await latestLinkOf(p.id), { patientActive: true, programActive: true })).toBe('revoked');
+    expect(linkStatusOf(await latestLinkOf(p.id), { patientActive: true, purposeActive: true })).toBe('revoked');
     // Nothing left to revoke
     expect(await revokeAccessLink(actor, p.id)).toBeNull();
     // Links stay in the database
@@ -267,7 +267,7 @@ describe('link with the exercise sheet (Link mit dem Übungsblatt)', () => {
     const linkDelivery = await db.accessLinkDelivery.findFirstOrThrow({ where: { handoutId: handout.id } });
     expect(linkDelivery).toMatchObject({ channel: 'EMAIL', status: 'SENT' });
     await expectTokenNotStored(tokenOf(access!.url));
-    expect(linkStatusOf(await latestLinkOf(p.id), { patientActive: true, programActive: true })).toBe('sent');
+    expect(linkStatusOf(await latestLinkOf(p.id), { patientActive: true, purposeActive: true })).toBe('sent');
   });
 
   it('adds the access sheet to the printout only, and nothing without the checkbox', async () => {

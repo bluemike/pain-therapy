@@ -5,28 +5,70 @@ import { db } from '@/lib/db';
 import { applyPatientZoneRole } from '../../prisma/patient-zone-role.mjs';
 
 /**
- * patient-zone-app: Rechte der Rolle patient_zone (iteration 4, task 1.4). Applies prisma/patient-zone-role.sql to
- * the test database like the migration job does, compares the grants with the allowed list and checks as
- * patient_zone that diagnoses, anamnesis and contact data cannot be read and nothing can be deleted.
+ * patient-zone-app: Rechte der Rolle patient_zone (iteration 4, task 1.4; extended in iteration 5, task 1.4). Applies
+ * prisma/patient-zone-role.sql to the test database like the migration job does, compares the grants with the
+ * allowed list and checks as patient_zone that diagnoses, anamnesis, documents and signature images cannot be read
+ * and nothing can be deleted.
  */
 
 const PASSWORD = process.env.PATIENT_ZONE_DB_PASSWORD ?? 'patient_zone';
 
-/** The allowed list of design D12 (HomePrescription without intensity, steps and note, design D7) */
+/**
+ * The allowed list of design D12 (HomePrescription without intensity, steps and note, design D7), extended by
+ * iteration 5 design D8 for the signature in the patient zone
+ */
 const TABLES: Record<string, string[]> = {
   AuditEvent: ['INSERT'],
+  Consent: ['INSERT'],
   ExerciseLogEntry: ['INSERT', 'SELECT', 'UPDATE'],
   PatientAccessLink: ['SELECT'],
   PatientZoneAttempt: ['INSERT', 'SELECT'],
   PatientZoneSession: ['INSERT', 'SELECT', 'UPDATE'],
+  SignatureSession: ['INSERT'],
 };
 const COLUMNS: Record<string, string[]> = {
+  'ConsentTextVersion.SELECT': ['body', 'id', 'language', 'title', 'version'],
   'Consultation.SELECT': ['at', 'id', 'treatmentId'],
   'Exercise.SELECT': ['code', 'nameDe', 'nameEn'],
   'ExerciseSheet.SELECT': ['exerciseCode', 'mainImage', 'rollingSeconds', 'sides', 'stretchSecondsPerSide'],
   'HomePrescription.SELECT': ['consultationId', 'exerciseCode', 'repetition'],
-  'Patient.SELECT': ['dateOfBirth', 'firstName', 'id', 'preferredLanguage', 'status'],
+  'Patient.SELECT': [
+    'city',
+    'dateOfBirth',
+    'email',
+    'firstName',
+    'id',
+    'insuranceNumber',
+    'insurer',
+    'lastName',
+    'mobile',
+    'phone',
+    'preferredLanguage',
+    'status',
+    'street',
+    'zip',
+  ],
   'PatientAccessLink.UPDATE': ['blockedAt', 'failedAttempts', 'lastUsedAt', 'lockedUntil'],
+  'SignatureSession.SELECT': [
+    'channel',
+    'completedAt',
+    'id',
+    'language',
+    'patientId',
+    'startedAt',
+    'status',
+    'textVersionId',
+    'zoneSessionId',
+  ],
+  'SignatureSession.UPDATE': [
+    'abortedAt',
+    'completedAt',
+    'patientNote',
+    'place',
+    'signaturePoints',
+    'signatureSvg',
+    'status',
+  ],
   'Treatment.SELECT': ['id', 'patientId'],
 };
 
@@ -80,7 +122,13 @@ describe.skipIf(!allowed)('role patient_zone', () => {
     ['the diagnosis of a treatment', 'SELECT "diagnosis" FROM "Treatment"'],
     ['pain values', 'SELECT "painBefore" FROM "Consultation"'],
     ['the anamnesis', 'SELECT * FROM "Anamnesis"'],
-    ['contact data', 'SELECT "email", "phone", "mobile" FROM "Patient"'],
+    ['the emergency contact and GP', 'SELECT "emergencyName", "emergencyPhone", "gp" FROM "Patient"'],
+    ['signature images', 'SELECT "signatureSvg", "signaturePoints" FROM "SignatureSession"'],
+    ['the remark of an earlier signature', 'SELECT "patientNote" FROM "SignatureSession"'],
+    ['consents', 'SELECT * FROM "Consent"'],
+    ['email deliveries', 'SELECT * FROM "EmailDelivery"'],
+    ['deleting signatures', 'DELETE FROM "SignatureSession"'],
+    ['resolving a remark', 'UPDATE "SignatureSession" SET "noteResolvedAt" = now()'],
     ['the note of the therapist', 'SELECT "note" FROM "HomePrescription"'],
     ['photos', 'SELECT * FROM "ClinicalPhoto"'],
     ['documents', 'SELECT * FROM "SignedDocument"'],

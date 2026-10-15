@@ -1,6 +1,14 @@
-import type { AccessLinkDelivery, PatientAccessLink, Prisma, PrismaClient } from '@prisma/client';
+import type {
+  AccessLinkChannel,
+  AccessLinkDelivery,
+  AccessLinkPurpose,
+  PatientAccessLink,
+  Prisma,
+  PrismaClient,
+} from '@prisma/client';
 import { linkExpiry, linkState, type LinkState } from '@pain-therapy/shared/access';
 import { currentProgram } from '@pain-therapy/shared/program';
+import { signatureStateOf } from '@pain-therapy/shared/signing';
 import { hashToken, linkUrl, newToken } from '@pain-therapy/shared/tokens';
 import { db } from './db';
 import { audit, SYSTEM_ACTOR } from './audit';
@@ -19,7 +27,7 @@ import type { Actor } from './session';
  */
 
 export class AccessLinkError extends Error {
-  constructor(public code: 'notFound' | 'inactive' | 'noProgram' | 'disabled') {
+  constructor(public code: 'notFound' | 'inactive' | 'noProgram' | 'disabled' | 'notPending' | 'noEmail') {
     super(code);
   }
 }
@@ -31,7 +39,7 @@ export const zoneEnabled = () => !!config.patientZone.url;
 
 /**
  * Issues a new link and replaces the valid one of the patient (Neuer Link ersetzt den alten). Only for an active
- * patient with an active home program (design D2).
+ * patient with an active home program (iteration 4, design D2) or a pending signature (iteration 5, design D3, D4).
  */
 export async function issueAccessLink(
   actor: Pick<Actor, 'id' | 'name'>,
@@ -44,7 +52,7 @@ export async function issueAccessLink(
   if (!patient) throw new AccessLinkError('notFound');
   if (patient.status !== 'ACTIVE') throw new AccessLinkError('inactive');
   const program = await currentProgram(tx, patientId, now);
-  if (!program?.active) throw new AccessLinkError('noProgram');
+  if (!program?.active && !(await signatureStateOf(tx, patientId)).pending) throw new AccessLinkError('noProgram');
   const previous = await tx.patientAccessLink.findMany({
     where: { patientId, replacedAt: null, revokedAt: null },
     select: { id: true },
@@ -112,6 +120,53 @@ export async function sendAccessLink(actor: Actor, patientId: string) {
   return { channel: 'SCREEN' as const, linkId: link.id, qr: await qrSvg(url), accessSheet: pdf };
 }
 
+/**
+ * zone-consent-invitation: Zur Unterschrift einladen (iteration 5, design D3). Only while a signature is pending.
+ * Issues a new link (replacing the previous one) and sends it by email or shows it as QR code. The invitation email
+ * goes to the stored address even without consent to unencrypted email: it holds only the practice name and the
+ * link, and the consent is given with exactly this form (Einladung ohne E-Mail-Einwilligung).
+ */
+export async function inviteToSign(actor: Actor, patientId: string, channel: 'EMAIL' | 'SCREEN') {
+  const p = await patientOf(patientId);
+  if (!(await signatureStateOf(db, patientId)).pending) throw new AccessLinkError('notPending');
+  if (channel === 'EMAIL' && !p.email) throw new AccessLinkError('noEmail');
+  const { link, url, delivery } = await db.$transaction(async (tx) => {
+    const issued = await issueAccessLink(actor, patientId, tx);
+    const delivery = await tx.accessLinkDelivery.create({
+      data: {
+        linkId: issued.link.id,
+        channel,
+        purpose: 'SIGNATURE',
+        recipient: channel === 'EMAIL' ? p.email : null,
+        status: channel === 'EMAIL' ? 'PENDING' : null,
+        requestedBy: actor.name,
+      },
+    });
+    await audit(
+      actor,
+      'accessLink.invited',
+      { patientId, after: channel === 'EMAIL' ? p.email : null, details: { linkId: issued.link.id, channel } },
+      tx,
+    );
+    return { ...issued, delivery };
+  });
+  if (channel === 'EMAIL') return { channel: 'EMAIL' as const, deliveryId: delivery.id, url, to: p.email! };
+  const pdf = await renderAccessSheetPdf({
+    language: p.preferredLanguage,
+    patient: p,
+    url,
+    expiresAt: link.expiresAt,
+    purpose: 'SIGNATURE',
+  });
+  return { channel: 'SCREEN' as const, linkId: link.id, qr: await qrSvg(url), accessSheet: pdf };
+}
+
+/** Invitation to sign, in the patient's language: practice, request, link, date of birth; no health data */
+export function signatureInviteEmail(language: 'de' | 'en', name: string, url: string) {
+  const t = translator(language, 'signatureInviteEmail');
+  return { subject: t('subject'), text: t('body', { name, url }) };
+}
+
 /** Text of the email with the link, in the patient's language (Text von der Praxis zu bestätigen, task 10.3) */
 export function accessLinkEmail(language: 'de' | 'en', name: string, url: string, expiresAt: Date) {
   const t = translator(language, 'accessLinkEmail');
@@ -124,7 +179,11 @@ export async function deliverAccessLink(deliveryId: string, url: string, opts: {
   if (!delivery || delivery.channel !== 'EMAIL' || delivery.status !== 'PENDING' || !delivery.recipient)
     return delivery;
   const p = await patientOf(delivery.link.patientId);
-  const mail = accessLinkEmail(p.preferredLanguage, `${p.firstName} ${p.lastName}`, url, delivery.link.expiresAt);
+  const name = `${p.firstName} ${p.lastName}`;
+  const mail =
+    delivery.purpose === 'SIGNATURE'
+      ? signatureInviteEmail(p.preferredLanguage, name, url)
+      : accessLinkEmail(p.preferredLanguage, name, url, delivery.link.expiresAt);
   const result = await sendWithRetry(
     { to: delivery.recipient, ...mail },
     {
@@ -134,7 +193,10 @@ export async function deliverAccessLink(deliveryId: string, url: string, opts: {
       },
     },
   );
-  const details = { kind: 'accessLink', linkId: delivery.linkId };
+  const details = {
+    kind: delivery.purpose === 'SIGNATURE' ? 'signatureInvite' : 'accessLink',
+    linkId: delivery.linkId,
+  };
   if (result.ok) {
     await db.accessLinkDelivery.update({
       where: { id: deliveryId },
@@ -149,14 +211,25 @@ export async function deliverAccessLink(deliveryId: string, url: string, opts: {
 }
 
 /** "Zugangsblatt drucken": the access sheet was opened for printing */
-export async function accessSheetPrinted(actor: Actor, patientId: string, linkId: string, handoutId?: string) {
+export async function accessSheetPrinted(
+  actor: Actor,
+  patientId: string,
+  linkId: string,
+  handoutId?: string,
+  purpose: AccessLinkPurpose = 'EXERCISES',
+) {
   const link = await db.patientAccessLink.findFirst({ where: { id: linkId, patientId } });
   if (!link) throw new AccessLinkError('notFound');
   await db.$transaction(async (tx) => {
     await tx.accessLinkDelivery.create({
-      data: { linkId, channel: 'PRINT', handoutId: handoutId ?? null, requestedBy: actor.name },
+      data: { linkId, channel: 'PRINT', purpose, handoutId: handoutId ?? null, requestedBy: actor.name },
     });
-    await audit(actor, 'accessLink.printed', { patientId, details: { linkId, handoutId: handoutId ?? null } }, tx);
+    await audit(
+      actor,
+      'accessLink.printed',
+      { patientId, details: { linkId, handoutId: handoutId ?? null, purpose } },
+      tx,
+    );
   });
 }
 
@@ -192,7 +265,7 @@ export type LinkStatus = 'none' | 'sent' | 'shown' | 'printed' | 'active' | Excl
 
 export function linkStatusOf(
   link: (PatientAccessLink & { deliveries: AccessLinkDelivery[] }) | null,
-  ctx: { patientActive: boolean; programActive: boolean },
+  ctx: { patientActive: boolean; purposeActive: boolean },
   now = new Date(),
 ): LinkStatus {
   if (!link) return 'none';
@@ -211,4 +284,43 @@ export async function latestLinkOf(patientId: string) {
     orderBy: { createdAt: 'desc' },
     include: { deliveries: { orderBy: { createdAt: 'desc' } } },
   });
+}
+
+/**
+ * zone-consent-invitation: Stand der Einladung (design D9) for the record and the dashboard. While a signature is
+ * pending: not invited, invitation sent (channel and time), delivery failed, or link opened. Otherwise `signedOnline`
+ * when the latest signature was made in the patient zone, else null. Only invitations after the latest signature
+ * count, so an old invitation does not show for a new text version.
+ */
+export type InviteStatus =
+  | { kind: 'notInvited' }
+  | { kind: 'sent'; channel: AccessLinkChannel; at: Date }
+  | { kind: 'failed'; at: Date }
+  | { kind: 'opened'; at: Date }
+  | { kind: 'signedOnline'; at: Date; version: number };
+
+export async function inviteStatusOf(patientId: string, pending: boolean): Promise<InviteStatus | null> {
+  const signed = await db.signatureSession.findFirst({
+    where: { patientId, status: 'SIGNED' },
+    orderBy: { completedAt: 'desc' },
+    select: { channel: true, completedAt: true, textVersion: { select: { version: true } } },
+  });
+  if (!pending)
+    return signed?.channel === 'PATIENT_ZONE' && signed.completedAt
+      ? { kind: 'signedOnline', at: signed.completedAt, version: signed.textVersion.version }
+      : null;
+  const invite = await db.accessLinkDelivery.findFirst({
+    where: {
+      purpose: 'SIGNATURE',
+      link: { patientId },
+      ...(signed?.completedAt ? { createdAt: { gt: signed.completedAt } } : {}),
+    },
+    orderBy: { createdAt: 'desc' },
+    include: { link: { select: { lastUsedAt: true, revokedAt: true, replacedAt: true } } },
+  });
+  if (!invite) return { kind: 'notInvited' };
+  const { link } = invite;
+  if (link.lastUsedAt && link.lastUsedAt > invite.createdAt) return { kind: 'opened', at: link.lastUsedAt };
+  if (invite.status === 'FAILED') return { kind: 'failed', at: invite.updatedAt };
+  return { kind: 'sent', channel: invite.channel, at: invite.sentAt ?? invite.createdAt };
 }

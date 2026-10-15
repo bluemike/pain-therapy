@@ -8,6 +8,7 @@ import { SearchBox } from '@/components/SearchBox';
 import { PlusIcon, TabletIcon } from '@/components/Icons';
 import { HomeProgramTile } from '@/components/HomeProgramTile';
 import { homeProgramOverview } from '@/lib/exercise-log';
+import { inviteStatusOf, zoneEnabled, type InviteStatus } from '@/lib/patient-access';
 import { handOver } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -21,12 +22,32 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const tc = await getTranslations('common');
   const tcs = await getTranslations('consentStatus');
   const tp = await getTranslations('patients');
+  const tsi = await getTranslations('signatureInvite');
   const { q = '' } = await searchParams;
   const [data, hits, homeProgram] = await Promise.all([
     dashboardData(),
     q.trim() ? listPatients({ q, filter: 'active' }) : Promise.resolve([]),
     homeProgramOverview(),
   ]);
+  // zone-consent-invitation: Unterschrift ausstehend im Cockpit with the state of the invitation (design D9)
+  const zone = zoneEnabled();
+  const invites = new Map<string, InviteStatus | null>(
+    zone
+      ? await Promise.all(
+          data.pending.slice(0, PENDING_SHOWN).map(async (p) => [p.id, await inviteStatusOf(p.id, true)] as const),
+        )
+      : [],
+  );
+  const inviteText = (i: InviteStatus | null | undefined) =>
+    !i || i.kind === 'signedOnline'
+      ? null
+      : i.kind === 'notInvited'
+        ? tsi('shortNotInvited')
+        : i.kind === 'failed'
+          ? tsi('shortFailed')
+          : i.kind === 'opened'
+            ? tsi('shortOpened', { at: formatDateTime(i.at) })
+            : tsi(`shortSent${i.channel}`, { at: formatDateTime(i.at) });
   const hour = hourInZurich();
   const first = user.name.split(' ')[0];
   const greeting = t(greetingKey(hour), { name: first });
@@ -48,6 +69,21 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         </Link>
       </div>
 
+      {data.openNotes.length ? (
+        <div className="banner info notebox" role="status" data-testid="open-notes">
+          <p>
+            <b>{tsi('noteHint')}:</b>{' '}
+            {data.openNotes.map((n, i) => (
+              <span key={n.id}>
+                {i ? ', ' : ''}
+                <Link href={`/patients/${n.id}`}>
+                  {n.firstName} {n.lastName}
+                </Link>
+              </span>
+            ))}
+          </p>
+        </div>
+      ) : null}
       {q.trim() ? (
         <section className="card" aria-live="polite">
           <header>
@@ -135,8 +171,19 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                       </Link>
                       <small>
                         {tcs(p.consent)} · {p.preferredLanguage === 'en' ? tc('languageEn') : tc('languageDe')}
+                        {inviteText(invites.get(p.id)) ? (
+                          <span data-testid="invite-state">
+                            {' · '}
+                            {t('colInvite')}: {inviteText(invites.get(p.id))}
+                          </span>
+                        ) : null}
                       </small>
                     </div>
+                    {zone ? (
+                      <Link className="btn btn--ghost" href={`/patients/${p.id}?invite=1`} style={{ minHeight: 40 }}>
+                        {invites.get(p.id)?.kind === 'failed' ? tsi('reinvite') : tsi('inviteShort')}
+                      </Link>
+                    ) : null}
                     <form action={handOver}>
                       <input type="hidden" name="id" value={p.id} />
                       <button className="btn btn--ghost" style={{ minHeight: 40 }}>

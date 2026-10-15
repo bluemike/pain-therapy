@@ -4,7 +4,7 @@ import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { SESSION_COOKIE, SESSION_DAYS } from '@pain-therapy/shared/access';
 import { DAY_MS } from '@pain-therapy/shared/time';
-import { confirmLink, endSession, type ConfirmResult } from '@/lib/access';
+import { confirmLink, endSession, programSession, type ConfirmResult } from '@/lib/access';
 import { correctEntry, createEntry, deleteEntry, parseEntryForm, quickEntry, type EntryError } from '@/lib/entries';
 import { getZoneSession } from '@/lib/session';
 
@@ -52,10 +52,13 @@ export async function logoutAction() {
   redirect('/?out=1');
 }
 
+/** Entries only with the home program; while a signature is pending the task to sign comes first (iteration 5) */
 async function requireSession() {
   const s = await getZoneSession();
-  if (!s) redirect('/');
-  return s;
+  if (s?.signaturePending) redirect('/unterschrift');
+  const p = programSession(s);
+  if (!p) redirect('/');
+  return p;
 }
 
 export type EntryValues = { done: boolean; rating: number | null; date: string; time: string; note: string };

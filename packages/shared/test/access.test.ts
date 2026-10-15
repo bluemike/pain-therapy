@@ -15,7 +15,7 @@ const valid: LinkFields = {
   blockedAt: null,
   lockedUntil: null,
 };
-const ok = { patientActive: true, programActive: true };
+const ok = { patientActive: true, purposeActive: true };
 
 describe('token and hash', () => {
   it('issues 256-bit tokens and stores only their SHA-256', () => {
@@ -46,8 +46,8 @@ describe('validity of a link', () => {
     expect(addMonths(new Date('2026-08-31T08:00:00Z'), 6).toISOString()).toBe('2027-02-28T08:00:00.000Z');
     expect(linkState(valid, ok, now)).toBe('valid');
     expect(linkState(valid, ok, new Date(valid.expiresAt.getTime() + 1))).toBe('expired');
-    expect(linkState(valid, { patientActive: false, programActive: true }, now)).toBe('expired');
-    expect(linkState(valid, { patientActive: true, programActive: false }, now)).toBe('expired');
+    expect(linkState(valid, { patientActive: false, purposeActive: true }, now)).toBe('expired');
+    expect(linkState(valid, { patientActive: true, purposeActive: false }, now)).toBe('expired');
   });
 
   it('distinguishes revoked, blocked, replaced and temporarily locked links', () => {
@@ -63,7 +63,7 @@ describe('validity of a link', () => {
     expect(sessionLinkOk({ ...valid, replacedAt: now }, ok, now)).toBe(true);
     expect(sessionLinkOk({ ...valid, revokedAt: now }, ok, now)).toBe(false);
     expect(sessionLinkOk({ ...valid, blockedAt: now }, ok, now)).toBe(false);
-    expect(sessionLinkOk(valid, { patientActive: true, programActive: false }, now)).toBe(false);
+    expect(sessionLinkOk(valid, { patientActive: true, purposeActive: false }, now)).toBe(false);
   });
 
   it('home program active for 12 weeks after the consultation', () => {

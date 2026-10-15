@@ -11,7 +11,7 @@ import {
 import { zurichInputs } from '@pain-therapy/shared/time';
 import { db } from './db';
 import { zoneAudit } from './audit';
-import type { ZoneSession } from './access';
+import type { ProgramSession } from './access';
 
 /**
  * exercise-log: Heimprogramm, Ausführung erfassen, Schnelleintrag, letzte 14 Tage und Korrektur (iteration 4, design
@@ -33,7 +33,7 @@ const ENTRY = {
 } as const;
 
 /** "Heute": the exercises of the current program with name, image, repetition, duration and progress */
-export async function today(s: ZoneSession, now = new Date()) {
+export async function today(s: ProgramSession, now = new Date()) {
   const codes = s.program.prescriptions.map((p) => p.exerciseCode);
   const [exercises, entries] = await Promise.all([
     db.exercise.findMany({
@@ -68,7 +68,7 @@ export const nameIn = (x: { nameDe: string; nameEn: string }, language: Language
   language === 'en' ? x.nameEn : x.nameDe;
 
 /** "Letzte 14 Tage": own entries, newest first, with the names of the exercises */
-export async function recentEntries(s: ZoneSession, now = new Date()) {
+export async function recentEntries(s: ProgramSession, now = new Date()) {
   const rows = await db.exerciseLogEntry.findMany({
     where: { patientId: s.patient.id, deletedAt: null, performedAt: { gte: historyStart(now) } },
     orderBy: [{ performedAt: 'desc' }, { createdAt: 'desc' }],
@@ -124,7 +124,11 @@ export function summary(e: { performedAt: Date; done: boolean; rating: number | 
 }
 
 /** Ausführung erfassen for an exercise of the current program */
-export async function createEntry(s: ZoneSession, input: LogEntryInput, now = new Date()): Promise<EntryError | null> {
+export async function createEntry(
+  s: ProgramSession,
+  input: LogEntryInput,
+  now = new Date(),
+): Promise<EntryError | null> {
   if (!s.program.prescriptions.some((p) => p.exerciseCode === input.code)) return 'error';
   const problem = performedAtProblem(input.performedAt, s.program.consultationAt, now);
   if (problem) return problem;
@@ -158,7 +162,7 @@ export async function createEntry(s: ZoneSession, input: LogEntryInput, now = ne
 }
 
 /** "Alle heutigen Übungen erledigt": the open executions of today's daily exercises as done, without rating */
-export async function quickEntry(s: ZoneSession, now = new Date()) {
+export async function quickEntry(s: ProgramSession, now = new Date()) {
   const entries = await db.exerciseLogEntry.findMany({
     where: { patientId: s.patient.id, consultationId: s.program.consultationId, deletedAt: null },
     select: { exerciseCode: true, performedAt: true, done: true, rating: true },
@@ -198,7 +202,7 @@ export async function quickEntry(s: ZoneSession, now = new Date()) {
 }
 
 /** An own entry that may still be changed (recorded less than 24 hours ago, not deleted) */
-async function ownEditable(s: ZoneSession, id: string, now: Date) {
+async function ownEditable(s: ProgramSession, id: string, now: Date) {
   const e = await db.exerciseLogEntry.findFirst({
     where: { id, patientId: s.patient.id, deletedAt: null },
     select: { ...ENTRY, prescription: { select: { consultation: { select: { at: true } } } } },
@@ -208,7 +212,7 @@ async function ownEditable(s: ZoneSession, id: string, now: Date) {
 
 /** Korrektur innerhalb von 24 Stunden, with before and after in the audit log */
 export async function correctEntry(
-  s: ZoneSession,
+  s: ProgramSession,
   id: string,
   input: LogEntryInput,
   now = new Date(),
@@ -245,7 +249,7 @@ export async function correctEntry(
 }
 
 /** Löschen innerhalb von 24 Stunden: only marks the entry as deleted; it stays in the database */
-export async function deleteEntry(s: ZoneSession, id: string, now = new Date()): Promise<EntryError | null> {
+export async function deleteEntry(s: ProgramSession, id: string, now = new Date()): Promise<EntryError | null> {
   const e = await ownEditable(s, id, now);
   if (!e) return 'notEditable';
   await db.$transaction(async (tx) => {
@@ -265,7 +269,7 @@ export async function deleteEntry(s: ZoneSession, id: string, now = new Date()):
 }
 
 /** Image of an exercise of the current program only (Nur das eigene Heimprogramm) */
-export async function mainImageOf(s: ZoneSession, code: string) {
+export async function mainImageOf(s: ProgramSession, code: string) {
   if (!s.program.prescriptions.some((p) => p.exerciseCode === code)) return null;
   const sheet = await db.exerciseSheet.findUnique({ where: { exerciseCode: code }, select: { mainImage: true } });
   return sheet?.mainImage ?? null;

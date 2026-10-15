@@ -44,6 +44,13 @@ export const config = {
    * its host name is bound: then "Link senden" and "Link zur Patienten-Zone mitsenden" stay hidden.
    */
   patientZone: { url: (process.env.PATIENT_ZONE_URL ?? '').trim() },
+  /**
+   * Key of the internal calls from the patient zone and the finalize job (iteration 5, design D7, D11): Key Vault
+   * secret zone-internal-secret in Azure; a fixed development value only outside production.
+   */
+  internalSecret:
+    process.env.ZONE_INTERNAL_SECRET ??
+    (process.env.NODE_ENV === 'production' ? '' : 'local-development-zone-internal-secret'),
   defaultPlace: process.env.DEFAULT_PLACE ?? 'Falera',
   /** Printed in the header of every signed PDF */
   practiceAddress: 'Pain Therapy | Via Prau da Cuort 5 | 7153 Falera',

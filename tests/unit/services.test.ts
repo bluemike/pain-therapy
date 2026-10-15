@@ -145,7 +145,9 @@ describe('signing, PDF archive and email', () => {
     );
     const s = await startSigning(actor, p.id);
     expect(s.language).toBe('en');
-    const { document, delivery } = await completeSigning(actor, s.id, { ...signInput(true), note: 'New mobile' });
+    const signed = await completeSigning(actor, s.id, { ...signInput(true), note: 'New mobile' });
+    const document = signed.document!;
+    const delivery = signed.delivery!;
     const file = await readFile(path.join(process.env.STORAGE_LOCAL_DIR!, document.blobPath));
     expect(sha256(file)).toBe(document.sha256);
     expect(file.subarray(0, 5).toString()).toBe('%PDF-');
@@ -175,8 +177,8 @@ describe('signing, PDF archive and email', () => {
     );
     const s = await startSigning(actor, p.id);
     const { delivery } = await completeSigning(actor, s.id, signInput(false));
-    expect(delivery.status).toBe('SKIPPED_NO_CONSENT');
-    await deliverEmail(delivery.id, { retryDelayMs: 1 });
+    expect(delivery!.status).toBe('SKIPPED_NO_CONSENT');
+    await deliverEmail(delivery!.id, { retryDelayMs: 1 });
     expect(sent).toHaveLength(0);
   });
 
@@ -194,12 +196,12 @@ describe('signing, PDF archive and email', () => {
     );
     const s = await startSigning(actor, p.id);
     const { document, delivery } = await completeSigning(actor, s.id, signInput(true));
-    const failed = await deliverEmail(delivery.id, { retryDelayMs: 1 });
+    const failed = await deliverEmail(delivery!.id, { retryDelayMs: 1 });
     expect(calls).toBe(3);
     expect(failed?.status).toBe('FAILED');
     expect(failed?.attempts).toBe(3);
     setMailer({ send: async () => {} });
-    const again = await requestResend(actor, document.id);
+    const again = await requestResend(actor, document!.id);
     expect((await deliverEmail(again.id, { retryDelayMs: 1 }))?.status).toBe('SENT');
   });
 

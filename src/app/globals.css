@@ -2859,3 +2859,28 @@ svg.spark circle {
   grid-template-columns: 120px minmax(0, 1fr);
   padding: 8px 0;
 }
+
+/* ---------- Iteration 5: invitation to sign in the patient zone (mockup views 1, 6, 7) */
+.invite-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.invite-options .btn {
+  width: 100%;
+  justify-content: flex-start;
+  min-height: 48px;
+}
+.sigstate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  font-size: 14px;
+}
+.notebox {
+  border-left: 3px solid var(--gold);
+}
+.notebox q {
+  font-style: italic;
+}

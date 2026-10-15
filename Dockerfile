@@ -31,6 +31,8 @@ COPY --from=build /app/prisma ./prisma
 COPY --from=build --chown=node:node /app/.next/standalone ./
 COPY --from=build --chown=node:node /app/.next/static ./.next/static
 COPY --from=build /app/assets ./assets
+# Job caj-pain-therapy-finalize (iteration 5, design D11): node scripts/finalize-pending.mjs
+COPY --from=build /app/scripts/finalize-pending.mjs ./scripts/finalize-pending.mjs
 RUN mkdir -p /app/data && chown node:node /app/data
 USER node
 EXPOSE 3000

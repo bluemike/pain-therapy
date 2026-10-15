@@ -73,7 +73,8 @@
     "emptyText": "Create the first patient. Figures and pending signatures will then appear here.",
     "searchResults": "Matches for \"{q}\"",
     "changedBy": "{when} · {user}",
-    "morePending": "{count} more in the patient list"
+    "morePending": "{count} more in the patient list",
+    "colInvite": "Invitation"
   },
   "consentStatus": {
     "signed": "Signed",
@@ -207,7 +208,6 @@
     "pendingBanner": "The disclaimer has not been signed yet.",
     "resignBanner": "The form text was updated (version {version}). Please have it signed again.",
     "abortedNote": "Signing aborted on {at}",
-    "patientNoteBanner": "Note from {name} while signing: \"{note}\"",
     "tabTreatments": "Treatments",
     "treatmentCreatedFlash": "Treatment opened.",
     "treatmentSavedFlash": "Changes to the treatment saved.",
@@ -236,7 +236,12 @@
     "createdOn": "Created {at}",
     "version": "Version {version}",
     "printed": "Printed {at}",
-    "handouts": "Exercise sheets"
+    "handouts": "Exercise sheets",
+    "channel": "Channel",
+    "channelIPAD": "iPad",
+    "channelPATIENT_ZONE": "Patient zone",
+    "finalizing": "Creating PDF …",
+    "finalizingMeta": "Signed on {at} · text version {version}"
   },
   "history": {
     "note": "Every change is stored with its old and new value and cannot be deleted.",
@@ -301,7 +306,14 @@
     "zoneSignedOut": "Patient zone: signed out",
     "logCreated": "Exercise log {code}: entry recorded",
     "logCorrected": "Exercise log {code}: entry corrected",
-    "logDeleted": "Exercise log {code}: entry deleted"
+    "logDeleted": "Exercise log {code}: entry deleted",
+    "signedZone": "Liability waiver signed in the patient zone",
+    "documentArchived": "PDF of the liability waiver archived",
+    "linkInvited": "Invited to sign in the patient zone",
+    "inviteEmailSent": "Email with the invitation to sign sent",
+    "inviteEmailFailed": "Email with the invitation to sign failed",
+    "noteResolved": "Remark on the personal details done",
+    "formOpened": "Patient zone: form to sign opened"
   },
   "deactivate": {
     "title": "Deactivate {name}?",
@@ -393,7 +405,8 @@
     "signature": "Signature: {name}",
     "placeDate": "Place and date",
     "footer": "Document {number} · Page {page} of {pages}",
-    "signedAt": "Signed on {at}"
+    "signedAt": "Signed on {at}",
+    "online": "Signed online in the patient zone, access confirmed with the date of birth on {at}"
   },
   "email": {
     "subject": "Your signed liability waiver ({number})",
@@ -690,7 +703,10 @@
     "step3": "After each exercise record whether you did it and how well you could do it (1 to 10).",
     "validity": "Valid until {date} while your home programme runs.",
     "keep": "Please keep this sheet safe and do not pass it on. A new access sheet replaces this one.",
-    "footer": "Only your therapist and the practice see your entries. Questions: pain-therapy@ayanta.ch"
+    "footer": "Only your therapist and the practice see your entries. Questions: pain-therapy@ayanta.ch",
+    "introSign": "For {name}: please read and sign the liability waiver with patient information and privacy notice on your phone.",
+    "step3Sign": "Read the text to the end, confirm the consents and sign with your finger. This takes about 5 minutes.",
+    "validitySign": "Valid until {date} while your signature is pending or your home programme runs."
   },
   "exerciseLog": {
     "tile": "Home programme",
@@ -766,5 +782,46 @@
     "revoked": "revoked",
     "replaced": "replaced",
     "expired": "expired"
+  },
+  "signatureInviteEmail": {
+    "subject": "Please sign the liability waiver",
+    "body": "Dear {name}\n\nBefore your treatment, please read the patient information, the liability waiver and the privacy notice and sign them online. This takes about 5 minutes:\n{url}\n\nFor your security we ask for your date of birth when you open the link. The link is personal, please do not forward it.\n\nKind regards\nPain Therapy · Via Prau da Cuort 5 · 7153 Falera"
+  },
+  "signatureInvite": {
+    "invite": "Invite to sign",
+    "intro": "{name} receives a personal link to the patient zone, reads and signs the liability waiver on their own phone and confirms access with the date of birth. An earlier link is replaced.",
+    "byEmail": "By email to {email}",
+    "noEmail": "By email (no address recorded)",
+    "showQr": "Show QR code (scan in the practice)",
+    "printSheet": "Print access sheet",
+    "qrInfo": "Scan with the phone camera. The link is valid for at most 6 months.",
+    "qrLabel": "QR code with the link to sign",
+    "privacy": "The invitation contains only the practice name and the link, no health data.",
+    "sentFlash": "The invitation goes by email to {to}.",
+    "close": "Close",
+    "errGeneric": "The invitation could not be created.",
+    "errInactive": "The record is deactivated.",
+    "errNotPending": "No signature is pending.",
+    "errDisabled": "The patient zone is not set up yet.",
+    "errNoEmail": "No email address is recorded.",
+    "pending": "Signature pending",
+    "notInvited": "not invited",
+    "sentEMAIL": "Invitation sent by email on {at}",
+    "sentSCREEN": "QR code shown on {at}",
+    "sentPRINT": "Access sheet printed on {at}",
+    "failed": "Invitation not delivered",
+    "opened": "Link opened on {at}, not signed yet",
+    "signedOnline": "Signed online in the patient zone on {at} · version {version}",
+    "reinvite": "Invite again",
+    "shortNotInvited": "not invited",
+    "shortSentEMAIL": "email sent {at}",
+    "shortSentSCREEN": "QR code shown {at}",
+    "shortSentPRINT": "access sheet printed {at}",
+    "shortFailed": "not delivered",
+    "shortOpened": "link opened {at}",
+    "inviteShort": "Invite",
+    "noteTitle": "Remark by {name} on the personal details",
+    "noteDone": "Done",
+    "noteHint": "Open remark on the personal details"
   }
 }

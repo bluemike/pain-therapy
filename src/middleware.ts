@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { isAllowedInPatientMode } from '@/lib/patient-mode';
 
-const PUBLIC = ['/login', '/no-access', '/api/auth', '/api/health'];
+// /api/internal: calls of the patient zone and the finalize job, signed with ZONE_INTERNAL_SECRET (iteration 5, D7)
+const PUBLIC = ['/login', '/no-access', '/api/auth', '/api/health', '/api/internal'];
 const SESSION_COOKIES = ['authjs.session-token', '__Secure-authjs.session-token'];
 
 export default auth((req) => {

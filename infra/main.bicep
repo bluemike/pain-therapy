@@ -80,6 +80,10 @@ var zoneImage = empty(zoneImageTag)
 var zonePort = empty(zoneImageTag) ? 80 : 3000
 // Shown to the practice app only once the host name of the zone is bound (design D13)
 var patientZoneUrl = zoneCustomDomainMode == 'bind' ? 'https://${zoneCustomDomain}' : ''
+// Address of the practice app for the zone and the finalize job (iteration 5, design D11): its default host name in
+// the Container Apps environment, so the calls do not depend on the custom domain. /api/internal/* takes only calls
+// signed with zone-internal-secret.
+var practiceInternalUrl = 'https://ca-${name}.${environment.properties.defaultDomain}'
 
 var roles = {
   acrPull: '7f951dda-4ed3-4680-a7ca-43fe172d538d'
@@ -215,7 +219,17 @@ resource secretZone 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   }
 }
 
-// Key Vault Secrets User on the two secrets of the zone only, not on the vault
+// Key of the internal calls from the patient zone and the finalize job to the practice app (iteration 5, design D7,
+// D11); derived like patient-zone-secret, so no further parameter is needed
+resource secretZoneInternal 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: vault
+  name: 'zone-internal-secret'
+  properties: {
+    value: '${guid(authSecret, patientZoneDbPassword, 'zone-internal')}${guid(patientZoneDbPassword, authSecret, 'zone-internal')}'
+  }
+}
+
+// Key Vault Secrets User on the three secrets of the zone only, not on the vault
 resource zoneSecretUserDatabaseUrl 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(secretZoneDatabaseUrl.id, zoneIdentity.id, roles.keyVaultSecretsUser)
   scope: secretZoneDatabaseUrl
@@ -229,6 +243,16 @@ resource zoneSecretUserDatabaseUrl 'Microsoft.Authorization/roleAssignments@2022
 resource zoneSecretUserSecret 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(secretZone.id, zoneIdentity.id, roles.keyVaultSecretsUser)
   scope: secretZone
+  properties: {
+    principalId: zoneIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.keyVaultSecretsUser)
+  }
+}
+
+resource zoneSecretUserInternal 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(secretZoneInternal.id, zoneIdentity.id, roles.keyVaultSecretsUser)
+  scope: secretZoneInternal
   properties: {
     principalId: zoneIdentity.properties.principalId
     principalType: 'ServicePrincipal'
@@ -402,6 +426,7 @@ var secrets = [
   { name: 'database-url', keyVaultUrl: secretDatabaseUrl.properties.secretUri, identity: identity.id }
   { name: 'auth-secret', keyVaultUrl: secretAuth.properties.secretUri, identity: identity.id }
   { name: 'entra-client-secret', keyVaultUrl: secretEntra.properties.secretUri, identity: identity.id }
+  { name: 'zone-internal-secret', keyVaultUrl: secretZoneInternal.properties.secretUri, identity: identity.id }
 ]
 
 var appEnv = [
@@ -422,6 +447,7 @@ var appEnv = [
   { name: 'MAIL_SENDER', value: mailSender }
   { name: 'DEFAULT_PLACE', value: defaultPlace }
   { name: 'PATIENT_ZONE_URL', value: patientZoneUrl }
+  { name: 'ZONE_INTERNAL_SECRET', secretRef: 'zone-internal-secret' }
 ]
 
 resource app 'Microsoft.App/containerApps@2024-03-01' = {
@@ -537,7 +563,7 @@ resource zoneApp 'Microsoft.App/containerApps@2024-03-01' = {
     type: 'UserAssigned'
     userAssignedIdentities: { '${zoneIdentity.id}': {} }
   }
-  dependsOn: [zoneAcrPull, zoneSecretUserDatabaseUrl, zoneSecretUserSecret, zoneBlobReader]
+  dependsOn: [zoneAcrPull, zoneSecretUserDatabaseUrl, zoneSecretUserSecret, zoneSecretUserInternal, zoneBlobReader]
   properties: {
     environmentId: environment.id
     workloadProfileName: 'Consumption'
@@ -546,6 +572,11 @@ resource zoneApp 'Microsoft.App/containerApps@2024-03-01' = {
       secrets: [
         { name: 'database-url', keyVaultUrl: secretZoneDatabaseUrl.properties.secretUri, identity: zoneIdentity.id }
         { name: 'patient-zone-secret', keyVaultUrl: secretZone.properties.secretUri, identity: zoneIdentity.id }
+        {
+          name: 'zone-internal-secret'
+          keyVaultUrl: secretZoneInternal.properties.secretUri
+          identity: zoneIdentity.id
+        }
       ]
       registries: [{ server: registry.properties.loginServer, identity: zoneIdentity.id }]
       ingress: {
@@ -580,6 +611,9 @@ resource zoneApp 'Microsoft.App/containerApps@2024-03-01' = {
                 { name: 'STORAGE_DRIVER', value: 'azure' }
                 { name: 'AZURE_STORAGE_ACCOUNT_URL', value: storage.properties.primaryEndpoints.blob }
                 { name: 'AZURE_STORAGE_EXERCISE_CONTAINER', value: exerciseMedia.name }
+                // After a signature the zone asks the practice app for the PDF (iteration 5, design D7)
+                { name: 'PRACTICE_INTERNAL_URL', value: practiceInternalUrl }
+                { name: 'ZONE_INTERNAL_SECRET', secretRef: 'zone-internal-secret' }
               ]
           probes: empty(zoneImageTag)
             ? []
@@ -591,6 +625,45 @@ resource zoneApp 'Microsoft.App/containerApps@2024-03-01' = {
       ]
       // Scales to zero: a few seconds on the first opening, accepted for lower costs (design D13)
       scale: { minReplicas: 0, maxReplicas: 2 }
+    }
+  }
+}
+
+// Rückfall of design D7 (iteration 5): every 5 minutes, the PDF of signatures from the patient zone that are still
+// without one, e.g. because the practice app restarted at that moment. Same image and identity as the practice app.
+resource finalizeJob 'Microsoft.App/jobs@2024-03-01' = {
+  name: 'caj-${name}-finalize'
+  location: location
+  tags: tags
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: { '${identity.id}': {} }
+  }
+  dependsOn: [acrPull, vaultSecretsUser]
+  properties: {
+    environmentId: environment.id
+    workloadProfileName: 'Consumption'
+    configuration: {
+      triggerType: 'Schedule'
+      replicaTimeout: 300
+      replicaRetryLimit: 0
+      scheduleTriggerConfig: { cronExpression: '*/5 * * * *', parallelism: 1, replicaCompletionCount: 1 }
+      secrets: [secrets[3]]
+      registries: [{ server: registry.properties.loginServer, identity: identity.id }]
+    }
+    template: {
+      containers: [
+        {
+          name: 'finalize'
+          image: image
+          command: empty(imageTag) ? [] : ['node', 'scripts/finalize-pending.mjs']
+          env: [
+            { name: 'PRACTICE_INTERNAL_URL', value: practiceInternalUrl }
+            { name: 'ZONE_INTERNAL_SECRET', secretRef: 'zone-internal-secret' }
+          ]
+          resources: { cpu: json('0.25'), memory: '0.5Gi' }
+        }
+      ]
     }
   }
 }

@@ -83,7 +83,7 @@ Nach `packages/shared` verschoben und in der Praxis-App re-exportiert: `signatur
 
 ### D11: Infrastruktur
 - **Secret:** `zone-internal-secret` in Key Vault, gelesen von beiden Apps (`ZONE_INTERNAL_SECRET`); die Identität der Zone bekommt Lesezugriff nur auf dieses zusätzliche Secret.
-- **Interne Adresse:** Die Zone erreicht die Praxis-App unter `https://<app-name>.internal.<env-domain>` (Variable `PRACTICE_INTERNAL_URL`); die Praxis-App bleibt öffentlich nur mit Entra erreichbar, die Route `/api/internal/*` nimmt nur signierte Aufrufe an.
+- **Interne Adresse:** Die Zone erreicht die Praxis-App unter ihrem Standard-Hostnamen in der Container-Apps-Umgebung `https://<app-name>.<env-domain>` (Variable `PRACTICE_INTERNAL_URL`, unabhängig vom eigenen Hostnamen); die Praxis-App bleibt nur mit Entra erreichbar, die Route `/api/internal/*` nimmt nur signierte Aufrufe an.
 - **Job:** `caj-pain-therapy-finalize` als Container-Apps-Job mit Cron `*/5 * * * *` im Bicep, gleiche Identität und Secrets wie die Praxis-App, Befehl `node scripts/finalize-pending.mjs` (ein `fetch` mit HMAC auf die interne Adresse).
 
 Mockup: [`mockups/unterschrift-zone.html`](mockups/unterschrift-zone.html) (Ansichten 1 Akte mit Einladung, 2 E-Mail, 3 Aufgabe in der Zone, 4 Formular, 5 Dank, 6 Akte nach der Unterschrift, 7 Cockpit).
