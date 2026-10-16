@@ -7,8 +7,8 @@ import {
   sessionLinkOk,
   type LinkState,
 } from '@pain-therapy/shared/access';
-import { currentProgram, type CurrentProgram } from '@pain-therapy/shared/program';
-import { signatureStateOf } from '@pain-therapy/shared/signing';
+import type { CurrentProgram } from '@pain-therapy/shared/program';
+import { linkPurposeOf } from '@pain-therapy/shared/record';
 import { DAY_MS } from '@pain-therapy/shared/time';
 import { hashIp, hashToken, isTokenShaped, newToken } from '@pain-therapy/shared/tokens';
 import { db } from './db';
@@ -31,16 +31,9 @@ export async function lookupLink(token: string, now = new Date()) {
     include: { patient: { select: PATIENT } },
   });
   if (!link) return null;
-  const [program, signature] = await Promise.all([
-    currentProgram(db, link.patientId, now),
-    signatureStateOf(db, link.patientId),
-  ]);
-  // A pending signature also keeps the link valid (iteration 5, design D4)
-  const state = linkState(
-    link,
-    { patientActive: link.patient.status === 'ACTIVE', purposeActive: !!program?.active || signature.pending },
-    now,
-  );
+  // A pending signature (iteration 5, design D4) or a record (iteration 6, design D3) also keeps the link valid
+  const { purposeActive } = await linkPurposeOf(db, link.patientId, now);
+  const state = linkState(link, { patientActive: link.patient.status === 'ACTIVE', purposeActive }, now);
   return { link, state };
 }
 
@@ -148,7 +141,8 @@ export async function confirmLink(
 
 /**
  * Gerätesitzung: valid for 30 days unless ended ("Abmelden"), the link revoked, blocked or expired, the patient no
- * longer active, or neither a home program active nor a signature pending (iteration 5, design D4). An invalid
+ * longer active, or the link without purpose: no active home program, no pending signature and no treatment or
+ * document (iteration 5, design D4; iteration 6, design D3). An invalid
  * session is ended in the database. Returns the patient, the current program (may be null or inactive while a
  * signature is pending) and whether a signature is pending.
  */
@@ -159,18 +153,8 @@ export async function resolveSession(sessionId: string | undefined, now = new Da
     include: { link: true, patient: { select: PATIENT } },
   });
   if (!session || session.endedAt || session.expiresAt <= now) return null;
-  const [program, signature] = await Promise.all([
-    currentProgram(db, session.patientId, now),
-    signatureStateOf(db, session.patientId),
-  ]);
-  const ok = sessionLinkOk(
-    session.link,
-    {
-      patientActive: session.patient.status === 'ACTIVE',
-      purposeActive: !!program?.active || signature.pending,
-    },
-    now,
-  );
+  const { program, signature, purposeActive } = await linkPurposeOf(db, session.patientId, now);
+  const ok = sessionLinkOk(session.link, { patientActive: session.patient.status === 'ACTIVE', purposeActive }, now);
   if (!ok) {
     await db.patientZoneSession.update({ where: { id: session.id }, data: { endedAt: now }, select: { id: true } });
     return null;

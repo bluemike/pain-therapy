@@ -311,7 +311,8 @@
     "inviteEmailSent": "E-Mail mit der Einladung zur Unterschrift gesendet",
     "inviteEmailFailed": "E-Mail mit der Einladung zur Unterschrift fehlgeschlagen",
     "noteResolved": "Anmerkung zu den Personalien erledigt",
-    "formOpened": "Patienten-Zone: Formular zur Unterschrift geöffnet"
+    "formOpened": "Patienten-Zone: Formular zur Unterschrift geöffnet",
+    "documentViewedInZone": "Dokument in der Patienten-Zone abgerufen"
   },
   "deactivate": {
     "title": "{name} deaktivieren?",
@@ -681,6 +682,7 @@
     "entries": "Einträge",
     "noEntries": "Noch keine Einträge der Patientin.",
     "quick": "Schnelleintrag",
+    "backfilled": "nachgetragen am {at}",
     "corrected": "korrigiert {at}",
     "deleted": "von der Patientin gelöscht {at}",
     "done": "gemacht",
@@ -708,7 +710,7 @@
     "readOnly": "Nur lesen: Einträge der Patientin lassen sich in der Praxis nicht ändern.",
     "linkError": "Der Link konnte nicht ausgestellt werden.",
     "linkErrorInactive": "Für inaktive Patient:innen wird kein Link ausgestellt.",
-    "linkErrorNoProgram": "Kein aktives Heimprogramm: zuerst in einer Konsultation Übungen zur Selbstausführung verordnen.",
+    "linkErrorNoProgram": "Kein Grund für einen Link: Die Patientin hat weder ein aktives Heimprogramm noch eine Behandlung, ein Dokument oder eine ausstehende Unterschrift.",
     "linkErrorDisabled": "Die Patienten-Zone ist noch nicht eingerichtet."
   },
   "linkStatus": {

@@ -479,6 +479,10 @@ main.page {
   background: var(--line);
   color: var(--muted);
 }
+.pill.info {
+  background: var(--info-bg);
+  color: var(--info);
+}
 
 .banner {
   border-radius: 8px;

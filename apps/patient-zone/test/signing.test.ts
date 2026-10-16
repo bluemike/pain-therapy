@@ -73,13 +73,15 @@ describe('link valid while a signature is pending (Gültigkeit des Links bei aus
     expect((await lookupLink(token, now))?.state).toBe('expired');
   });
 
-  it('ends the link and the device session after the signature when there is no home program', async () => {
+  it('keeps the link and the device session after the signature for the record (iteration 6, zone-record)', async () => {
     await publish(1);
     const { zone, token, sessionId } = await invited();
     const form = await openForm(zone, now);
     expect(await submitSignature(zone, form!.sid, payload(), now)).toEqual({ ok: true });
-    expect(await resolveSession(sessionId, now)).toBeNull();
-    expect((await lookupLink(token, now))?.state).toBe('expired');
+    const after = await resolveSession(sessionId, now);
+    expect(after?.signaturePending).toBe(false);
+    expect(programSession(after)).toBeNull();
+    expect((await lookupLink(token, now))?.state).toBe('valid');
   });
 
   it('shows the exercises again after signing a new text version with a running home program', async () => {

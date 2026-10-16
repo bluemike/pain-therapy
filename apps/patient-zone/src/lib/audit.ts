@@ -11,6 +11,7 @@ export type ZoneAuditAction =
   | 'zone.viewed'
   | 'zone.signedOut'
   | 'signing.formOpened'
+  | 'document.viewedInZone'
   | 'exerciseLog.created'
   | 'exerciseLog.corrected'
   | 'exerciseLog.deleted';

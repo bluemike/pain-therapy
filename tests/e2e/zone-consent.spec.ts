@@ -90,7 +90,7 @@ test.describe('signature in the patient zone', () => {
     await drawSignature(patient);
     await patient.getByRole('button', { name: 'Unterschreiben', exact: true }).click();
     await expect(patient.getByRole('heading', { level: 1, name: 'Vielen Dank' })).toBeVisible();
-    await expect(patient.getByText('Sie können diese Seite jetzt schliessen.')).toBeVisible();
+    await expect(patient.getByRole('link', { name: 'Zu Ihren Behandlungen und Dokumenten' })).toBeVisible();
     await expectNoHorizontalScroll(patient, 'thanks');
     await expectNoA11yViolations(patient, 'thanks');
 

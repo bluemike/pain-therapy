@@ -2,8 +2,8 @@ import type { Language } from '@prisma/client';
 import { openToday, progress } from '@pain-therapy/shared/adherence';
 import { executionTime } from '@pain-therapy/shared/home-program';
 import {
+  dayReference,
   editable,
-  historyStart,
   logEntryFormSchema,
   performedAtProblem,
   type LogEntryInput,
@@ -14,8 +14,9 @@ import { zoneAudit } from './audit';
 import type { ProgramSession } from './access';
 
 /**
- * exercise-log: Heimprogramm, Ausführung erfassen, Schnelleintrag, letzte 14 Tage und Korrektur (iteration 4, design
- * D7, D8). Every function works for the patient of the session only.
+ * exercise-log: Heimprogramm, Ausführung erfassen, Schnelleintrag und Korrektur (iteration 4, design D7, D8), with the
+ * day selection and the entries of the whole program of iteration 6 (zone-exercise-backfill, design D7). Every
+ * function works for the patient of the session only.
  */
 
 const ENTRY = {
@@ -32,8 +33,11 @@ const ENTRY = {
   deletedAt: true,
 } as const;
 
-/** "Heute": the exercises of the current program with name, image, repetition, duration and progress */
-export async function today(s: ProgramSession, now = new Date()) {
+/**
+ * The exercises of the current program with name, image, repetition, duration and progress on the day of `ref`
+ * ("Heute" with now, a past day with dayReference(); weekly targets count the week of that day)
+ */
+export async function today(s: ProgramSession, ref = new Date()) {
   const codes = s.program.prescriptions.map((p) => p.exerciseCode);
   const [exercises, entries] = await Promise.all([
     db.exercise.findMany({
@@ -58,19 +62,19 @@ export async function today(s: ProgramSession, now = new Date()) {
       repetition: p.repetition,
       hasImage: !!x?.sheet?.mainImage,
       seconds: executionTime(x?.sheet ?? null).seconds,
-      progress: progress(p, entries, now),
+      progress: progress(p, entries, ref),
     };
   });
-  return { items, open: openToday(s.program.prescriptions, entries, now) };
+  return { items, open: openToday(s.program.prescriptions, entries, ref) };
 }
 
 export const nameIn = (x: { nameDe: string; nameEn: string }, language: Language) =>
   language === 'en' ? x.nameEn : x.nameDe;
 
-/** "Letzte 14 Tage": own entries, newest first, with the names of the exercises */
+/** Entries of the whole current program, newest first, with the names of the exercises (design D7) */
 export async function recentEntries(s: ProgramSession, now = new Date()) {
   const rows = await db.exerciseLogEntry.findMany({
-    where: { patientId: s.patient.id, deletedAt: null, performedAt: { gte: historyStart(now) } },
+    where: { patientId: s.patient.id, consultationId: s.program.consultationId, deletedAt: null },
     orderBy: [{ performedAt: 'desc' }, { createdAt: 'desc' }],
     select: { ...ENTRY, prescription: { select: { exercise: { select: { nameDe: true, nameEn: true } } } } },
   });
@@ -161,13 +165,19 @@ export async function createEntry(
   return null;
 }
 
-/** "Alle heutigen Übungen erledigt": the open executions of today's daily exercises as done, without rating */
-export async function quickEntry(s: ProgramSession, now = new Date()) {
+/**
+ * "Alle heutigen Übungen erledigt", or for a chosen past day "Alle Übungen dieses Tages erledigt" (design D7): the open
+ * executions of the daily exercises of that day as done, without rating, at now for today and at 12:00 (on the day
+ * of the consultation its time) for a past day. Entries already recorded stay unchanged.
+ */
+export async function quickEntry(s: ProgramSession, now = new Date(), day?: string) {
+  const at = day ? dayReference(day, s.program.consultationAt, now) : now;
+  if (performedAtProblem(at, s.program.consultationAt, now)) return 0;
   const entries = await db.exerciseLogEntry.findMany({
     where: { patientId: s.patient.id, consultationId: s.program.consultationId, deletedAt: null },
     select: { exerciseCode: true, performedAt: true, done: true, rating: true },
   });
-  const open = openToday(s.program.prescriptions, entries, now);
+  const open = openToday(s.program.prescriptions, entries, at);
   let count = 0;
   await db.$transaction(async (tx) => {
     for (const o of open)
@@ -178,7 +188,7 @@ export async function quickEntry(s: ProgramSession, now = new Date()) {
             consultationId: s.program.consultationId,
             exerciseCode: o.exerciseCode,
             sessionId: s.session.id,
-            performedAt: now,
+            performedAt: at,
             done: true,
             quick: true,
             createdAt: now,

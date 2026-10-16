@@ -2,6 +2,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { adherence } from '@pain-therapy/shared/adherence';
+import { dayReference } from '@pain-therapy/shared/log-entry';
 import { db } from '@/lib/db';
 import { confirmLink, programSession, resolveSession, type ProgramSession } from '@/lib/access';
 import {
@@ -24,7 +25,7 @@ vi.mock('@/lib/session', () => ({ getZoneSession: async () => session.current })
 beforeEach(resetDatabase);
 afterAll(() => admin.$disconnect());
 
-async function signedIn(opts: { language?: 'de' | 'en' } = {}) {
+async function signedIn(opts: { language?: 'de' | 'en'; at?: Date } = {}) {
   const s = await setup(opts);
   const r = await confirmLink({ token: s.token, ...DOB, ip: '203.0.113.9' }, ago(0, 3));
   if (!r.ok) throw new Error('not signed in');
@@ -57,16 +58,16 @@ describe('today (Heimprogramm in der Patienten-Zone)', () => {
     expect(await createEntry(zone, input({ time: '09:00' }), now)).toBeNull();
     const { items } = await today(zone, now);
     expect(items.map((i) => [i.code, i.progress.period, i.progress.done, i.progress.target])).toEqual([
+      ['1F', 'today', 0, 1],
       ['2A', 'today', 1, 2],
       ['2D', 'week', 0, 5],
-      ['1F', 'today', 0, 1],
     ]);
-    expect(items[0]).toMatchObject({ name: 'Übung 2A', seconds: 240, hasImage: true });
+    expect(items[1]).toMatchObject({ name: 'Übung 2A', seconds: 240, hasImage: true });
   });
 
   it('uses the language of the patient (Englisch)', async () => {
     const { zone } = await signedIn({ language: 'en' });
-    expect((await today(zone, now)).items[0].name).toBe('Exercise 2A');
+    expect((await today(zone, now)).items[1].name).toBe('Exercise 2A');
   });
 
   it('shows only the newest prescription; earlier entries stay with theirs (Neue Verordnung)', async () => {
@@ -166,6 +167,57 @@ describe('quick entry (Schnelleintrag)', () => {
       await correctEntry(zone, rows[1].id, input({ rating: '6', time: '11:00' }), new Date(now.getTime() + 3600_000)),
     ).toBeNull();
     expect((await admin.exerciseLogEntry.findUniqueOrThrow({ where: { id: rows[1].id } })).rating).toBe(6);
+  });
+});
+
+describe('backfill (zone-exercise-backfill, iteration 6, task 5.4)', () => {
+  // now is Wed 14.10.2026 12:00 in Zurich, the program started Sun 4.10. 12:00
+  const day = (zone: ProgramSession, key: string) => dayReference(key, zone.program.consultationAt, now);
+
+  it('records yesterday and shows it in the view of yesterday, not of today (Gestern nachtragen)', async () => {
+    const { zone } = await signedIn();
+    expect(await createEntry(zone, input({ date: '2026-10-13', time: '12:00', rating: '6' }), now)).toBeNull();
+    const yesterday = await today(zone, day(zone, '2026-10-13'));
+    expect(yesterday.items.find((i) => i.code === '2A')?.progress).toMatchObject({ period: 'today', done: 1 });
+    const todays = await today(zone, now);
+    expect(todays.items.find((i) => i.code === '2A')?.progress.done).toBe(0);
+    // Weekly targets count the week of the chosen day (Mon 12.10. to Sun 18.10.)
+    await createEntry(zone, input({ code: '2D', date: '2026-10-12', time: '18:00' }), now);
+    const weekly = (await today(zone, day(zone, '2026-10-13'))).items.find((i) => i.code === '2D');
+    expect(weekly?.progress).toMatchObject({ period: 'week', done: 1 });
+    expect((await today(zone, day(zone, '2026-10-11'))).items.find((i) => i.code === '2D')?.progress.done).toBe(0);
+  });
+
+  it('fills the open executions of a past day at 12:00 and keeps recorded ones (Ganzer Tag)', async () => {
+    const { zone } = await signedIn();
+    await createEntry(zone, input({ date: '2026-10-13', time: '08:00' }), now);
+    expect(await quickEntry(zone, now, '2026-10-13')).toBe(2);
+    const rows = await admin.exerciseLogEntry.findMany({ where: { quick: true }, orderBy: { exerciseCode: 'asc' } });
+    expect(rows.map((r) => [r.exerciseCode, r.performedAt.toISOString(), r.createdAt.toISOString()])).toEqual([
+      ['1F', '2026-10-13T10:00:00.000Z', now.toISOString()],
+      ['2A', '2026-10-13T10:00:00.000Z', now.toISOString()],
+    ]);
+    expect(await quickEntry(zone, now, '2026-10-13')).toBe(0);
+    expect(await admin.exerciseLogEntry.count({ where: { quick: false } })).toBe(1);
+    // Today is untouched
+    expect((await today(zone, now)).open).toHaveLength(2);
+  });
+
+  it('uses the time of the consultation on its own day and nothing before it (Grenze Konsultation)', async () => {
+    const { zone } = await signedIn({ at: new Date('2026-10-04T14:30:00Z') });
+    expect(await quickEntry(zone, now, '2026-10-04')).toBe(3);
+    const at = (await admin.exerciseLogEntry.findFirstOrThrow()).performedAt;
+    expect(at.toISOString()).toBe('2026-10-04T14:30:00.000Z');
+    expect(await quickEntry(zone, now, '2026-10-03')).toBe(0);
+    expect(await createEntry(zone, input({ date: '2026-10-04', time: '12:00' }), now)).toBe('beforeConsultation');
+  });
+
+  it('lists the entries of the whole program, also older than 14 days (Ältere Einträge)', async () => {
+    const { zone } = await signedIn({ at: ago(30) });
+    await createEntry(zone, input({ date: '2026-09-20', time: '18:00' }), now);
+    await createEntry(zone, input({ date: '2026-10-13', time: '18:00' }), now);
+    const list = await recentEntries(zone, now);
+    expect(list.map((e) => e.inputs.date)).toEqual(['2026-10-13', '2026-09-20']);
   });
 });
 

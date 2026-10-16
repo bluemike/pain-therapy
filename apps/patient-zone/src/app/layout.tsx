@@ -2,7 +2,9 @@ import type { Metadata, Viewport } from 'next';
 import Link from 'next/link';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getTranslations } from 'next-intl/server';
+import { programSession } from '@/lib/access';
 import { getZoneSession } from '@/lib/session';
+import { ZoneTabs } from '@/components/ZoneTabs';
 import { logoutAction } from './actions';
 import '@fontsource/inter/400.css';
 import '@fontsource/inter/600.css';
@@ -38,9 +40,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </form>
           ) : null}
         </header>
-        <main id="main">
-          <NextIntlClientProvider>{children}</NextIntlClientProvider>
-        </main>
+        <NextIntlClientProvider>
+          {session && !session.signaturePending ? <ZoneTabs exercises={!!programSession(session)} /> : null}
+          <main id="main">{children}</main>
+        </NextIntlClientProvider>
         <footer className="foot">
           <Link href="/privacy">{t('privacy')}</Link> · {t('footerNote')}
         </footer>

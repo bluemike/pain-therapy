@@ -65,10 +65,7 @@ export default async function PatientRecord({
       ? {
           kind: 'ok',
           text: t('createdFlash', { name }),
-          action:
-            active && p.consent !== 'signed' ? (
-              <div className="actions">{inviteButton('gold')}</div>
-            ) : null,
+          action: active && p.consent !== 'signed' ? <div className="actions">{inviteButton('gold')}</div> : null,
         }
       : sp.flash === 'saved'
         ? { kind: 'ok', text: t('savedFlash') }
@@ -779,6 +776,9 @@ async function History({
         return t('noteResolved');
       case 'signing.formOpened':
         return t('formOpened');
+      // zone-documents (iteration 6): the document number is shown as the new value
+      case 'document.viewedInZone':
+        return t('documentViewedInZone');
       // patient-access and exercise-log (iteration 4): link events and entries of the patient zone
       case 'accessLink.issued':
         return t('linkIssued');

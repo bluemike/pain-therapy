@@ -239,9 +239,14 @@ describe('access link from the record (Link senden aus der Akte)', () => {
     await expect(db.patientAccessLink.delete({ where: { id: link.id } })).rejects.toThrow();
   });
 
-  it('is offered only with an active home program, an active patient and the zone set up', async () => {
+  it('is offered only with a purpose, an active patient and the zone set up', async () => {
+    // After the home program the treatment keeps a purpose (iteration 6, zone-record: Link ohne Heimprogramm)
     const { p } = await withProgram('Alt', { ago: 90 });
-    await expect(sendAccessLink(actor, p.id)).rejects.toMatchObject({ code: 'noProgram' });
+    expect((await sendAccessLink(actor, p.id)).channel).toBe('SCREEN');
+    const log = await exerciseLogOf(actor, p.id);
+    expect(log.active).toBe(false);
+    expect(log.canSendLink).toBe(true);
+    expect(log.linkStatus).toBe('shown');
     const { p: inactive } = await withProgram('Inaktiv');
     await setStatus(actor, inactive.id, 'INACTIVE');
     await expect(sendAccessLink(actor, inactive.id)).rejects.toMatchObject({ code: 'inactive' });

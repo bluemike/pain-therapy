@@ -7,15 +7,15 @@ import { applyPatientZoneRole } from '../../prisma/patient-zone-role.mjs';
 /**
  * patient-zone-app: Rechte der Rolle patient_zone (iteration 4, task 1.4; extended in iteration 5, task 1.4). Applies
  * prisma/patient-zone-role.sql to the test database like the migration job does, compares the grants with the
- * allowed list and checks as patient_zone that diagnoses, anamnesis, documents and signature images cannot be read
- * and nothing can be deleted.
+ * allowed list and checks as patient_zone that anamnesis, photos, archive paths and signature images cannot be read
+ * and nothing can be deleted. Iteration 6 (task 2.2) adds treatments, consultations and documents, read only.
  */
 
 const PASSWORD = process.env.PATIENT_ZONE_DB_PASSWORD ?? 'patient_zone';
 
 /**
  * The allowed list of design D12 (HomePrescription without intensity, steps and note, design D7), extended by
- * iteration 5 design D8 for the signature in the patient zone
+ * iteration 5 design D8 for the signature in the patient zone and by iteration 6 design D4, D5 for the record
  */
 const TABLES: Record<string, string[]> = {
   AuditEvent: ['INSERT'],
@@ -28,10 +28,15 @@ const TABLES: Record<string, string[]> = {
 };
 const COLUMNS: Record<string, string[]> = {
   'ConsentTextVersion.SELECT': ['body', 'id', 'language', 'title', 'version'],
-  'Consultation.SELECT': ['at', 'id', 'treatmentId'],
-  'Exercise.SELECT': ['code', 'nameDe', 'nameEn'],
+  'Consultation.SELECT': ['at', 'comparison', 'diagnosis', 'id', 'number', 'painAfter', 'painBefore', 'treatmentId'],
+  'ConsultationExercise.SELECT': ['consultationId', 'difficulty', 'exerciseCode', 'prescribed', 'variants'],
+  'ConsultationPoint.SELECT': ['consultationId', 'left', 'pointId', 'right', 'sensitivity'],
+  'ConsultationRolling.SELECT': ['area', 'consultationId', 'position', 'toolCode'],
+  'Exercise.SELECT': ['code', 'nameDe', 'nameEn', 'sort'],
+  'ExerciseHandout.SELECT': ['consultationId', 'createdAt', 'documentNumber', 'id', 'language', 'patientId', 'version'],
   'ExerciseSheet.SELECT': ['exerciseCode', 'mainImage', 'rollingSeconds', 'sides', 'stretchSecondsPerSide'],
   'HomePrescription.SELECT': ['consultationId', 'exerciseCode', 'repetition'],
+  'OsteopressurePoint.SELECT': ['attachmentDe', 'group', 'id', 'muscleAttachmentLatin', 'sort'],
   'Patient.SELECT': [
     'city',
     'dateOfBirth',
@@ -49,6 +54,8 @@ const COLUMNS: Record<string, string[]> = {
     'zip',
   ],
   'PatientAccessLink.UPDATE': ['blockedAt', 'failedAttempts', 'lastUsedAt', 'lockedUntil'],
+  'Region.SELECT': ['id', 'nameDe', 'nameEn'],
+  'RollingTool.SELECT': ['code', 'nameDe', 'nameEn', 'sort'],
   'SignatureSession.SELECT': [
     'channel',
     'completedAt',
@@ -69,7 +76,8 @@ const COLUMNS: Record<string, string[]> = {
     'signatureSvg',
     'status',
   ],
-  'Treatment.SELECT': ['id', 'patientId'],
+  'SignedDocument.SELECT': ['createdAt', 'documentNumber', 'id', 'language', 'patientId', 'sessionId', 'textVersion'],
+  'Treatment.SELECT': ['diagnosis', 'id', 'painStart', 'patientId', 'regionId', 'startedAt'],
 };
 
 // Creating a role needs CREATEROLE (the CI and docker compose users are superusers; Azure's admin has CREATEROLE)
@@ -114,13 +122,30 @@ describe.skipIf(!allowed)('role patient_zone', () => {
 
   it('reads the allowed columns and the current home program', async () => {
     await expect(zone.$queryRaw`SELECT "id", "firstName", "dateOfBirth" FROM "Patient" LIMIT 1`).resolves.toBeDefined();
+    // The record of iteration 6: treatments, consultations and the document list
+    await expect(zone.$queryRaw`SELECT "diagnosis", "painStart" FROM "Treatment" LIMIT 1`).resolves.toBeDefined();
+    await expect(
+      zone.$queryRaw`SELECT "diagnosis", "painBefore", "painAfter", "comparison" FROM "Consultation" LIMIT 1`,
+    ).resolves.toBeDefined();
+    await expect(
+      zone.$queryRaw`SELECT "documentNumber", "createdAt" FROM "SignedDocument" LIMIT 1`,
+    ).resolves.toBeDefined();
+    await expect(
+      zone.$queryRaw`SELECT "documentNumber", "version" FROM "ExerciseHandout" LIMIT 1`,
+    ).resolves.toBeDefined();
     await expect(currentProgram(zone, 'no-such-patient')).resolves.toBeNull();
   });
 
   it.each([
-    ['the diagnosis of a consultation (Diagnose nicht lesbar)', 'SELECT "diagnosis" FROM "Consultation"'],
-    ['the diagnosis of a treatment', 'SELECT "diagnosis" FROM "Treatment"'],
-    ['pain values', 'SELECT "painBefore" FROM "Consultation"'],
+    ['who created a treatment', 'SELECT "createdBy", "updatedBy" FROM "Treatment"'],
+    ['who created a consultation', 'SELECT "createdBy", "updatedBy" FROM "Consultation"'],
+    ['changing a treatment', `UPDATE "Treatment" SET "diagnosis" = 'x'`],
+    ['changing a consultation', `UPDATE "Consultation" SET "painAfter" = 0`],
+    ['deleting a consultation point', 'DELETE FROM "ConsultationPoint"'],
+    ['the archive path of a document', 'SELECT "blobPath", "sha256" FROM "SignedDocument"'],
+    ['the archive path of an exercise sheet', 'SELECT "blobPath", "prescriptions", "createdBy" FROM "ExerciseHandout"'],
+    ['exercise sheet deliveries', 'SELECT * FROM "HandoutDelivery"'],
+    ['changing a document', `UPDATE "SignedDocument" SET "documentNumber" = 'x'`],
     ['the anamnesis', 'SELECT * FROM "Anamnesis"'],
     ['the emergency contact and GP', 'SELECT "emergencyName", "emergencyPhone", "gp" FROM "Patient"'],
     ['signature images', 'SELECT "signatureSvg", "signaturePoints" FROM "SignatureSession"'],
@@ -131,8 +156,6 @@ describe.skipIf(!allowed)('role patient_zone', () => {
     ['resolving a remark', 'UPDATE "SignatureSession" SET "noteResolvedAt" = now()'],
     ['the note of the therapist', 'SELECT "note" FROM "HomePrescription"'],
     ['photos', 'SELECT * FROM "ClinicalPhoto"'],
-    ['documents', 'SELECT * FROM "SignedDocument"'],
-    ['exercise sheets of the practice', 'SELECT * FROM "ExerciseHandout"'],
     ['the audit log', 'SELECT * FROM "AuditEvent"'],
     ['deleting entries', 'DELETE FROM "ExerciseLogEntry"'],
     ['deleting sessions', 'DELETE FROM "PatientZoneSession"'],

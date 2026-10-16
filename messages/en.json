@@ -311,7 +311,8 @@
     "inviteEmailSent": "Email with the invitation to sign sent",
     "inviteEmailFailed": "Email with the invitation to sign failed",
     "noteResolved": "Remark on the personal details done",
-    "formOpened": "Patient zone: form to sign opened"
+    "formOpened": "Patient zone: form to sign opened",
+    "documentViewedInZone": "Document opened in the patient zone"
   },
   "deactivate": {
     "title": "Deactivate {name}?",
@@ -681,6 +682,7 @@
     "entries": "Entries",
     "noEntries": "No entries by the patient yet.",
     "quick": "quick entry",
+    "backfilled": "recorded later on {at}",
     "corrected": "corrected {at}",
     "deleted": "deleted by the patient {at}",
     "done": "done",
@@ -708,7 +710,7 @@
     "readOnly": "Read only: the patient’s entries cannot be changed by the practice.",
     "linkError": "The link could not be issued.",
     "linkErrorInactive": "No link is issued for inactive patients.",
-    "linkErrorNoProgram": "No active home programme: first prescribe home exercises in a consultation.",
+    "linkErrorNoProgram": "No reason for a link: the patient has no active home programme, treatment, document or pending signature.",
     "linkErrorDisabled": "The patient zone is not set up yet."
   },
   "linkStatus": {

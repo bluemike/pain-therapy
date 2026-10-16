@@ -50,7 +50,6 @@
     "record": "Erfassen",
     "imageOf": "Bild der Übung {code}",
     "noImage": "Kein Bild",
-    "recent": "Letzte 14 Tage",
     "today": "Heute",
     "noEntries": "Noch keine Einträge.",
     "editHint": "Einträge lassen sich 24 Stunden lang ändern oder löschen.",
@@ -89,7 +88,7 @@
     "noteTooLong": "Die Bemerkung darf höchstens 500 Zeichen lang sein.",
     "dateInvalid": "Bitte geben Sie Datum und Zeit an.",
     "future": "Datum und Zeit dürfen nicht in der Zukunft liegen.",
-    "beforeConsultation": "Datum und Zeit dürfen nicht vor der Konsultation liegen, in der die Übung verordnet wurde.",
+    "beforeConsultation": "Dieses Datum liegt vor Ihrem Heimprogramm.",
     "notEditable": "Dieser Eintrag lässt sich nicht mehr ändern."
   },
   "privacy": {
@@ -122,7 +121,7 @@
     "title": "Vielen Dank",
     "text": "Ihre Unterschrift ist bei der Praxis. Das unterschriebene Dokument erhalten Sie per E-Mail, wenn Sie dem zugestimmt haben, sonst gibt es Ihnen die Praxis beim nächsten Termin.",
     "toExercises": "Weiter zu Ihren Übungen",
-    "noProgram": "Sie können diese Seite jetzt schliessen."
+    "toRecord": "Zu Ihren Behandlungen und Dokumenten"
   },
   "signForm": {
     "title": "Haftungsausschluss unterschreiben",
@@ -164,5 +163,82 @@
     "readNew": "Neue Version lesen",
     "sessionEnded": "Ihre Anmeldung ist abgelaufen. Bitte öffnen Sie den Link noch einmal.",
     "footer": "Online unterschrieben in der Patienten-Zone. Ihre Angaben sieht nur die Praxis."
+  },
+  "nav": {
+    "label": "Bereiche der Patienten-Zone",
+    "exercises": "Übungen",
+    "treatments": "Behandlungen",
+    "documents": "Dokumente"
+  },
+  "day": {
+    "program": "Heimprogramm seit {since} · gültig bis {until}",
+    "previous": "Vorheriger Tag",
+    "next": "Nächster Tag",
+    "today": "Heute",
+    "yesterday": "Gestern",
+    "choose": "Tag wählen",
+    "show": "Anzeigen",
+    "summary": "An diesem Tag {done} von {total} täglichen Ausführungen erfasst.",
+    "quick": "Alle Übungen dieses Tages erledigt",
+    "quickDone": "{count, plural, one {# Ausführung} other {# Ausführungen}} für {date} als gemacht erfasst.",
+    "progressDay": "{done} von {target} an diesem Tag",
+    "progressWeekOf": "{done} von {target} in dieser Woche",
+    "entries": "Einträge seit {date}",
+    "backfillHint": "Vergessen einzutragen? Wählen Sie den Tag und erfassen Sie die Übung nachträglich."
+  },
+  "treatments": {
+    "title": "Meine Behandlungen",
+    "sub": "Was die Praxis zu Ihren Behandlungen festgehalten hat.",
+    "empty": "Noch keine Behandlungen",
+    "emptyText": "Nach Ihrem ersten Termin erscheinen hier Ihre Behandlungen.",
+    "started": "Beginn",
+    "diagnosis": "Diagnose",
+    "painStart": "Schmerz zu Beginn",
+    "consultations": "Konsultationen",
+    "consultationsValue": "{count}, zuletzt {date}",
+    "none": "noch keine",
+    "pain": "{n} %"
+  },
+  "treatment": {
+    "back": "Meine Behandlungen",
+    "since": "Seit {date} · Schmerz zu Beginn {pain} %",
+    "course": "Schmerzverlauf",
+    "before": "vorher",
+    "after": "nachher",
+    "nr": "Nr. {n}",
+    "range": "{before} → {after}",
+    "consultation": "Konsultation {n}",
+    "meta": "{date} · Schmerz {range}",
+    "notRecorded": "nicht erfasst",
+    "diagnosis": "Diagnose",
+    "comparison": "Vergleich",
+    "points": "Osteopressur-Punkte",
+    "exercises": "Übungen in der Praxis",
+    "rolling": "Faszien-Rollmassage",
+    "home": "Heimprogramm",
+    "sheet": "Übungsblatt {nr} öffnen",
+    "left": "links",
+    "right": "rechts",
+    "noConsultations": "Noch keine Konsultation.",
+    "repDaily": "täglich {n}x",
+    "repWeekly": "{n}x pro Woche"
+  },
+  "documents": {
+    "title": "Meine Dokumente",
+    "sub": "Tippen zum Ansehen oder Herunterladen.",
+    "sheets": "Übungsblätter",
+    "sheet": "Übungsblatt Konsultation {n}",
+    "current": "aktuell",
+    "version": "Version {n}",
+    "disclaimers": "Haftungsausschluss",
+    "disclaimer": "Haftungsausschluss, Textversion {n}",
+    "PATIENT_ZONE": "unterschrieben online",
+    "IPAD": "unterschrieben auf dem iPad",
+    "pending": "Haftungsausschluss wird erstellt",
+    "pendingText": "Unterschrieben am {date}. Das PDF erscheint hier in wenigen Minuten.",
+    "open": "Öffnen",
+    "openLabel": "{name} vom {date} öffnen",
+    "noSheets": "Noch keine Übungsblätter.",
+    "noDisclaimer": "Noch kein unterschriebener Haftungsausschluss."
   }
 }

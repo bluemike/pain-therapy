@@ -72,6 +72,8 @@ export default defineConfig({
         PATIENT_ZONE_SECRET: 'e2e-only-patient-zone-secret',
         STORAGE_DRIVER: 'local',
         STORAGE_EXERCISE_LOCAL_DIR: path.resolve('data/exercise-media'),
+        // The practice app's document archive (npm run dev writes to ./data/documents), read only (iteration 6)
+        STORAGE_LOCAL_DIR: path.resolve(process.env.STORAGE_LOCAL_DIR ?? 'data/documents'),
         PRACTICE_INTERNAL_URL: `http://localhost:${PORT}`,
         ZONE_INTERNAL_SECRET: INTERNAL_SECRET,
       },
