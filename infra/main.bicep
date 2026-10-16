@@ -565,7 +565,7 @@ resource migrateJob 'Microsoft.App/jobs@2024-03-01' = {
   }
 }
 
-// Patient zone (iteration 4, design D13): no Entra sign-in, own identity and database role, scales to zero
+// Patient zone (iteration 4, design D13): no Entra sign-in, own identity and database role, always one replica
 resource zoneApp 'Microsoft.App/containerApps@2024-03-01' = {
   name: 'ca-${name}-zone'
   location: location
@@ -643,8 +643,8 @@ resource zoneApp 'Microsoft.App/containerApps@2024-03-01' = {
               ]
         }
       ]
-      // Scales to zero: a few seconds on the first opening, accepted for lower costs (design D13)
-      scale: { minReplicas: 0, maxReplicas: 2 }
+      // Always one replica: patients open the zone from an email link, a cold start took too long (2026-10-16)
+      scale: { minReplicas: 1, maxReplicas: 2 }
     }
   }
 }
