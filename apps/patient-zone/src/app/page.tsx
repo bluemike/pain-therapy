@@ -153,7 +153,8 @@ export default async function Home({
         <h2 id="h_ex">{t('exercises')}</h2>
         <ul className="exlist">
           {items.map((it) => (
-            <li className="ex" key={it.code} data-code={it.code}>
+            // Keyed by the day, so the forms start again with the date of a newly chosen day
+            <li className="ex" key={`${it.code}-${day.day}`} data-code={it.code}>
               <div className="head">
                 {it.hasImage ? (
                   // eslint-disable-next-line @next/next/no-img-element -- private image, only with a session

@@ -3,7 +3,7 @@ import { can } from './access';
 import { loadExerciseMedia, type MediaKind } from './exercise-sheets';
 
 /**
- * exercise-library: Schutz der Übungsinhalte. Images only for signed-in users with a role and never in patient mode;
+ * exercise-library: Schutz der Übungsinhalte. Images only for signed-in users with a role;
  * patients get them only inside their exercise sheet. Not patient data, so a private browser cache is fine.
  */
 export async function exerciseMediaResponse(code: string, kind: string) {

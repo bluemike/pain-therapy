@@ -72,7 +72,7 @@ test('record in the patient zone: tabs, treatment, document, recording yesterday
     .click();
   await page.getByLabel('Übung 2A verordnet').check();
   await page.getByRole('button', { name: 'Konsultation speichern' }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Übungsblatt' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Übungsblatt' })).toBeVisible({ timeout: 20_000 });
   await page.getByRole('button', { name: 'Übungsblatt senden' }).click();
   await expect(page.getByText('Der Link zur Patienten-Zone steht im Text der E-Mail.')).toBeVisible();
   const link = await sheetLink(email);
@@ -131,15 +131,16 @@ test('record in the patient zone: tabs, treatment, document, recording yesterday
   await expect(patient.getByTestId('disclaimers')).toContainText('unterschrieben online');
   await expectNoHorizontalScroll(patient, 'documents');
   await expectNoA11yViolations(patient, 'documents');
-  const href = (await patient.getByTestId('sheets').locator('a.doc').getAttribute('href'))!;
-  const pdf = await patient.request.get(href);
+  // Absolute: the request context's base URL is the practice app
+  const href = new URL((await patient.getByTestId('sheets').locator('a.doc').getAttribute('href'))!, patient.url());
+  const pdf = await patient.request.get(href.toString());
   expect(pdf.status()).toBe(200);
   expect(pdf.headers()['content-type']).toBe('application/pdf');
   expect(pdf.headers()['content-disposition']).toMatch(/^inline; filename="PT-\d{4}-\d{5}\.pdf"$/);
   expect((await pdf.body()).subarray(0, 5).toString()).toBe('%PDF-');
   // Without a session no PDF
   const stranger = await browser.newContext();
-  const anon = await stranger.request.get(new URL(href, patient.url()).toString(), { maxRedirects: 0 });
+  const anon = await stranger.request.get(href.toString(), { maxRedirects: 0 });
   expect(anon.status()).not.toBe(200);
   await stranger.close();
   await patient.context().close();

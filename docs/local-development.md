@@ -17,7 +17,7 @@ npm run dev                               # http://localhost:3000
 
 Mit `AUTH_DEV_LOGIN=true` zeigt die Anmeldeseite zusätzlich die **Entwickler-Anmeldung**: Name, Rolle (Therapeut:in, Administration, keine) und Kontoart (Ayanta, Gast, fremder Tenant) frei wählbar. Damit lassen sich alle Zugriffsfälle durchspielen. In Azure ist sie immer aus.
 
-Mails landen als `.json` mit dem PDF-Anhang daneben in `data/outbox/`, unterschriebene PDFs in `data/documents/`, Fotos von Behandlungen und Konsultationen in `data/clinical-photos/` (`STORAGE_PHOTO_LOCAL_DIR`), Übungsblätter (PDF) wie die unterschriebenen Dokumente in `data/documents/`. Die Bilder und Texte der L&B-Übungsblätter liest die App aus `data/exercise-media/` (`STORAGE_EXERCISE_LOCAL_DIR`); `npm run media:placeholders` legt dort synthetische Platzhalter an (gestreifte Bilder, Texte "Platzhalter …"), die echten Inhalte gehören nicht ins Repository (siehe [deployment.md](deployment.md#iteration-3-selbstausführung-übungsblatt)). Wer die echten Dateien lokal braucht, kopiert sie aus OneDrive in diesen Ordner und startet `npm run catalog:sync`. Neue Behandlungen und Konsultationen gibt es nur für aktive Patient:innen mit gültig unterschriebenem Haftungsausschluss; lokal also zuerst über *An Patient:in übergeben* unterschreiben. Das iPad lässt sich im Browser mit den Entwicklerwerkzeugen (Gerätesimulation) oder mit einem echten iPad im selben Netz (`http://<rechner-ip>:3000`) testen.
+Mails landen als `.json` mit dem PDF-Anhang daneben in `data/outbox/`, unterschriebene PDFs in `data/documents/`, Fotos von Behandlungen und Konsultationen in `data/clinical-photos/` (`STORAGE_PHOTO_LOCAL_DIR`), Übungsblätter (PDF) wie die unterschriebenen Dokumente in `data/documents/`. Die Bilder und Texte der L&B-Übungsblätter liest die App aus `data/exercise-media/` (`STORAGE_EXERCISE_LOCAL_DIR`); `npm run media:placeholders` legt dort synthetische Platzhalter an (gestreifte Bilder, Texte "Platzhalter …"), die echten Inhalte gehören nicht ins Repository (siehe [deployment.md](deployment.md#iteration-3-selbstausführung-übungsblatt)). Wer die echten Dateien lokal braucht, kopiert sie aus OneDrive in diesen Ordner und startet `npm run catalog:sync`. Neue Behandlungen und Konsultationen gibt es nur für aktive Patient:innen mit gültig unterschriebenem Haftungsausschluss; lokal also zuerst *Zur Unterschrift einladen* und in der Patienten-Zone (`npm run dev:zone`, Link aus `data/outbox/` oder QR-Code) unterschreiben. Telefon und iPad lassen sich im Browser mit den Entwicklerwerkzeugen (Gerätesimulation) oder mit einem echten Gerät im selben Netz (`http://<rechner-ip>:3000`) testen.
 
 ## Patienten-Zone (ab Iteration 4)
 
@@ -75,7 +75,6 @@ src/app/            Seiten (App Router) und Server Actions
   api/exercise-media/[code]/[main|sheet]/  Bilder der Übungsblätter, nur mit Anmeldung
   (app)/patients/[id]/treatments/[tid]/consultations/[cid]/handout/  Abschluss: Übungsblatt senden oder drucken
   (app)/catalog/exercises/[code]/  Übung im Katalog
-  sign/             Patientenmodus auf dem iPad
   documents/[id]/   PDF-Auslieferung mit Prüfsumme
 src/lib/            Dienste: Patient:innen, Unterschrift, PDF, Ablage, Mail, Audit, Zugriff
 src/components/     UI-Bausteine (Formular, Unterschriftsfeld, Dialoge)

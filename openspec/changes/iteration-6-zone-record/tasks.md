@@ -9,31 +9,31 @@
 
 ## 2. Zugang und Rechte
 
-- [ ] 2.1 `purposeActive` um `hasRecord` erweitern (Praxis-App und Zone); "Zugang zur Patienten-Zone senden" auch ohne Heimprogramm (D3); Unit-Tests
-- [ ] 2.2 `prisma/patient-zone-role.sql` nach D4 und D5 erweitern; Rechte-Test mit neuen erlaubten und weiterhin verweigerten Spalten
-- [ ] 2.3 Bicep: "Storage Blob Data Reader" der Zonen-Identität auf `signed-documents`
+- [x] 2.1 `purposeActive` um `hasRecord` erweitern (Praxis-App und Zone); "Zugang zur Patienten-Zone senden" auch ohne Heimprogramm (D3); Unit-Tests
+- [x] 2.2 `prisma/patient-zone-role.sql` nach D4 und D5 erweitern; Rechte-Test mit neuen erlaubten und weiterhin verweigerten Spalten
+- [x] 2.3 Bicep: "Storage Blob Data Reader" der Zonen-Identität auf `signed-documents`
 
 ## 3. Dokumente (zone-documents)
 
-- [ ] 3.1 Seite `/dokumente` mit Gruppen "Haftungsausschluss" und "Übungsblätter", aktuell/ältere Versionen, "wird erstellt"
-- [ ] 3.2 Route `/dokumente/{documentNumber}` mit Prüfung auf die Patientin der Sitzung, Blob-Abruf, Kopfzeilen nach D4, Audit `document.viewedInZone`; Anzeige im Verlauf der Akte
-- [ ] 3.3 Tests: eigene Dokumente, fremde Nummer 404, ohne Sitzung kein PDF
+- [x] 3.1 Seite `/dokumente` mit Gruppen "Haftungsausschluss" und "Übungsblätter", aktuell/ältere Versionen, "wird erstellt"
+- [x] 3.2 Route `/dokumente/{documentNumber}` mit Prüfung auf die Patientin der Sitzung, Blob-Abruf, Kopfzeilen nach D4, Audit `document.viewedInZone`; Anzeige im Verlauf der Akte
+- [x] 3.3 Tests: eigene Dokumente, fremde Nummer 404, ohne Sitzung kein PDF
 
 ## 4. Behandlungen (zone-record)
 
-- [ ] 4.1 Seiten `/behandlungen` und `/behandlungen/{id}` mit Konsultationen, Punkten, Übungen, Rollmassage, Heimprogramm, Link zum Übungsblatt und Schmerzverlauf (D5); de und en
-- [ ] 4.2 Reiter-Navigation, Umleitung ohne Heimprogramm, Vorrang der Unterschrift (D6)
-- [ ] 4.3 Tests: fremde Behandlung 404, keine Fotos, leere Liste
+- [x] 4.1 Seiten `/behandlungen` und `/behandlungen/{id}` mit Konsultationen, Punkten, Übungen, Rollmassage, Heimprogramm, Link zum Übungsblatt und Schmerzverlauf (D5); de und en
+- [x] 4.2 Reiter-Navigation, Umleitung ohne Heimprogramm, Vorrang der Unterschrift (D6)
+- [x] 4.3 Tests: fremde Behandlung 404, keine Fotos, leere Liste
 
 ## 5. Nacherfassen (zone-exercise-backfill)
 
-- [ ] 5.1 Tagesauswahl mit Grenzen, Tagesansicht mit `progress()` für den gewählten Tag, Formular mit vorgesetztem Datum (D7)
-- [ ] 5.2 "Alle Übungen dieses Tages erledigt" für vergangene Tage; Einträge des ganzen Heimprogramms
-- [ ] 5.3 Kennzeichnung "nachgetragen am …" im Übungstagebuch der Akte
-- [ ] 5.4 Tests: gestern nachtragen, Grenze Konsultation, ganzer Tag, Kennzeichnung
+- [x] 5.1 Tagesauswahl mit Grenzen, Tagesansicht mit `progress()` für den gewählten Tag, Formular mit vorgesetztem Datum (D7)
+- [x] 5.2 "Alle Übungen dieses Tages erledigt" für vergangene Tage; Einträge des ganzen Heimprogramms
+- [x] 5.3 Kennzeichnung "nachgetragen am …" im Übungstagebuch der Akte
+- [x] 5.4 Tests: gestern nachtragen, Grenze Konsultation, ganzer Tag, Kennzeichnung
 
 ## 6. Abschluss
 
-- [ ] 6.1 Playwright auf 390 px: Reiter, Behandlung, Dokument öffnen, gestern nachtragen; axe ohne Verstösse
-- [ ] 6.2 `docs/roadmap.md` und `docs/deployment.md` nachführen (Ausweg ohne Telefon, Fotos in der Zone als spätere Punkte)
+- [x] 6.1 Playwright auf 390 px: Reiter, Behandlung, Dokument öffnen, gestern nachtragen; axe ohne Verstösse
+- [x] 6.2 `docs/roadmap.md` und `docs/deployment.md` nachführen (Ausweg ohne Telefon, Fotos in der Zone als spätere Punkte)
 - [ ] 6.3 Abnahme durch die Praxis auf iPhone und Android

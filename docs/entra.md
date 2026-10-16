@@ -70,4 +70,4 @@ Die App sendet als Postfach `MAIL_SENDER` (z. B. `pain-therapy@ayanta.ch`) über
 - Gastkonten (`acct = 1`) und Konten aus anderen Identity Providern (`idp`-Claim) werden abgewiesen.
 - Rollen: `Therapist` oder `Admin`; Formulartexte nur mit `Admin`.
 - Sitzung: 30 Minuten ohne Aktivität, danach neue Anmeldung.
-- Patientenmodus verlassen: neue Anmeldung mit `prompt=login`, eine bestehende Microsoft-Sitzung reicht nicht.
+- Den Patientenmodus auf dem iPad gibt es seit Iteration 6 nicht mehr; unterschrieben wird in der Patienten-Zone. Eine Sitzung, die noch aus dem Patientenmodus stammt, gilt nicht mehr und verlangt eine neue Anmeldung.
