@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { can, checkClaims } from '@/lib/access';
-import { isAllowedInPatientMode, signPatientMode, verifyPatientMode } from '@/lib/patient-mode';
 
 const AYANTA = 'tenant-ayanta';
 
@@ -34,21 +33,6 @@ describe('Entra ID claims', () => {
     expect(can.manageConsentTexts(['THERAPIST'])).toBe(false);
     expect(can.manageConsentTexts(['ADMIN'])).toBe(true);
     expect(can.managePatients(['THERAPIST'])).toBe(true);
-  });
-});
-
-describe('patient mode', () => {
-  it('only accepts server-signed session ids', () => {
-    expect(verifyPatientMode('abc', signPatientMode('abc'))).toBe(true);
-    expect(verifyPatientMode('abc', signPatientMode('xyz'))).toBe(false);
-    expect(verifyPatientMode('abc', 'forged')).toBe(false);
-  });
-  it('allows only the signing screens of that session', () => {
-    expect(isAllowedInPatientMode('/sign/s1', 's1')).toBe(true);
-    expect(isAllowedInPatientMode('/sign/s1/thanks', 's1')).toBe(true);
-    expect(isAllowedInPatientMode('/sign/s2', 's1')).toBe(false);
-    expect(isAllowedInPatientMode('/patients', 's1')).toBe(false);
-    expect(isAllowedInPatientMode('/documents/x', 's1')).toBe(false);
   });
 });
 

@@ -17,7 +17,7 @@ import {
   latestLinkOf,
   linkStatusOf,
 } from '@/lib/patient-access';
-import { deliverEmail, finalizePending, finalizeSignature, resolvePatientNote, startSigning } from '@/lib/signing';
+import { deliverEmail, finalizePending, finalizeSignature, resolvePatientNote } from '@/lib/signing';
 import { sha256 } from '@/lib/storage';
 import { setMailer, type OutgoingMail } from '@/lib/mail';
 import type { Actor } from '@/lib/session';
@@ -255,7 +255,16 @@ describe('PDF of a signature from the zone (PDF, Archiv und Zustellung)', () => 
     // A second call finds the document and changes nothing
     expect((await call(`Bearer ${internalToken(sid, config.internalSecret)}`)).status).toBe(404);
     // iPad sessions are not finalized through this route
-    const ipad = await startSigning(actor, (await newPatient()).id);
+    const ipadPatient = await newPatient();
+    const ipad = await db.signatureSession.create({
+      data: {
+        patientId: ipadPatient.id,
+        textVersionId: (await db.consentTextVersion.findFirstOrThrow({ where: { language: 'de' } })).id,
+        language: 'de',
+        channel: 'IPAD',
+        startedBy: actor.name,
+      },
+    });
     const r = await finalizeRoute(
       new Request('http://practice/x', {
         method: 'POST',

@@ -12,8 +12,9 @@ import {
   updatePatient,
   viewPatient,
 } from '@/lib/patients';
-import { INITIAL_TEXTS, publishVersion } from '@/lib/consent-texts';
-import { completeSigning, deliverEmail, requestResend, startSigning } from '@/lib/signing';
+import { currentVersionNumber, INITIAL_TEXTS, publishVersion } from '@/lib/consent-texts';
+import { recordSignature, SignatureRecordError } from '@pain-therapy/shared/signing';
+import { deliverEmail, finalizeSignature, requestResend } from '@/lib/signing';
 import { setMailer, type OutgoingMail } from '@/lib/mail';
 import { sha256 } from '@/lib/storage';
 import { EMPTY_PATIENT } from '@/lib/schemas';
@@ -47,6 +48,28 @@ const signInput = (email: boolean) => ({
   unencryptedEmail: email,
   ...signature,
 });
+
+/**
+ * A signature recorded on the former iPad channel (Iteration 1). The patient mode is gone (Iteration 6), but such
+ * sessions and their PDFs stay valid, so the archive and email path is tested with them.
+ */
+async function startSigning(patientId: string) {
+  const patient = await db.patient.findUniqueOrThrow({ where: { id: patientId } });
+  const version = await currentVersionNumber();
+  const text = await db.consentTextVersion.findFirstOrThrow({
+    where: { version, language: patient.preferredLanguage },
+  });
+  return db.signatureSession.create({
+    data: { patientId, textVersionId: text.id, language: text.language, channel: 'IPAD', startedBy: actor.name },
+  });
+}
+async function completeSigning(
+  sid: string,
+  input: Omit<ReturnType<typeof signInput>, 'note'> & { note: string | null },
+) {
+  await recordSignature(db, { sid, input, actor });
+  return (await finalizeSignature(sid))!;
+}
 
 afterEach(() => setMailer(null));
 
@@ -143,9 +166,9 @@ describe('signing, PDF archive and email', () => {
         email: 'sarah@example.com',
       }),
     );
-    const s = await startSigning(actor, p.id);
+    const s = await startSigning(p.id);
     expect(s.language).toBe('en');
-    const signed = await completeSigning(actor, s.id, { ...signInput(true), note: 'New mobile' });
+    const signed = await completeSigning(s.id, { ...signInput(true), note: 'New mobile' });
     const document = signed.document!;
     const delivery = signed.delivery!;
     const file = await readFile(path.join(process.env.STORAGE_LOCAL_DIR!, document.blobPath));
@@ -162,7 +185,9 @@ describe('signing, PDF archive and email', () => {
       ['UNENCRYPTED_EMAIL', true],
     ]);
     expect((await db.emailDelivery.findUniqueOrThrow({ where: { id: delivery.id } })).status).toBe('SENT');
-    await expect(completeSigning(actor, s.id, signInput(true))).rejects.toThrow('notOpen');
+    await expect(recordSignature(db, { sid: s.id, input: signInput(true), actor })).rejects.toThrow(
+      SignatureRecordError,
+    );
     await expect(db.signedDocument.update({ where: { id: document.id }, data: { sha256: 'x' } })).rejects.toThrow(
       /append-only/,
     );
@@ -175,8 +200,8 @@ describe('signing, PDF archive and email', () => {
       actor,
       form({ firstName: 'Marco', lastName: 'Caduff', dateOfBirth: '08.06.1972', email: 'm@example.ch' }),
     );
-    const s = await startSigning(actor, p.id);
-    const { delivery } = await completeSigning(actor, s.id, signInput(false));
+    const s = await startSigning(p.id);
+    const { delivery } = await completeSigning(s.id, signInput(false));
     expect(delivery!.status).toBe('SKIPPED_NO_CONSENT');
     await deliverEmail(delivery!.id, { retryDelayMs: 1 });
     expect(sent).toHaveLength(0);
@@ -194,8 +219,8 @@ describe('signing, PDF archive and email', () => {
       actor,
       form({ firstName: 'Laura', lastName: 'Bianchi', dateOfBirth: '14.09.1988', email: 'laura@example.ch' }),
     );
-    const s = await startSigning(actor, p.id);
-    const { document, delivery } = await completeSigning(actor, s.id, signInput(true));
+    const s = await startSigning(p.id);
+    const { document, delivery } = await completeSigning(s.id, signInput(true));
     const failed = await deliverEmail(delivery!.id, { retryDelayMs: 1 });
     expect(calls).toBe(3);
     expect(failed?.status).toBe('FAILED');
@@ -203,6 +228,21 @@ describe('signing, PDF archive and email', () => {
     setMailer({ send: async () => {} });
     const again = await requestResend(actor, document!.id);
     expect((await deliverEmail(again.id, { retryDelayMs: 1 }))?.status).toBe('SENT');
+  });
+
+  it('aborts open iPad sessions and keeps signed ones (Iteration 6, signing-zone-only, task 1.3)', async () => {
+    const p = await createPatient(
+      actor,
+      form({ firstName: 'Iris', lastName: 'Pad', dateOfBirth: '01.02.1966', email: 'iris@example.ch' }),
+    );
+    const signed = await startSigning(p.id);
+    const { document } = await completeSigning(signed.id, signInput(false));
+    const open = await startSigning(p.id);
+    const sql = await readFile(path.resolve('prisma/migrations/20261016090000_zone_record/migration.sql'), 'utf8');
+    await db.$executeRawUnsafe(sql.replace(/^--.*$/gm, ''));
+    expect((await db.signatureSession.findUniqueOrThrow({ where: { id: open.id } })).status).toBe('ABORTED');
+    expect((await db.signatureSession.findUniqueOrThrow({ where: { id: signed.id } })).status).toBe('SIGNED');
+    expect(await db.signedDocument.findUnique({ where: { id: document!.id } })).not.toBeNull();
   });
 
   it('a new text version marks earlier signatures for re-signing (task 6.2)', async () => {

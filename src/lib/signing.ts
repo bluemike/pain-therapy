@@ -1,71 +1,15 @@
 import type { ConsentKind, Language } from '@prisma/client';
 import { ZONE_ACTOR } from '@pain-therapy/shared/access';
-import { recordSignature, SignatureRecordError, signatureSize, zonePlace } from '@pain-therapy/shared/signing';
+import { signatureSize, zonePlace } from '@pain-therapy/shared/signing';
 import { db } from './db';
 import { audit, SYSTEM_ACTOR } from './audit';
-import { currentText } from './consent-texts';
 import { formatDateTime } from './format';
 import { translator } from './i18n-server';
 import { sendWithRetry } from './mail';
 import { renderSignedFormPdf } from './pdf';
 import { signatureSvg, type Stroke } from './signature';
 import { documentStore, sha256 } from './storage';
-import type { SigningInput } from './schemas';
 import type { Actor } from './session';
-
-export class SigningError extends Error {
-  constructor(public code: 'notFound' | 'inactive' | 'noText' | 'notOpen') {
-    super(code);
-  }
-}
-
-/** consent-signing: Unterschriftsablauf starten */
-export async function startSigning(actor: Actor, patientId: string) {
-  const patient = await db.patient.findUnique({ where: { id: patientId } });
-  if (!patient) throw new SigningError('notFound');
-  if (patient.status !== 'ACTIVE') throw new SigningError('inactive');
-  const text = await currentText(patient.preferredLanguage);
-  if (!text) throw new SigningError('noText');
-  return db.$transaction(async (tx) => {
-    // An earlier session left open (e.g. the device was taken away) counts as aborted
-    const open = await tx.signatureSession.findMany({ where: { patientId, status: 'OPEN' } });
-    for (const o of open) {
-      await tx.signatureSession.update({ where: { id: o.id }, data: { status: 'ABORTED', abortedAt: new Date() } });
-      await audit(actor, 'signing.aborted', { patientId, details: { sessionId: o.id } }, tx);
-    }
-    const session = await tx.signatureSession.create({
-      data: { patientId, textVersionId: text.id, language: patient.preferredLanguage, startedBy: actor.name },
-    });
-    await audit(actor, 'signing.started', { patientId, details: { sessionId: session.id, version: text.version } }, tx);
-    return session;
-  });
-}
-
-export async function getSession(sid: string) {
-  return db.signatureSession.findUnique({
-    where: { id: sid },
-    include: {
-      patient: true,
-      textVersion: true,
-      consents: true,
-      document: { include: { deliveries: { orderBy: { createdAt: 'desc' }, take: 1 } } },
-    },
-  });
-}
-
-/** Ends an unfinished session after the therapist signed back in (consent-signing: Abbruch). */
-export async function abortIfOpen(actor: Actor, sid: string) {
-  const s = await db.signatureSession.findUnique({ where: { id: sid } });
-  if (!s || s.status !== 'OPEN') return s;
-  return db.$transaction(async (tx) => {
-    const updated = await tx.signatureSession.update({
-      where: { id: sid },
-      data: { status: 'ABORTED', abortedAt: new Date() },
-    });
-    await audit(actor, 'signing.aborted', { patientId: s.patientId, details: { sessionId: sid } }, tx);
-    return updated;
-  });
-}
 
 /** Next human-readable document number PT-YYYY-NNNNN, shared by signed forms and exercise sheets */
 export async function nextDocumentNumber(): Promise<string> {
@@ -79,38 +23,9 @@ export async function nextDocumentNumber(): Promise<string> {
 }
 
 /**
- * consent-signing: Abschluss der Unterschrift on the iPad. Step 1 stores the signature (shared with the patient zone),
- * step 2 creates PDF, archive and email (iteration 5, design D7). When step 2 fails the signature still counts and
- * the finalize job creates the PDF a few minutes later; the result then has no document.
- */
-export async function completeSigning(actor: Actor, sid: string, input: SigningInput) {
-  const session = await db.signatureSession.findUnique({ where: { id: sid }, include: { patient: true } });
-  if (!session) throw new SigningError('notFound');
-  if (session.status !== 'OPEN') throw new SigningError('notOpen');
-  const { patient } = session;
-  try {
-    await recordSignature(db, {
-      sid,
-      input,
-      actor: { id: actor.id, name: `${patient.firstName} ${patient.lastName} (${actor.name}, Patientenmodus)` },
-    });
-  } catch (e) {
-    if (e instanceof SignatureRecordError) throw new SigningError(e.code === 'notOpen' ? 'notOpen' : 'notFound');
-    throw e;
-  }
-  try {
-    return (await finalizeSignature(sid)) ?? { document: null, delivery: null };
-  } catch (e) {
-    console.error(`finalizeSignature ${sid} failed, the finalize job retries`, e);
-    return { document: null, delivery: null };
-  }
-}
-
-/**
  * zone-consent-signing: PDF, Archiv und Zustellung, step 2 of 2 (design D7). Renders the PDF of a SIGNED session,
  * archives it immutably, creates SignedDocument and EmailDelivery. Idempotent: a session that already has a
- * document is left alone, and an advisory lock per session serialises concurrent calls (the zone, the job and the
- * iPad). Returns null when there is nothing to do. The caller starts the email with deliverEmail().
+ * document is left alone, and an advisory lock per session serialises concurrent calls (the zone and the job). Returns null when there is nothing to do. The caller starts the email with deliverEmail().
  */
 export async function finalizeSignature(sid: string) {
   return db.$transaction(

@@ -9,7 +9,7 @@ import { loadExerciseMedia, type MediaKind } from './exercise-sheets';
 export async function exerciseMediaResponse(code: string, kind: string) {
   const headers = { 'Cache-Control': 'private, no-store' };
   const session = await auth();
-  if (!session?.user?.id || session.patientMode || !can.managePatients(session.user.roles ?? [])) {
+  if (!session?.user?.id || !can.managePatients(session.user.roles ?? [])) {
     return new Response('Forbidden', { status: 403, headers });
   }
   if (kind !== 'main' && kind !== 'sheet') return new Response('Not found', { status: 404, headers });

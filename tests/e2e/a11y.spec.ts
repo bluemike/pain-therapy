@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { createSignedPatient, fillPatient, login, scrollReaderToEnd, unique } from './helpers';
+import { createSignedPatient, fillPatient, login, unique } from './helpers';
 import { TINY_JPEG } from '../fixtures/jpeg';
 
 /** ui-foundation: axe check, no WCAG 2.1 AA violations (task 3.4) */
@@ -44,11 +44,9 @@ test('app pages and the patient signing page', async ({ page }) => {
   await page.goto('/admin/consent-texts');
   await expectNoViolations(page, 'form texts');
   await page.goto(recordUrl);
-  await page.getByRole('button', { name: 'An Patient:in übergeben' }).first().click();
-  await expect(page.getByRole('heading', { name: 'Haftungsausschluss und Einwilligung' })).toBeVisible();
-  await expectNoViolations(page, 'signing page');
-  await scrollReaderToEnd(page);
-  await expectNoViolations(page, 'signing page after reading');
+  await page.getByRole('button', { name: 'Zur Unterschrift einladen' }).first().click();
+  await expect(page.getByTestId('invite-dialog').filter({ visible: true })).toBeVisible();
+  await expectNoViolations(page, 'invitation dialog');
 });
 
 /** Iteration 2, task 5.2: record with treatments, treatment form, consultation and catalog */

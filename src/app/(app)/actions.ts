@@ -4,14 +4,12 @@ import { after } from 'next/server';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { unstable_update } from '@/auth';
 import { db } from '@/lib/db';
 import { requireUser } from '@/lib/session';
 import { fieldErrors, formDataToObject, patientSchema } from '@/lib/schemas';
 import { createPatient, findDuplicates, setStatus, updatePatient } from '@/lib/patients';
-import { deliverEmail, requestResend, SigningError, startSigning } from '@/lib/signing';
+import { deliverEmail, requestResend } from '@/lib/signing';
 import { publishVersion } from '@/lib/consent-texts';
-import { signPatientMode } from '@/lib/patient-mode';
 import { formatDate } from '@/lib/format';
 import { LOCALE_COOKIE } from '@/i18n/request';
 
@@ -69,21 +67,6 @@ export async function reactivatePatient(fd: FormData) {
   const id = String(fd.get('id'));
   await setStatus(actor, id, 'ACTIVE');
   redirect(`/patients/${id}?flash=reactivated`);
-}
-
-/** consent-signing: An Patient übergeben. Switches this device into patient mode. */
-export async function handOver(fd: FormData) {
-  const actor = await requireUser();
-  const id = String(fd.get('id'));
-  let sid: string;
-  try {
-    sid = (await startSigning(actor, id)).id;
-  } catch (e) {
-    if (e instanceof SigningError) redirect(`/patients/${id}?error=${e.code}`);
-    throw e;
-  }
-  await unstable_update({ patientMode: { sid, sig: signPatientMode(sid) } } as never);
-  redirect(`/sign/${sid}`);
 }
 
 export async function resendEmail(fd: FormData) {

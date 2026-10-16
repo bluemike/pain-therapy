@@ -1,50 +1,11 @@
-import { readdir, readFile } from 'node:fs/promises';
-import path from 'node:path';
-import { expect, test, type Browser, type Page } from '@playwright/test';
-import { drawSignature, expectNoA11yViolations, fillPatient, login, unique } from './helpers';
+import { expect, test, type Page } from '@playwright/test';
+import { drawSignature, expectNoA11yViolations, fillPatient, inviteFromOutbox, login, phone, unique } from './helpers';
 
 /**
  * Iteration 5, task 3.4: invite a new patient to sign (mail to the outbox instead of Graph), open the link on a phone
  * (390 px), confirm with the date of birth, read, consent and sign with the finger; the practice sees the signature,
  * the PDF with channel "Patienten-Zone" and the remark. Needs both apps (playwright.config.ts starts them).
  */
-
-const OUTBOX = path.resolve(process.env.E2E_OUTBOX_DIR ?? 'data/e2e-outbox');
-
-async function inviteFromOutbox(to: string) {
-  let url = '';
-  await expect(async () => {
-    const files = (await readdir(OUTBOX)).filter((f) => f.endsWith('.json')).sort();
-    for (const f of files.reverse()) {
-      const mail = JSON.parse(await readFile(path.join(OUTBOX, f), 'utf8')) as {
-        to: string;
-        subject: string;
-        text: string;
-      };
-      const m =
-        mail.to === to && mail.subject.includes('unterschreiben')
-          ? /https?:\/\/\S+\/l\/[A-Za-z0-9_-]{43}/.exec(mail.text)
-          : null;
-      if (m) {
-        url = m[0];
-        return;
-      }
-    }
-    throw new Error(`No invitation to ${to} yet`);
-  }).toPass({ timeout: 20_000 });
-  return url;
-}
-
-async function phone(browser: Browser) {
-  const context = await browser.newContext({
-    viewport: { width: 390, height: 844 },
-    isMobile: true,
-    hasTouch: true,
-    locale: 'de-CH',
-    timezoneId: 'Europe/Zurich',
-  });
-  return context.newPage();
-}
 
 async function expectNoHorizontalScroll(page: Page, name: string) {
   const { scroll, client } = await page.evaluate(() => ({

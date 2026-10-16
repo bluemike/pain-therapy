@@ -6,7 +6,7 @@ import { translator } from '@/lib/i18n-server';
 /** exercise-handout: Vorschau. Renders the exercise sheet without document number; nothing is stored or sent. */
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string; cid: string }> }) {
   const session = await auth();
-  if (!session?.user?.id || session.patientMode || !can.managePatients(session.user.roles)) {
+  if (!session?.user?.id || !can.managePatients(session.user.roles)) {
     return new Response('Forbidden', { status: 403 });
   }
   const { id, cid } = await params;

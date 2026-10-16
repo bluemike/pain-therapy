@@ -2,10 +2,10 @@
 
 ## 1. Patientenmodus entfernen (signing-zone-only)
 
-- [ ] 1.1 `src/app/sign/`, `src/lib/patient-mode.ts`, `PatientModeBar`, `SigningForm` der Praxis-App, `startSigning()`/`completeSigning()` und die Patientenmodus-Sperre in Middleware und Sitzung entfernen; Übersetzungen und Tests bereinigen (D2)
-- [ ] 1.2 "An Patient übergeben" in Erfolgsdialog, Akte, Cockpit und `OpeningBlocked` durch "Zur Unterschrift einladen" ersetzen
-- [ ] 1.3 Migration: offene `IPAD`-Sitzungen auf `ABORTED`; Anzeige "Kanal: iPad" für bestehende Dokumente bleibt
-- [ ] 1.4 Tests: keine Route unter `/sign`, Erfolgsdialog nur mit Einladung, bestehende iPad-Unterschrift gilt weiter
+- [x] 1.1 `src/app/sign/`, `src/lib/patient-mode.ts`, `PatientModeBar`, `SigningForm` der Praxis-App, `startSigning()`/`completeSigning()` und die Patientenmodus-Sperre in Middleware und Sitzung entfernen; Übersetzungen und Tests bereinigen (D2)
+- [x] 1.2 "An Patient übergeben" in Erfolgsdialog, Akte, Cockpit und `OpeningBlocked` durch "Zur Unterschrift einladen" ersetzen
+- [x] 1.3 Migration: offene `IPAD`-Sitzungen auf `ABORTED`; Anzeige "Kanal: iPad" für bestehende Dokumente bleibt
+- [x] 1.4 Tests: keine Route unter `/sign`, Erfolgsdialog nur mit Einladung, bestehende iPad-Unterschrift gilt weiter
 
 ## 2. Zugang und Rechte
 

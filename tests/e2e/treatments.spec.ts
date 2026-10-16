@@ -178,7 +178,7 @@ test.describe('treatments and consultations', () => {
     expect((await page.request.get(photoUrl!)).status()).toBe(404);
   });
 
-  test('without a signed disclaimer no treatment is opened; hand over is offered', async ({ page }) => {
+  test('without a signed disclaimer no treatment is opened; the invitation is offered', async ({ page }) => {
     await login(page);
     await page.goto('/patients/new');
     await fillPatient(page, { first: 'Ohne', last: `Unterschrift${unique()}`, dob: '01.01.1970' });
@@ -189,7 +189,7 @@ test.describe('treatments and consultations', () => {
       page.getByText(/Neue Behandlungen und Konsultationen sind erst nach der Unterschrift möglich/),
     ).toBeVisible();
     await expect(page.locator('#f_diagnosis')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'An Patient:in übergeben' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Zur Unterschrift einladen' })).toBeVisible();
   });
 });
 
