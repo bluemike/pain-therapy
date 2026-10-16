@@ -106,7 +106,7 @@ Mockup: [`mockups/patienten-zone.html`](mockups/patienten-zone.html) (Ansichten 
 - [Link in unverschlüsselter E-Mail] → Nur mit Einwilligung; Link allein reicht nicht ohne Geburtsdatum; Sperren und Ersetzen jederzeit in der Akte.
 - [Eigene Datenbankrolle muss nach jeder Migration passen] → Rechte werden bei jedem Migrationslauf neu gesetzt; Test der Rechte in CI gegen Postgres.
 - [Einträge nicht überprüfbar] → Die Praxis sieht Selbstauskünfte; die Übersicht zeigt sie neutral als "erfasst", nicht als Erfolg.
-- [Kaltstart mit `minReplicas: 0`] → Wenige Sekunden beim ersten Öffnen; akzeptiert für geringere Kosten.
+- [Kaltstart mit `minReplicas: 0`] → Wenige Sekunden beim ersten Öffnen; akzeptiert für geringere Kosten. Nachtrag 2026-10-16: In Produktion dauerte der erste Aufruf aus der E-Mail zu lange, daher `minReplicas: 1`.
 
 ## Migration Plan
 
