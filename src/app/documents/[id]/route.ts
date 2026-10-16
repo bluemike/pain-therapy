@@ -10,7 +10,7 @@ import { documentStore, sha256 } from '@/lib/storage';
  */
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
-  if (!session?.user?.id || session.patientMode || !can.managePatients(session.user.roles)) {
+  if (!session?.user?.id || !can.managePatients(session.user.roles)) {
     return new Response('Forbidden', { status: 403 });
   }
   const { id } = await params;

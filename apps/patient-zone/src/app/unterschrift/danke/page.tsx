@@ -2,8 +2,8 @@ import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 
 /**
- * zone-consent-signing: Vielen Dank (mockup view 5). Needs no session: without a home program the link and the device
- * session end with the signature (design D4), and this page is the last one the patient sees.
+ * zone-consent-signing: Vielen Dank (mockup view 5). Since iteration 6 the signature itself keeps the link valid
+ * (zone-record, design D3), so the patient continues to her exercises or, without a home program, to her record.
  */
 export default async function Thanks({ searchParams }: { searchParams: Promise<{ p?: string }> }) {
   const { p } = await searchParams;
@@ -20,7 +20,9 @@ export default async function Thanks({ searchParams }: { searchParams: Promise<{
           {t('toExercises')}
         </Link>
       ) : (
-        <p className="muted">{t('noProgram')}</p>
+        <Link className="btn btn--gold btn--block" href="/dokumente">
+          {t('toRecord')}
+        </Link>
       )}
     </>
   );

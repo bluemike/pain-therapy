@@ -7,7 +7,7 @@ import type {
   PrismaClient,
 } from '@prisma/client';
 import { linkExpiry, linkState, type LinkState } from '@pain-therapy/shared/access';
-import { currentProgram } from '@pain-therapy/shared/program';
+import { linkPurposeOf } from '@pain-therapy/shared/record';
 import { signatureStateOf } from '@pain-therapy/shared/signing';
 import { hashToken, linkUrl, newToken } from '@pain-therapy/shared/tokens';
 import { db } from './db';
@@ -39,7 +39,8 @@ export const zoneEnabled = () => !!config.patientZone.url;
 
 /**
  * Issues a new link and replaces the valid one of the patient (Neuer Link ersetzt den alten). Only for an active
- * patient with an active home program (iteration 4, design D2) or a pending signature (iteration 5, design D3, D4).
+ * patient with an active home program (iteration 4, design D2), a pending signature (iteration 5, design D3, D4) or a
+ * treatment or document to look at in the zone (iteration 6, design D3).
  */
 export async function issueAccessLink(
   actor: Pick<Actor, 'id' | 'name'>,
@@ -51,8 +52,7 @@ export async function issueAccessLink(
   const patient = await tx.patient.findUnique({ where: { id: patientId }, select: { status: true } });
   if (!patient) throw new AccessLinkError('notFound');
   if (patient.status !== 'ACTIVE') throw new AccessLinkError('inactive');
-  const program = await currentProgram(tx, patientId, now);
-  if (!program?.active && !(await signatureStateOf(tx, patientId)).pending) throw new AccessLinkError('noProgram');
+  if (!(await linkPurposeOf(tx, patientId, now)).purposeActive) throw new AccessLinkError('noProgram');
   const previous = await tx.patientAccessLink.findMany({
     where: { patientId, replacedAt: null, revokedAt: null },
     select: { id: true },

@@ -32,7 +32,12 @@ export async function currentProgram(
   const c = await db.consultation.findFirst({
     where: { treatment: { patientId }, home: { some: {} } },
     orderBy: [{ at: 'desc' }, { id: 'desc' }],
-    select: { id: true, at: true, home: { select: { exerciseCode: true, repetition: true } } },
+    select: {
+      id: true,
+      at: true,
+      // In the order of the catalog (1A to 4G), like the paper form; the database order alone is not stable
+      home: { select: { exerciseCode: true, repetition: true }, orderBy: { exercise: { sort: 'asc' } } },
+    },
   });
   if (!c) return null;
   return {

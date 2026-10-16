@@ -1,6 +1,14 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { hashToken, newToken } from '@pain-therapy/shared/tokens';
-import { confirmable, confirmLink, endSession, lookupLink, resolveSession, touchSession } from '@/lib/access';
+import {
+  confirmable,
+  confirmLink,
+  endSession,
+  lookupLink,
+  programSession,
+  resolveSession,
+  touchSession,
+} from '@/lib/access';
 import { installLogMasking } from '@/lib/log';
 import { admin, ago, consultation, DOB, link, now, patient, resetDatabase, setup } from './fixtures';
 
@@ -93,7 +101,7 @@ describe('confirmation with the date of birth', () => {
 });
 
 describe('neutral messages (Neutrale Fehlermeldungen)', () => {
-  it('treats unknown, expired, replaced, revoked and blocked links and an ended program the same way', async () => {
+  it('treats unknown, expired, replaced, revoked and blocked links and a link without purpose the same way', async () => {
     const cases: [string, string][] = [];
     cases.push(['unknown', newToken()]);
     cases.push(['malformed', 'abc']);
@@ -102,10 +110,9 @@ describe('neutral messages (Neutrale Fehlermeldungen)', () => {
     cases.push(['replaced', (await link(p.id, ago(1), { replacedAt: ago(0, 1) })).token]);
     cases.push(['revoked', (await link(p.id, ago(1), { revokedAt: ago(0, 1) })).token]);
     cases.push(['blocked', (await link(p.id, ago(1), { blockedAt: ago(0, 1) })).token]);
-    // Kein aktives Heimprogramm: last consultation with prescriptions more than 12 weeks ago
-    const old = await patient();
-    await consultation(old.id, ago(85), [['2A', 'DAILY_1']]);
-    cases.push(['no program', (await link(old.id, ago(1))).token]);
+    // No home program, no pending signature, no treatment and no document (iteration 6, design D3)
+    const none = await patient();
+    cases.push(['no purpose', (await link(none.id, ago(1))).token]);
     const inactive = await patient({ status: 'INACTIVE' });
     await consultation(inactive.id, ago(5), [['2A', 'DAILY_1']]);
     cases.push(['inactive patient', (await link(inactive.id)).token]);
@@ -123,8 +130,8 @@ describe('neutral messages (Neutrale Fehlermeldungen)', () => {
 });
 
 describe('device session (Gerätesitzung)', () => {
-  async function signedIn() {
-    const s = await setup();
+  async function signedIn(opts: { at?: Date } = {}) {
+    const s = await setup(opts);
     const r = await confirm(s.token);
     if (!r.ok) throw new Error('not signed in');
     return { ...s, sessionId: r.sessionId };
@@ -159,9 +166,20 @@ describe('device session (Gerätesitzung)', () => {
     expect((await admin.patientZoneSession.findFirstOrThrow()).endedAt).toEqual(later(4));
   });
 
-  it('ends when the home program is no longer active', async () => {
-    const { sessionId } = await signedIn();
-    expect(await resolveSession(sessionId, new Date(now.getTime() + 75 * 86400_000))).toBeNull();
+  it('stays after the home program while there is a treatment, without the exercises (zone-record)', async () => {
+    // Home program from 80 days ago: ended after 84 days, the device session (30 days) still runs
+    const { sessionId, token } = await signedIn({ at: ago(80) });
+    const after = new Date(now.getTime() + 10 * 86400_000);
+    const s = await resolveSession(sessionId, after);
+    expect(s?.program?.active).toBe(false);
+    expect(programSession(s)).toBeNull();
+    expect((await lookupLink(token, after))?.state).toBe('valid');
+  });
+
+  it('ends when the patient is no longer active', async () => {
+    const { sessionId, patient: p } = await signedIn();
+    await admin.patient.update({ where: { id: p.id }, data: { status: 'INACTIVE' } });
+    expect(await resolveSession(sessionId, later(1))).toBeNull();
   });
 });
 

@@ -1,5 +1,6 @@
 import { adherence, type Adherence } from '@pain-therapy/shared/adherence';
 import { PROGRAM_ACTIVE_WEEKS, currentProgram, programActive } from '@pain-therapy/shared/program';
+import { hasRecord } from '@pain-therapy/shared/record';
 import { signatureStateOf } from '@pain-therapy/shared/signing';
 import type { Repetition } from '@pain-therapy/shared/home-program';
 import { DAY_MS } from '@pain-therapy/shared/time';
@@ -20,7 +21,7 @@ const ENTRIES_SHOWN = 200;
 export async function exerciseLogOf(actor: Actor, patientId: string, now = new Date()) {
   const patient = await db.patient.findUniqueOrThrow({ where: { id: patientId }, select: { status: true } });
   const program = await currentProgram(db, patientId, now);
-  const [consultation, entries, link, signature] = await Promise.all([
+  const [consultation, entries, link, signature, record] = await Promise.all([
     program
       ? db.consultation.findUnique({
           where: { id: program.consultationId },
@@ -43,15 +44,20 @@ export async function exerciseLogOf(actor: Actor, patientId: string, now = new D
     }),
     latestLinkOf(patientId),
     signatureStateOf(db, patientId),
+    hasRecord(db, patientId),
   ]);
   await audit(actor, 'exerciseLog.viewed', { patientId });
   const active = patient.status === 'ACTIVE' && !!program?.active;
+  // A pending signature (iteration 5, design D4) or a record (iteration 6, design D3) also keeps the link valid
+  const purposeActive = !!program?.active || signature.pending || record;
   // In the order of the treatment form, like the exercise sheet
   const order = (code: string) => consultation?.exercises.findIndex((x) => x.exerciseCode === code) ?? 0;
   const prescriptions = [...(consultation?.home ?? [])].sort((a, b) => order(a.exerciseCode) - order(b.exerciseCode));
   return {
     program: program && consultation ? { ...program, consultation, prescriptions } : null,
     active,
+    /** "Link senden" also without a home program, once there is a treatment or document (iteration 6, design D3) */
+    canSendLink: patient.status === 'ACTIVE' && purposeActive,
     adherence:
       program && consultation
         ? adherence(
@@ -63,12 +69,7 @@ export async function exerciseLogOf(actor: Actor, patientId: string, now = new D
         : null,
     entries,
     link,
-    linkStatus: linkStatusOf(
-      link,
-      // A pending signature also keeps the link valid (iteration 5, design D4)
-      { patientActive: patient.status === 'ACTIVE', purposeActive: !!program?.active || signature.pending },
-      now,
-    ),
+    linkStatus: linkStatusOf(link, { patientActive: patient.status === 'ACTIVE', purposeActive }, now),
   };
 }
 

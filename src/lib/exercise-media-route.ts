@@ -3,13 +3,13 @@ import { can } from './access';
 import { loadExerciseMedia, type MediaKind } from './exercise-sheets';
 
 /**
- * exercise-library: Schutz der Übungsinhalte. Images only for signed-in users with a role and never in patient mode;
+ * exercise-library: Schutz der Übungsinhalte. Images only for signed-in users with a role;
  * patients get them only inside their exercise sheet. Not patient data, so a private browser cache is fine.
  */
 export async function exerciseMediaResponse(code: string, kind: string) {
   const headers = { 'Cache-Control': 'private, no-store' };
   const session = await auth();
-  if (!session?.user?.id || session.patientMode || !can.managePatients(session.user.roles ?? [])) {
+  if (!session?.user?.id || !can.managePatients(session.user.roles ?? [])) {
     return new Response('Forbidden', { status: 403, headers });
   }
   if (kind !== 'main' && kind !== 'sheet') return new Response('Not found', { status: 404, headers });

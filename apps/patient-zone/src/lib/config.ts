@@ -22,6 +22,9 @@ export const config = {
     accountUrl: process.env.AZURE_STORAGE_ACCOUNT_URL ?? '',
     connectionString: process.env.AZURE_STORAGE_CONNECTION_STRING ?? '',
     exerciseContainer: process.env.AZURE_STORAGE_EXERCISE_CONTAINER ?? 'exercise-media',
+    /** Document archive of the practice app (iteration 6, design D4), read only; locally its STORAGE_LOCAL_DIR */
+    documentLocalDir: process.env.STORAGE_LOCAL_DIR ?? '../../data/documents',
+    documentContainer: process.env.AZURE_STORAGE_CONTAINER ?? 'signed-documents',
   },
   practice: {
     name: 'Ayanta Pain Therapy',

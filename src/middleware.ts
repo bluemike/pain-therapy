@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { isAllowedInPatientMode } from '@/lib/patient-mode';
 
 // /api/internal: calls of the patient zone and the finalize job, signed with ZONE_INTERNAL_SECRET (iteration 5, D7)
 const PUBLIC = ['/login', '/no-access', '/api/auth', '/api/health', '/api/internal'];
@@ -29,13 +28,6 @@ export default auth((req) => {
     return res;
   }
 
-  // consent-signing: Patientenmodus shows nothing but the signing screens of that one session
-  const pm = session.patientMode;
-  if (pm) {
-    if (isAllowedInPatientMode(pathname, pm.sid)) return NextResponse.next();
-    return NextResponse.redirect(new URL(`/sign/${pm.sid}`, req.nextUrl));
-  }
-  if (pathname.startsWith('/sign/')) return NextResponse.redirect(new URL('/', req.nextUrl));
   if (pathname === '/login') return NextResponse.redirect(new URL('/', req.nextUrl));
   return NextResponse.next();
 });

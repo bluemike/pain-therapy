@@ -371,10 +371,21 @@ resource blobContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = 
   }
 }
 
-// The patient zone reads the exercise images, nothing else in the storage account
+// The patient zone reads the exercise images and, since iteration 6 (design D4), the archived PDFs of its own
+// patient; nothing else in the storage account, and never writes
 resource zoneBlobReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(exerciseMedia.id, zoneIdentity.id, roles.storageBlobDataReader)
   scope: exerciseMedia
+  properties: {
+    principalId: zoneIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.storageBlobDataReader)
+  }
+}
+
+resource zoneDocumentReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(documents.id, zoneIdentity.id, roles.storageBlobDataReader)
+  scope: documents
   properties: {
     principalId: zoneIdentity.properties.principalId
     principalType: 'ServicePrincipal'
@@ -563,7 +574,14 @@ resource zoneApp 'Microsoft.App/containerApps@2024-03-01' = {
     type: 'UserAssigned'
     userAssignedIdentities: { '${zoneIdentity.id}': {} }
   }
-  dependsOn: [zoneAcrPull, zoneSecretUserDatabaseUrl, zoneSecretUserSecret, zoneSecretUserInternal, zoneBlobReader]
+  dependsOn: [
+    zoneAcrPull
+    zoneSecretUserDatabaseUrl
+    zoneSecretUserSecret
+    zoneSecretUserInternal
+    zoneBlobReader
+    zoneDocumentReader
+  ]
   properties: {
     environmentId: environment.id
     workloadProfileName: 'Consumption'
@@ -611,6 +629,8 @@ resource zoneApp 'Microsoft.App/containerApps@2024-03-01' = {
                 { name: 'STORAGE_DRIVER', value: 'azure' }
                 { name: 'AZURE_STORAGE_ACCOUNT_URL', value: storage.properties.primaryEndpoints.blob }
                 { name: 'AZURE_STORAGE_EXERCISE_CONTAINER', value: exerciseMedia.name }
+                // Signed disclaimers and exercise sheets in "Dokumente" (iteration 6, design D4), read only
+                { name: 'AZURE_STORAGE_CONTAINER', value: documents.name }
                 // After a signature the zone asks the practice app for the PDF (iteration 5, design D7)
                 { name: 'PRACTICE_INTERNAL_URL', value: practiceInternalUrl }
                 { name: 'ZONE_INTERNAL_SECRET', secretRef: 'zone-internal-secret' }

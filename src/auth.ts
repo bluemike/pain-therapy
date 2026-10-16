@@ -5,12 +5,10 @@ import type { Provider } from 'next-auth/providers';
 import type { Role } from '@prisma/client';
 import { config } from '@/lib/config';
 import { checkClaims, isSessionIdle, type EntraClaims } from '@/lib/access';
-import { verifyPatientMode } from '@/lib/patient-mode';
 
 declare module 'next-auth' {
   interface Session {
     user: { id: string; roles: Role[] } & DefaultSession['user'];
-    patientMode?: { sid: string; since: number };
   }
 }
 
@@ -21,7 +19,8 @@ type Token = {
   roles?: Role[];
   authTime?: number;
   lastActivity?: number;
-  patientMode?: { sid: string; since: number };
+  /** Only in tokens issued before iteration 6, when the iPad patient mode existed */
+  patientMode?: unknown;
 };
 
 const providers: Provider[] = [];
@@ -87,11 +86,11 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
       if (!check.ok) return `/no-access?reason=${check.reason}`;
       return true;
     },
-    async jwt({ token, account, profile, user, trigger, session }) {
+    async jwt({ token, account, profile, user }) {
       const t = token as Token;
       const now = Date.now();
       if (account) {
-        // Fresh sign-in: build a new token. This also ends patient mode (consent-signing: Patientenmodus verlassen).
+        // Fresh sign-in: build a new token
         const check = checkClaims(claimsFor(account.provider, profile, user), tenantFor(account.provider));
         if (!check.ok) return null;
         const p = (profile ?? {}) as { oid?: string; preferred_username?: string; email?: string; name?: string };
@@ -105,15 +104,12 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
         } satisfies Token;
       }
       if (isSessionIdle(t.lastActivity, now, config.idleTimeoutMs)) return null;
+      // A device still in the removed iPad patient mode (iteration 6, signing-zone-only) must sign in again instead of
+      // getting the practice app
+      if (t.patientMode) return null;
       // A cookie refreshed by a request that was still running during sign-out must not revive the session
       if (await signedOutSince(t.sub, t.authTime)) return null;
       t.lastActivity = now;
-      if (trigger === 'update') {
-        const pm = (session as { patientMode?: { sid?: unknown; sig?: unknown } } | undefined)?.patientMode;
-        // Only the server can enter patient mode (signed id); nothing but a fresh sign-in can leave it.
-        if (pm && verifyPatientMode(pm.sid, pm.sig) && !t.patientMode)
-          t.patientMode = { sid: pm.sid as string, since: now };
-      }
       return t;
     },
     session({ session, token }) {
@@ -122,7 +118,6 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
       session.user.roles = t.roles ?? [];
       session.user.name = t.name ?? '';
       session.user.email = t.email ?? '';
-      if (t.patientMode) session.patientMode = t.patientMode;
       return session;
     },
   },

@@ -217,8 +217,6 @@ describe('exercise library', () => {
     expect((await exerciseMediaResponse('2A', 'main')).status).toBe(403);
     session.current = { user: { id: 'u-2', name: 'Ohne Rolle', roles: [] } };
     expect((await exerciseMediaResponse('2A', 'main')).status).toBe(403);
-    session.current = { ...THERAPIST, patientMode: { sid: 's', sig: 'x' } };
-    expect((await exerciseMediaResponse('2A', 'main')).status).toBe(403);
     session.current = THERAPIST;
     const main = await exerciseMediaResponse('2A', 'main');
     expect(main.status).toBe(200);

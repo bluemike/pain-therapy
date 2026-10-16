@@ -2,10 +2,10 @@ import { auth } from '@/auth';
 import { can } from './access';
 import { loadPhoto } from './photos';
 
-/** Datenschutz der Fotos (design D6): sign-in with a role, no patient mode, `Cache-Control: private, no-store`. */
+/** Datenschutz der Fotos (design D6): sign-in with a role, `Cache-Control: private, no-store`. */
 export async function photoResponse(id: string, variant: 'full' | 'thumb') {
   const session = await auth();
-  if (!session?.user?.id || session.patientMode || !can.managePatients(session.user.roles ?? [])) {
+  if (!session?.user?.id || !can.managePatients(session.user.roles ?? [])) {
     return new Response('Forbidden', { status: 403, headers: { 'Cache-Control': 'private, no-store' } });
   }
   const data = await loadPhoto({ id: session.user.id, name: session.user.name ?? '' }, id, variant);

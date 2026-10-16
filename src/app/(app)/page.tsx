@@ -5,11 +5,10 @@ import { dashboardData, listPatients } from '@/lib/patients';
 import { formatDate, formatDateTime, greetingKey, hourInZurich } from '@/lib/format';
 import { ConsentPill } from '@/components/Pills';
 import { SearchBox } from '@/components/SearchBox';
-import { PlusIcon, TabletIcon } from '@/components/Icons';
+import { PlusIcon } from '@/components/Icons';
 import { HomeProgramTile } from '@/components/HomeProgramTile';
 import { homeProgramOverview } from '@/lib/exercise-log';
 import { inviteStatusOf, zoneEnabled, type InviteStatus } from '@/lib/patient-access';
-import { handOver } from './actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -184,13 +183,6 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                         {invites.get(p.id)?.kind === 'failed' ? tsi('reinvite') : tsi('inviteShort')}
                       </Link>
                     ) : null}
-                    <form action={handOver}>
-                      <input type="hidden" name="id" value={p.id} />
-                      <button className="btn btn--ghost" style={{ minHeight: 40 }}>
-                        <TabletIcon />
-                        {t('startSigning')}
-                      </button>
-                    </form>
                   </li>
                 ))}
                 {data.pending.length > PENDING_SHOWN ? (

@@ -3,8 +3,9 @@ import path from 'node:path';
 import { config } from './config';
 
 /**
- * Read-only access to the private container `exercise-media` (design D7, D13): the managed identity of the patient
- * zone has "Storage Blob Data Reader" on this container only. Locally the folder of npm run media:placeholders.
+ * Read-only access to the private containers `exercise-media` (design D7, D13) and, since iteration 6 (design D4),
+ * `signed-documents`: the managed identity of the patient zone has "Storage Blob Data Reader" on these two containers
+ * only. Locally the folders of npm run media:placeholders and of the practice app's document archive.
  */
 export interface MediaStore {
   get(name: string): Promise<Buffer | null>;
@@ -25,6 +26,7 @@ class LocalMedia implements MediaStore {
 }
 
 class AzureMedia implements MediaStore {
+  constructor(private container: string) {}
   private client = (async () => {
     const { BlobServiceClient } = await import('@azure/storage-blob');
     const service = config.storage.connectionString
@@ -33,7 +35,7 @@ class AzureMedia implements MediaStore {
           config.storage.accountUrl,
           new (await import('@azure/identity')).DefaultAzureCredential(),
         );
-    return service.getContainerClient(config.storage.exerciseContainer);
+    return service.getContainerClient(this.container);
   })();
   async get(name: string) {
     try {
@@ -47,11 +49,27 @@ class AzureMedia implements MediaStore {
 
 let store: MediaStore | null = null;
 export function mediaStore(): MediaStore {
-  store ??= config.storage.driver === 'azure' ? new AzureMedia() : new LocalMedia(config.storage.exerciseLocalDir);
+  store ??=
+    config.storage.driver === 'azure'
+      ? new AzureMedia(config.storage.exerciseContainer)
+      : new LocalMedia(config.storage.exerciseLocalDir);
   return store;
 }
 export function setMediaStore(s: MediaStore | null) {
   store = s;
+}
+
+/** The archived PDFs (signed disclaimers and exercise sheets), read only */
+let documents: MediaStore | null = null;
+export function documentStore(): MediaStore {
+  documents ??=
+    config.storage.driver === 'azure'
+      ? new AzureMedia(config.storage.documentContainer)
+      : new LocalMedia(config.storage.documentLocalDir);
+  return documents;
+}
+export function setDocumentStore(s: MediaStore | null) {
+  documents = s;
 }
 
 export function contentTypeOf(name: string) {

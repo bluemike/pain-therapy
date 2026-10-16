@@ -9,7 +9,7 @@ import { listRegions, regionLabel } from '@/lib/catalog';
 import { ageOn, formatDate, formatDateTime, formatPercent } from '@/lib/format';
 import { repetitionParts, stepsLabel, type Repetition } from '@/lib/home-program';
 import { ConsentPill, StatusPill } from '@/components/Pills';
-import { PlusIcon, TabletIcon } from '@/components/Icons';
+import { PlusIcon } from '@/components/Icons';
 import { DeactivateDialog } from '@/components/DeactivateDialog';
 import { HandoutList } from '@/components/HandoutList';
 import { handoutsOf } from '@/lib/handouts';
@@ -17,7 +17,7 @@ import { exerciseLogOf } from '@/lib/exercise-log';
 import { ExerciseLogTab } from '@/components/ExerciseLogTab';
 import { SignatureInvite } from '@/components/SignatureInvite';
 import { inviteStatusOf, zoneEnabled, type InviteStatus } from '@/lib/patient-access';
-import { handOver, reactivatePatient, resendEmail } from '../../actions';
+import { reactivatePatient, resendEmail } from '../../actions';
 import { resolveNoteAction } from '../../access-link-actions';
 
 export const dynamic = 'force-dynamic';
@@ -59,28 +59,13 @@ export default async function PatientRecord({
     canInvite ? (
       <SignatureInvite patientId={p.id} name={name} email={p.email} variant={variant} openOnLoad={openOnLoad} />
     ) : null;
-  const handOverForm = (
-    <form action={handOver}>
-      <input type="hidden" name="id" value={p.id} />
-      <button className="btn btn--gold">
-        <TabletIcon />
-        {t('handOver')}
-      </button>
-    </form>
-  );
 
   const flash =
     sp.flash === 'created'
       ? {
           kind: 'ok',
           text: t('createdFlash', { name }),
-          action:
-            active && p.consent !== 'signed' ? (
-              <div className="actions">
-                {inviteButton('gold')}
-                {handOverForm}
-              </div>
-            ) : null,
+          action: active && p.consent !== 'signed' ? <div className="actions">{inviteButton('gold')}</div> : null,
         }
       : sp.flash === 'saved'
         ? { kind: 'ok', text: t('savedFlash') }
@@ -151,10 +136,7 @@ export default async function PatientRecord({
               : ''}
             {invite ? <InviteLine invite={invite} t={tsi} /> : null}
           </p>
-          <div className="actions">
-            {inviteButton('gold', sp.invite === '1')}
-            {handOverForm}
-          </div>
+          <div className="actions">{inviteButton('gold', sp.invite === '1')}</div>
         </div>
       ) : p.consent === 'resign' ? (
         <div className="banner warn">
@@ -162,10 +144,7 @@ export default async function PatientRecord({
             {t('resignBanner', { version: p.currentVersion })}
             {invite ? <InviteLine invite={invite} t={tsi} /> : null}
           </p>
-          <div className="actions">
-            {inviteButton('gold', sp.invite === '1')}
-            {handOverForm}
-          </div>
+          <div className="actions">{inviteButton('gold', sp.invite === '1')}</div>
         </div>
       ) : invite?.kind === 'signedOnline' ? (
         <div className="banner ok" role="status">
@@ -219,13 +198,6 @@ export default async function PatientRecord({
           {active ? (
             <>
               {inviteButton('ghost')}
-              <form action={handOver}>
-                <input type="hidden" name="id" value={p.id} />
-                <button className="btn btn--ghost">
-                  <TabletIcon />
-                  {t('handOver')}
-                </button>
-              </form>
               <DeactivateDialog
                 id={p.id}
                 label={t('deactivate')}
@@ -264,7 +236,7 @@ export default async function PatientRecord({
       {tab === 'anamnesis' ? <AnamnesisView a={p.anamnesis} tf={tf} tc={tc} /> : null}
       {tab === 'documents' ? (
         <>
-          <Documents p={p} active={active} handOverForm={handOverForm} />
+          <Documents p={p} invite={inviteButton('gold')} />
           {handouts.length ? (
             <section className="card" aria-labelledby="h_handouts">
               <h2 id="h_handouts">{(await getTranslations('documents'))('handouts')}</h2>
@@ -629,7 +601,7 @@ async function DeliveryLine({
   }
 }
 
-async function Documents({ p, active, handOverForm }: { p: Rec; active: boolean; handOverForm: React.ReactNode }) {
+async function Documents({ p, invite }: { p: Rec; invite: React.ReactNode }) {
   const t = await getTranslations('documents');
   const tcs = await getTranslations('consentStatus');
   const tc = await getTranslations('common');
@@ -645,7 +617,7 @@ async function Documents({ p, active, handOverForm }: { p: Rec; active: boolean;
             <b>{t('notSigned')}</b>
             <div className="meta">{tcs(p.consent)}</div>
           </div>
-          <div className="act">{active ? handOverForm : null}</div>
+          <div className="act">{invite}</div>
         </div>
       ) : null}
       {p.finalizing.map((f) => (
@@ -804,6 +776,9 @@ async function History({
         return t('noteResolved');
       case 'signing.formOpened':
         return t('formOpened');
+      // zone-documents (iteration 6): the document number is shown as the new value
+      case 'document.viewedInZone':
+        return t('documentViewedInZone');
       // patient-access and exercise-log (iteration 4): link events and entries of the patient zone
       case 'accessLink.issued':
         return t('linkIssued');

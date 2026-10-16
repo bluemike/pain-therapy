@@ -50,7 +50,6 @@
     "record": "Record",
     "imageOf": "Picture of exercise {code}",
     "noImage": "No picture",
-    "recent": "Last 14 days",
     "today": "Today",
     "noEntries": "No entries yet.",
     "editHint": "Entries can be changed or deleted for 24 hours.",
@@ -89,7 +88,7 @@
     "noteTooLong": "The note may be at most 500 characters long.",
     "dateInvalid": "Please enter date and time.",
     "future": "Date and time must not be in the future.",
-    "beforeConsultation": "Date and time must not be before the consultation in which the exercise was prescribed.",
+    "beforeConsultation": "This date is before your home programme.",
     "notEditable": "This entry can no longer be changed."
   },
   "privacy": {
@@ -122,7 +121,7 @@
     "title": "Thank you",
     "text": "The practice has your signature. You will receive the signed document by email if you agreed to that, otherwise the practice gives it to you at your next appointment.",
     "toExercises": "Go to your exercises",
-    "noProgram": "You can close this page now."
+    "toRecord": "To your treatments and documents"
   },
   "signForm": {
     "title": "Sign the liability waiver",
@@ -164,5 +163,82 @@
     "readNew": "Read the new version",
     "sessionEnded": "Your sign-in has expired. Please open the link again.",
     "footer": "Signed online in the patient zone. Only the practice sees your details."
+  },
+  "nav": {
+    "label": "Sections of the patient zone",
+    "exercises": "Exercises",
+    "treatments": "Treatments",
+    "documents": "Documents"
+  },
+  "day": {
+    "program": "Home programme since {since} · valid until {until}",
+    "previous": "Previous day",
+    "next": "Next day",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "choose": "Choose day",
+    "show": "Show",
+    "summary": "{done} of {total} daily executions recorded on this day.",
+    "quick": "All exercises of this day done",
+    "quickDone": "{count, plural, one {# execution} other {# executions}} recorded as done for {date}.",
+    "progressDay": "{done} of {target} on this day",
+    "progressWeekOf": "{done} of {target} in this week",
+    "entries": "Entries since {date}",
+    "backfillHint": "Forgot to record? Choose the day and record the exercise afterwards."
+  },
+  "treatments": {
+    "title": "My treatments",
+    "sub": "What the practice recorded about your treatments.",
+    "empty": "No treatments yet",
+    "emptyText": "Your treatments appear here after your first appointment.",
+    "started": "Start",
+    "diagnosis": "Diagnosis",
+    "painStart": "Pain at the start",
+    "consultations": "Consultations",
+    "consultationsValue": "{count}, last on {date}",
+    "none": "none yet",
+    "pain": "{n} %"
+  },
+  "treatment": {
+    "back": "My treatments",
+    "since": "Since {date} · pain at the start {pain} %",
+    "course": "Pain course",
+    "before": "before",
+    "after": "after",
+    "nr": "No. {n}",
+    "range": "{before} → {after}",
+    "consultation": "Consultation {n}",
+    "meta": "{date} · pain {range}",
+    "notRecorded": "not recorded",
+    "diagnosis": "Diagnosis",
+    "comparison": "Comparison",
+    "points": "Osteopressure points",
+    "exercises": "Exercises in the practice",
+    "rolling": "Fascia roll massage",
+    "home": "Home programme",
+    "sheet": "Open exercise sheet {nr}",
+    "left": "left",
+    "right": "right",
+    "noConsultations": "No consultation yet.",
+    "repDaily": "daily {n}x",
+    "repWeekly": "{n}x per week"
+  },
+  "documents": {
+    "title": "My documents",
+    "sub": "Tap to view or download.",
+    "sheets": "Exercise sheets",
+    "sheet": "Exercise sheet consultation {n}",
+    "current": "current",
+    "version": "Version {n}",
+    "disclaimers": "Liability waiver",
+    "disclaimer": "Liability waiver, text version {n}",
+    "PATIENT_ZONE": "signed online",
+    "IPAD": "signed on the iPad",
+    "pending": "Liability waiver being created",
+    "pendingText": "Signed on {date}. The PDF appears here in a few minutes.",
+    "open": "Open",
+    "openLabel": "Open {name} of {date}",
+    "noSheets": "No exercise sheets yet.",
+    "noDisclaimer": "No signed liability waiver yet."
   }
 }

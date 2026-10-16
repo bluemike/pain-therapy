@@ -33,9 +33,9 @@ test('main screens', async ({ page }, info) => {
   await page.getByRole('button', { name: 'Speichern' }).click();
   await expect(page.getByRole('heading', { level: 1, name: /^Sarah Thompson/ })).toBeVisible();
   await shot('05-record');
-  await page.getByRole('button', { name: 'An Patient:in übergeben' }).first().click();
-  await expect(page.getByRole('heading', { name: 'Liability waiver and consent' })).toBeVisible();
-  await shot('06-signing');
+  await page.getByRole('button', { name: 'Zur Unterschrift einladen' }).first().click();
+  await expect(page.getByTestId('invite-dialog').filter({ visible: true })).toBeVisible();
+  await shot('06-invite');
 });
 
 /** Iteration 2: record with treatments, treatment form, consultation form and catalog (task 5.2, 5.3 preparation) */

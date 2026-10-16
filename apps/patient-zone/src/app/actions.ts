@@ -3,8 +3,9 @@
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { SESSION_COOKIE, SESSION_DAYS } from '@pain-therapy/shared/access';
+import { chosenDay } from '@pain-therapy/shared/log-entry';
 import { DAY_MS } from '@pain-therapy/shared/time';
-import { confirmLink, endSession, programSession, type ConfirmResult } from '@/lib/access';
+import { confirmLink, endSession, programSession, type ConfirmResult, type ProgramSession } from '@/lib/access';
 import { correctEntry, createEntry, deleteEntry, parseEntryForm, quickEntry, type EntryError } from '@/lib/entries';
 import { getZoneSession } from '@/lib/session';
 
@@ -61,6 +62,12 @@ async function requireSession() {
   return p;
 }
 
+/** Back to the day the patient was looking at (hidden field "tag" of the forms, design D7) */
+function homeWith(s: ProgramSession, fd: FormData, query: string) {
+  const { day, today } = chosenDay(String(fd.get('tag') ?? ''), s.program.consultationAt);
+  return `/?${query}${today ? '' : `&tag=${day}`}`;
+}
+
 export type EntryValues = { done: boolean; rating: number | null; date: string; time: string; note: string };
 /** After an error the form shows what was entered again (React resets a form after its action) */
 export type EntryState = { error?: EntryError; values?: EntryValues; attempt?: number };
@@ -83,7 +90,7 @@ export async function createEntryAction(prev: EntryState, fd: FormData): Promise
   if (!parsed.ok) return failed(parsed.error);
   const error = await createEntry(s, parsed.data);
   if (error) return failed(error);
-  redirect('/?ok=saved');
+  redirect(homeWith(s, fd, 'ok=saved'));
 }
 
 export async function correctEntryAction(prev: EntryState, fd: FormData): Promise<EntryState> {
@@ -93,17 +100,19 @@ export async function correctEntryAction(prev: EntryState, fd: FormData): Promis
   if (!parsed.ok) return failed(parsed.error);
   const error = await correctEntry(s, String(fd.get('id') ?? ''), parsed.data);
   if (error) return failed(error);
-  redirect('/?ok=corrected');
+  redirect(homeWith(s, fd, 'ok=corrected'));
 }
 
 export async function deleteEntryAction(fd: FormData) {
   const s = await requireSession();
   const error = await deleteEntry(s, String(fd.get('id') ?? ''));
-  redirect(error ? '/?err=notEditable' : '/?ok=deleted');
+  redirect(homeWith(s, fd, error ? 'err=notEditable' : 'ok=deleted'));
 }
 
-export async function quickEntryAction() {
+/** "Alle Übungen dieses Tages erledigt" for the day in the hidden field "tag" (today without it) */
+export async function quickEntryAction(fd: FormData) {
   const s = await requireSession();
-  const n = await quickEntry(s);
-  redirect(`/?ok=quick&n=${n}`);
+  const { day } = chosenDay(String(fd.get('tag') ?? ''), s.program.consultationAt);
+  const n = await quickEntry(s, new Date(), day);
+  redirect(homeWith(s, fd, `ok=quick&n=${n}`));
 }

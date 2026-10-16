@@ -47,6 +47,7 @@ export type AuditAction =
   | 'zone.viewed'
   | 'zone.signedOut'
   | 'signing.formOpened'
+  | 'document.viewedInZone'
   | 'exerciseLog.created'
   | 'exerciseLog.corrected'
   | 'exerciseLog.deleted'

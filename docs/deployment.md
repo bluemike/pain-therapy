@@ -16,7 +16,7 @@ Ziel: `https://pain-therapy.ayanta.ch`, alle Daten in **Switzerland North**. Die
 | Container `exercise-media` im selben Storage Account | Bilder und Texte der digitalisierten L&B-Übungsblätter, privat, von Hand geladen (siehe Iteration 3); die App liefert die Bilder nur an angemeldete Benutzer:innen aus |
 | Key Vault | `AUTH_SECRET`, Client Secret, Datenbank-URL; ab Iteration 4 `patient-zone-database-url`, `patient-zone-db-password`, `patient-zone-secret`; ab Iteration 5 `zone-internal-secret` |
 | User-assigned Managed Identity `id-pain-therapy` | Zugriff auf Registry, Key Vault, Blob Storage und Graph (E-Mail) |
-| User-assigned Managed Identity `id-pain-therapy-zone` | nur für die Patienten-Zone: *AcrPull*, *Key Vault Secrets User* nur auf ihren zwei Secrets, *Storage Blob Data Reader* nur auf `exercise-media` |
+| User-assigned Managed Identity `id-pain-therapy-zone` | nur für die Patienten-Zone: *AcrPull*, *Key Vault Secrets User* nur auf ihren Secrets, *Storage Blob Data Reader* nur auf `exercise-media` und (ab Iteration 6) `signed-documents` |
 | Log Analytics | Logs der Container Apps, 90 Tage |
 
 Die App greift mit der Managed Identity auf Blob Storage, Key Vault und Graph zu. Für PostgreSQL nutzt sie Benutzer und Passwort aus dem Key Vault; Prisma kann keine Entra-Tokens für Postgres erneuern (Abweichung von design.md D2, siehe offene Punkte).
@@ -222,6 +222,21 @@ Die Patientin unterschreibt den Haftungsausschluss auf dem eigenen Telefon. Die 
 **Vor dem Go-live (Praxis):** Texte der Einladungs-E-Mail (`messages/*.json`, `signatureInviteEmail`), des Zugangsblatts zur Unterschrift (`accessSheet.introSign`, `step3Sign`, `validitySign`) und der Seiten in der Zone (`apps/patient-zone/messages/*.json`, `signTask`, `signForm`, `signThanks`) bestätigen. Einmal durchspielen: neue Test-Patientin per E-Mail einladen, auf dem Telefon unterschreiben, PDF unter *Dokumente* (Kanal *Patienten-Zone*) und die E-Mail prüfen.
 
 **Rollback:** vorherige Revisionen beider Apps aktivieren. Unterschriften aus der Zone ohne PDF verarbeitet der Job nach dem erneuten Ausrollen; der Job selbst lässt sich mit `az containerapp job stop`/`update --trigger-type Manual` anhalten.
+
+## Iteration 6 (Patientenakte in der Patienten-Zone)
+
+Der Patientenmodus auf dem iPad ist entfernt; die Zone zeigt Behandlungen, Konsultationen und Dokumente. Ohne neuen Parameter, ohne neues Secret und ohne manuellen Schritt:
+
+- **Speicher:** neue Rollenzuweisung *Storage Blob Data Reader* der Zonen-Identität auf dem Container `signed-documents` (nur lesen; der Container bleibt unveränderbar). Die Deploy-App darf diese Rolle seit Iteration 4 vergeben.
+- **Zone:** Variable `AZURE_STORAGE_CONTAINER` (= `signed-documents`). Abrufe eines PDFs erscheinen im Verlauf der Akte ("Dokument in der Patienten-Zone abgerufen").
+- **Datenbank:** Migration `20261016090000_zone_record` setzt offene, nie abgeschlossene iPad-Unterschriften auf "abgebrochen"; unterschriebene iPad-Sitzungen und ihre PDFs bleiben unverändert gültig. Der Migrationsjob erweitert die Rechte der Rolle `patient_zone` um ausgewählte Spalten von Behandlungen, Konsultationen (mit Punkten, Übungen, Rollmassage), Katalognamen, unterschriebenen Dokumenten und Übungsblättern, nur `SELECT` (ohne Archivpfad, Prüfsumme, Zustellungen, Benutzerfelder, Fotos und Anamnese).
+- **Abmelden im alten Patientenmodus:** Ein iPad, das beim Deployment noch im Patientenmodus war, muss sich neu anmelden.
+
+`az deployment group what-if` erwartet: *Create* eine Rollenzuweisung auf `…/containers/signed-documents`; *Modify* der Container App `ca-pain-therapy-zone` (Variable, neues Image) und der Praxis-App (neues Image).
+
+**Vor dem Go-live (Praxis):** Texte der neuen Seiten in der Zone (`apps/patient-zone/messages/*.json`: `nav`, `day`, `treatments`, `treatment`, `documents`) bestätigen. Einmal auf iPhone und Android durchspielen: Link öffnen, Reiter, eine Behandlung, ein Dokument öffnen, gestern nachtragen, in der Akte "nachgetragen" prüfen.
+
+**Rollback:** vorherige Revisionen beider Apps aktivieren. Die Migration ist datenseitig harmlos (nur abgebrochene, unvollständige iPad-Sitzungen); die zusätzlichen Leserechte der Rolle stören die alte Zone nicht.
 
 ## Nach dem Go-live
 

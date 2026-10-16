@@ -1,4 +1,5 @@
 import { getLocale, getTranslations } from 'next-intl/server';
+import { backfilled } from '@pain-therapy/shared/log-entry';
 import { formatDate, formatDateTime, formatDateZurich } from '@/lib/format';
 import { localName } from '@/lib/catalog';
 import { repetitionParts, type Repetition } from '@/lib/home-program';
@@ -192,6 +193,12 @@ export async function ExerciseLogTab({ patientId, log, flash }: { patientId: str
                       </small>
                       {e.note ? <q className="note">{e.note}</q> : null}
                     </span>
+                    {backfilled(e.performedAt, e.createdAt) ? (
+                      // zone-exercise-backfill: Nachgetragene Einträge in der Praxis (iteration 6, design D7)
+                      <span className="pill info" data-testid="backfilled">
+                        {t('backfilled', { at: formatDateZurich(e.createdAt) })}
+                      </span>
+                    ) : null}
                     <span className="res">
                       {e.done ? (
                         <>
@@ -262,7 +269,7 @@ export async function ExerciseLogTab({ patientId, log, flash }: { patientId: str
               {zoneEnabled() ? (
                 <AccessLinkPanel
                   patientId={patientId}
-                  canSend={log.active}
+                  canSend={log.canSendLink}
                   canRevoke={linkOpen && log.linkStatus !== 'expired'}
                 />
               ) : (

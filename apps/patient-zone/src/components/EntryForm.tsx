@@ -10,20 +10,25 @@ const RATINGS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 /**
  * exercise-log: Ausführung erfassen or correct an entry. "Gemacht?" and the rating 1 to 10 are radio buttons shown
  * as segments (44 px targets); with "Nein" the rating is hidden by CSS and not stored. Date and time are prefilled
- * with now and may not be in the future.
+ * with now, or with the chosen past day at 12:00 (iteration 6, design D7), and may not be in the future or before the
+ * consultation. `tag` brings the patient back to the day she was looking at.
  */
 export function EntryForm({
   mode,
   code,
   entryId,
   defaults,
+  minDate,
   maxDate,
+  tag,
 }: {
   mode: 'create' | 'correct';
   code: string;
   entryId?: string;
   defaults: EntryValues;
+  minDate: string;
   maxDate: string;
+  tag?: string;
 }) {
   const t = useTranslations('entry');
   const [state, action, pending] = useActionState<EntryState, FormData>(
@@ -34,7 +39,15 @@ export function EntryForm({
   const values = state.values ?? defaults;
   return (
     <form action={action} className="entry" aria-label={t(mode === 'create' ? 'legend' : 'legendCorrect', { code })}>
-      <Fields key={state.attempt ?? 0} values={values} entryId={entryId} code={code} maxDate={maxDate} />
+      {tag ? <input type="hidden" name="tag" value={tag} /> : null}
+      <Fields
+        key={state.attempt ?? 0}
+        values={values}
+        entryId={entryId}
+        code={code}
+        minDate={minDate}
+        maxDate={maxDate}
+      />
       {state.error ? (
         <div className="banner err" role="alert">
           {t(state.error)}
@@ -51,11 +64,13 @@ function Fields({
   values: defaults,
   entryId,
   code,
+  minDate,
   maxDate,
 }: {
   values: EntryValues;
   entryId?: string;
   code: string;
+  minDate: string;
   maxDate: string;
 }) {
   const t = useTranslations('entry');
@@ -94,7 +109,7 @@ function Fields({
       <div className="dt">
         <label>
           <span className="lbl">{t('date')}</span>
-          <input type="date" name="date" defaultValue={defaults.date} max={maxDate} required />
+          <input type="date" name="date" defaultValue={defaults.date} min={minDate} max={maxDate} required />
         </label>
         <label>
           <span className="lbl">{t('time')}</span>

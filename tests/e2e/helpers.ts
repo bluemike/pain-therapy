@@ -1,4 +1,61 @@
-import { expect, type Page } from '@playwright/test';
+import { readdir, readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { expect, type Browser, type Page } from '@playwright/test';
+
+const OUTBOX = path.resolve(process.env.E2E_OUTBOX_DIR ?? 'data/e2e-outbox');
+
+/** Mails in the outbox (MAIL_DRIVER=outbox), to pass as `before` so only newer mails count */
+export async function outboxFiles() {
+  return new Set((await readdir(OUTBOX).catch(() => [] as string[])).filter((f) => f.endsWith('.json')));
+}
+
+/** The link of the newest invitation to sign to `to`, ignoring mails listed in `before` */
+export async function inviteFromOutbox(to: string, before = new Set<string>()) {
+  let url = '';
+  await expect(async () => {
+    const files = (await readdir(OUTBOX)).filter((f) => f.endsWith('.json') && !before.has(f)).sort();
+    for (const f of files.reverse()) {
+      const mail = JSON.parse(await readFile(path.join(OUTBOX, f), 'utf8')) as {
+        to: string;
+        subject: string;
+        text: string;
+      };
+      const m =
+        mail.to === to && mail.subject.includes('unterschreiben')
+          ? /https?:\/\/\S+\/l\/[A-Za-z0-9_-]{43}/.exec(mail.text)
+          : null;
+      if (m) {
+        url = m[0];
+        return;
+      }
+    }
+    throw new Error(`No invitation to ${to} yet`);
+  }).toPass({ timeout: 20_000 });
+  return url;
+}
+
+/** A phone (390 px, touch) in its own browser context, like the patient's own device */
+export async function phone(browser: Browser) {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+    locale: 'de-CH',
+    timezoneId: 'Europe/Zurich',
+  });
+  return context.newPage();
+}
+
+/** Opens a zone link on `patient` and confirms with the date of birth (DD.MM.YYYY) */
+export async function confirmInZone(patient: Page, link: string, dob: string) {
+  const [d, m, y] = dob.split('.');
+  await patient.goto(link);
+  await patient.getByLabel('Tag (TT)').fill(d);
+  await patient.getByLabel('Monat (MM)').fill(m);
+  await patient.getByLabel('Jahr (JJJJ)').fill(y);
+  await patient.getByRole('button', { name: 'Bestätigen' }).click();
+  await expect(patient.getByRole('heading', { level: 1, name: /^Guten Tag/ })).toBeVisible();
+}
 
 export async function login(
   page: Page,
@@ -42,38 +99,47 @@ export async function drawSignature(page: Page) {
   await page.mouse.up();
 }
 
-export async function scrollReaderToEnd(page: Page) {
-  const reader = page.getByTestId('reader');
-  await reader.evaluate((el) => el.scrollTo(0, el.scrollHeight));
-  await expect(page.getByText(/Text vollständig gelesen|Text read to the end/)).toBeVisible();
-}
-
 /**
- * Creates a German-speaking patient and signs the disclaimer on the device, then opens the record. With
- * `emailConsent` the patient also agrees to unencrypted email.
+ * Creates a German-speaking patient, invites them by email and signs the disclaimer in the patient zone on a phone
+ * (the only way to sign since Iteration 6), then opens the record once the PDF is archived. With `emailConsent` the
+ * patient also agrees to unencrypted email.
  */
 export async function createSignedPatient(
   page: Page,
   p: { first: string; last: string; dob: string; emailConsent?: boolean; email?: string },
 ) {
+  const email = p.email ?? `${p.first.toLowerCase()}@example.ch`;
   await page.goto('/patients/new');
-  await fillPatient(page, p);
+  await fillPatient(page, { ...p, email });
   await page.getByRole('button', { name: 'Speichern' }).click();
   await expect(page.getByText(/ist angelegt/)).toBeVisible();
-  await page.locator('.banner').getByRole('button', { name: 'An Patient:in übergeben' }).click();
-  await expect(page.getByRole('heading', { name: 'Haftungsausschluss und Einwilligung' })).toBeVisible();
-  await scrollReaderToEnd(page);
-  await page.getByTestId('consent-liability').check();
-  await page.getByTestId('consent-dataProcessing').check();
-  if (p.emailConsent) await page.getByTestId('consent-unencryptedEmail').check();
-  await drawSignature(page);
-  await page.getByRole('button', { name: 'Unterschreiben', exact: true }).click();
-  await expect(page.getByRole('heading', { name: `Vielen Dank, ${p.first}` })).toBeVisible();
-  await page.getByRole('link', { name: 'Zurück zur Praxis' }).click();
-  await page.getByRole('button', { name: 'Erneut anmelden' }).click();
-  await page.getByRole('link', { name: 'Zur Akte' }).click();
+  const recordUrl = page.url().split('?')[0];
+  const before = await outboxFiles();
+  await page.locator('.banner').getByRole('button', { name: 'Zur Unterschrift einladen' }).click();
+  const dialog = page.getByTestId('invite-dialog').filter({ visible: true });
+  await dialog.getByRole('button', { name: `Per E-Mail an ${email}` }).click();
+  await expect(dialog.getByText(`Die Einladung geht per E-Mail an ${email}.`)).toBeVisible();
+  const link = await inviteFromOutbox(email, before);
+
+  const patient = await phone(page.context().browser()!);
+  await confirmInZone(patient, link, p.dob);
+  await patient.getByRole('link', { name: 'Formular öffnen' }).click();
+  await patient.getByText('Ende des Textes.').scrollIntoViewIfNeeded();
+  await expect(patient.getByText('✓ Text gelesen')).toBeVisible();
+  await patient.getByTestId('consent-liability').check();
+  await patient.getByTestId('consent-dataProcessing').check();
+  if (p.emailConsent) await patient.getByTestId('consent-unencryptedEmail').check();
+  await drawSignature(patient);
+  await patient.getByRole('button', { name: 'Unterschreiben', exact: true }).click();
+  await expect(patient.getByRole('heading', { level: 1, name: 'Vielen Dank' })).toBeVisible();
+  await patient.context().close();
+
+  await expect(async () => {
+    await page.goto(`${recordUrl}?tab=documents`);
+    await expect(page.locator('.doc').filter({ hasText: 'Kanal: Patienten-Zone' })).toContainText('PT-');
+  }).toPass({ timeout: 20_000 });
+  await page.goto(recordUrl);
   await expect(page.getByRole('heading', { level: 1, name: `${p.first} ${p.last}` })).toBeVisible();
-  await page.goto(page.url().split('?')[0]);
 }
 
 /** ui-foundation: axe check, no WCAG 2.1 AA violations */

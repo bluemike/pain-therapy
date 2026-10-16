@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { DAY_MS, fromZurichInputs } from './time';
+import { addDays, DAY_MS, dayKey, fromZurichInputs } from './time';
 import { EDIT_HOURS, HISTORY_DAYS, NOTE_MAX, RATING_MAX, RATING_MIN } from './limits';
 
 /**
@@ -75,4 +75,39 @@ export function editable(createdAt: Date, now = new Date()): boolean {
 /** Start of "Letzte 14 Tage" */
 export function historyStart(now = new Date()): Date {
   return new Date(now.getTime() - HISTORY_DAYS * DAY_MS);
+}
+
+/**
+ * zone-exercise-backfill: Tag wählen (iteration 6, design D7). The day "YYYY-MM-DD" from `?tag=`, limited to the
+ * days from the consultation of the current program up to today (Swiss time); invalid or outside means today.
+ */
+export function chosenDay(tag: string | undefined, consultationAt: Date, now = new Date()) {
+  const first = dayKey(consultationAt);
+  const today = dayKey(now);
+  const day = tag && /^\d{4}-\d{2}-\d{2}$/.test(tag) && fromZurichInputs(tag, '12:00') ? tag : today;
+  const inRange = day >= first && day <= today;
+  const key = inRange ? day : today;
+  return {
+    day: key,
+    today: key === today,
+    first,
+    last: today,
+    previous: key > first ? addDays(key, -1) : null,
+    next: key < today ? addDays(key, 1) : null,
+  };
+}
+
+/**
+ * Reference time of a chosen day: now for today, otherwise 12:00 Swiss time, but not before the consultation (on its
+ * own day the time of the consultation). Used for the day view, the preset time and "Alle Übungen dieses Tages".
+ */
+export function dayReference(day: string, consultationAt: Date, now = new Date()): Date {
+  if (day === dayKey(now)) return now;
+  const noon = fromZurichInputs(day, '12:00')!;
+  return noon < consultationAt ? consultationAt : noon;
+}
+
+/** Nachgetragene Einträge in der Praxis (design D7): recorded more than 24 hours after the execution */
+export function backfilled(performedAt: Date, createdAt: Date): boolean {
+  return createdAt.getTime() - performedAt.getTime() > 24 * 60 * 60 * 1000;
 }

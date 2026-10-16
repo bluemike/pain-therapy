@@ -27,9 +27,9 @@ export type LinkFields = {
 };
 
 /**
- * State of a link. `expired` also covers an inactive patient and a link without purpose: no active home program and
- * no pending signature (iteration 5, design D4: purposeActive = homeProgramActive || signaturePending; the record
- * shows the link as expired). Only `valid` and `locked` links get the confirmation page; every other state
+ * State of a link. `expired` also covers an inactive patient and a link without purpose: no active home program, no
+ * pending signature and no treatment or document (iteration 6, design D3: purposeActive = homeProgramActive ||
+ * signaturePending || hasRecord, see record.ts; the record shows the link as expired). Only `valid` and `locked` links get the confirmation page; every other state
  * shows the same neutral page as an unknown token.
  */
 export type LinkState = 'valid' | 'locked' | 'blocked' | 'revoked' | 'replaced' | 'expired';
