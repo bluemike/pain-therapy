@@ -194,3 +194,42 @@ test.describe('catalog exercise', () => {
     await anonymous.close();
   });
 });
+
+test.describe('exercise preview and audio (iteration 7)', () => {
+  test('Engpassdehnungen: the image opens in a popup, the audio plays and stops', async ({ page }) => {
+    await openConsultation(page, false);
+    const table = page.locator('section[aria-labelledby="h_ex"]');
+    await expect(table.getByRole('columnheader', { name: 'Bild · Audio' })).toBeVisible();
+
+    // Bild gross öffnen
+    await table.getByRole('button', { name: 'Bild von Übung 2A gross öffnen' }).click();
+    const popup = page.getByRole('dialog', { name: /^2A / });
+    await expect(popup).toBeVisible();
+    await expect(popup.getByRole('img', { name: 'Hauptbild 2A' })).toBeVisible();
+    await popup.getByRole('button', { name: 'Schliessen' }).click();
+    await expect(popup).toBeHidden();
+
+    // Audio anhören und stoppen (placeholder: three seconds of silence)
+    const play = table.getByRole('button', { name: 'Übung 2A vorlesen' });
+    await play.click();
+    const stop = table.getByRole('button', { name: 'Vorlesen von Übung 2A stoppen' });
+    await expect(stop).toHaveAttribute('aria-pressed', 'true');
+    await stop.click();
+    await expect(play).toHaveAttribute('aria-pressed', 'false');
+
+    // Audio not uploaded yet
+    await page.route('**/api/exercise-media/2D/audio', (r) => r.fulfill({ status: 404, body: 'Not found' }));
+    await table.getByRole('button', { name: 'Übung 2D vorlesen' }).click();
+    await expect(table.getByText('Audio nicht verfügbar')).toBeVisible();
+  });
+
+  test('catalog: preview and audio for every exercise', async ({ page }) => {
+    await login(page);
+    await page.goto('/catalog?tab=exercises');
+    await expect(page.getByRole('button', { name: 'Bild von Übung 1A gross öffnen' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Übung 4G vorlesen' })).toBeVisible();
+    const res = await page.request.get('/api/exercise-media/1A/audio', { headers: { range: 'bytes=0-1' } });
+    expect(res.status()).toBe(206);
+    expect(res.headers()['content-type']).toBe('audio/mpeg');
+  });
+});

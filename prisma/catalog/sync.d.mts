@@ -8,6 +8,7 @@ export function normalizeContent(
   entry: unknown,
   stepLabels?: string[],
 ): { rolling: string | null; steps: { label: string; text: string }[]; variants: string | null } | null;
+export function contentByCode(content: unknown): Map<string, Record<string, unknown>> | null;
 export function syncCatalog(
   db: PrismaClient,
   opts?: { dir?: string; now?: Date; content?: unknown },

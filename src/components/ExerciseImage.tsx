@@ -12,11 +12,13 @@ export function ExerciseImage({
   kind,
   alt,
   className,
+  lazy,
 }: {
   code: string;
   kind: 'main' | 'sheet';
   alt: string;
   className?: string;
+  lazy?: boolean;
 }) {
   const t = useTranslations('exercise');
   const [failed, setFailed] = useState(false);
@@ -39,6 +41,7 @@ export function ExerciseImage({
       className={className}
       src={`/api/exercise-media/${encodeURIComponent(code)}/${kind}`}
       alt={alt}
+      loading={lazy ? 'lazy' : undefined}
       onError={() => setFailed(true)}
     />
   );

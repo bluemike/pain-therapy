@@ -213,7 +213,8 @@ describe('exercise library', () => {
   });
 
   it('delivers images only to signed-in users with a role (Bild ohne Anmeldung)', async () => {
-    const { exerciseMediaResponse } = await import('@/lib/exercise-media-route');
+    const { exerciseMediaResponse: route } = await import('@/lib/exercise-media-route');
+    const exerciseMediaResponse = (code: string, kind: string) => route(new Request('http://localhost'), code, kind);
     expect((await exerciseMediaResponse('2A', 'main')).status).toBe(403);
     session.current = { user: { id: 'u-2', name: 'Ohne Rolle', roles: [] } };
     expect((await exerciseMediaResponse('2A', 'main')).status).toBe(403);
@@ -228,12 +229,36 @@ describe('exercise library', () => {
     expect((await exerciseMediaResponse('9Z', 'main')).status).toBe(404);
   });
 
+  it('plays the spoken sheet, also in byte ranges for Safari (Audio anhören)', async () => {
+    const { exerciseMediaResponse } = await import('@/lib/exercise-media-route');
+    const mp3 = Buffer.from('ID3-placeholder-audio-0123456789');
+    setExerciseMediaStore({ get: async (name) => (name === '2A.mp3' ? mp3 : null) });
+    const get = (headers: Record<string, string> = {}) =>
+      exerciseMediaResponse(new Request('http://localhost', { headers }), '2A', 'audio');
+    expect((await get()).status).toBe(403);
+    session.current = THERAPIST;
+    const full = await get();
+    expect(full.status).toBe(200);
+    expect(full.headers.get('content-type')).toBe('audio/mpeg');
+    expect(full.headers.get('accept-ranges')).toBe('bytes');
+    expect(Buffer.from(await full.arrayBuffer()).equals(mp3)).toBe(true);
+    const part = await get({ range: 'bytes=0-1' });
+    expect(part.status).toBe(206);
+    expect(part.headers.get('content-range')).toBe(`bytes 0-1/${mp3.length}`);
+    expect(Buffer.from(await part.arrayBuffer()).toString()).toBe('ID');
+    const tail = await get({ range: 'bytes=-4' });
+    expect(Buffer.from(await tail.arrayBuffer()).toString()).toBe('6789');
+    expect((await get({ range: `bytes=${mp3.length}-` })).status).toBe(416);
+    expect((await exerciseMediaResponse(new Request('http://localhost'), '2B', 'audio')).status).toBe(404);
+  });
+
   it('degrades gracefully while the media are not uploaded', async () => {
     setExerciseMediaStore({ get: async () => null });
     expect(await loadExerciseMedia('2A', 'main')).toBeNull();
     const { exerciseMediaResponse } = await import('@/lib/exercise-media-route');
     session.current = THERAPIST;
-    expect((await exerciseMediaResponse('2A', 'main')).status).toBe(404);
+    expect((await exerciseMediaResponse(new Request('http://localhost'), '2A', 'main')).status).toBe(404);
+    expect((await exerciseMediaResponse(new Request('http://localhost'), '2A', 'audio')).status).toBe(404);
   });
 });
 

@@ -10,6 +10,8 @@ import { DEFAULT_REPETITION, type Timing } from '@/lib/home-program';
 import { PhotoField, usePhotos, type SavedPhoto } from './PhotoField';
 import { Seg } from './Seg';
 import { HomeProgramBlock, type HomeEntry } from './HomeProgramBlock';
+import { ExercisePreview } from './ExercisePreview';
+import { ExerciseAudio } from './ExerciseAudio';
 
 type Sensitivity = (typeof SENSITIVITIES)[number];
 type Difficulty = (typeof DIFFICULTIES)[number];
@@ -63,6 +65,7 @@ export function ConsultationForm({
   const ts = useTranslations('scales');
   const tp = useTranslations('photos');
   const tf = useTranslations('form');
+  const tx = useTranslations('exercise');
   const locale = useLocale();
   const [state, action, pending] = useActionState<TreatmentFormState, FormData>(saveConsultation, {});
   const errors = state.errors ?? {};
@@ -393,6 +396,7 @@ export function ConsultationForm({
                 <thead>
                   <tr>
                     <th scope="col">{t('colExercise')}</th>
+                    <th scope="col">{tx('media')}</th>
                     <th scope="col">{t('prescribed')}</th>
                     <th scope="col">{t('difficulty')}</th>
                     <th scope="col">{t('variants')}</th>
@@ -407,6 +411,10 @@ export function ConsultationForm({
                           <b>{x.code}</b> {exName(x)}
                           {x.retired ? <small> · {t('retired')}</small> : null}
                         </th>
+                        <td className="exmedia">
+                          <ExercisePreview code={x.code} name={exName(x)} />
+                          <ExerciseAudio code={x.code} />
+                        </td>
                         <td className="lr">
                           <label>
                             <input

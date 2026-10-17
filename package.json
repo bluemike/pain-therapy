@@ -21,6 +21,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "catalog:sync": "node prisma/catalog/sync.mjs",
     "media:placeholders": "tsx scripts/exercise-media-placeholders.ts",
+    "media:audio": "tsx scripts/exercise-audio.ts",
     "postinstall": "prisma generate",
     "build:zone": "prisma generate && npm run build -w @pain-therapy/patient-zone",
     "build:all": "npm run build && npm run build -w @pain-therapy/patient-zone",

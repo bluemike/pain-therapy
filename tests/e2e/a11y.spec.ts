@@ -51,6 +51,8 @@ test('app pages and the patient signing page', async ({ page }) => {
 
 /** Iteration 2, task 5.2: record with treatments, treatment form, consultation and catalog */
 test('treatments, consultation and catalog', async ({ page }) => {
+  // Twelve axe passes, since iteration 7 with preview and audio for every exercise; close to 30 s on slow runners
+  test.setTimeout(60_000);
   await login(page);
   await createSignedPatient(page, { first: 'Vera', last: `Axe${unique()}`, dob: '03.09.1972' });
   await expectNoViolations(page, 'record, no treatment yet');

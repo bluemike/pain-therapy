@@ -2,6 +2,7 @@ import type { ExerciseSheet } from '@prisma/client';
 import { db } from './db';
 import { exerciseMediaStore } from './storage';
 import type { Timing } from './home-program';
+import { audioFileOf } from './exercise-audio';
 
 /** exercise-library: digitised sheets, their timing and media (design D1 to D3). */
 
@@ -12,7 +13,8 @@ export type SheetContent = {
   variants: string | null;
 };
 
-export type MediaKind = 'main' | 'sheet';
+export type MediaKind = 'main' | 'sheet' | 'audio';
+export const MEDIA_KINDS: readonly MediaKind[] = ['main', 'sheet', 'audio'];
 
 export const timingOf = (s: Pick<ExerciseSheet, 'stretchSecondsPerSide' | 'sides' | 'rollingSeconds'> | null) =>
   s ? { stretchSecondsPerSide: s.stretchSecondsPerSide, sides: s.sides, rollingSeconds: s.rollingSeconds } : null;
@@ -51,13 +53,18 @@ export async function exerciseDetail(code: string) {
   };
 }
 
-const CONTENT_TYPES: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png' };
+const CONTENT_TYPES: Record<string, string> = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  mp3: 'audio/mpeg',
+};
 
-/** Reads the main image or the sheet image of an exercise; null if the sheet or the file is missing. */
+/** Reads the main image, the sheet image or the audio (iteration 7) of an exercise; null if the sheet or the file is missing. */
 export async function loadExerciseMedia(code: string, kind: MediaKind) {
   const sheet = await db.exerciseSheet.findUnique({ where: { exerciseCode: code } });
   if (!sheet || sheet.retiredAt) return null;
-  const name = kind === 'main' ? sheet.mainImage : sheet.sheetImage;
+  const name = kind === 'main' ? sheet.mainImage : kind === 'sheet' ? sheet.sheetImage : audioFileOf(sheet.mainImage);
   const contentType = CONTENT_TYPES[name.split('.').pop()?.toLowerCase() ?? ''];
   if (!contentType) return null;
   const data = await exerciseMediaStore().get(name);

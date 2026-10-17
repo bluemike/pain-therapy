@@ -4,6 +4,8 @@ import { requireUser } from '@/lib/session';
 import { catalogView, localName, type RollingStep, type Variant } from '@/lib/catalog';
 import { timingOf } from '@/lib/exercise-sheets';
 import { executionTime, formatMinutes } from '@/lib/home-program';
+import { ExercisePreview } from '@/components/ExercisePreview';
+import { ExerciseAudio } from '@/components/ExerciseAudio';
 
 export const dynamic = 'force-dynamic';
 
@@ -177,6 +179,7 @@ export default async function CatalogPage({
                 <tr>
                   <th scope="col">{t('colCode')}</th>
                   <th scope="col">{t('colExercise')}</th>
+                  <th scope="col">{te('media')}</th>
                   <th scope="col">{t('colRegions')}</th>
                   <th scope="col">{t('colTiming')}</th>
                   <th scope="col">{t('colRolling')}</th>
@@ -197,6 +200,16 @@ export default async function CatalogPage({
                       <td>
                         {localName(x, locale)}
                         <small className="muted"> · {other(x)}</small>
+                      </td>
+                      <td className="exmedia">
+                        {x.sheet ? (
+                          <>
+                            <ExercisePreview code={x.code} name={localName(x, locale)} />
+                            <ExerciseAudio code={x.code} />
+                          </>
+                        ) : (
+                          '–'
+                        )}
                       </td>
                       <td className="num">
                         {c.regionExercises

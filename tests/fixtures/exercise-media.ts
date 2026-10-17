@@ -2,6 +2,8 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { deflateSync } from 'node:zlib';
 import { TINY_JPEG } from './jpeg';
+import { SILENT_MP3 } from './mp3';
+import { audioFileOf } from '../../src/lib/exercise-audio';
 
 /**
  * Synthetic stand-ins for the exercise media (exercise-library, design D2) for tests and local development.
@@ -70,15 +72,19 @@ export function placeholderContent(sheets: SheetRef[]) {
 
 /**
  * Writes placeholder media for every sheet (or the given codes) into `dir`, with the same file names as the real
- * container: <code>.jpg, <code>-blatt.png and exercises-content.json.
+ * container: <code>.jpg, <code>-blatt.png, <code>.mp3 (iteration 7, silence) and exercises-content.json.
  */
-export async function writePlaceholderMedia(dir: string, opts: { codes?: string[]; content?: boolean } = {}) {
+export async function writePlaceholderMedia(
+  dir: string,
+  opts: { codes?: string[]; content?: boolean; audio?: boolean } = {},
+) {
   const sheets = (await exerciseSheetRefs()).filter((s) => !opts.codes || opts.codes.includes(s.code));
   await mkdir(dir, { recursive: true });
   const sheet = placeholderPng();
   for (const s of sheets) {
     await writeFile(path.join(dir, s.mainImage), TINY_JPEG);
     await writeFile(path.join(dir, s.sheetImage), sheet);
+    if (opts.audio !== false) await writeFile(path.join(dir, audioFileOf(s.mainImage)), SILENT_MP3);
   }
   if (opts.content !== false)
     await writeFile(path.join(dir, 'exercises-content.json'), JSON.stringify(placeholderContent(sheets), null, 2));
