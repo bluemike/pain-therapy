@@ -85,7 +85,7 @@ test('record in the patient zone: tabs, treatment, document, recording yesterday
   // Gestern nachtragen: previous day, record 2A, back to today
   await patient.getByRole('link', { name: 'Vorheriger Tag' }).click();
   await expect(patient.getByTestId('day')).toContainText('Gestern');
-  await patient.locator('li.ex[data-code="2A"] summary').click();
+  await patient.locator('li.ex[data-code="2A"] summary.btn').click();
   const form = patient.getByRole('form', { name: 'Eintrag 2A', exact: true });
   await expect(form.getByLabel('Zeit')).toHaveValue('12:00');
   await form.getByText('Ja', { exact: true }).click();

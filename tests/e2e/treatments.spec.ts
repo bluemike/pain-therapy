@@ -72,7 +72,7 @@ test.describe('treatments and sessions', () => {
     await expect(page.getByText('Behandlungsbogen 2.3 · Lendenwirbelsäule, Bauch')).toBeVisible();
     await expect(page.locator('#f_diagnosis')).toHaveValue('Lumbalgie rechts, ausstrahlend in die Leiste');
     // Order of the form: head, pain before, Osteopressur, exercises, Selbstausführung, pain after, photos
-    await expect(page.locator('main h2')).toHaveText([
+    await expect(page.locator('main h2[id^="h_"]')).toHaveText([
       'Schmerz vorher',
       'Osteopressur',
       'Übungen',

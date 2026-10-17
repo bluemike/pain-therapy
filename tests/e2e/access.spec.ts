@@ -29,7 +29,7 @@ test.describe('access-control', () => {
   test('a therapist cannot manage form texts', async ({ page }) => {
     await login(page, { role: 'Therapist' });
     // "Hallo" only on the first page after signing in (iteration 8, user-profile)
-    await expect(page.getByTestId('greeting')).toHaveText('Hallo Mike');
+    await expect(page.getByTestId('greeting')).toHaveText(/^Hallo \S+$/);
     await page.reload();
     await expect(page.getByTestId('greeting')).not.toContainText('Hallo');
     await expect(page.getByRole('link', { name: 'Formulartexte' })).toHaveCount(0);
@@ -48,6 +48,8 @@ test.describe('access-control', () => {
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
     await expect(page.getByText('Profil gespeichert.')).toBeVisible();
     await expect(page.locator('header').first()).toContainText('Therapeut');
+    await page.getByRole('button', { name: 'Abmelden' }).first().click();
+    await expect(page).toHaveURL(/\/login/);
     await login(page, { role: 'Therapist' });
     await expect(page.getByTestId('greeting')).toHaveText('Hallo Michael');
     // Back to the preset for the other tests

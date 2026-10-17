@@ -115,7 +115,7 @@ test.describe('patient zone', () => {
     await expect(patient.locator('li.ex[data-code="2D"] .chosen')).toContainText('Platzhalter 2D: Variante 1');
 
     // Ausführung erfassen: 2A gemacht, 7/10, with a note
-    await patient.locator('li.ex[data-code="2A"] summary').click();
+    await patient.locator('li.ex[data-code="2A"] summary.btn').click();
     const form = entryForm(patient, '2A');
     await form.getByText('Ja', { exact: true }).click();
     await form.getByText('7', { exact: true }).click();
