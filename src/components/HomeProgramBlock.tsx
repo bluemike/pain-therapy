@@ -1,109 +1,68 @@
 'use client';
 
-import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
   executionTime,
   formatMinutes,
-  INTENSITIES,
+  perWeek,
   programTime,
-  REPETITIONS,
-  repetitionParts,
-  STEPS,
-  stepsLabel,
-  type Repetition,
+  TIMES_PER_DAY,
+  WEEKDAYS,
+  weekdayBit,
   type Timing,
 } from '@/lib/home-program';
 import { ExerciseImage } from './ExerciseImage';
 import { Seg } from './Seg';
 
-export type HomeEntry = { repetition: Repetition; intensity: number | null; steps: number | null; note: string };
-export type HomeRowInfo = { code: string; name: string; timing: Timing | null };
-
-const DAILY = REPETITIONS.filter((r) => repetitionParts(r).daily);
-const WEEKLY = REPETITIONS.filter((r) => !repetitionParts(r).daily);
+export type HomeEntry = { timesPerDay: number; weekdays: number; note: string };
+export type HomeRowInfo = { code: string; name: string; epd: string; timing: Timing | null };
 
 /**
- * home-program: Block "Selbstausführung" nach mockups/selbstausfuehrung.html. Lists every prescribed exercise with
- * repetition (ten options in two groups), intensity, steps and the duration of one execution, and the total time.
+ * home-schedule (iteration 8, design D7): Block "Selbstausführung". One row per prescribed exercise with FRM and its
+ * EPD, executions per day (1× to 3×), weekdays Mo to So (all preselected, at least one) and a note; the duration of
+ * one execution, the time per week of the row and the total time.
  */
 export function HomeProgramBlock({
   rows,
   entry,
+  errors = {},
   onChange,
   onRemove,
-  addable,
-  onAdd,
 }: {
   rows: HomeRowInfo[];
   entry: (code: string) => HomeEntry;
+  /** "home:<code>" → key of the "errors" namespace */
+  errors?: Record<string, string>;
   onChange: (code: string, patch: Partial<HomeEntry>) => void;
   onRemove: (code: string) => void;
-  addable: { code: string; name: string }[];
-  onAdd: (code: string) => void;
 }) {
   const t = useTranslations('home');
-  const tc = useTranslations('common');
+  const te = useTranslations('errors');
   const locale = useLocale();
-  const [adding, setAdding] = useState(false);
-  const [toAdd, setToAdd] = useState('');
-  const total = programTime(
-    rows.map((r) => ({ code: r.code, repetition: entry(r.code).repetition, timing: r.timing })),
-  );
+  const schedule = (code: string) => ({ timesPerDay: entry(code).timesPerDay, weekdays: entry(code).weekdays });
+  const total = programTime(rows.map((r) => ({ code: r.code, schedule: schedule(r.code), timing: r.timing })));
   const min = (m: number) => formatMinutes(m, locale);
-  const times = (list: readonly Repetition[]) =>
-    list.map((r) => [r, t('times', { n: repetitionParts(r).times })] as [Repetition, string]);
+  const perDay = TIMES_PER_DAY.map((n) => [n, t('times', { n })] as [number, string]);
 
   return (
     <section className="card sheet" aria-labelledby="h_home">
       <header>
         <h2 id="h_home">{t('title')}</h2>
-        <button type="button" className="btn btn--ghost" onClick={() => setAdding(true)} aria-expanded={adding}>
-          + {t('add')}
-        </button>
       </header>
       <div className="body">
         <p className="hint">{t('hint')}</p>
-        {adding ? (
-          <div className="addpoint">
-            <label className="l" htmlFor="f_addExercise">
-              {t('addLabel')}
-            </label>
-            <select id="f_addExercise" className="inp" value={toAdd} onChange={(e) => setToAdd(e.target.value)}>
-              <option value="">–</option>
-              {addable.map((x) => (
-                <option key={x.code} value={x.code}>
-                  {x.code} · {x.name}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              className="btn btn--ghost"
-              disabled={!toAdd}
-              onClick={() => {
-                onAdd(toAdd);
-                setToAdd('');
-                setAdding(false);
-              }}
-            >
-              {t('addConfirm')}
-            </button>
-            <button type="button" className="btn btn--ghost" onClick={() => setAdding(false)}>
-              {tc('cancel')}
-            </button>
-          </div>
-        ) : null}
         {rows.length ? (
           <ul className="rxlist" aria-label={t('title')}>
             {rows.map((r) => {
               const v = entry(r.code);
               const e = executionTime(r.timing);
+              const bad = errors[`home:${r.code}`];
               return (
-                <li className="rx" key={r.code} data-code={r.code}>
+                <li className={`rx${bad ? ' bad' : ''}`} key={r.code} data-code={r.code}>
                   <ExerciseImage className="rximg" code={r.code} kind="main" alt={t('imageOf', { code: r.code })} />
                   <div className="nm">
                     <b>{r.code}</b> {r.name}
+                    <small>{t('parts', { epd: r.epd })}</small>
                     <small>
                       {r.timing ? (r.timing.sides === 2 ? t('bothSides') : t('oneSide')) : t('timingNotSet')}
                     </small>
@@ -111,64 +70,49 @@ export function HomeProgramBlock({
                   <div className="dur">
                     {r.timing ? t('perExecution', { duration: min(e.seconds / 60) }) : '–'}
                     {r.timing && e.stretchMissing ? <small>{t('stretchNotSet')}</small> : null}
+                    {r.timing ? (
+                      <small data-testid={`week-${r.code}`}>
+                        {t('rowPerWeek', { duration: min((e.seconds * perWeek(schedule(r.code))) / 60) })}
+                      </small>
+                    ) : null}
                   </div>
                   <div className="opts">
                     <span className="lbl" aria-hidden="true">
-                      {t('daily')}
+                      {t('perDayLabel')}
                     </span>
                     <Seg
-                      label={t('repetitionOf', { code: r.code, kind: t('daily') })}
-                      options={times(DAILY)}
-                      value={v.repetition}
+                      label={t('timesPerDayOf', { code: r.code })}
+                      options={perDay}
+                      value={v.timesPerDay}
                       required
-                      onChange={(rep) => rep && onChange(r.code, { repetition: rep })}
+                      onChange={(n) => n && onChange(r.code, { timesPerDay: n })}
                     />
                     <span className="lbl" aria-hidden="true">
-                      {t('weekly')}
+                      {t('weekdays')}
                     </span>
-                    <Seg
-                      label={t('repetitionOf', { code: r.code, kind: t('weekly') })}
-                      options={times(WEEKLY)}
-                      value={v.repetition}
-                      required
-                      onChange={(rep) => rep && onChange(r.code, { repetition: rep })}
-                    />
+                    <span className="seg days" role="group" aria-label={t('weekdaysOf', { code: r.code })}>
+                      {WEEKDAYS.map((d, i) => {
+                        const on = (v.weekdays & weekdayBit(i)) !== 0;
+                        return (
+                          <button
+                            key={d}
+                            type="button"
+                            aria-pressed={on}
+                            aria-label={t(`day_${d}`)}
+                            onClick={() => onChange(r.code, { weekdays: v.weekdays ^ weekdayBit(i) })}
+                          >
+                            {t(`short_${d}`)}
+                          </button>
+                        );
+                      })}
+                    </span>
+                    {bad || !v.weekdays ? (
+                      <span className="msg" role="alert">
+                        {te('weekdayRequired')}
+                      </span>
+                    ) : null}
                   </div>
                   <div className="opts">
-                    <label className="lbl">
-                      {t('intensity')}{' '}
-                      <select
-                        className="inp"
-                        aria-label={t('intensityOf', { code: r.code })}
-                        value={v.intensity ?? ''}
-                        onChange={(ev) =>
-                          onChange(r.code, { intensity: ev.target.value ? Number(ev.target.value) : null })
-                        }
-                      >
-                        <option value="">–</option>
-                        {INTENSITIES.map((n) => (
-                          <option key={n} value={n}>
-                            {n}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="lbl">
-                      {t('steps')}{' '}
-                      <select
-                        className="inp"
-                        aria-label={t('stepsOf', { code: r.code })}
-                        value={v.steps ?? ''}
-                        onChange={(ev) => onChange(r.code, { steps: ev.target.value ? Number(ev.target.value) : null })}
-                      >
-                        <option value="">–</option>
-                        {STEPS.map((n) => (
-                          <option key={n} value={n}>
-                            {stepsLabel(n)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
                     <input
                       className="inp note"
                       maxLength={300}

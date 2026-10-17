@@ -49,17 +49,6 @@ export function ageOn(dob: Date, at = new Date()): number {
   return age;
 }
 
-export function hourInZurich(d = new Date()): number {
-  // formatToParts: de-CH formats a lone hour as "12 Uhr"
-  const parts = new Intl.DateTimeFormat('de-CH', { hour: '2-digit', hourCycle: 'h23', timeZone: TZ }).formatToParts(d);
-  return Number(parts.find((p) => p.type === 'hour')?.value);
-}
-
-/** dashboard: Begrüssung nach Tageszeit (Swiss time) */
-export function greetingKey(hour: number): 'greetingMorning' | 'greetingDay' | 'greetingEvening' {
-  return hour < 11 ? 'greetingMorning' : hour < 18 ? 'greetingDay' : 'greetingEvening';
-}
-
 /** Value for <input type="datetime-local"> in Swiss time, e.g. "2026-10-13T09:15". */
 export function toLocalInput(d: Date): string {
   const parts = new Intl.DateTimeFormat('en-CA', {

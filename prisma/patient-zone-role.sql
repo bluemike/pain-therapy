@@ -33,14 +33,13 @@ BEGIN
     ON "Patient" TO patient_zone;
   -- The current home program (design D2) and, read only, the treatments and consultations of the record (iteration 6,
   -- design D5), without createdBy and updatedBy
-  GRANT SELECT ("id", "patientId", "startedAt", "regionId", "diagnosis", "painStart") ON "Treatment" TO patient_zone;
+  GRANT SELECT ("id", "patientId", "startedAt", "regionId", "side", "diagnosis", "painStart") ON "Treatment" TO patient_zone;
   GRANT SELECT ("id", "treatmentId", "number", "at", "diagnosis", "painBefore", "painAfter", "comparison")
     ON "Consultation" TO patient_zone;
   GRANT SELECT ("consultationId", "pointId", "left", "right", "sensitivity") ON "ConsultationPoint" TO patient_zone;
-  GRANT SELECT ("consultationId", "exerciseCode", "prescribed", "difficulty", "variants")
+  GRANT SELECT ("consultationId", "exerciseCode", "prescribed", "difficulty", "variant")
     ON "ConsultationExercise" TO patient_zone;
-  GRANT SELECT ("consultationId", "position", "area", "toolCode") ON "ConsultationRolling" TO patient_zone;
-  GRANT SELECT ("id", "nameDe", "nameEn") ON "Region" TO patient_zone;
+  GRANT SELECT ("id", "code", "nameDe", "nameEn") ON "Region" TO patient_zone;
   GRANT SELECT ("id", "group", "muscleAttachmentLatin", "attachmentDe", "sort") ON "OsteopressurePoint" TO patient_zone;
   GRANT SELECT ("code", "nameDe", "nameEn", "sort") ON "RollingTool" TO patient_zone;
   -- Documents of the record (iteration 6, design D4): the list, not the archive path, checksum or deliveries; the zone
@@ -49,10 +48,15 @@ BEGIN
     ON "SignedDocument" TO patient_zone;
   GRANT SELECT ("id", "documentNumber", "patientId", "consultationId", "version", "language", "createdAt")
     ON "ExerciseHandout" TO patient_zone;
-  -- Without intensity, steps and the note of the therapist (design D7: Bemerkungen der Therapeutin nicht sichtbar)
-  GRANT SELECT ("consultationId", "exerciseCode", "repetition") ON "HomePrescription" TO patient_zone;
+  -- Without the note of the therapist (design D7: Bemerkungen der Therapeutin nicht sichtbar); since iteration 8
+  -- (design D7) the EPD and the schedule per day and weekday
+  GRANT SELECT ("consultationId", "exerciseCode", "variant", "timesPerDay", "weekdays")
+    ON "HomePrescription" TO patient_zone;
   GRANT SELECT ("code", "nameDe", "nameEn", "sort") ON "Exercise" TO patient_zone;
-  GRANT SELECT ("exerciseCode", "mainImage", "stretchSecondsPerSide", "sides", "rollingSeconds") ON "ExerciseSheet" TO patient_zone;
+  -- FRM and EPD of the own exercises (iteration 8, design D2): texts, tools, aids and the variants
+  GRANT SELECT ("exerciseCode", "mainImage", "stretchSecondsPerSide", "sides", "rollingSeconds", "segments",
+                "rollingTools", "standardAids") ON "ExerciseSheet" TO patient_zone;
+  GRANT SELECT ("exerciseCode", "number", "images", "aids", "seconds", "retiredAt") ON "ExerciseVariant" TO patient_zone;
 
   -- Access link: read, and update only the counters and the last use
   GRANT SELECT ON "PatientAccessLink" TO patient_zone;

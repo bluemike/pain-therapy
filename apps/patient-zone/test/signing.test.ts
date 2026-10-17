@@ -49,7 +49,7 @@ const payload = (x: Record<string, unknown> = {}) => ({
 /** A new patient without consultation, invited with a link, signed in on her phone */
 async function invited(opts: { withProgram?: boolean } = {}) {
   const p = await patient();
-  if (opts.withProgram) await consultation(p.id, ago(2), [['2A', 'DAILY_2']]);
+  if (opts.withProgram) await consultation(p.id, ago(2), [['2A', 2]]);
   const l = await link(p.id);
   const r = await confirmLink({ token: l.token, ...DOB, ip: '203.0.113.20' }, now);
   if (!r.ok) throw new Error(`not signed in: ${r.error}`);

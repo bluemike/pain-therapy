@@ -105,26 +105,26 @@ describe('treatments (Behandlungen)', () => {
   it('lists only the own treatments, newest first, with consultations', async () => {
     const { zone, patientId, consultationId } = await signedIn();
     const treatmentId = (await admin.consultation.findUniqueOrThrow({ where: { id: consultationId } })).treatmentId;
-    await consultation(patientId, ago(3), [['2A', 'DAILY_1']], treatmentId);
+    await consultation(patientId, ago(3), [['2A', 1]], treatmentId);
     await consultation(patientId, ago(40), []);
     await consultation((await patient()).id, ago(1), []);
     const list = await treatmentsOf(zone);
     expect(list.map((t) => [t.consultations, t.region, t.diagnosis, t.painStart])).toEqual([
-      [2, 'Lendenwirbelsäule', 'Geheime Diagnose', 60],
-      [1, 'Lendenwirbelsäule', 'Geheime Diagnose', 60],
+      [2, '2.3 Lendenwirbelsäule', 'Geheime Diagnose', 60],
+      [1, '2.3 Lendenwirbelsäule', 'Geheime Diagnose', 60],
     ]);
     expect(list[0].lastAt).toEqual(ago(3));
   });
 
-  it('shows the consultations with points, exercises, rolling and home program, without photos', async () => {
+  it('shows the sessions with points, exercises with their EPD and home program, without photos', async () => {
     const { zone, patientId, consultationId } = await signedIn();
     await admin.osteopressurePoint.create({
       data: { id: '2.2.1', group: 2, muscleAttachmentLatin: 'Os sacrum', attachmentDe: 'Kreuzbein', sort: 1 },
     });
-    await admin.rollingTool.create({ data: { code: 'MEDI', nameDe: 'Medi-Rolle', nameEn: 'Medi roll', sort: 1 } });
     await admin.consultationPoint.create({ data: { consultationId, pointId: '2.2.1', left: true } });
-    await admin.consultationExercise.create({ data: { consultationId, exerciseCode: '2A', prescribed: true } });
-    await admin.consultationRolling.create({ data: { consultationId, position: 1, area: 'Gesäss', toolCode: 'MEDI' } });
+    await admin.consultationExercise.create({
+      data: { consultationId, exerciseCode: '2A', prescribed: true, difficulty: 'EASY', variant: 2 },
+    });
     const c = await admin.consultation.findUniqueOrThrow({ where: { id: consultationId } });
     await admin.consultation.update({ where: { id: consultationId }, data: { painAfter: 30, comparison: 'besser' } });
     await admin.clinicalPhoto.create({
@@ -152,12 +152,11 @@ describe('treatments (Behandlungen)', () => {
       painAfter: 30,
       comparison: 'besser',
       points: [{ id: '2.2.1', name: 'Kreuzbein', left: true, right: false }],
-      exercises: [{ code: '2A', name: 'Übung 2A' }],
-      rolling: [{ area: 'Gesäss', tool: 'Medi-Rolle' }],
+      exercises: [{ code: '2A', name: 'Übung 2A', variant: 2 }],
       home: [
-        { code: '1F', repetition: 'DAILY_1' },
-        { code: '2A', repetition: 'DAILY_2' },
-        { code: '2D', repetition: 'WEEKLY_5' },
+        { code: '1F', schedule: { timesPerDay: 1, weekdays: 127 }, variant: null },
+        { code: '2A', schedule: { timesPerDay: 2, weekdays: 127 }, variant: null },
+        { code: '2D', schedule: { timesPerDay: 1, weekdays: 31 }, variant: null },
       ],
       sheet: newer,
     });

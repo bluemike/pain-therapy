@@ -1,3 +1,4 @@
+import type { z } from 'zod';
 import { createHash } from 'node:crypto';
 import { rm } from 'node:fs/promises';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -8,7 +9,7 @@ import { db } from '@/lib/db';
 import { config } from '@/lib/config';
 import { createPatient, historyOf, setStatus } from '@/lib/patients';
 import { currentVersionNumber } from '@/lib/consent-texts';
-import { consultationSchema, EMPTY_PATIENT, patientSchema, treatmentSchema, type Sheet } from '@/lib/schemas';
+import { consultationSchema, EMPTY_PATIENT, patientSchema, sheetSchema, treatmentSchema } from '@/lib/schemas';
 import { createConsultation, createTreatment, TreatmentError, updateConsultation } from '@/lib/treatments';
 import { createHandout, deliverHandout } from '@/lib/handouts';
 import {
@@ -101,22 +102,22 @@ async function signedPatient(lastName: string, emailConsent: boolean) {
   return p;
 }
 
-const consultationInput = (at: string, sheet: Partial<Sheet>) =>
+const consultationInput = (at: string, sheet: Partial<z.input<typeof sheetSchema>>) =>
   consultationSchema.parse({
     at,
     diagnosis: 'Lumbalgie',
     painBefore: '',
     painAfter: '',
     comparison: '',
-    sheet: JSON.stringify({ points: [], exercises: [], rolling: [], ...sheet }),
+    sheet: JSON.stringify({ points: [], exercises: [], ...sheet }),
   });
 
-const prescribed = (code: string) => ({ code, prescribed: true, difficulty: null, variants: null });
-const PROGRAM: Partial<Sheet> = {
+const prescribed = (code: string) => ({ code, prescribed: true, difficulty: 'MEDIUM' as const, variant: null });
+const PROGRAM: Partial<z.input<typeof sheetSchema>> = {
   exercises: [prescribed('2A'), prescribed('2D')],
   home: [
-    { code: '2A', repetition: 'DAILY_1', intensity: null, steps: null, note: null },
-    { code: '2D', repetition: 'WEEKLY_5', intensity: null, steps: null, note: null },
+    { code: '2A', timesPerDay: 1, weekdays: 127, note: null },
+    { code: '2D', timesPerDay: 1, weekdays: 31, note: null },
   ],
 };
 
@@ -304,14 +305,15 @@ describe('adherence in the practice (Kachel "Heimprogramm", Reiter "Übungstageb
   it('lists active programs with flagged patients first and logs the opening of the tab', async () => {
     const quiet = await withProgram('Zzz', { ago: 5 });
     const busy = await withProgram('Aaa', { ago: 5 });
-    for (let d = 0; d < 5; d++)
+    // Every day since the session (6 calendar days); 2D is only due Mo–Fr, extra days do not count twice
+    for (let d = 0; d < 6; d++)
       for (const code of ['2A', '2D'])
         await db.exerciseLogEntry.create({
           data: {
             patientId: busy.p.id,
             consultationId: busy.c.id,
             exerciseCode: code,
-            performedAt: new Date(Date.now() - d * DAY - 60_000),
+            performedAt: new Date(Date.now() - Math.min(d * DAY + 60_000, 5 * DAY - 60_000)),
             done: true,
             rating: 8,
           },
@@ -324,7 +326,7 @@ describe('adherence in the practice (Kachel "Heimprogramm", Reiter "Übungstageb
 
     const log = await exerciseLogOf(actor, busy.p.id);
     expect(log.active).toBe(true);
-    expect(log.entries).toHaveLength(10);
+    expect(log.entries).toHaveLength(12);
     expect(log.adherence?.total.percent).toBe(100);
     expect(log.program?.prescriptions.map((x) => x.exerciseCode)).toEqual(['2A', '2D']);
     expect(await db.auditEvent.count({ where: { patientId: busy.p.id, action: 'exerciseLog.viewed' } })).toBe(1);
@@ -339,19 +341,19 @@ describe('adherence in the practice (Kachel "Heimprogramm", Reiter "Übungstageb
     });
     const without2D = consultationInput(daysAgo(1), {
       exercises: [prescribed('2A')],
-      home: [{ code: '2A', repetition: 'DAILY_2', intensity: null, steps: null, note: null }],
+      home: [{ code: '2A', timesPerDay: 2, weekdays: 127, note: null }],
     });
     await expect(updateConsultation(actor, c.id, without2D)).rejects.toMatchObject({ code: 'prescriptionLogged' });
     await expect(updateConsultation(actor, c.id, without2D)).rejects.toBeInstanceOf(TreatmentError);
-    // Changing the repetition of a logged exercise keeps its entries
+    // Changing the weekdays of a logged exercise keeps its entries
     await updateConsultation(
       actor,
       c.id,
       consultationInput(daysAgo(1), {
         ...PROGRAM,
         home: [
-          { code: '2A', repetition: 'DAILY_1', intensity: null, steps: null, note: null },
-          { code: '2D', repetition: 'WEEKLY_3', intensity: null, steps: null, note: null },
+          { code: '2A', timesPerDay: 1, weekdays: 127, note: null },
+          { code: '2D', timesPerDay: 1, weekdays: 1 | 4 | 16, note: null },
         ],
       }),
     );

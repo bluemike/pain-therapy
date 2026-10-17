@@ -15,7 +15,8 @@ const PASSWORD = process.env.PATIENT_ZONE_DB_PASSWORD ?? 'patient_zone';
 
 /**
  * The allowed list of design D12 (HomePrescription without intensity, steps and note, design D7), extended by
- * iteration 5 design D8 for the signature in the patient zone and by iteration 6 design D4, D5 for the record
+ * iteration 5 design D8 for the signature in the patient zone, by iteration 6 design D4, D5 for the record and by
+ * iteration 8 design D2, D7 for FRM, EPD and the weekdays
  */
 const TABLES: Record<string, string[]> = {
   AuditEvent: ['INSERT'],
@@ -29,13 +30,22 @@ const TABLES: Record<string, string[]> = {
 const COLUMNS: Record<string, string[]> = {
   'ConsentTextVersion.SELECT': ['body', 'id', 'language', 'title', 'version'],
   'Consultation.SELECT': ['at', 'comparison', 'diagnosis', 'id', 'number', 'painAfter', 'painBefore', 'treatmentId'],
-  'ConsultationExercise.SELECT': ['consultationId', 'difficulty', 'exerciseCode', 'prescribed', 'variants'],
+  'ConsultationExercise.SELECT': ['consultationId', 'difficulty', 'exerciseCode', 'prescribed', 'variant'],
   'ConsultationPoint.SELECT': ['consultationId', 'left', 'pointId', 'right', 'sensitivity'],
-  'ConsultationRolling.SELECT': ['area', 'consultationId', 'position', 'toolCode'],
   'Exercise.SELECT': ['code', 'nameDe', 'nameEn', 'sort'],
   'ExerciseHandout.SELECT': ['consultationId', 'createdAt', 'documentNumber', 'id', 'language', 'patientId', 'version'],
-  'ExerciseSheet.SELECT': ['exerciseCode', 'mainImage', 'rollingSeconds', 'sides', 'stretchSecondsPerSide'],
-  'HomePrescription.SELECT': ['consultationId', 'exerciseCode', 'repetition'],
+  'ExerciseSheet.SELECT': [
+    'exerciseCode',
+    'mainImage',
+    'rollingSeconds',
+    'rollingTools',
+    'segments',
+    'sides',
+    'standardAids',
+    'stretchSecondsPerSide',
+  ],
+  'ExerciseVariant.SELECT': ['aids', 'exerciseCode', 'images', 'number', 'retiredAt', 'seconds'],
+  'HomePrescription.SELECT': ['consultationId', 'exerciseCode', 'timesPerDay', 'variant', 'weekdays'],
   'OsteopressurePoint.SELECT': ['attachmentDe', 'group', 'id', 'muscleAttachmentLatin', 'sort'],
   'Patient.SELECT': [
     'city',
@@ -54,7 +64,7 @@ const COLUMNS: Record<string, string[]> = {
     'zip',
   ],
   'PatientAccessLink.UPDATE': ['blockedAt', 'failedAttempts', 'lastUsedAt', 'lockedUntil'],
-  'Region.SELECT': ['id', 'nameDe', 'nameEn'],
+  'Region.SELECT': ['code', 'id', 'nameDe', 'nameEn'],
   'RollingTool.SELECT': ['code', 'nameDe', 'nameEn', 'sort'],
   'SignatureSession.SELECT': [
     'channel',
@@ -77,7 +87,7 @@ const COLUMNS: Record<string, string[]> = {
     'status',
   ],
   'SignedDocument.SELECT': ['createdAt', 'documentNumber', 'id', 'language', 'patientId', 'sessionId', 'textVersion'],
-  'Treatment.SELECT': ['diagnosis', 'id', 'painStart', 'patientId', 'regionId', 'startedAt'],
+  'Treatment.SELECT': ['diagnosis', 'id', 'painStart', 'patientId', 'regionId', 'side', 'startedAt'],
 };
 
 // Creating a role needs CREATEROLE (the CI and docker compose users are superusers; Azure's admin has CREATEROLE)
@@ -114,7 +124,8 @@ describe.skipIf(!allowed)('role patient_zone', () => {
       SELECT c.relname AS "table", at.attname AS "column", a.privilege_type AS privilege
       FROM pg_attribute at JOIN pg_class c ON c.oid = at.attrelid JOIN pg_namespace n ON n.oid = c.relnamespace,
         aclexplode(at.attacl) a
-      WHERE n.nspname = 'public' AND a.grantee = 'patient_zone'::regrole ORDER BY 1, 3, 2`;
+      WHERE n.nspname = 'public' AND NOT at.attisdropped AND a.grantee = 'patient_zone'::regrole
+      ORDER BY 1, 3, 2`;
     const byColumn: Record<string, string[]> = {};
     for (const c of columns) (byColumn[`${c.table}.${c.privilege}`] ??= []).push(c.column);
     expect(byColumn).toEqual(COLUMNS);

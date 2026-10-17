@@ -1,6 +1,6 @@
 import { auth } from '@/auth';
 import { can } from './access';
-import { loadExerciseMedia, MEDIA_KINDS, type MediaKind } from './exercise-sheets';
+import { isMediaKind, loadExerciseMedia } from './exercise-sheets';
 
 /** A single "bytes=a-b" range of a file of `size` bytes, or null if absent or not satisfiable */
 export function byteRange(header: string | null, size: number): { start: number; end: number } | 'invalid' | null {
@@ -29,8 +29,8 @@ export async function exerciseMediaResponse(req: Request, code: string, kind: st
   if (!session?.user?.id || !can.managePatients(session.user.roles ?? [])) {
     return new Response('Forbidden', { status: 403, headers });
   }
-  if (!MEDIA_KINDS.includes(kind as MediaKind)) return new Response('Not found', { status: 404, headers });
-  const media = await loadExerciseMedia(code, kind as MediaKind);
+  if (!isMediaKind(kind)) return new Response('Not found', { status: 404, headers });
+  const media = await loadExerciseMedia(code, kind);
   if (!media) return new Response('Not found', { status: 404, headers });
   const size = media.data.length;
   const common = {

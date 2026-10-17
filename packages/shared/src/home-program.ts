@@ -39,6 +39,11 @@ export const validSchedule = (s: Schedule) =>
   s.weekdays >= 1 &&
   s.weekdays <= ALL_WEEKDAYS;
 
+/** For display, e.g. "1× pro Tag · Mo Di Mi Do Fr" or "2× pro Tag · jeden Tag" */
+export function scheduleParts(s: Schedule) {
+  return { timesPerDay: s.timesPerDay, everyDay: s.weekdays === ALL_WEEKDAYS, days: weekdaysOf(s.weekdays) };
+}
+
 /** Executions per week: per day × selected weekdays */
 export function perWeek(s: Schedule): number {
   return s.timesPerDay * dayCount(s.weekdays);

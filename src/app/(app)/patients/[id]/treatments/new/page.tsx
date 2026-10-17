@@ -4,7 +4,7 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import { requireUser } from '@/lib/session';
 import { getPatient } from '@/lib/patients';
 import { openingBlocker } from '@/lib/treatments';
-import { listRegions, regionLabel } from '@/lib/catalog';
+import { listRegions, regionGroups } from '@/lib/catalog';
 import { toLocalInput } from '@/lib/format';
 import { TreatmentForm } from '@/components/TreatmentForm';
 import { OpeningBlocked } from '@/components/OpeningBlocked';
@@ -43,8 +43,14 @@ export default async function NewTreatmentPage({ params }: { params: Promise<{ i
       ) : (
         <TreatmentForm
           patientId={id}
-          initial={{ startedAt: toLocalInput(new Date()), regionId: '', diagnosis: '', painStart: '' }}
-          regions={regions.map((r) => [String(r.id), regionLabel(r, locale)])}
+          initial={{
+            startedAt: toLocalInput(new Date()),
+            regionId: '',
+            side: 'UNSPECIFIED',
+            diagnosis: '',
+            painStart: '',
+          }}
+          regions={regionGroups(regions, locale)}
           cancelHref={`/patients/${id}`}
         />
       )}

@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { startTransition, useActionState, useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { saveConsultation, type TreatmentFormState } from '@/app/(app)/treatment-actions';
-import { DIFFICULTIES, PAIN_VALUES, ROLLING_SLOTS, SENSITIVITIES, type Sheet } from '@/lib/schemas';
+import { DIFFICULTIES, PAIN_VALUES, SENSITIVITIES, SIDES, type Sheet } from '@/lib/schemas';
 import type { SheetExercise, SheetPoint } from '@/lib/catalog';
-import { DEFAULT_REPETITION, type Timing } from '@/lib/home-program';
+import { DEFAULT_SCHEDULE, withVariant, type Timing } from '@/lib/home-program';
 import { PhotoField, usePhotos, type SavedPhoto } from './PhotoField';
 import { Seg } from './Seg';
 import { HomeProgramBlock, type HomeEntry } from './HomeProgramBlock';
@@ -16,8 +16,24 @@ import { ExerciseAudio } from './ExerciseAudio';
 type Sensitivity = (typeof SENSITIVITIES)[number];
 type Difficulty = (typeof DIFFICULTIES)[number];
 type PointEntry = { left: boolean; right: boolean; sensitivity: Sensitivity | null };
-type ExerciseEntry = { prescribed: boolean; difficulty: Difficulty | null; variants: string };
-type RollingEntry = { area: string; toolCode: string };
+type ExerciseEntry = { prescribed: boolean; difficulty: Difficulty | null; variant: number | null };
+type Side = (typeof SIDES)[number];
+/** Punkte pro Sitzung (iteration 8, design D5): Sitzung 1 = dark red, 2 = red, 3 = black points */
+type PointFilter = 'all' | 'main' | 'relevant' | 'standard';
+const FILTERS: PointFilter[] = ['all', 'main', 'relevant', 'standard'];
+export const defaultPointFilter = (sessionNumber: number): PointFilter =>
+  sessionNumber >= 1 && sessionNumber <= 3 ? FILTERS[sessionNumber] : 'all';
+
+export type ExerciseOption = {
+  code: string;
+  nameDe: string;
+  nameEn: string;
+  areaDe: string;
+  areaEn: string;
+  retired: boolean;
+  timing: Timing | null;
+  variants: { number: number; images: number[]; aids: string[]; seconds: number | null }[];
+};
 
 export type ConsultationValues = {
   at: string;
@@ -28,34 +44,44 @@ export type ConsultationValues = {
   sheet: Sheet;
 };
 
-/** consultations: digitaler Behandlungsbogen nach mockups/konsultation-lws-bauch.html */
+/**
+ * session-form (iteration 8, design D3 to D7): digitaler Behandlungsbogen in the order of the treatment: Kopf,
+ * Schmerz vorher, Osteopressur, Übungen, Selbstausführung, Schmerz nachher, Fotos.
+ */
 export function ConsultationForm({
   patientId,
   treatmentId,
   id,
+  number,
+  side,
   regionLabel,
+  areaLabel,
   treatmentInfo,
   initial,
   points: sheetPoints,
   exercises: sheetExercises,
   catalogPoints,
   catalogExercises,
-  tools,
   saved,
   cancelHref,
 }: {
   patientId: string;
   treatmentId: string;
   id?: string;
+  /** Number of the session: presets the point filter */
+  number: number;
+  /** Körperseite of the treatment */
+  side: Side;
   regionLabel: string;
+  /** Bereich of the Schmerzbereich, e.g. "1 Kopf" */
+  areaLabel: string;
   treatmentInfo: string;
   initial: ConsultationValues;
   points: SheetPoint[];
   exercises: SheetExercise[];
   catalogPoints: { id: string; latin: string; de: string; group: number }[];
-  /** All exercises with their timing (Selbstausführung: "Übung hinzufügen" and the time totals) */
-  catalogExercises: { code: string; nameDe: string; nameEn: string; retired: boolean; timing: Timing | null }[];
-  tools: { code: string; name: string }[];
+  /** All exercises with their Bereich, timing and variants ("Übung aus anderem Bereich", time totals) */
+  catalogExercises: ExerciseOption[];
   saved?: SavedPhoto[];
   cancelHref: string;
 }) {
@@ -79,27 +105,24 @@ export function ConsultationForm({
     Object.fromEntries(initial.sheet.points.map((p) => [p.pointId, { ...p }])),
   );
   const [extra, setExtra] = useState<SheetPoint[]>([]);
-  const [onlyMain, setOnlyMain] = useState(false);
+  const [filter, setFilter] = useState<PointFilter>(() => defaultPointFilter(number));
   const [adding, setAdding] = useState(false);
   const [toAdd, setToAdd] = useState('');
+  const [exToAdd, setExToAdd] = useState('');
   const [exs, setExs] = useState<Record<string, ExerciseEntry>>(() =>
     Object.fromEntries(
       initial.sheet.exercises.map((x) => [
         x.code,
-        { prescribed: x.prescribed, difficulty: x.difficulty, variants: x.variants ?? '' },
+        { prescribed: x.prescribed, difficulty: x.difficulty, variant: x.variant },
       ]),
     ),
   );
-  // Exercises added in "Selbstausführung" that are not on this area's form
+  // Exercises of another Bereich added by the therapist (design D6)
   const [extraExercises, setExtraExercises] = useState<SheetExercise[]>([]);
   const [home, setHome] = useState<Record<string, HomeEntry>>(() =>
-    Object.fromEntries(initial.sheet.home.map((h) => [h.code, { ...h, note: h.note ?? '' }])),
-  );
-  const [rolling, setRolling] = useState<RollingEntry[]>(() =>
-    Array.from({ length: ROLLING_SLOTS }, (_, i) => {
-      const r = initial.sheet.rolling.find((x) => x.position === i + 1);
-      return { area: r?.area ?? '', toolCode: r?.toolCode ?? '' };
-    }),
+    Object.fromEntries(
+      initial.sheet.home.map((h) => [h.code, { timesPerDay: h.timesPerDay, weekdays: h.weekdays, note: h.note ?? '' }]),
+    ),
   );
 
   useEffect(() => {
@@ -111,31 +134,46 @@ export function ConsultationForm({
   const point = (id: string): PointEntry => pts[id] ?? { left: false, right: false, sensitivity: null };
   const setPoint = (id: string, patch: Partial<PointEntry>) =>
     setPts((prev) => ({ ...prev, [id]: { ...point(id), ...patch } }));
-  const exercise = (code: string): ExerciseEntry => exs[code] ?? { prescribed: false, difficulty: null, variants: '' };
+  const recordedPoint = (id: string) => {
+    const v = point(id);
+    return v.left || v.right || !!v.sensitivity;
+  };
+  /** Osteopressur nach Körperseite (design D4): a sensitivity ticks the side of the treatment */
+  const setSensitivity = (id: string, sensitivity: Sensitivity | null) =>
+    setPoint(id, {
+      sensitivity,
+      ...(sensitivity && side === 'LEFT' ? { left: true } : {}),
+      ...(sensitivity && side === 'RIGHT' ? { right: true } : {}),
+    });
+  const exercise = (code: string): ExerciseEntry => exs[code] ?? { prescribed: false, difficulty: null, variant: null };
   const setExercise = (code: string, patch: Partial<ExerciseEntry>) =>
     setExs((prev) => ({ ...prev, [code]: { ...exercise(code), ...patch } }));
 
   const exercises = [...sheetExercises, ...extraExercises];
-  const homeEntry = (code: string): HomeEntry =>
-    home[code] ?? { repetition: DEFAULT_REPETITION, intensity: null, steps: null, note: '' };
+  const homeEntry = (code: string): HomeEntry => home[code] ?? { ...DEFAULT_SCHEDULE, note: '' };
   const setHomeEntry = (code: string, patch: Partial<HomeEntry>) =>
     setHome((prev) => ({ ...prev, [code]: { ...homeEntry(code), ...patch } }));
   const exName = (x: { nameDe: string; nameEn: string }) => (locale === 'en' ? x.nameEn : x.nameDe);
+  const areaName = (x: { areaDe: string; areaEn: string }) => (locale === 'en' ? x.areaEn : x.areaDe);
+  const option = (code: string) => catalogExercises.find((c) => c.code === code);
   const prescribed = exercises.filter((x) => exercise(x.code).prescribed);
-  /** home-program: Weitere Übung. Added from the catalog it counts as prescribed. */
-  function addHomeExercise(code: string) {
-    const x = catalogExercises.find((c) => c.code === code);
+  const epdLabel = (v: number | null) => (v ? t('epdVariant', { n: v }) : t('epdStandard'));
+  /** session-form: Übung aus anderem Bereich hinzufügen; it is prescribed right away */
+  function addExercise(code: string) {
+    const x = option(code);
     if (!x) return;
     if (!exercises.some((e) => e.code === code))
-      setExtraExercises((prev) => [...prev, { code, nameDe: x.nameDe, nameEn: x.nameEn, retired: false }]);
+      setExtraExercises((prev) => [...prev, { code, nameDe: x.nameDe, nameEn: x.nameEn, retired: false, extra: true }]);
     setExercise(code, { prescribed: true });
   }
 
   function sheetJson(): string {
     const sheet = {
       points: allPoints.map((p) => ({ pointId: p.id, ...point(p.id) })),
-      exercises: exercises.map((x) => ({ code: x.code, ...exercise(x.code) })),
-      rolling: rolling.map((r, i) => ({ position: i + 1, area: r.area, toolCode: r.toolCode || null })),
+      exercises: exercises.map((x) => {
+        const v = exercise(x.code);
+        return { code: x.code, ...v, variant: v.prescribed || v.difficulty ? v.variant : null };
+      }),
       home: prescribed.map((x) => ({ code: x.code, ...homeEntry(x.code) })),
     };
     return JSON.stringify(sheet);
@@ -243,27 +281,16 @@ export function ConsultationForm({
         </div>
       </fieldset>
 
-      <section className="card sheet" aria-labelledby="h_pain">
-        <h2 id="h_pain">{t('pain')}</h2>
+      <section className="card sheet" aria-labelledby="h_painBefore">
+        <h2 id="h_painBefore">{t('painBeforeTitle')}</h2>
         <div className="body">
           <div className="painrow">
-            <span id="l_painBefore">{t('painBefore')}</span>
             <Seg
               className="scale"
-              label={`${t('pain')} ${t('painBefore')}, %`}
+              label={`${t('painBeforeTitle')}, %`}
               options={painOptions}
               value={painBefore}
               onChange={setPainBefore}
-            />
-          </div>
-          <div className="painrow">
-            <span id="l_painAfter">{t('painAfter')}</span>
-            <Seg
-              className="scale"
-              label={`${t('pain')} ${t('painAfter')}, %`}
-              options={painOptions}
-              value={painAfter}
-              onChange={setPainAfter}
             />
           </div>
           <span className="hint">{t('painHint')}</span>
@@ -273,9 +300,20 @@ export function ConsultationForm({
       <section className="card sheet" aria-labelledby="h_osteo">
         <header>
           <h2 id="h_osteo">{t('osteopressure')}</h2>
-          <label className="ck small">
-            <input type="checkbox" checked={onlyMain} onChange={(e) => setOnlyMain(e.target.checked)} />
-            {t('onlyMain')}
+          <label className="lbl small">
+            {t('pointFilter')}{' '}
+            <select
+              className="inp"
+              data-testid="point-filter"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value as PointFilter)}
+            >
+              {FILTERS.map((f) => (
+                <option key={f} value={f}>
+                  {t(`filter_${f}`)}
+                </option>
+              ))}
+            </select>
           </label>
         </header>
         <div className="body">
@@ -284,6 +322,7 @@ export function ConsultationForm({
             <span className="r">■ {t('legendRelevant')}</span>
             <span>■ {t('legendStandard')}</span>
           </div>
+          {side !== 'UNSPECIFIED' ? <p className="hint">{t('sideHint', { side: t(`side_${side}`) })}</p> : null}
           <div className="sheetwrap">
             <table className="sheettab">
               <thead>
@@ -298,7 +337,11 @@ export function ConsultationForm({
                 {allPoints.map((p) => {
                   const v = point(p.id);
                   return (
-                    <tr key={p.id} className={`e-${p.emphasis}`} hidden={onlyMain && p.emphasis !== 'main'}>
+                    <tr
+                      key={p.id}
+                      className={`e-${p.emphasis}`}
+                      hidden={filter !== 'all' && p.emphasis !== filter && !p.extra && !recordedPoint(p.id)}
+                    >
                       <th scope="row" className="pid num">
                         {p.id}
                       </th>
@@ -317,6 +360,7 @@ export function ConsultationForm({
                           <input
                             type="checkbox"
                             checked={v.left}
+                            disabled={side === 'RIGHT' && !v.left}
                             aria-label={t('leftLong', { id: p.id })}
                             onChange={(e) => setPoint(p.id, { left: e.target.checked })}
                           />
@@ -326,6 +370,7 @@ export function ConsultationForm({
                           <input
                             type="checkbox"
                             checked={v.right}
+                            disabled={side === 'LEFT' && !v.right}
                             aria-label={t('rightLong', { id: p.id })}
                             onChange={(e) => setPoint(p.id, { right: e.target.checked })}
                           />
@@ -337,7 +382,7 @@ export function ConsultationForm({
                           label={t('sensitivityOf', { id: p.id })}
                           options={sensOptions}
                           value={v.sensitivity}
-                          onChange={(s) => setPoint(p.id, { sensitivity: s })}
+                          onChange={(s) => setSensitivity(p.id, s)}
                         />
                       </td>
                     </tr>
@@ -370,7 +415,6 @@ export function ConsultationForm({
                   if (p) setExtra((prev) => [...prev, { ...p, emphasis: 'standard', extra: true, retired: false }]);
                   setToAdd('');
                   setAdding(false);
-                  setOnlyMain(false);
                 }}
               >
                 {t('add')}
@@ -388,7 +432,10 @@ export function ConsultationForm({
       </section>
 
       <section className="card sheet" aria-labelledby="h_ex">
-        <h2 id="h_ex">{t('exercises')}</h2>
+        <header>
+          <h2 id="h_ex">{t('exercises')}</h2>
+          <span className="hint">{t('exercisesHint', { area: areaLabel })}</span>
+        </header>
         <div className="body">
           {exercises.length ? (
             <div className="sheetwrap">
@@ -398,17 +445,20 @@ export function ConsultationForm({
                     <th scope="col">{t('colExercise')}</th>
                     <th scope="col">{tx('media')}</th>
                     <th scope="col">{t('prescribed')}</th>
+                    <th scope="col">{t('epd')}</th>
                     <th scope="col">{t('difficulty')}</th>
-                    <th scope="col">{t('variants')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {exercises.map((x) => {
                     const v = exercise(x.code);
+                    const o = option(x.code);
+                    const bad = errors[`exercises:${x.code}`];
                     return (
-                      <tr key={x.code}>
+                      <tr key={x.code} data-code={x.code} className={bad ? 'bad' : undefined}>
                         <th scope="row">
                           <b>{x.code}</b> {exName(x)}
+                          {x.extra && o ? <small> · {areaName(o)}</small> : null}
                           {x.retired ? <small> · {t('retired')}</small> : null}
                         </th>
                         <td className="exmedia">
@@ -427,22 +477,36 @@ export function ConsultationForm({
                           </label>
                         </td>
                         <td>
+                          <select
+                            className="inp"
+                            aria-label={t('epdOf', { code: x.code })}
+                            disabled={!v.prescribed && !v.difficulty}
+                            value={v.variant ?? ''}
+                            onChange={(e) =>
+                              setExercise(x.code, { variant: e.target.value ? Number(e.target.value) : null })
+                            }
+                          >
+                            <option value="">{t('epdStandard')}</option>
+                            {(o?.variants ?? []).map((w) => (
+                              <option key={w.number} value={w.number}>
+                                {t('variantOption', { n: w.number, images: w.images.join('+') })}
+                                {w.aids.length ? ` · ${w.aids.join(', ')}` : ''}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td>
                           <Seg
                             label={t('difficultyOf', { code: x.code })}
                             options={diffOptions}
                             value={v.difficulty}
                             onChange={(d) => setExercise(x.code, { difficulty: d })}
                           />
-                        </td>
-                        <td>
-                          <input
-                            className="inp"
-                            placeholder={t('variantPlaceholder')}
-                            aria-label={t('variantsOf', { code: x.code })}
-                            maxLength={500}
-                            value={v.variants}
-                            onChange={(e) => setExercise(x.code, { variants: e.target.value })}
-                          />
+                          {bad ? (
+                            <span className="msg" role="alert">
+                              {te(bad as 'difficultyRequired')}
+                            </span>
+                          ) : null}
                         </td>
                       </tr>
                     );
@@ -453,60 +517,65 @@ export function ConsultationForm({
           ) : (
             <p className="muted">{t('noExercises')}</p>
           )}
+          <div className="addpoint">
+            <label className="l" htmlFor="f_addExercise">
+              {t('addExercise')}
+            </label>
+            <select id="f_addExercise" className="inp" value={exToAdd} onChange={(e) => setExToAdd(e.target.value)}>
+              <option value="">–</option>
+              {catalogExercises
+                .filter((c) => !c.retired && !exercises.some((e) => e.code === c.code))
+                .map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.code} · {exName(c)} ({areaName(c)})
+                  </option>
+                ))}
+            </select>
+            <button
+              type="button"
+              className="btn btn--ghost"
+              disabled={!exToAdd}
+              onClick={() => {
+                addExercise(exToAdd);
+                setExToAdd('');
+              }}
+            >
+              {t('add')}
+            </button>
+          </div>
         </div>
       </section>
 
       <HomeProgramBlock
-        rows={prescribed.map((x) => ({
-          code: x.code,
-          name: exName(x),
-          timing: catalogExercises.find((c) => c.code === x.code)?.timing ?? null,
-        }))}
+        rows={prescribed.map((x) => {
+          const v = exercise(x.code).variant;
+          const o = option(x.code);
+          return {
+            code: x.code,
+            name: exName(x),
+            epd: epdLabel(v),
+            timing: withVariant(o?.timing ?? null, o?.variants.find((w) => w.number === v)?.seconds),
+          };
+        })}
         entry={homeEntry}
+        errors={errors}
         onChange={setHomeEntry}
         onRemove={(code) => setExercise(code, { prescribed: false })}
-        addable={catalogExercises
-          .filter((c) => !c.retired && !exercise(c.code).prescribed)
-          .map((c) => ({ code: c.code, name: exName(c) }))}
-        onAdd={addHomeExercise}
       />
 
-      <section className="card sheet" aria-labelledby="h_roll">
-        <h2 id="h_roll">{t('rolling')}</h2>
-        <div className="grid">
-          <p className="hint w6row">{tools.map((x) => `${x.name} = ${x.code}`).join(' · ')}</p>
-          {rolling.map((r, i) => (
-            <div className="f" key={i}>
-              <label className="l" htmlFor={`f_roll${i + 1}`}>
-                {t('rollingArea', { n: i + 1 })}
-              </label>
-              <input
-                id={`f_roll${i + 1}`}
-                className="inp"
-                maxLength={200}
-                placeholder={i === 0 ? t('rollingPlaceholder') : undefined}
-                value={r.area}
-                onChange={(e) =>
-                  setRolling((prev) => prev.map((x, k) => (k === i ? { ...x, area: e.target.value } : x)))
-                }
-              />
-              <select
-                className="inp"
-                aria-label={t('rollingTool', { n: i + 1 })}
-                value={r.toolCode}
-                onChange={(e) =>
-                  setRolling((prev) => prev.map((x, k) => (k === i ? { ...x, toolCode: e.target.value } : x)))
-                }
-              >
-                <option value="">{t('rollingChoose')}</option>
-                {tools.map((x) => (
-                  <option key={x.code} value={x.code}>
-                    {x.code} · {x.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ))}
+      <section className="card sheet" aria-labelledby="h_painAfter">
+        <h2 id="h_painAfter">{t('painAfterTitle')}</h2>
+        <div className="body">
+          <div className="painrow">
+            <Seg
+              className="scale"
+              label={`${t('painAfterTitle')}, %`}
+              options={painOptions}
+              value={painAfter}
+              onChange={setPainAfter}
+            />
+          </div>
+          <span className="hint">{t('painHint')}</span>
         </div>
       </section>
 

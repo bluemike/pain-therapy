@@ -1,3 +1,4 @@
+import type { z } from 'zod';
 import { readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -6,7 +7,7 @@ import { db } from '@/lib/db';
 import { config } from '@/lib/config';
 import { createPatient, historyOf } from '@/lib/patients';
 import { currentVersionNumber } from '@/lib/consent-texts';
-import { consultationSchema, EMPTY_PATIENT, patientSchema, treatmentSchema, type Sheet } from '@/lib/schemas';
+import { consultationSchema, EMPTY_PATIENT, patientSchema, sheetSchema, treatmentSchema } from '@/lib/schemas';
 import { createConsultation, createTreatment, getConsultation, sheetOf, updateConsultation } from '@/lib/treatments';
 import { exerciseChoices, exerciseDetail, loadExerciseMedia } from '@/lib/exercise-sheets';
 import {
@@ -104,19 +105,20 @@ async function signedPatient(lastName: string, opts: { emailConsent: boolean; la
   return p;
 }
 
-const consultationInput = (sheet: Partial<Sheet>) =>
+const consultationInput = (sheet: Partial<z.input<typeof sheetSchema>>) =>
   consultationSchema.parse({
     at: '2026-10-13T09:30',
     diagnosis: 'Lumbalgie',
     painBefore: '',
     painAfter: '',
     comparison: '',
-    sheet: JSON.stringify({ points: [], exercises: [], rolling: [], ...sheet }),
+    sheet: JSON.stringify({ points: [], exercises: [], ...sheet }),
   });
 
-const prescribed = (code: string) => ({ code, prescribed: true, difficulty: null, variants: null });
+const prescribed = (code: string) => ({ code, prescribed: true, difficulty: 'MEDIUM' as const, variant: null });
+const MO_FR = 31;
 
-/** Consultation on area 6 with 2A täglich 2x, 2D wöchentlich 5x and 4B (from the catalog) */
+/** Session on area 6 with 2A 2× daily, 2D 1× Mo–Fr and 4B (from the catalog) */
 async function consultationWithProgram(lastName: string, opts: { emailConsent: boolean; language?: 'de' | 'en' }) {
   const p = await signedPatient(lastName, opts);
   const t = await createTreatment(
@@ -130,8 +132,8 @@ async function consultationWithProgram(lastName: string, opts: { emailConsent: b
     consultationInput({
       exercises: [prescribed('2A'), prescribed('2D'), prescribed('4B')],
       home: [
-        { code: '2A', repetition: 'DAILY_2', intensity: 7, steps: 3, note: null },
-        { code: '2D', repetition: 'WEEKLY_5', intensity: null, steps: null, note: 'abends' },
+        { code: '2A', timesPerDay: 2, weekdays: 127, note: null },
+        { code: '2D', timesPerDay: 1, weekdays: MO_FR, note: 'abends' },
       ],
     }),
   );
@@ -160,7 +162,7 @@ describe('exercise library', () => {
     expect(twoA?.sheet).toMatchObject({ sheetPage: 7, mainImage: '2A.jpg', sheetImage: '2A-blatt.png', sides: 1 });
     expect(twoA?.timing).toEqual({ stretchSecondsPerSide: 120, sides: 1, rollingSeconds: 120 });
     expect(twoA?.content?.rolling).toContain('Platzhalter 2A');
-    expect(twoA?.content?.steps.map((s) => s.label)).toEqual(['Schritt 1', 'Schritt 2', 'Schritt 3A', 'Schritt 3B']);
+    expect(twoA?.content?.steps.map((s) => s.label)).toEqual(['Schritt 1', 'Schritt 2', 'Schritt 3a', 'Schritt 3b']);
     expect((await exerciseDetail('1C'))?.timing?.stretchSecondsPerSide).toBeNull();
     expect((await exerciseDetail('1C'))?.timingTodo).toHaveLength(1);
     const choices = await exerciseChoices();
@@ -267,22 +269,22 @@ describe('home program', () => {
     const { p, c } = await consultationWithProgram('Programm', { emailConsent: true });
     const stored = (await getConsultation(c.id))!;
     expect(sheetOf(stored).home).toEqual([
-      { code: '2A', repetition: 'DAILY_2', intensity: 7, steps: 3, note: null },
-      { code: '2D', repetition: 'WEEKLY_5', intensity: null, steps: null, note: 'abends' },
+      { code: '2A', variant: null, timesPerDay: 2, weekdays: 127, note: null },
+      { code: '2D', variant: null, timesPerDay: 1, weekdays: MO_FR, note: 'abends' },
       // Added from the catalog, prescribed with the default
-      { code: '4B', repetition: 'DAILY_1', intensity: null, steps: null, note: null },
+      { code: '4B', variant: null, timesPerDay: 1, weekdays: 127, note: null },
     ]);
 
-    // Wiederholung wählen and removing 4B from the prescription
+    // Changing days and removing 4B from the prescription
     await updateConsultation(
       actor,
       c.id,
       consultationInput({
         exercises: [prescribed('2A'), prescribed('2D'), { ...prescribed('4B'), prescribed: false, difficulty: 'EASY' }],
         home: [
-          { code: '2A', repetition: 'WEEKLY_5', intensity: 7, steps: 3, note: null },
-          { code: '2D', repetition: 'WEEKLY_5', intensity: null, steps: null, note: 'abends' },
-          { code: '4B', repetition: 'DAILY_1', intensity: null, steps: null, note: null },
+          { code: '2A', timesPerDay: 2, weekdays: MO_FR, note: null },
+          { code: '2D', timesPerDay: 1, weekdays: MO_FR, note: 'abends' },
+          { code: '4B', timesPerDay: 1, weekdays: 127, note: null },
         ],
       }),
     );
@@ -290,8 +292,8 @@ describe('home program', () => {
       (await db.homePrescription.findMany({ where: { consultationId: c.id } })).map((h) => h.exerciseCode).sort(),
     ).toEqual(['2A', '2D']);
     expect(
-      (await db.homePrescription.findFirst({ where: { consultationId: c.id, exerciseCode: '2A' } }))?.repetition,
-    ).toBe('WEEKLY_5');
+      (await db.homePrescription.findFirst({ where: { consultationId: c.id, exerciseCode: '2A' } }))?.weekdays,
+    ).toBe(MO_FR);
 
     // Änderungshistorie (task 2.4)
     const changes = (await historyOf(p.id))
@@ -299,19 +301,17 @@ describe('home program', () => {
       .map((e) => [e.field, e.before, e.after])
       .sort();
     expect(changes).toEqual([
-      ['home:2A:repetition', 'DAILY_2', 'WEEKLY_5'],
-      ['home:4B:repetition', 'DAILY_1', null],
+      ['home:2A:weekdays', '127', '31'],
+      ['home:4B:timesPerDay', '1', null],
+      ['home:4B:weekdays', '127', null],
     ]);
   });
 
-  it('rejects intensity 10 in the database too', async () => {
-    const { c } = await consultationWithProgram('Intensitaet', { emailConsent: false });
-    await expect(
-      db.homePrescription.update({
-        where: { consultationId_exerciseCode: { consultationId: c.id, exerciseCode: '2A' } },
-        data: { intensity: 10 },
-      }),
-    ).rejects.toThrow(/intensity_check/);
+  it('rejects no weekday and 4× per day in the database too', async () => {
+    const { c } = await consultationWithProgram('Wochentage', { emailConsent: false });
+    const where = { consultationId_exerciseCode: { consultationId: c.id, exerciseCode: '2A' } };
+    await expect(db.homePrescription.update({ where, data: { weekdays: 0 } })).rejects.toThrow(/check/i);
+    await expect(db.homePrescription.update({ where, data: { timesPerDay: 4 } })).rejects.toThrow(/check/i);
   });
 });
 
@@ -346,16 +346,16 @@ describe('exercise handout', () => {
     for (const s of [
       'Ihr Übungsprogramm',
       'Anna Druck, geb. 05.03.1980',
-      'Konsultation vom 13.10.2026',
-      'Therapeut:in: Christina Franz',
-      'täglich 2x',
-      'wöchentlich 5x',
-      'täglich 1x',
+      'Sitzung vom 13.10.2026',
+      'PRO TAG WOCHENTAGE',
+      '2× pro Tag jeden Tag',
+      '1× pro Tag Mo Di Mi Do Fr',
+      'Faszien-Rollmassage + Engpassdehnung Standardübung',
+      'EPD Standardübung',
       'abends',
       // 2A 2x7x4 + 2D 5x4 + 4B 7x6 = 56 + 20 + 42 = 118 min per week, 16.9 → 17 min per day
       'Zeitbedarf: pro Tag 17 min, pro Woche 118 min',
-      'Die Intensität (Schmerz, Anstrengung, Widerwille) darf nie 10 oder höher erreichen',
-      'Häufigkeit pro Woche',
+      'dürfen nie 10 oder höher erreichen',
       handout.documentNumber,
     ])
       expect(text).toContain(s);
@@ -424,7 +424,7 @@ describe('exercise handout', () => {
       c.id,
       consultationInput({
         exercises: [prescribed('2A')],
-        home: [{ code: '2A', repetition: 'DAILY_3', intensity: 5, steps: 2, note: null }],
+        home: [{ code: '2A', timesPerDay: 3, weekdays: 127, note: null }],
       }),
     );
     const second = await createHandout(actor, c.id, 'PRINT');
@@ -448,7 +448,7 @@ describe('exercise handout', () => {
     const { handout } = await createHandout(actor, c.id, 'PRINT');
     expect(handout.language).toBe('en');
     const { text } = await pdfText(await documentStore().get(handout.blobPath));
-    for (const s of ['Your exercise programme', '2x daily', '5x weekly', 'Spine exercise', 'Times per week'])
+    for (const s of ['Your exercise programme', '2× per day every day', '1× per day Mo Tu We Th Fr', 'Spine exercise'])
       expect(text).toContain(s);
     expect(text).not.toContain('Übungsprogramm');
   });
@@ -467,10 +467,15 @@ describe('handout PDF', () => {
       {
         code: '1C',
         name: 'Augen-Übung',
-        repetition: 'DAILY_1',
-        intensity: null,
-        steps: 2,
+        variant: null,
+        timesPerDay: 1,
+        weekdays: 127,
         note: null,
+        tools: [],
+        aids: [],
+        frmImage: null,
+        epdImage: null,
+        segments: null,
         seconds: 120,
         stretchMissing: true,
         timingMissing: false,
@@ -486,7 +491,7 @@ describe('handout PDF', () => {
   it('still renders without media and says so (Bild nicht verfügbar)', async () => {
     const { pages, text } = await pdfText(await renderHandoutPdf(input()));
     expect(pages).toBe(2);
-    for (const s of ['Bild nicht verfügbar', 'Blatt nicht verfügbar', 'Dehnung noch nicht festgelegt', '1-2'])
+    for (const s of ['Bild nicht verfügbar', 'Blatt nicht verfügbar', 'Dehnung noch nicht festgelegt', '1× pro Tag'])
       expect(text).toContain(s);
   });
 

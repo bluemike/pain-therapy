@@ -5,8 +5,9 @@ import {
   fieldErrors,
   PAIN_VALUES,
   patientSchema,
-  ROLLING_SLOTS,
   SENSITIVITIES,
+  sheetErrors,
+  EMPTY_SHEET,
   treatmentSchema,
 } from '@/lib/schemas';
 import { toLocalInput } from '@/lib/format';
@@ -110,7 +111,9 @@ describe('treatment schema', () => {
 
   it('accepts a complete treatment', () => {
     const r = treatmentSchema.parse(valid);
-    expect(r).toMatchObject({ regionId: 6, diagnosis: 'Lumbalgie rechts', painStart: 60 });
+    expect(r).toMatchObject({ regionId: 6, side: 'UNSPECIFIED', diagnosis: 'Lumbalgie rechts', painStart: 60 });
+    expect(treatmentSchema.parse({ ...valid, side: 'LEFT' }).side).toBe('LEFT');
+    expect(treatmentSchema.safeParse({ ...valid, side: 'BOTH' }).success).toBe(false);
     expect(r.startedAt.toISOString()).toBe('2026-10-13T07:15:00.000Z');
   });
 
@@ -143,63 +146,52 @@ describe('consultation schema', () => {
       { pointId: '2.1.1', left: false, right: false, sensitivity: null },
     ],
     exercises: [
-      { code: '2D', prescribed: true, difficulty: 'HARD', variants: '' },
-      { code: '2A', prescribed: false, difficulty: null, variants: '  ' },
-    ],
-    rolling: [
-      { position: 1, area: 'Beckenkamm', toolCode: 'MiKu' },
-      { position: 2, area: '', toolCode: null },
+      { code: '2D', prescribed: true, difficulty: 'HARD', variant: 2 },
+      { code: '2A', prescribed: false, difficulty: null, variant: null },
     ],
   };
   const base = { at: '2026-10-13T09:30', diagnosis: 'Lumbalgie', painBefore: '', painAfter: '', comparison: '' };
+  const parse = (s: object) => consultationSchema.safeParse({ ...base, sheet: JSON.stringify(s) });
 
   it('drops empty rows of the form and keeps optional pain values empty (Leerer Bogen)', () => {
     const r = consultationSchema.parse({ ...base, sheet: JSON.stringify(sheet) });
     expect(r.painBefore).toBeNull();
     expect(r.painAfter).toBeNull();
     expect(r.sheet.points).toEqual([{ pointId: '2.11.1', left: false, right: true, sensitivity: 'STRONG' }]);
-    expect(r.sheet.exercises).toEqual([{ code: '2D', prescribed: true, difficulty: 'HARD', variants: null }]);
-    expect(r.sheet.rolling).toEqual([{ position: 1, area: 'Beckenkamm', toolCode: 'MiKu' }]);
-    expect(consultationSchema.parse({ ...base, sheet: '' }).sheet).toEqual({
-      points: [],
-      exercises: [],
-      rolling: [],
-      home: [],
-    });
+    expect(r.sheet.exercises).toEqual([{ code: '2D', prescribed: true, difficulty: 'HARD', variant: 2 }]);
+    expect(consultationSchema.parse({ ...base, sheet: '' }).sheet).toEqual(EMPTY_SHEET);
   });
 
-  it('keeps one home prescription per prescribed exercise, "täglich 1x" when none was sent (home-program)', () => {
+  it('keeps one home row per prescribed exercise, 1× per day on all weekdays when none was sent (home-schedule)', () => {
     const r = consultationSchema.parse({ ...base, sheet: JSON.stringify(sheet) });
-    expect(r.sheet.home).toEqual([{ code: '2D', repetition: 'DAILY_1', intensity: null, steps: null, note: null }]);
+    expect(r.sheet.home).toEqual([{ code: '2D', timesPerDay: 1, weekdays: 127, note: null, variant: 2 }]);
     const withHome = {
       ...sheet,
-      exercises: [...sheet.exercises, { code: '2A', prescribed: false, difficulty: 'EASY', variants: null }],
+      exercises: [...sheet.exercises.slice(0, 1), { code: '2A', prescribed: false, difficulty: 'EASY', variant: null }],
       home: [
-        { code: '2D', repetition: 'WEEKLY_5', intensity: 7, steps: 3, note: ' abends ' },
+        { code: '2D', timesPerDay: 2, weekdays: 31, note: ' abends ' },
         // Not prescribed (any more): dropped
-        { code: '2A', repetition: 'DAILY_2', intensity: null, steps: null, note: null },
+        { code: '2A', timesPerDay: 1, weekdays: 127, note: null },
       ],
     };
-    expect(consultationSchema.parse({ ...base, sheet: JSON.stringify(withHome) }).sheet.home).toEqual([
-      { code: '2D', repetition: 'WEEKLY_5', intensity: 7, steps: 3, note: 'abends' },
+    expect(parse(withHome).data!.sheet.home).toEqual([
+      { code: '2D', timesPerDay: 2, weekdays: 31, note: 'abends', variant: 2 },
     ]);
   });
 
-  it('refuses intensity 10, steps beyond 3 and unknown repetitions (Intensität 10)', () => {
-    const home = (h: object) =>
-      consultationSchema.safeParse({
-        ...base,
-        sheet: JSON.stringify({
-          ...sheet,
-          home: [{ code: '2D', repetition: 'DAILY_1', intensity: null, steps: null, note: null, ...h }],
-        }),
-      }).success;
-    expect(home({ intensity: 9, steps: 3 })).toBe(true);
-    expect(home({ intensity: 10 })).toBe(false);
-    expect(home({ intensity: 0 })).toBe(false);
-    expect(home({ steps: 4 })).toBe(false);
-    expect(home({ repetition: 'DAILY_4' })).toBe(false);
-    expect(home({ repetition: 'WEEKLY_8' })).toBe(false);
+  it('requires "Übung fällt" for every prescribed exercise (session-form)', () => {
+    const r = parse({ ...sheet, exercises: [{ code: '1A', prescribed: true, difficulty: null, variant: null }] });
+    expect(r.success).toBe(false);
+    expect(sheetErrors(r.error!)).toEqual({ 'exercises:1A': 'difficultyRequired' });
+  });
+
+  it('requires at least one weekday and 1× to 3× per day (Tage abwählen)', () => {
+    const home = (h: object) => parse({ ...sheet, home: [{ code: '2D', timesPerDay: 1, weekdays: 127, note: null, ...h }] });
+    expect(home({ timesPerDay: 3, weekdays: 64 }).success).toBe(true);
+    expect(sheetErrors(home({ weekdays: 0 }).error!)).toEqual({ 'home:2D': 'weekdayRequired' });
+    expect(home({ timesPerDay: 4 }).success).toBe(false);
+    expect(home({ timesPerDay: 0 }).success).toBe(false);
+    expect(home({ weekdays: 128 }).success).toBe(false);
   });
 
   it('accepts pain before and after in steps of 10 and rejects other values', () => {
@@ -209,11 +201,9 @@ describe('consultation schema', () => {
     expect(fieldErrors(bad.error!)).toEqual({ painBefore: 'pain' });
   });
 
-  it('rejects unknown scale values, seventh rolling rows and broken JSON', () => {
+  it('rejects unknown scale values and broken JSON', () => {
     const wrong = { ...sheet, points: [{ pointId: '1.1.1', left: true, right: false, sensitivity: 'HUGE' }] };
-    expect(consultationSchema.safeParse({ ...base, sheet: JSON.stringify(wrong) }).success).toBe(false);
-    const seven = { ...sheet, rolling: [{ position: 7, area: 'x', toolCode: null }] };
-    expect(consultationSchema.safeParse({ ...base, sheet: JSON.stringify(seven) }).success).toBe(false);
+    expect(parse(wrong).success).toBe(false);
     expect(fieldErrors(consultationSchema.safeParse({ ...base, sheet: '{' }).error!)).toEqual({ sheet: 'sheet' });
   });
 
@@ -221,6 +211,5 @@ describe('consultation schema', () => {
     expect([...PAIN_VALUES]).toEqual(scales.painPercent);
     expect([...SENSITIVITIES]).toEqual(scales.sensitivity.map((s) => s.code));
     expect([...DIFFICULTIES]).toEqual(scales.difficulty.map((s) => s.code));
-    expect(ROLLING_SLOTS).toBe(scales.rollingSlots);
   });
 });

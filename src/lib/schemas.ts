@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { parseLocalInput, parseSwissDate } from './format';
-import { DEFAULT_REPETITION, REPETITIONS } from './home-program';
+import { ALL_WEEKDAYS, DEFAULT_SCHEDULE, TIMES_PER_DAY } from './home-program';
 
 /**
  * Patient form schema, shared by client and server (design D1).
@@ -251,7 +251,8 @@ export const EMPTY_PATIENT: PatientFormValues = {
 export const PAIN_VALUES = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100] as const;
 export const SENSITIVITIES = ['LOW', 'MEDIUM', 'STRONG', 'EXTREME'] as const;
 export const DIFFICULTIES = ['EASY', 'MEDIUM', 'HARD', 'IMPOSSIBLE'] as const;
-export const ROLLING_SLOTS = 6;
+/** Körperseite of a treatment (iteration 8, design D4) */
+export const SIDES = ['UNSPECIFIED', 'LEFT', 'RIGHT'] as const;
 
 const isPain = (n: number) => (PAIN_VALUES as readonly number[]).includes(n);
 
@@ -309,11 +310,17 @@ export const treatmentSchema = z.object({
       }
       return n;
     }),
+  side: z
+    .string()
+    .optional()
+    .transform((v) => v?.trim() ?? '')
+    .transform((v) => (v === '' ? 'UNSPECIFIED' : v))
+    .pipe(z.enum(SIDES, { message: 'required' })),
   diagnosis: requiredText(2000),
   painStart: requiredPain,
 });
 export type TreatmentInput = z.output<typeof treatmentSchema>;
-export const TREATMENT_FIELDS = ['startedAt', 'regionId', 'diagnosis', 'painStart'] as const;
+export const TREATMENT_FIELDS = ['startedAt', 'regionId', 'side', 'diagnosis', 'painStart'] as const;
 
 const sheetText = (max: number) =>
   z
@@ -325,17 +332,21 @@ const sheetText = (max: number) =>
 
 const homeRow = z.object({
   code: z.string().min(1).max(10),
-  repetition: z.enum(REPETITIONS),
-  // home-program: Intensität 10 is never offered
-  intensity: z.number().int().min(1).max(9).nullable(),
-  steps: z.number().int().min(1).max(3).nullable(),
+  timesPerDay: z
+    .number()
+    .int()
+    .refine((n) => (TIMES_PER_DAY as readonly number[]).includes(n), { message: 'sheet' }),
+  // Bit mask Mo = 1 … So = 64; at least one day is checked below, per exercise
+  weekdays: z.number().int().min(0).max(ALL_WEEKDAYS),
   note: sheetText(300),
 });
 export type HomeRow = z.output<typeof homeRow>;
 
 /**
- * The digital Behandlungsbogen, sent by the consultation form as JSON. Empty rows are dropped. `home` is the block
- * "Selbstausführung" (iteration 3): exactly one row per prescribed exercise, "täglich 1x" where the form sent none.
+ * The digital Behandlungsbogen, sent by the session form as JSON. Empty rows are dropped. `home` is the block
+ * "Selbstausführung" (iteration 3, iteration 8 design D7): exactly one row per prescribed exercise, "1× pro Tag, alle
+ * Wochentage" where the form sent none; it takes the EPD (Standard or variant) of the prescribed exercise.
+ * Errors per exercise have the path ["exercises" | "home", code] (see sheetErrors).
  */
 export const sheetSchema = z
   .object({
@@ -355,50 +366,54 @@ export const sheetSchema = z
           code: z.string().min(1).max(10),
           prescribed: z.boolean(),
           difficulty: z.enum(DIFFICULTIES).nullable(),
-          variants: sheetText(500),
+          // EPD: null = Standardübung, otherwise the number of the variant (design D6)
+          variant: z.number().int().min(1).max(50).nullable(),
         }),
       )
       .max(100),
-    rolling: z
-      .array(
-        z.object({
-          position: z.number().int().min(1).max(ROLLING_SLOTS),
-          area: sheetText(200),
-          toolCode: z.string().min(1).max(10).nullable(),
-        }),
-      )
-      .max(ROLLING_SLOTS),
     home: z.array(homeRow).max(100).default([]),
   })
   .refine((s) => new Set(s.home.map((h) => h.code)).size === s.home.length, { message: 'sheet' })
   .transform((s) => {
-    const exercises = s.exercises.filter((x) => x.prescribed || x.difficulty || x.variants);
+    const exercises = s.exercises.filter((x) => x.prescribed || x.difficulty);
     const home = exercises
       .filter((x) => x.prescribed)
-      .map(
-        (x) =>
-          s.home.find((h) => h.code === x.code) ?? {
-            code: x.code,
-            repetition: DEFAULT_REPETITION,
-            intensity: null,
-            steps: null,
-            note: null,
-          },
-      );
+      .map((x) => {
+        const h = s.home.find((r) => r.code === x.code) ?? { code: x.code, ...DEFAULT_SCHEDULE, note: null };
+        return { ...h, variant: x.variant };
+      });
     return {
       points: s.points.filter((p) => p.left || p.right || p.sensitivity),
       exercises,
-      rolling: s.rolling.filter((r) => r.area || r.toolCode),
       home,
     };
   })
   .refine((s) => new Set(s.points.map((p) => p.pointId)).size === s.points.length, { message: 'sheet' })
   .refine((s) => new Set(s.exercises.map((x) => x.code)).size === s.exercises.length, { message: 'sheet' })
-  .refine((s) => new Set(s.rolling.map((r) => r.position)).size === s.rolling.length, { message: 'sheet' });
+  .superRefine((s, ctx) => {
+    // session-form: "Übung fällt" is required for every prescribed exercise
+    for (const x of s.exercises)
+      if (x.prescribed && !x.difficulty)
+        ctx.addIssue({ code: 'custom', path: ['exercises', x.code], message: 'difficultyRequired' });
+    // home-schedule: at least one weekday
+    for (const h of s.home)
+      if (!h.weekdays) ctx.addIssue({ code: 'custom', path: ['home', h.code], message: 'weekdayRequired' });
+  });
 export type Sheet = z.output<typeof sheetSchema>;
-export const EMPTY_SHEET: Sheet = { points: [], exercises: [], rolling: [], home: [] };
+export const EMPTY_SHEET: Sheet = { points: [], exercises: [], home: [] };
 
-/** consultations: Konsultation eröffnen / ändern */
+/** Errors of single exercises: { "exercises:1A": "difficultyRequired", "home:1A": "weekdayRequired" } */
+export function sheetErrors(error: z.ZodError): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const issue of error.issues) {
+    const [root, part, code] = issue.path;
+    if (root === 'sheet' && (part === 'exercises' || part === 'home') && typeof code === 'string')
+      out[`${part}:${code}`] ??= issue.message;
+  }
+  return out;
+}
+
+/** session-form: Sitzung eröffnen / ändern (model and routes keep the name "consultation") */
 export const consultationSchema = z.object({
   at: pastDateTime,
   diagnosis: requiredText(2000),
@@ -409,7 +424,7 @@ export const consultationSchema = z.object({
     .string()
     .transform((v, ctx) => {
       try {
-        return JSON.parse(v || '{"points":[],"exercises":[],"rolling":[],"home":[]}') as unknown;
+        return JSON.parse(v || '{"points":[],"exercises":[],"home":[]}') as unknown;
       } catch {
         ctx.addIssue({ code: 'custom', message: 'sheet' });
         return z.NEVER;
@@ -427,3 +442,13 @@ export function pickFields(fd: FormData, fields: readonly string[]): Record<stri
   }
   return obj;
 }
+
+// ---------- Iteration 8: user profile ----------
+
+export const TITLES = ['THERAPIST_F', 'THERAPIST_M'] as const;
+
+/** user-profile: "Mein Profil" (design D9) */
+export const profileSchema = z.object({
+  displayName: requiredText(40),
+  title: z.enum(TITLES, { message: 'required' }),
+});

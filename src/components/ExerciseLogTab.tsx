@@ -2,7 +2,7 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import { backfilled } from '@pain-therapy/shared/log-entry';
 import { formatDate, formatDateTime, formatDateZurich } from '@/lib/format';
 import { localName } from '@/lib/catalog';
-import { repetitionParts, type Repetition } from '@/lib/home-program';
+import { scheduleText } from '@/lib/home-program';
 import { zoneEnabled } from '@/lib/patient-access';
 import type { exerciseLogOf } from '@/lib/exercise-log';
 import { regionLabel } from '@/lib/catalog';
@@ -19,10 +19,6 @@ type Log = Awaited<ReturnType<typeof exerciseLogOf>>;
  */
 export async function ExerciseLogTab({ patientId, log, flash }: { patientId: string; log: Log; flash?: string }) {
   const [t, th, locale] = await Promise.all([getTranslations('exerciseLog'), getTranslations('home'), getLocale()]);
-  const rep = (r: Repetition) => {
-    const { daily, times } = repetitionParts(r);
-    return th(daily ? 'repDaily' : 'repWeekly', { n: times });
-  };
   const a = log.adherence;
   const program = log.program;
   const link = log.link;
@@ -99,7 +95,7 @@ export async function ExerciseLogTab({ patientId, log, flash }: { patientId: str
                             <td>
                               <b>{x.exerciseCode}</b> {localName(p.exercise, locale)}
                             </td>
-                            <td data-l={t('colRepetition')}>{rep(x.repetition)}</td>
+                            <td data-l={t('colRepetition')}>{scheduleText(x.schedule, th)}</td>
                             <td data-l={t('colRequired')} className="num">
                               {x.required}
                             </td>
