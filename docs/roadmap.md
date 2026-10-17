@@ -30,6 +30,14 @@ Patientenakte in der Patienten-Zone: Der Patientenmodus auf dem iPad ("An Patien
 
 Übungen vorlesen: Im Behandlungsbogen (Abschnitt "Engpassdehnungen") und im Katalog zeigt jede Übung ein kleines Hauptbild, das sich mit einem Klick gross in einem Fenster öffnet, und "Anhören", das die gesprochene Fassung des Übungsblatts abspielt. Die Aufnahmen erzeugt Azure AI Speech (Stufe F0, kostenlos) einmalig aus den digitalisierten Texten. Siehe `openspec/changes/iteration-7-exercise-audio`.
 
+## Iteration 8 (Spezifikation)
+
+Bereiche und Schmerzbereiche, Sitzung statt Konsultation, Übung als FRM + EPD (Standard oder Variante), Körperseite und Punkte pro Sitzung, Selbstausführung mit Wochentagen, Profil und Begriffe der Praxis. Siehe `openspec/changes/iteration-8-bereiche-sitzungen`.
+
+## Offen (to be defined)
+
+- **"Bilder NUR für den Patienten sichtbar machen":** Stichwort aus dem Gespräch mit Christina Franz (17.10.2026), noch ohne Spezifikation. Zu klären: welche Bilder (klinische Fotos oder Übungsbilder) und für wen sie sichtbar oder verborgen sein sollen.
+
 ## Später (noch nicht eingeplant)
 
 - **Schmerzbeschwerden:** bis zu 3 aktive Beschwerden pro Patient mit Ort, Qualität, Intensität, Tiefe, Verlauf, Körperschema, SZ-Geschichte, Zusammenhängen und SZ-Referenzen.
