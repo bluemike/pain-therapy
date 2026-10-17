@@ -6,6 +6,7 @@ import { localName } from '@/lib/catalog';
 import { exerciseDetail } from '@/lib/exercise-sheets';
 import { executionTime, formatMinutes } from '@/lib/home-program';
 import { ExerciseImage } from '@/components/ExerciseImage';
+import { ExerciseAudio } from '@/components/ExerciseAudio';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,6 +45,7 @@ export default async function ExercisePage({ params }: { params: Promise<{ code:
       <div className="exdet">
         <div>
           <ExerciseImage className="exmain" code={x.code} kind="main" alt={t('mainImage', { code: x.code })} />
+          {x.sheet ? <ExerciseAudio code={x.code} /> : null}
           <section className="card" aria-labelledby="h_timing">
             <h2 id="h_timing">{t('timing')}</h2>
             <dl className="kv">

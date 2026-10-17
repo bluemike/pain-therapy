@@ -563,7 +563,15 @@
     "mainImage": "Hauptbild {code}",
     "sheetImage": "Übungsblatt {code}",
     "notCaptured": "noch nicht erfasst",
-    "source": "Inhalte aus der L&B-Sammelmappe, nur für angemeldete Benutzer:innen."
+    "source": "Inhalte aus der L&B-Sammelmappe, nur für angemeldete Benutzer:innen.",
+    "openImage": "Bild von Übung {code} gross öffnen",
+    "close": "Schliessen",
+    "listen": "Anhören",
+    "stop": "Stopp",
+    "playAudio": "Übung {code} vorlesen",
+    "stopAudio": "Vorlesen von Übung {code} stoppen",
+    "audioMissing": "Audio nicht verfügbar",
+    "media": "Bild · Audio"
   },
   "handout": {
     "title": "Übungsblatt",

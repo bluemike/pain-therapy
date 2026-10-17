@@ -563,7 +563,15 @@
     "mainImage": "Main image {code}",
     "sheetImage": "Exercise sheet {code}",
     "notCaptured": "not yet captured",
-    "source": "Contents of the L&B Sammelmappe, for signed-in users only."
+    "source": "Contents of the L&B Sammelmappe, for signed-in users only.",
+    "openImage": "Open the image of exercise {code} in full size",
+    "close": "Close",
+    "listen": "Listen",
+    "stop": "Stop",
+    "playAudio": "Read exercise {code} aloud",
+    "stopAudio": "Stop reading exercise {code}",
+    "audioMissing": "Audio not available",
+    "media": "Image · audio"
   },
   "handout": {
     "title": "Exercise sheet",

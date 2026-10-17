@@ -238,6 +238,41 @@ Der Patientenmodus auf dem iPad ist entfernt; die Zone zeigt Behandlungen, Konsu
 
 **Rollback:** vorherige Revisionen beider Apps aktivieren. Die Migration ist datenseitig harmlos (nur abgebrochene, unvollständige iPad-Sitzungen); die zusätzlichen Leserechte der Rolle stören die alte Zone nicht.
 
+## Iteration 7 (Übungen vorlesen)
+
+Jede Engpassdehnung hat eine gesprochene Fassung ihres Übungsblatts. Die MP3s entstehen einmalig mit Azure AI Speech aus den digitalisierten Texten (`exercises-content.json`) und liegen wie die Bilder im privaten Container `exercise-media`, benannt wie das Hauptbild (`1A.jpg` → `1A.mp3`). Die App braucht dafür keinen neuen Parameter, kein Secret und keine Bicep-Änderung; der Speech-Dienst wird nur beim Erzeugen benutzt. Fehlt eine MP3, zeigt die App "Audio nicht verfügbar".
+
+### 1. Speech-Dienst anlegen (einmalig, kostenlos)
+
+```bash
+az cognitiveservices account create -n spch-pain-therapy -g rg-pain-therapy \
+  --kind SpeechServices --sku F0 -l switzerlandnorth --yes
+export AZURE_SPEECH_KEY=$(az cognitiveservices account keys list -n spch-pain-therapy -g rg-pain-therapy --query key1 -o tsv)
+```
+
+Stufe F0 ist gratis (500 000 Zeichen neuronale Stimmen pro Monat; alle 27 Blätter brauchen grob 40 000). Pro Abonnement und Region ist nur ein F0-Dienst möglich; gibt es schon einen, dessen Schlüssel verwenden. An den Dienst gehen nur die Texte von L&B, nie Patientendaten.
+
+### 2. MP3s erzeugen
+
+Im Repository auf dem Mac, mit dem Ordner, in dem `exercises-content.json` liegt:
+
+```bash
+npm run media:audio -- "<OneDrive>/pain-therapy/exercises/digitalisiert"
+```
+
+Standardstimme ist `de-CH-LeniNeural` (Hochdeutsch mit Schweizer Akzent); `--voice de-CH-JanNeural` wählt die männliche Stimme. Vorhandene MP3s bleiben, `--force` ersetzt sie, `--only 2A,2B` erzeugt nur einzelne Übungen (zum Beispiel nach einer Textkorrektur). Das Skript schreibt die MP3s in denselben Ordner.
+
+### 3. Hochladen
+
+Wie die Bilder in Iteration 3, Schritt 2:
+
+```bash
+az storage blob upload-batch --account-name <storageAccountName> --auth-mode login \
+  -d exercise-media -s "<OneDrive>/pain-therapy/exercises/digitalisiert" --pattern "*.mp3" --overwrite
+```
+
+Prüfen: *Katalog → Engpassdehnungen* zeigt bei jeder Übung "Anhören"; ein Klick spielt die Aufnahme. Ersetzte MP3s brauchen keinen Neustart (Browser-Cache höchstens eine Stunde).
+
 ## Nach dem Go-live
 
 - **Aufbewahrung sperren:** Die Retention-Policy des Containers `signed-documents` ist zunächst entsperrt, damit sie korrigiert werden kann. Nach der Abnahme sperren (nicht umkehrbar):

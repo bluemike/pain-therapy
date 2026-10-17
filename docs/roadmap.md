@@ -26,6 +26,10 @@ Haftungsausschluss in der Patienten-Zone: Einladung zur Unterschrift per E-Mail 
 
 Patientenakte in der Patienten-Zone: Der Patientenmodus auf dem iPad ("An Patient übergeben") ist entfernt, unterschrieben wird nur noch in der Zone. Die Zone zeigt mit den Reitern "Übungen", "Behandlungen" und "Dokumente" die Behandlungen und Konsultationen (nur lesend), die unterschriebenen Haftungsausschlüsse und die Übungsblätter als PDF. Die Patientin kann Ausführungen für vergangene Tage des aktuellen Heimprogramms nachtragen; die Praxis sieht sie als "nachgetragen". Der Link gilt neu auch ohne Heimprogramm, solange es eine Behandlung oder ein Dokument gibt (höchstens 6 Monate). Siehe `openspec/changes/iteration-6-zone-record`.
 
+## Iteration 7 (umgesetzt)
+
+Übungen vorlesen: Im Behandlungsbogen (Abschnitt "Engpassdehnungen") und im Katalog zeigt jede Übung ein kleines Hauptbild, das sich mit einem Klick gross in einem Fenster öffnet, und "Anhören", das die gesprochene Fassung des Übungsblatts abspielt. Die Aufnahmen erzeugt Azure AI Speech (Stufe F0, kostenlos) einmalig aus den digitalisierten Texten. Siehe `openspec/changes/iteration-7-exercise-audio`.
+
 ## Später (noch nicht eingeplant)
 
 - **Schmerzbeschwerden:** bis zu 3 aktive Beschwerden pro Patient mit Ort, Qualität, Intensität, Tiefe, Verlauf, Körperschema, SZ-Geschichte, Zusammenhängen und SZ-Referenzen.
@@ -33,6 +37,7 @@ Patientenakte in der Patienten-Zone: Der Patientenmodus auf dem iPad ("An Patien
 - **Behandlungsbogen als PDF** und Abschluss einer Behandlung.
 - **Erfolgsprotokoll und Verlauf:** Bewertungen nach Stunden, erster Nacht, Tag 1 und Tag 2, Verlauf pro Beschwerde, Hinweis ab der fünften Behandlung, neutrale Darstellung ohne Heilversprechen.
 - **Aufbewahrung und Datenschutz:** 20 Jahre nach der letzten Behandlung, Datenexport (JSON und PDF), Berichtigung und Bestreitungsvermerk.
+- **Übungen vorlesen in der Patienten-Zone** und Link auf die Aufnahmen im Übungsblatt (Iteration 7: nur in der Praxis-App).
 - **Patienten-Zone erweitern:** Erinnerungen an die Übungen und Erfolgsprotokoll der Patientin nach Stunden, erster Nacht, Tag 1 und Tag 2.
 - **Anamnese in der Patienten-Zone:** Fragebogen zur Anamnese vor dem ersten Termin, Personalien durch die Patientin ändern.
 - **Row-Level-Security** für die Rolle der Patienten-Zone.

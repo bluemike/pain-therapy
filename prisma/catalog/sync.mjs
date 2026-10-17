@@ -99,7 +99,7 @@ export function normalizeContent(entry, stepLabels = []) {
 }
 
 /** Entries of exercises-content.json by code: a list of { code, … }, { exercises: [...] } or { "1A": {…}, … } */
-function contentByCode(content) {
+export function contentByCode(content) {
   if (!content) return null;
   const list = Array.isArray(content)
     ? content
