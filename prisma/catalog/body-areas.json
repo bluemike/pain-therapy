@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "nameDe": "Kopf",
+    "nameEn": "Head"
+  },
+  {
+    "id": 2,
+    "nameDe": "Rumpf",
+    "nameEn": "Trunk"
+  },
+  {
+    "id": 3,
+    "nameDe": "Schulter/Arm",
+    "nameEn": "Shoulder/arm"
+  },
+  {
+    "id": 4,
+    "nameDe": "Becken/Beine",
+    "nameEn": "Pelvis/legs"
+  }
+]

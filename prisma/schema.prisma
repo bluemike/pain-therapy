@@ -70,17 +70,26 @@ enum EmailStatus {
   SKIPPED_NO_ADDRESS
 }
 
+/// Berufsbezeichnung (user-profile, iteration 8 design D9): "Therapeutin" or "Therapeut"
+enum ProfessionalTitle {
+  THERAPIST_F
+  THERAPIST_M
+}
+
 /// A signed-in Ayanta user. Created on first sign-in from the Entra ID token.
 model User {
-  id          String    @id @default(cuid())
-  entraOid    String    @unique
+  id          String            @id @default(cuid())
+  entraOid    String            @unique
   email       String
   name        String
+  /// "Hallo <displayName>"; first name from Entra until the user changes it under "Mein Profil"
+  displayName String?
+  title       ProfessionalTitle @default(THERAPIST_F)
   roles       Role[]
-  locale      Language  @default(de)
+  locale      Language          @default(de)
   place       String?
-  createdAt   DateTime  @default(now())
-  lastLoginAt DateTime  @default(now())
+  createdAt   DateTime          @default(now())
+  lastLoginAt DateTime          @default(now())
   /// Sessions issued before this time are rejected (sign-out, access-control)
   signedOutAt DateTime?
 }
@@ -279,9 +288,25 @@ enum PointEmphasis {
   standard
 }
 
-/// One of the 12 treatment areas (Behandlungsbögen) of the Sammelmappe
+/// Bereich (body-areas, iteration 8 design D1): 1 Kopf, 2 Rumpf, 3 Schulter/Arm, 4 Becken/Beine
+model BodyArea {
+  id        Int       @id
+  nameDe    String
+  nameEn    String
+  retiredAt DateTime?
+
+  regions   Region[]
+  points    OsteopressurePoint[]
+  exercises Exercise[]
+}
+
+/// Schmerzbereich: one of the 12 treatment areas (Behandlungsbögen) of the Sammelmappe, "1.1" to "4.3"
 model Region {
   id         Int       @id
+  /// "<Bereich>.<n>", e.g. "1.2"
+  code       String
+  bodyAreaId Int
+  bodyArea   BodyArea  @relation(fields: [bodyAreaId], references: [id])
   nameDe     String
   nameEn     String
   sheetTitle String
@@ -295,7 +320,9 @@ model Region {
 model OsteopressurePoint {
   /// e.g. "2.11.1"
   id                    String    @id
+  /// Bereich (iteration 8 design D1; formerly "Gruppe")
   group                 Int
+  bodyArea              BodyArea  @relation(fields: [group], references: [id])
   muscleAttachmentLatin String
   attachmentDe          String
   /// Order of the reference file (numeric by ID)
@@ -322,7 +349,9 @@ model RegionPoint {
 /// Engpassdehnung 1A to 4G
 model Exercise {
   code         String    @id
+  /// Bereich (iteration 8 design D1; formerly "Gruppe")
   group        Int
+  bodyArea     BodyArea  @relation(fields: [group], references: [id])
   nameDe       String
   nameEn       String
   stretchSteps Int?
@@ -338,6 +367,23 @@ model Exercise {
   consultations ConsultationExercise[]
   sheet         ExerciseSheet?
   prescriptions HomePrescription[]
+  epdVariants   ExerciseVariant[]
+}
+
+/// Variante der Engpassdehnung (exercise-segments, iteration 8 design D2). Texts in ExerciseSheet.segments.
+model ExerciseVariant {
+  exerciseCode String
+  exercise     Exercise  @relation(fields: [exerciseCode], references: [code])
+  /// 1…n per exercise
+  number       Int
+  /// Numbers of the images in the variant band, e.g. [1, 2]
+  images       Int[]
+  aids         String[]
+  /// null: same as the standard exercise
+  seconds      Int?
+  retiredAt    DateTime?
+
+  @@id([exerciseCode, number])
 }
 
 model RegionExercise {
@@ -358,8 +404,6 @@ model RollingTool {
   nameEn    String
   sort      Int
   retiredAt DateTime?
-
-  consultations ConsultationRolling[]
 }
 
 // ---------- Treatments and consultations (design D1, D4) ----------
@@ -379,6 +423,13 @@ enum Difficulty {
   IMPOSSIBLE
 }
 
+/// Körperseite of a treatment (session-form, iteration 8 design D4)
+enum Side {
+  UNSPECIFIED
+  LEFT
+  RIGHT
+}
+
 /// One treatment per pain area; never deleted (database trigger)
 model Treatment {
   id        String   @id @default(cuid())
@@ -387,6 +438,9 @@ model Treatment {
   startedAt DateTime
   regionId  Int
   region    Region   @relation(fields: [regionId], references: [id])
+  /// Fixed after the first session, like the pain area
+  side      Side     @default(UNSPECIFIED)
+  /// "Schmerzlokalisation und Schmerzzustand" (iteration 8 design D10)
   diagnosis String
   /// Pain at the start in percent, 0 to 100 in steps of 10
   painStart Int
@@ -421,7 +475,6 @@ model Consultation {
 
   points    ConsultationPoint[]
   exercises ConsultationExercise[]
-  rolling   ConsultationRolling[]
   photos    ClinicalPhoto[]
   home      HomePrescription[]
   handouts  ExerciseHandout[]
@@ -447,23 +500,14 @@ model ConsultationExercise {
   consultation   Consultation @relation(fields: [consultationId], references: [id])
   exerciseCode   String
   exercise       Exercise     @relation(fields: [exerciseCode], references: [code])
+  /// Prescribed = performed in the session and part of the home program (iteration 8 design D6)
   prescribed     Boolean      @default(false)
+  /// Required when prescribed
   difficulty     Difficulty?
-  variants       String?
+  /// EPD: null = Standardübung, otherwise the number of the ExerciseVariant
+  variant        Int?
 
   @@id([consultationId, exerciseCode])
-}
-
-/// Fascia rolling row 1 to 6
-model ConsultationRolling {
-  consultationId String
-  consultation   Consultation @relation(fields: [consultationId], references: [id])
-  position       Int
-  area           String?
-  toolCode       String?
-  tool           RollingTool? @relation(fields: [toolCode], references: [code])
-
-  @@id([consultationId, position])
 }
 
 // ---------- Clinical photos (clinical-photos, design D5, D6) ----------
@@ -517,36 +561,29 @@ model ExerciseSheet {
   timingTodo            Json?
   /// { rolling, steps: [{ label, text }], variants } from the container; null while "noch nicht erfasst"
   content               Json?
+  /// FRM tools (iteration 8 design D2), e.g. ["MiKu", "MiRo"]
+  rollingTools          String[]  @default([])
+  /// Aids of the EPD standard exercise, e.g. ["Wand"]
+  standardAids          String[]  @default([])
+  /// FRM, Standardübung and Varianten from segments-content.json in the container; null while "noch nicht erfasst"
+  segments              Json?
   retiredAt             DateTime?
 }
 
 // ---------- Home program and exercise handout (home-program, exercise-handout, design D4 to D6) ----------
 
-/// "täglich 1x" to "täglich 3x" and "wöchentlich 1x" to "wöchentlich 7x"
-enum Repetition {
-  DAILY_1
-  DAILY_2
-  DAILY_3
-  WEEKLY_1
-  WEEKLY_2
-  WEEKLY_3
-  WEEKLY_4
-  WEEKLY_5
-  WEEKLY_6
-  WEEKLY_7
-}
-
-/// Selbstausführung: one row per exercise prescribed in a consultation. Replaced with the form, like the sheet rows.
+/// Selbstausführung: one row per exercise prescribed in a session, always FRM + the chosen EPD (iteration 8 design D7)
 model HomePrescription {
   consultationId String
   consultation   Consultation @relation(fields: [consultationId], references: [id])
   exerciseCode   String
   exercise       Exercise     @relation(fields: [exerciseCode], references: [code])
-  repetition     Repetition   @default(DAILY_1)
-  /// 1 to 9; the intensity must stay below 10
-  intensity      Int?
-  /// Steps 1 to n (1, 1-2, 1-3)
-  steps          Int?
+  /// Copy of ConsultationExercise.variant: null = EPD Standard
+  variant        Int?
+  /// 1 to 3 executions per day
+  timesPerDay    Int          @default(1)
+  /// Bit mask Mo = 1, Di = 2 … So = 64; 127 = every day, at least one day
+  weekdays       Int          @default(127)
   note           String?
 
   logEntries ExerciseLogEntry[]
