@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { requireUser } from '@/lib/session';
-import { catalogView, localName, type RollingStep, type Variant } from '@/lib/catalog';
+import { catalogView, localName } from '@/lib/catalog';
 import { timingOf } from '@/lib/exercise-sheets';
 import { executionTime, formatMinutes } from '@/lib/home-program';
 import { ExercisePreview } from '@/components/ExercisePreview';
@@ -12,8 +12,9 @@ export const dynamic = 'force-dynamic';
 type Tab = 'regions' | 'points' | 'exercises' | 'tools';
 
 /**
- * therapy-catalog: Katalog ansehen. Read-only for both roles (design D8): no form posts anything here; the region
- * filter is a plain GET form. Retired entries are not shown.
+ * therapy-catalog: "L&B Basisdaten" (iteration 8, design D1, D10). Read-only for both roles (iteration 2, design D8):
+ * no form posts anything here; the filter is a plain GET form. The Schmerzbereiche are shown in their 4 Bereiche.
+ * Retired entries are not shown.
  */
 export default async function CatalogPage({
   searchParams,
@@ -34,12 +35,16 @@ export default async function CatalogPage({
   ];
   const regionId = Number(sp.region) || null;
   const region = c.regions.find((r) => r.id === regionId) ?? null;
+  const code = (regionId: number) => c.regions.find((r) => r.id === regionId)?.code ?? String(regionId);
   const regionsOfPoint = (id: string) =>
     c.regionPoints
       .filter((x) => x.pointId === id)
-      .map((x) => x.regionId)
+      .map((x) => code(x.regionId))
       .join(', ');
-  const groupName = (g: number) => (g >= 1 && g <= 4 ? t(`group${g}` as 'group1') : String(g));
+  const areaName = (g: number) => {
+    const a = c.areas.find((x) => x.id === g);
+    return a ? `${a.id} ${localName(a, locale)}` : String(g);
+  };
   const points = region
     ? c.regionPoints
         .filter((x) => x.regionId === region.id)
@@ -87,33 +92,43 @@ export default async function CatalogPage({
                   <th scope="col">{t('colExercises')}</th>
                 </tr>
               </thead>
-              <tbody>
-                {c.regions.map((r) => {
-                  const rp = c.regionPoints.filter((x) => x.regionId === r.id);
-                  return (
-                    <tr key={r.id}>
-                      <td className="pid num">{r.id}</td>
-                      <td>
-                        <Link href={`/catalog?tab=points&region=${r.id}`}>{localName(r, locale)}</Link>
-                      </td>
-                      <td className="hide-sm">{other(r)}</td>
-                      <td className="num">{rp.length}</td>
-                      <td className="num">
-                        {rp
-                          .filter((x) => x.emphasis === 'main')
-                          .map((x) => x.pointId)
-                          .join(', ')}
-                      </td>
-                      <td>
-                        {c.regionExercises
-                          .filter((x) => x.regionId === r.id)
-                          .map((x) => x.exerciseCode)
-                          .join(', ')}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
+              {c.areas.map((a) => (
+                <tbody key={a.id}>
+                  <tr className="grouprow">
+                    <th scope="rowgroup" colSpan={6}>
+                      {areaName(a.id)}
+                      <small className="muted"> · {other(a)}</small>
+                    </th>
+                  </tr>
+                  {c.regions
+                    .filter((r) => r.bodyAreaId === a.id)
+                    .map((r) => {
+                      const rp = c.regionPoints.filter((x) => x.regionId === r.id);
+                      return (
+                        <tr key={r.id}>
+                          <td className="pid num">{r.code}</td>
+                          <td>
+                            <Link href={`/catalog?tab=points&region=${r.id}`}>{localName(r, locale)}</Link>
+                          </td>
+                          <td className="hide-sm">{other(r)}</td>
+                          <td className="num">{rp.length}</td>
+                          <td className="num">
+                            {rp
+                              .filter((x) => x.emphasis === 'main')
+                              .map((x) => x.pointId)
+                              .join(', ')}
+                          </td>
+                          <td>
+                            {c.regionExercises
+                              .filter((x) => x.regionId === r.id)
+                              .map((x) => x.exerciseCode)
+                              .join(', ')}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              ))}
             </table>
           </div>
         </section>
@@ -127,10 +142,16 @@ export default async function CatalogPage({
               <label htmlFor="c_region">{t('filterRegion')}</label>
               <select id="c_region" name="region" className="inp" defaultValue={region ? String(region.id) : ''}>
                 <option value="">{t('allRegions')}</option>
-                {c.regions.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.id} · {localName(r, locale)}
-                  </option>
+                {c.areas.map((a) => (
+                  <optgroup key={a.id} label={areaName(a.id)}>
+                    {c.regions
+                      .filter((r) => r.bodyAreaId === a.id)
+                      .map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.code} · {localName(r, locale)}
+                        </option>
+                      ))}
+                  </optgroup>
                 ))}
               </select>
               <button className="btn btn--ghost">{t('show')}</button>
@@ -161,7 +182,7 @@ export default async function CatalogPage({
                       {p.emphasis === 'relevant' ? <span className="sr-only"> ({tc('legendRelevant')})</span> : null}
                       <small>{p.attachmentDe}</small>
                     </td>
-                    <td>{groupName(p.group)}</td>
+                    <td>{areaName(p.group)}</td>
                     <td className="num">{regionsOfPoint(p.id)}</td>
                   </tr>
                 ))}
@@ -180,6 +201,7 @@ export default async function CatalogPage({
                   <th scope="col">{t('colCode')}</th>
                   <th scope="col">{t('colExercise')}</th>
                   <th scope="col">{te('media')}</th>
+                  <th scope="col">{t('colGroup')}</th>
                   <th scope="col">{t('colRegions')}</th>
                   <th scope="col">{t('colTiming')}</th>
                   <th scope="col">{t('colRolling')}</th>
@@ -188,8 +210,6 @@ export default async function CatalogPage({
               </thead>
               <tbody>
                 {c.exercises.map((x) => {
-                  const rolling = x.rolling as RollingStep[] | null;
-                  const variants = x.variants as Variant[] | null;
                   const timing = timingOf(x.sheet);
                   const e = executionTime(timing);
                   return (
@@ -211,10 +231,11 @@ export default async function CatalogPage({
                           '–'
                         )}
                       </td>
+                      <td>{areaName(x.group)}</td>
                       <td className="num">
                         {c.regionExercises
                           .filter((r) => r.exerciseCode === x.code)
-                          .map((r) => r.regionId)
+                          .map((r) => code(r.regionId))
                           .join(', ')}
                       </td>
                       <td className="num">
@@ -222,15 +243,18 @@ export default async function CatalogPage({
                         {timing && e.stretchMissing ? <small className="todo"> · {te('stretchNotSet')}</small> : null}
                       </td>
                       <td>
-                        {rolling
-                          ? rolling.map((r) => (
-                              <div key={r.order}>
-                                <b>{r.toolCode}</b>: {r.areaDe}
-                              </div>
+                        {x.sheet?.rollingTools.length
+                          ? x.sheet.rollingTools.map((code, i) => (
+                              <span key={code}>
+                                {i ? ', ' : ''}
+                                <Link href="/catalog?tab=tools">{code}</Link>
+                              </span>
                             ))
                           : todo}
                       </td>
-                      <td>{variants ? variants.map((v) => <div key={v.order}>{v.de}</div>) : todo}</td>
+                      <td className="num">
+                        {x.epdVariants.length ? t('variantCount', { count: x.epdVariants.length }) : '–'}
+                      </td>
                     </tr>
                   );
                 })}

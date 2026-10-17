@@ -30,9 +30,9 @@ Patientenakte in der Patienten-Zone: Der Patientenmodus auf dem iPad ("An Patien
 
 Übungen vorlesen: Im Behandlungsbogen (Abschnitt "Engpassdehnungen") und im Katalog zeigt jede Übung ein kleines Hauptbild, das sich mit einem Klick gross in einem Fenster öffnet, und "Anhören", das die gesprochene Fassung des Übungsblatts abspielt. Die Aufnahmen erzeugt Azure AI Speech (Stufe F0, kostenlos) einmalig aus den digitalisierten Texten. Siehe `openspec/changes/iteration-7-exercise-audio`.
 
-## Iteration 8 (Spezifikation)
+## Iteration 8 (umgesetzt, Abnahme offen)
 
-Bereiche und Schmerzbereiche, Sitzung statt Konsultation, Übung als FRM + EPD (Standard oder Variante), Körperseite und Punkte pro Sitzung, Selbstausführung mit Wochentagen, Profil und Begriffe der Praxis. Siehe `openspec/changes/iteration-8-bereiche-sitzungen`.
+Bereiche und Schmerzbereiche (4 × 3, "L&B Basisdaten"), Sitzung statt Konsultation, Übung als FRM + EPD (Standard oder Variante) mit Bildband und Audio je Teil, Körperseite und Punkte pro Sitzung, Pflichtfeld "Übung fällt", Selbstausführung pro Tag und Wochentage, "Mein Profil" mit Begrüssung einmal nach dem Anmelden. Siehe `openspec/changes/iteration-8-bereiche-sitzungen`.
 
 ## Offen (to be defined)
 

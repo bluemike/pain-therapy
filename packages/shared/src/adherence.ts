@@ -1,9 +1,10 @@
-import { perWeek, repetitionParts, type Repetition } from './home-program';
-import { addDays, DAY_MS, dayKey, daysBetween, weekKey } from './time';
+import { scheduledOn, type Schedule } from './home-program';
+import { addDays, dayKey, daysBetween, weekKey } from './time';
 
 /**
  * adherence-overview: Berechnung der Einhaltung (iteration 4, design D9). Pure functions, used by the practice app
- * (Kachel "Heimprogramm", Reiter "Übungstagebuch") and the patient zone (Stand "heute" und "diese Woche").
+ * (Kachel "Heimprogramm", Reiter "Übungstagebuch") and the patient zone (Stand "heute"). Since iteration 8 (design
+ * D8) only the selected weekdays count: Soll = selected days × executions per day.
  */
 
 /** Hinweise (confirmed by the practice on 14.10.2026) */
@@ -12,7 +13,7 @@ export const LOW_ADHERENCE_FROM_DAY = 3;
 export const NO_ENTRY_DAYS = 3;
 export const WINDOW_DAYS = 7;
 
-export type AdherencePrescription = { exerciseCode: string; repetition: Repetition };
+export type AdherencePrescription = { exerciseCode: string; schedule: Schedule };
 export type AdherenceEntry = {
   exerciseCode: string;
   performedAt: Date;
@@ -24,14 +25,22 @@ export type Flag = 'lowAdherence' | 'noEntry';
 
 const percent = (done: number, required: number) => (required > 0 ? Math.round((100 * done) / required) : null);
 
+/** Selected days from the day key `from` to `to` (both included) */
+export function scheduledDays(schedule: Pick<Schedule, 'weekdays'>, from: string, to: string): number {
+  let n = 0;
+  for (let d = from; d <= to; d = addDays(d, 1)) if (scheduledOn(schedule, d)) n++;
+  return n;
+}
+
 /**
- * Soll of the last 7 days: täglich n× = 7n, wöchentlich n× = n. Younger prescriptions are prorated by the days since
- * the consultation / 7, rounded up (at least one day, so the day of the consultation already counts).
+ * Soll of the last 7 days (today and the 6 days before, from the day of the session at the earliest): selected
+ * weekdays in that window × executions per day.
  */
-export function required(repetition: Repetition, daysSinceConsultation: number): number {
-  const week = perWeek(repetition);
-  if (daysSinceConsultation >= WINDOW_DAYS) return week;
-  return Math.ceil((week * Math.max(1, daysSinceConsultation)) / WINDOW_DAYS);
+export function required(schedule: Schedule, consultationAt: Date, now = new Date()): number {
+  const today = dayKey(now);
+  const windowStart = addDays(today, -(WINDOW_DAYS - 1));
+  const start = dayKey(consultationAt);
+  return scheduledDays(schedule, start > windowStart ? start : windowStart, today) * schedule.timesPerDay;
 }
 
 const average = (values: number[]) =>
@@ -49,17 +58,19 @@ export function adherence(
 ) {
   const live = entries.filter((e) => !e.deletedAt && e.performedAt.getTime() <= now.getTime());
   const days = daysBetween(consultationAt, now);
-  const windowStart = now.getTime() - WINDOW_DAYS * DAY_MS;
-  const inWindow = live.filter((e) => e.performedAt.getTime() > windowStart);
+  const today = dayKey(now);
+  // The same 7 calendar days as the Soll: today and the 6 days before
+  const windowStart = addDays(today, -(WINDOW_DAYS - 1));
+  const inWindow = live.filter((e) => dayKey(e.performedAt) >= windowStart);
   const perExercise = prescriptions.map((p) => {
     const mine = live.filter((e) => e.exerciseCode === p.exerciseCode);
     const recent = inWindow.filter((e) => e.exerciseCode === p.exerciseCode);
-    const req = required(p.repetition, days);
+    const req = required(p.schedule, consultationAt, now);
     const done = Math.min(req, recent.filter((e) => e.done).length);
     const last = mine.reduce<Date | null>((a, e) => (!a || e.performedAt > a ? e.performedAt : a), null);
     return {
       exerciseCode: p.exerciseCode,
-      repetition: p.repetition,
+      schedule: p.schedule,
       required: req,
       done,
       percent: percent(done, req),
@@ -79,8 +90,12 @@ export function adherence(
   const flags: Flag[] = [];
   if (total.percent !== null && total.percent < LOW_ADHERENCE_PERCENT && days >= LOW_ADHERENCE_FROM_DAY)
     flags.push('lowAdherence');
-  const since = lastEntryAt ?? consultationAt;
-  if (now.getTime() - since.getTime() >= NO_ENTRY_DAYS * DAY_MS) flags.push('noEntry');
+  // "3 Tage ohne Eintrag": selected days of any prescription after the day of the last entry (or of the session)
+  const since = dayKey(lastEntryAt ?? consultationAt);
+  let missed = 0;
+  for (let d = addDays(since, 1); d <= today; d = addDays(d, 1))
+    if (prescriptions.some((p) => scheduledOn(p.schedule, d))) missed++;
+  if (missed >= NO_ENTRY_DAYS) flags.push('noEntry');
   return {
     daysSinceConsultation: days,
     perExercise,
@@ -110,11 +125,10 @@ export function weeklyTrend(
     const from = week < startDay ? startDay : week;
     const lastDay = addDays(week, 6);
     const to = lastDay > today ? today : lastDay;
-    const days = Math.round((Date.parse(to) - Date.parse(from)) / DAY_MS) + 1;
     let req = 0;
     let done = 0;
     for (const p of prescriptions) {
-      const r = Math.ceil((perWeek(p.repetition) * days) / WINDOW_DAYS);
+      const r = scheduledDays(p.schedule, from, to) * p.schedule.timesPerDay;
       const n = entries.filter(
         (e) =>
           e.exerciseCode === p.exerciseCode &&
@@ -132,29 +146,23 @@ export function weeklyTrend(
 }
 
 /**
- * Stand in the patient zone: daily exercises count today's executions ("heute 1 von 2"), weekly exercises those of
- * the current calendar week ("diese Woche 3 von 5").
+ * Stand in the patient zone: today's executions ("heute 1 von 2"). On a day that is not selected the target is 0 and
+ * the exercise is not open; an entry is still possible and counts (iteration 8, design D8).
  */
 export function progress(p: AdherencePrescription, entries: AdherenceEntry[], now = new Date()) {
-  const { daily, times } = repetitionParts(p.repetition);
   const today = dayKey(now);
-  const week = weekKey(now);
+  const scheduledToday = scheduledOn(p.schedule, today);
+  const target = scheduledToday ? p.schedule.timesPerDay : 0;
   const done = entries.filter(
-    (e) =>
-      e.exerciseCode === p.exerciseCode &&
-      e.done &&
-      !e.deletedAt &&
-      (daily ? dayKey(e.performedAt) === today : weekKey(e.performedAt) === week),
+    (e) => e.exerciseCode === p.exerciseCode && e.done && !e.deletedAt && dayKey(e.performedAt) === today,
   ).length;
-  return { period: daily ? ('today' as const) : ('week' as const), done, target: times, complete: done >= times };
+  return { done, target, scheduledToday, complete: done >= target };
 }
 
-/** "Alle heutigen Übungen erledigt": open executions of today per daily exercise */
+/** "Alle heutigen Übungen erledigt": open executions of today per exercise selected for today */
 export function openToday(prescriptions: AdherencePrescription[], entries: AdherenceEntry[], now = new Date()) {
   return prescriptions.flatMap((p) => {
     const pr = progress(p, entries, now);
-    return pr.period === 'today' && pr.done < pr.target
-      ? [{ exerciseCode: p.exerciseCode, count: pr.target - pr.done }]
-      : [];
+    return pr.done < pr.target ? [{ exerciseCode: p.exerciseCode, count: pr.target - pr.done }] : [];
   });
 }

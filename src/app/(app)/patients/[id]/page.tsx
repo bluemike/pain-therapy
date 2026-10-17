@@ -7,7 +7,7 @@ import { historyOf, viewPatient } from '@/lib/patients';
 import { treatmentsOf } from '@/lib/treatments';
 import { listRegions, regionLabel } from '@/lib/catalog';
 import { ageOn, formatDate, formatDateTime, formatPercent } from '@/lib/format';
-import { repetitionParts, stepsLabel, type Repetition } from '@/lib/home-program';
+import { weekdaysOf } from '@/lib/home-program';
 import { ConsentPill, StatusPill } from '@/components/Pills';
 import { PlusIcon } from '@/components/Icons';
 import { DeactivateDialog } from '@/components/DeactivateDialog';
@@ -461,7 +461,7 @@ async function Treatments({
                 <div className="meta num">
                   {t('opened', { at: formatDateTime(tr.startedAt) })} ·{' '}
                   {t('painStart', { pain: formatPercent(tr.painStart) })} ·{' '}
-                  {t('photoCount', { count: tr.photos.length })}
+                  {t('sideLine', { side: t(`side_${tr.side}`) })} · {t('photoCount', { count: tr.photos.length })}
                 </div>
                 <div className="diag">{t('diagnosisLine', { text: tr.diagnosis })}</div>
               </div>
@@ -505,7 +505,6 @@ async function Treatments({
                         {[
                           c._count.points ? t('points', { count: c._count.points }) : null,
                           c._count.exercises ? t('exercises', { count: c._count.exercises }) : null,
-                          c._count.rolling ? t('rolling', { count: c._count.rolling }) : null,
                           c._count.photos ? t('photoCount', { count: c._count.photos }) : null,
                         ]
                           .filter(Boolean)
@@ -680,6 +679,7 @@ function sheetFieldLabel(th: T, field: string | null): string {
   const key: Record<string, string> = {
     startedAt: 'fStartedAt',
     regionId: 'fRegionId',
+    side: 'fSide',
     diagnosis: 'fDiagnosis',
     painStart: 'fPainStart',
     at: 'fAt',
@@ -691,12 +691,9 @@ function sheetFieldLabel(th: T, field: string | null): string {
     'point:sensitivity': 'fPointSensitivity',
     'exercise:prescribed': 'fExercisePrescribed',
     'exercise:difficulty': 'fExerciseDifficulty',
-    'exercise:variants': 'fExerciseVariants',
-    'rolling:area': 'fRollingArea',
-    'rolling:tool': 'fRollingTool',
-    'home:repetition': 'fHomeRepetition',
-    'home:intensity': 'fHomeIntensity',
-    'home:steps': 'fHomeSteps',
+    'exercise:variant': 'fExerciseVariant',
+    'home:timesPerDay': 'fHomeTimesPerDay',
+    'home:weekdays': 'fHomeWeekdays',
     'home:note': 'fHomeNote',
   };
   const k = key[sub ? `${kind}:${sub}` : kind];
@@ -708,7 +705,7 @@ async function History({
   regions,
 }: {
   events: AuditEvent[];
-  regions: { id: number; nameDe: string; nameEn: string }[];
+  regions: { id: number; code: string; nameDe: string; nameEn: string }[];
 }) {
   const t = await getTranslations('history');
   const tf = await getTranslations('form');
@@ -818,11 +815,13 @@ async function History({
     if (v === 'true') return '✓';
     if (v === 'false') return '–';
     if (v && /^(LOW|MEDIUM|STRONG|EXTREME|EASY|HARD|IMPOSSIBLE)$/.test(v)) return ts(v as 'LOW');
-    if (v && /^(DAILY|WEEKLY)_\d$/.test(v)) {
-      const { daily, times } = repetitionParts(v as Repetition);
-      return th(daily ? 'repDaily' : 'repWeekly', { n: times });
-    }
-    if (v && /^home:.*:steps$/.test(e.field ?? '')) return stepsLabel(Number(v));
+    if (v && e.field === 'side') return t(`side_${v}` as 'side_LEFT');
+    if (v && /^exercise:.*:variant$/.test(e.field ?? '')) return t('variantN', { n: v });
+    if (v && /^home:.*:timesPerDay$/.test(e.field ?? '')) return th('timesPerDayN', { n: v });
+    if (v && /^home:.*:weekdays$/.test(e.field ?? ''))
+      return weekdaysOf(Number(v))
+        .map((d) => th(`short_${d}`))
+        .join(' ');
     if (v && /^(painStart|painBefore|painAfter)$/.test(e.field ?? '')) return `${v} %`;
     if (v && e.field === 'regionId') {
       const r = regions.find((x) => String(x.id) === v);

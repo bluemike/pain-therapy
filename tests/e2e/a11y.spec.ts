@@ -49,8 +49,8 @@ test('app pages and the patient signing page', async ({ page }) => {
   await expectNoViolations(page, 'invitation dialog');
 });
 
-/** Iteration 2, task 5.2: record with treatments, treatment form, consultation and catalog */
-test('treatments, consultation and catalog', async ({ page }) => {
+/** Iteration 2, task 5.2: record with treatments, treatment form, session and catalog (iteration 8: profile) */
+test('treatments, session and catalog', async ({ page }) => {
   // Twelve axe passes, since iteration 7 with preview and audio for every exercise; close to 30 s on slow runners
   test.setTimeout(60_000);
   await login(page);
@@ -69,19 +69,28 @@ test('treatments, consultation and catalog', async ({ page }) => {
   await expectNoViolations(page, 'new treatment with photo preview');
   await page.getByRole('button', { name: 'Behandlung eröffnen' }).click();
   await expect(page.getByText('Behandlung eröffnet.')).toBeVisible();
-  await page.locator('section.treat').first().getByRole('link', { name: 'Konsultation', exact: true }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Konsultation Nr. 1' })).toBeVisible();
+  await page.locator('section.treat').first().getByRole('link', { name: 'Sitzung', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Sitzung Nr. 1' })).toBeVisible();
+  await page.getByTestId('point-filter').selectOption('all');
   await page
     .getByRole('group', { name: 'Empfindlichkeit Punkt 2.11.1' })
     .getByRole('button', { name: 'stark' })
     .click();
   await page.getByRole('button', { name: 'Punkt aus anderem Bereich' }).click();
-  await expectNoViolations(page, 'consultation');
-  await page.getByRole('button', { name: 'Konsultation speichern' }).click();
-  await expect(page.getByText('Konsultation Nr. 1 gespeichert.')).toBeVisible();
-  await expectNoViolations(page, 'record with treatment and consultation');
+  await expectNoViolations(page, 'session');
+  // "Übung fällt" missing on a prescribed exercise
+  await page.getByLabel('Übung 2D verordnet').check();
+  await page.getByRole('button', { name: 'Sitzung speichern' }).click();
+  await expect(page.locator('section[aria-labelledby="h_ex"] tr.bad')).toHaveCount(1);
+  await expectNoViolations(page, 'session with errors');
+  await page.getByLabel('Übung 2D verordnet').uncheck();
+  await page.getByRole('button', { name: 'Sitzung speichern' }).click();
+  await expect(page.getByText('Sitzung Nr. 1 gespeichert.')).toBeVisible();
+  await expectNoViolations(page, 'record with treatment and session');
   await page.locator('.conslist a').first().click();
-  await expectNoViolations(page, 'saved consultation');
+  await expectNoViolations(page, 'saved session');
+  await page.goto('/profile');
+  await expectNoViolations(page, 'profile');
   for (const tab of ['', '?tab=points&region=6', '?tab=points', '?tab=exercises', '?tab=tools']) {
     await page.goto(`/catalog${tab}`);
     await expectNoViolations(page, `catalog ${tab || 'regions'}`);
@@ -98,16 +107,17 @@ test('home exercises, exercise sheet and catalog exercise', async ({ page }) => 
   await page.locator('#f_diagnosis').fill('Lumbalgie');
   await page.getByRole('button', { name: 'Behandlung eröffnen' }).click();
   await expect(page.getByText('Behandlung eröffnet.')).toBeVisible();
-  await page.locator('section.treat').first().getByRole('link', { name: 'Konsultation', exact: true }).click();
+  await page.locator('section.treat').first().getByRole('link', { name: 'Sitzung', exact: true }).click();
   await page.getByLabel('Übung 2A verordnet').check();
   await page.getByLabel('Übung 2C verordnet').check();
-  await page
-    .getByRole('group', { name: 'Wiederholung 2A wöchentlich', exact: true })
-    .getByRole('button', { name: '3x' })
-    .click();
-  await page.locator('section[aria-labelledby="h_home"]').getByRole('button', { name: '+ Übung hinzufügen' }).click();
-  await expectNoViolations(page, 'consultation with home exercises');
-  await page.getByRole('button', { name: 'Konsultation speichern' }).click();
+  await page.getByLabel('Übung 2C: EPD').selectOption({ index: 1 });
+  const group = (name: string) => page.getByRole('group', { name, exact: true });
+  await group('Übung 2A: pro Tag').getByRole('button', { name: '3×' }).click();
+  await group('Übung 2A: Wochentage').getByRole('button', { name: 'Sonntag' }).click();
+  for (const code of ['2A', '2C'])
+    await group(`Übung ${code}: Übung fällt`).getByRole('button', { name: 'mittel' }).click();
+  await expectNoViolations(page, 'session with home exercises');
+  await page.getByRole('button', { name: 'Sitzung speichern' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Übungsblatt' })).toBeVisible();
   await expectNoViolations(page, 'Abschluss');
   await page.getByRole('button', { name: 'Übungsblatt senden' }).click();

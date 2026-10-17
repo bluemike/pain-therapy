@@ -49,6 +49,7 @@ Nach einem Gespräch mit Christina Franz (Stichworte vom 17.10.2026) und der Neu
 - Audio in der Patienten-Zone. Die Aufnahmen pro FRM, EPD und Variante liegen bereit.
 - Eigene Bildausschnitte pro Variante. Das Variantenband zeigt alle Varianten; die Nummern im Bild sagen, welche gemeint ist.
 - Benutzerverwaltung durch Admins. Jede Person pflegt nur ihr eigenes Profil.
+- "Bilder NUR für den Patienten sichtbar machen" (Stichwort vom 17.10.2026): to be defined, noch ohne Spezifikation; siehe docs/roadmap.md.
 
 ## Capabilities
 

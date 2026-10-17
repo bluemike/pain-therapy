@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { getFormatter, getTranslations } from 'next-intl/server';
-import { repetitionParts } from '@pain-therapy/shared/home-program';
+import { scheduleParts } from '@pain-therapy/shared/home-program';
 import { chosenDay, dayReference } from '@pain-therapy/shared/log-entry';
 import { PROGRAM_ACTIVE_WEEKS } from '@pain-therapy/shared/program';
 import { addDays, dayKey, fromZurichInputs, zurichInputs } from '@pain-therapy/shared/time';
@@ -64,9 +64,9 @@ export default async function Home({
       : long(day.day);
   const until = new Date(s.program.consultationAt.getTime() + PROGRAM_ACTIVE_WEEKS * 7 * 86400_000);
   const tagField = day.today ? undefined : day.day;
-  const daily = items.filter((i) => i.progress.period === 'today');
-  const dailyTotal = daily.reduce((a, i) => a + i.progress.target, 0);
-  const dailyDone = daily.reduce((a, i) => a + Math.min(i.progress.target, i.progress.done), 0);
+  // Only the exercises prescribed on this weekday count (iteration 8, design D8)
+  const dailyTotal = items.reduce((a, i) => a + i.progress.target, 0);
+  const dailyDone = items.reduce((a, i) => a + Math.min(i.progress.target, i.progress.done), 0);
   const inputs = zurichInputs(ref);
   const flash =
     sp.ok === 'saved'
@@ -82,10 +82,13 @@ export default async function Home({
                 ? t('quickDone', { count: Number(sp.n) })
                 : td('quickDone', { count: Number(sp.n), date: long(day.day) })
             : null;
-  const rep = (r: (typeof items)[number]['repetition']) => {
-    const { daily: d, times } = repetitionParts(r);
-    return t(d ? 'repDaily' : 'repWeekly', { n: times });
+  /** "2× pro Tag · Mo Di Mi Do Fr" */
+  const rep = (sch: (typeof items)[number]['schedule']) => {
+    const p = scheduleParts(sch);
+    const days = p.everyDay ? t('everyDay') : p.days.map((d) => t(`short_${d}`)).join(' ');
+    return `${t('timesPerDay', { n: p.timesPerDay })} · ${days}`;
   };
+  const epd = (v: number | null) => (v ? t('epdVariant', { n: v }) : t('epdStandard'));
   const todayKey = dayKey(now);
   const days = new Map<string, typeof recent>();
   for (const e of recent) {
@@ -140,7 +143,9 @@ export default async function Home({
           ? day.today
             ? t('todaySummary', { done: dailyDone, total: dailyTotal })
             : td('summary', { done: dailyDone, total: dailyTotal })
-          : t('weeklyOnly')}
+          : day.today
+            ? t('freeDay')
+            : td('freeDay')}
       </p>
       {open.length ? (
         <form action={quickEntryAction}>
@@ -165,23 +170,81 @@ export default async function Home({
                 <div>
                   <b>{it.code}</b> {it.name}
                   <small>
-                    {rep(it.repetition)} · {t('perExecution', { min: format.number(Math.round(it.seconds / 6) / 10) })}
+                    {rep(it.schedule)} · {t('parts', { epd: epd(it.variant) })} ·{' '}
+                    {t('perExecution', { min: format.number(Math.round(it.seconds / 6) / 10) })}
                   </small>
                 </div>
               </div>
               <div className="prog">
                 <span className={`pill ${it.progress.complete ? 'ok' : ''}`} data-testid="progress">
-                  {day.today
-                    ? t(it.progress.period === 'today' ? 'progressToday' : 'progressWeek', {
-                        done: it.progress.done,
-                        target: it.progress.target,
-                      })
-                    : td(it.progress.period === 'today' ? 'progressDay' : 'progressWeekOf', {
-                        done: it.progress.done,
-                        target: it.progress.target,
-                      })}
+                  {!it.progress.scheduledToday
+                    ? t('notScheduled', { done: it.progress.done })
+                    : day.today
+                      ? t('progressToday', { done: it.progress.done, target: it.progress.target })
+                      : td('progressDay', { done: it.progress.done, target: it.progress.target })}
                 </span>
               </div>
+              {it.guide ? (
+                <details className="guide">
+                  <summary className="linkbtn">
+                    {t('guide')}
+                    <span className="sr"> {it.code}</span>
+                  </summary>
+                  <h3>
+                    {t('frm')}
+                    {it.guide.tools.length ? ` · ${it.guide.tools.join(', ')}` : ''}
+                  </h3>
+                  {/* eslint-disable-next-line @next/next/no-img-element -- private image, only with a session */}
+                  <img
+                    className="band"
+                    src={`/media/${it.code}?teil=frm`}
+                    alt={t('bandOf', { code: it.code, part: t('frm') })}
+                    loading="lazy"
+                  />
+                  {it.guide.segments?.frm.items.map((x, i) => (
+                    <p key={i}>
+                      {x.n.length ? <b>({x.n.join('/')}) </b> : null}
+                      {x.text}
+                    </p>
+                  ))}
+                  <h3>
+                    {t('epd')} · {epd(it.variant)}
+                    {it.guide.aids.length ? ` · ${it.guide.aids.join(', ')}` : ''}
+                  </h3>
+                  {/* eslint-disable-next-line @next/next/no-img-element -- private image, only with a session */}
+                  <img
+                    className="band"
+                    src={`/media/${it.code}?teil=${it.variant ? 'var' : 'std'}`}
+                    alt={t('bandOf', { code: it.code, part: t('epd') })}
+                    loading="lazy"
+                  />
+                  {it.guide.segments && !it.variant ? (
+                    <>
+                      {it.guide.segments.standard.intro ? <p>{it.guide.segments.standard.intro}</p> : null}
+                      {it.guide.segments.standard.steps.map((st, i) => (
+                        <p key={i}>
+                          {st.label ? <b>{st.label}: </b> : null}
+                          {st.text}
+                        </p>
+                      ))}
+                    </>
+                  ) : null}
+                  {it.guide.segments && it.variant ? (
+                    <>
+                      {it.guide.segments.variants.intro ? <p>{it.guide.segments.variants.intro}</p> : null}
+                      {it.guide.segments.variants.items
+                        .filter((v) => v.number === it.variant)
+                        .map((v) => (
+                          <p key={v.number} className="chosen">
+                            <b>{t('epdVariant', { n: v.number })}: </b>
+                            {v.text}
+                          </p>
+                        ))}
+                    </>
+                  ) : null}
+                  {!it.guide.segments ? <p className="muted">{t('guideMissing')}</p> : null}
+                </details>
+              ) : null}
               <details className="rec">
                 <summary className="btn">
                   {t('record')}

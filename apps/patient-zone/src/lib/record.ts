@@ -1,16 +1,21 @@
-import type { Language, Repetition } from '@prisma/client';
+import type { Language } from '@prisma/client';
+import type { Schedule } from '@pain-therapy/shared/home-program';
 import { db } from './db';
 import { nameIn } from './entries';
 import type { ZoneSession } from './access';
 
 /**
- * zone-record and zone-documents (iteration 6, design D4, D5): the patient's own treatments, consultations and
+ * zone-record and zone-documents (iteration 6, design D4, D5): the patient's own treatments, sessions and
  * documents, read only. Every query filters by the patient of the device session; an id of another patient is
  * treated like an unknown one. Selects only the columns the role patient_zone may read (prisma/patient-zone-role.sql):
  * no photos, anamnesis, staff names, archive paths or deliveries.
  */
 
-const region = { select: { id: true, nameDe: true, nameEn: true } } as const;
+const region = { select: { id: true, code: true, nameDe: true, nameEn: true } } as const;
+
+/** "1.2 Kiefer und Zähne": Schmerzbereich with its number (iteration 8, design D1) */
+const regionName = (r: { code: string; nameDe: string; nameEn: string }, lang: Language) =>
+  `${r.code} ${nameIn(r, lang)}`;
 
 /** "Behandlungen": newest first, with the number and date of the last consultation */
 export async function treatmentsOf(s: ZoneSession) {
@@ -20,6 +25,7 @@ export async function treatmentsOf(s: ZoneSession) {
     select: {
       id: true,
       startedAt: true,
+      side: true,
       diagnosis: true,
       painStart: true,
       region,
@@ -30,7 +36,8 @@ export async function treatmentsOf(s: ZoneSession) {
   return rows.map((t) => ({
     id: t.id,
     startedAt: t.startedAt,
-    region: nameIn(t.region, lang),
+    region: regionName(t.region, lang),
+    side: t.side,
     diagnosis: t.diagnosis,
     painStart: t.painStart,
     consultations: t.consultations.length,
@@ -47,9 +54,9 @@ export type ZoneConsultation = {
   painAfter: number | null;
   comparison: string | null;
   points: { id: string; name: string; left: boolean; right: boolean }[];
-  exercises: { code: string; name: string }[];
-  rolling: { area: string | null; tool: string | null }[];
-  home: { code: string; repetition: Repetition }[];
+  /** EPD: null = Standardübung, otherwise the variant (iteration 8, design D6) */
+  exercises: { code: string; name: string; variant: number | null }[];
+  home: { code: string; schedule: Schedule; variant: number | null }[];
   /** Current (newest) exercise sheet of the consultation */
   sheet: string | null;
 };
@@ -61,6 +68,7 @@ export async function treatmentOf(s: ZoneSession, id: string) {
     select: {
       id: true,
       startedAt: true,
+      side: true,
       diagnosis: true,
       painStart: true,
       region,
@@ -81,14 +89,12 @@ export async function treatmentOf(s: ZoneSession, id: string) {
               point: { select: { id: true, attachmentDe: true, muscleAttachmentLatin: true, sort: true } },
             },
           },
-          exercises: { select: { exercise: { select: { code: true, nameDe: true, nameEn: true, sort: true } } } },
-          rolling: {
-            orderBy: { position: 'asc' },
-            select: { area: true, tool: { select: { nameDe: true, nameEn: true } } },
+          exercises: {
+            select: { variant: true, exercise: { select: { code: true, nameDe: true, nameEn: true, sort: true } } },
           },
           home: {
             orderBy: { exercise: { sort: 'asc' } },
-            select: { exerciseCode: true, repetition: true },
+            select: { exerciseCode: true, timesPerDay: true, weekdays: true, variant: true },
           },
           handouts: {
             where: { patientId: s.patient.id },
@@ -114,19 +120,20 @@ export async function treatmentOf(s: ZoneSession, id: string) {
       .sort((a, b) => a.point.sort - b.point.sort)
       .map((p) => ({ id: p.point.id, name: pointName(p.point, lang), left: p.left, right: p.right })),
     exercises: c.exercises
-      .map((x) => x.exercise)
-      .sort((a, b) => a.sort - b.sort)
-      .map((x) => ({ code: x.code, name: nameIn(x, lang) })),
-    rolling: c.rolling
-      .filter((r) => r.area || r.tool)
-      .map((r) => ({ area: r.area, tool: r.tool ? nameIn(r.tool, lang) : null })),
-    home: c.home.map((h) => ({ code: h.exerciseCode, repetition: h.repetition })),
+      .sort((a, b) => a.exercise.sort - b.exercise.sort)
+      .map((x) => ({ code: x.exercise.code, name: nameIn(x.exercise, lang), variant: x.variant })),
+    home: c.home.map((h) => ({
+      code: h.exerciseCode,
+      schedule: { timesPerDay: h.timesPerDay, weekdays: h.weekdays },
+      variant: h.variant,
+    })),
     sheet: c.handouts[0]?.documentNumber ?? null,
   }));
   return {
     id: t.id,
     startedAt: t.startedAt,
-    region: nameIn(t.region, lang),
+    region: regionName(t.region, lang),
+    side: t.side,
     diagnosis: t.diagnosis,
     painStart: t.painStart,
     consultations,

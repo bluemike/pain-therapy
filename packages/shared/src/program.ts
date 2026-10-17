@@ -1,6 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 import { DAY_MS } from './time';
-import type { Repetition } from './home-program';
+import type { Schedule } from './home-program';
 
 /**
  * patient-access and exercise-log: das aktuelle Heimprogramm (iteration 4, design D2). The prescriptions of the most
@@ -16,7 +16,7 @@ export function programActive(consultationAt: Date, now = new Date()): boolean {
 export type CurrentProgram = {
   consultationId: string;
   consultationAt: Date;
-  prescriptions: { exerciseCode: string; repetition: Repetition }[];
+  prescriptions: { exerciseCode: string; schedule: Schedule; variant: number | null }[];
   active: boolean;
 };
 
@@ -36,14 +36,21 @@ export async function currentProgram(
       id: true,
       at: true,
       // In the order of the catalog (1A to 4G), like the paper form; the database order alone is not stable
-      home: { select: { exerciseCode: true, repetition: true }, orderBy: { exercise: { sort: 'asc' } } },
+      home: {
+        select: { exerciseCode: true, timesPerDay: true, weekdays: true, variant: true },
+        orderBy: { exercise: { sort: 'asc' } },
+      },
     },
   });
   if (!c) return null;
   return {
     consultationId: c.id,
     consultationAt: c.at,
-    prescriptions: c.home.map((h) => ({ exerciseCode: h.exerciseCode, repetition: h.repetition as Repetition })),
+    prescriptions: c.home.map((h) => ({
+      exerciseCode: h.exerciseCode,
+      schedule: { timesPerDay: h.timesPerDay, weekdays: h.weekdays },
+      variant: h.variant,
+    })),
     active: programActive(c.at, now),
   };
 }

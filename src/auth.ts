@@ -5,10 +5,12 @@ import type { Provider } from 'next-auth/providers';
 import type { Role } from '@prisma/client';
 import { config } from '@/lib/config';
 import { checkClaims, isSessionIdle, type EntraClaims } from '@/lib/access';
+import { presetFor } from '@/lib/profile-presets';
 
 declare module 'next-auth' {
   interface Session {
-    user: { id: string; roles: Role[] } & DefaultSession['user'];
+    /** authTime: start of this sign-in (ms), used for the greeting once per sign-in */
+    user: { id: string; roles: Role[]; authTime?: number } & DefaultSession['user'];
   }
 }
 
@@ -118,6 +120,7 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
       session.user.roles = t.roles ?? [];
       session.user.name = t.name ?? '';
       session.user.email = t.email ?? '';
+      session.user.authTime = t.authTime;
       return session;
     },
   },
@@ -137,7 +140,14 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
       const oid = account.provider === 'dev' ? user.id! : (p.oid ?? user.id!);
       await db.user.upsert({
         where: { entraOid: oid },
-        create: { entraOid: oid, email: user.email ?? '', name: user.name ?? '', roles: check.roles },
+        // user-profile (iteration 8, design D9): Mike and Chrissie get their preset on the first sign-in
+        create: {
+          entraOid: oid,
+          email: user.email ?? '',
+          name: user.name ?? '',
+          roles: check.roles,
+          ...presetFor(user.email ?? ''),
+        },
         update: { email: user.email ?? '', name: user.name ?? '', roles: check.roles, lastLoginAt: new Date() },
       });
     },

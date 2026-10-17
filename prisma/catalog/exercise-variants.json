@@ -1,0 +1,646 @@
+[
+  {
+    "exerciseCode": "1A",
+    "number": 1,
+    "images": [1],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "1A",
+    "number": 2,
+    "images": [2],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "1A",
+    "number": 3,
+    "images": [3],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "1A",
+    "number": 4,
+    "images": [4],
+    "aids": ["Kieferretter"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "1B",
+    "number": 1,
+    "images": [1],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "1B",
+    "number": 2,
+    "images": [2],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "1B",
+    "number": 3,
+    "images": [3],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "1C",
+    "number": 1,
+    "images": [1],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "1D",
+    "number": 1,
+    "images": [1],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "1D",
+    "number": 2,
+    "images": [2],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "1D",
+    "number": 3,
+    "images": [3],
+    "aids": ["Nackenretter"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "1E",
+    "number": 1,
+    "images": [1],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "1E",
+    "number": 2,
+    "images": [2],
+    "aids": ["Knieretter"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "1F",
+    "number": 1,
+    "images": [1],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "1F",
+    "number": 2,
+    "images": [2],
+    "aids": ["Stuhl"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "1F",
+    "number": 3,
+    "images": [3],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2A",
+    "number": 1,
+    "images": [1],
+    "aids": ["Schlaufe"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2A",
+    "number": 2,
+    "images": [2],
+    "aids": ["Schlaufe", "Stuhl"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2A",
+    "number": 3,
+    "images": [3],
+    "aids": ["Wand"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2B",
+    "number": 1,
+    "images": [1],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2B",
+    "number": 2,
+    "images": [2],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2B",
+    "number": 3,
+    "images": [3],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2B",
+    "number": 4,
+    "images": [4],
+    "aids": ["Wand"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2B",
+    "number": 5,
+    "images": [5],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2C",
+    "number": 1,
+    "images": [1],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2C",
+    "number": 2,
+    "images": [2],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2D",
+    "number": 1,
+    "images": [1],
+    "aids": ["Rückenretter"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2D",
+    "number": 2,
+    "images": [2],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2D",
+    "number": 3,
+    "images": [3],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2D",
+    "number": 4,
+    "images": [4],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2D",
+    "number": 5,
+    "images": [5],
+    "aids": ["Schlaufe"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2D",
+    "number": 6,
+    "images": [6],
+    "aids": ["Stuhl", "Wand"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2E",
+    "number": 1,
+    "images": [1],
+    "aids": ["Schlaufe", "Stuhl"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2E",
+    "number": 2,
+    "images": [2],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2E",
+    "number": 3,
+    "images": [3],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2E",
+    "number": 4,
+    "images": [4],
+    "aids": ["ISG-Ischias-Retter"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2E",
+    "number": 5,
+    "images": [5],
+    "aids": ["Schlaufe"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2E",
+    "number": 6,
+    "images": [6],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2F",
+    "number": 1,
+    "images": [1],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2F",
+    "number": 2,
+    "images": [2],
+    "aids": ["Schlaufe", "Wand"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2F",
+    "number": 3,
+    "images": [3],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2F",
+    "number": 4,
+    "images": [4],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "2F",
+    "number": 5,
+    "images": [5],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "3A",
+    "number": 1,
+    "images": [1],
+    "aids": ["Wand"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "3A",
+    "number": 2,
+    "images": [2],
+    "aids": ["Tisch"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "3B",
+    "number": 1,
+    "images": [1],
+    "aids": ["Wand"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "3B",
+    "number": 2,
+    "images": [2],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "3B",
+    "number": 3,
+    "images": [3],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "3B",
+    "number": 4,
+    "images": [4],
+    "aids": ["Schulterretter"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "3C",
+    "number": 1,
+    "images": [1, 2],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "3C",
+    "number": 2,
+    "images": [3, 4],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "3C",
+    "number": 3,
+    "images": [5],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "3D",
+    "number": 1,
+    "images": [1],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "3D",
+    "number": 2,
+    "images": [2],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "3D",
+    "number": 3,
+    "images": [3],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "3D",
+    "number": 4,
+    "images": [4],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "3E",
+    "number": 1,
+    "images": [1, 2],
+    "aids": ["Schlaufe"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "3E",
+    "number": 2,
+    "images": [3],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "3F",
+    "number": 1,
+    "images": [1],
+    "aids": ["Wand"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "3F",
+    "number": 2,
+    "images": [2],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "3G",
+    "number": 1,
+    "images": [1],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "3G",
+    "number": 2,
+    "images": [2],
+    "aids": ["Wand"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "3G",
+    "number": 3,
+    "images": [3],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "3G",
+    "number": 4,
+    "images": [4],
+    "aids": ["Schlaufe"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "3H",
+    "number": 1,
+    "images": [1],
+    "aids": ["Schlaufe", "Tisch"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "3H",
+    "number": 2,
+    "images": [2],
+    "aids": ["Tisch"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4A",
+    "number": 1,
+    "images": [1],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4A",
+    "number": 2,
+    "images": [2],
+    "aids": ["Schlaufe"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4A",
+    "number": 3,
+    "images": [3],
+    "aids": ["Schlaufe", "Stuhl"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4A",
+    "number": 4,
+    "images": [4],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4B",
+    "number": 1,
+    "images": [1],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4B",
+    "number": 2,
+    "images": [2],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4B",
+    "number": 3,
+    "images": [3],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4B",
+    "number": 4,
+    "images": [4],
+    "aids": ["Knieretter", "Stuhl"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4C",
+    "number": 1,
+    "images": [1],
+    "aids": ["Wand"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4C",
+    "number": 2,
+    "images": [2],
+    "aids": ["Wand"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4C",
+    "number": 3,
+    "images": [3],
+    "aids": ["Knieretter"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4C",
+    "number": 4,
+    "images": [4],
+    "aids": ["Wand"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4C",
+    "number": 5,
+    "images": [5],
+    "aids": ["Schlaufe", "Stuhl"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4D",
+    "number": 1,
+    "images": [1],
+    "aids": ["Wand"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4D",
+    "number": 2,
+    "images": [2],
+    "aids": ["Schlaufe", "Stuhl"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4D",
+    "number": 3,
+    "images": [3],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4D",
+    "number": 4,
+    "images": [4],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4E",
+    "number": 1,
+    "images": [1],
+    "aids": ["Schlaufe"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4E",
+    "number": 2,
+    "images": [2],
+    "aids": ["Stuhl"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4E",
+    "number": 3,
+    "images": [3],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4F",
+    "number": 1,
+    "images": [1],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4F",
+    "number": 2,
+    "images": [2],
+    "aids": ["Wand"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4F",
+    "number": 3,
+    "images": [3],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4G",
+    "number": 1,
+    "images": [1],
+    "aids": ["Wand"],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4G",
+    "number": 2,
+    "images": [2],
+    "aids": [],
+    "seconds": null
+  },
+  {
+    "exerciseCode": "4G",
+    "number": 3,
+    "images": [3],
+    "aids": [],
+    "seconds": null
+  }
+]

@@ -4,7 +4,7 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import { requireUser } from '@/lib/session';
 import { getTreatment } from '@/lib/treatments';
 import { photosOf } from '@/lib/photos';
-import { listRegions, regionLabel } from '@/lib/catalog';
+import { listRegions, regionGroups, regionLabel } from '@/lib/catalog';
 import { toLocalInput } from '@/lib/format';
 import { TreatmentForm } from '@/components/TreatmentForm';
 
@@ -43,10 +43,11 @@ export default async function EditTreatmentPage({ params }: { params: Promise<{ 
         initial={{
           startedAt: toLocalInput(tr.startedAt),
           regionId: String(tr.regionId),
+          side: tr.side,
           diagnosis: tr.diagnosis,
           painStart: String(tr.painStart),
         }}
-        regions={regions.map((r) => [String(r.id), regionLabel(r, locale)])}
+        regions={regionGroups(regions, locale)}
         saved={photos.map((p) => ({ id: p.id, takenAt: p.takenAt.toISOString() }))}
         cancelHref={`/patients/${id}#t-${tid}`}
         regionLocked={tr._count.consultations > 0}

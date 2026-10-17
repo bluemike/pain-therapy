@@ -17,6 +17,8 @@ export class TreatmentError extends Error {
       | 'consent'
       | 'region'
       | 'regionLocked'
+      | 'sideLocked'
+      | 'side'
       | 'startAfterConsultation'
       | 'catalog'
       | 'notFound'
@@ -80,7 +82,7 @@ export async function treatmentsOf(patientId: string) {
       consultations: {
         orderBy: { number: 'desc' },
         include: {
-          _count: { select: { points: true, exercises: true, rolling: true, photos: { where: { removedAt: null } } } },
+          _count: { select: { points: true, exercises: true, photos: { where: { removedAt: null } } } },
         },
       },
     },
@@ -90,7 +92,7 @@ export async function treatmentsOf(patientId: string) {
 export async function getTreatment(id: string) {
   return db.treatment.findUnique({
     where: { id },
-    include: { region: true, patient: true, _count: { select: { consultations: true } } },
+    include: { region: { include: { bodyArea: true } }, patient: true, _count: { select: { consultations: true } } },
   });
 }
 
@@ -130,6 +132,7 @@ function treatmentChanges(before: Treatment, input: TreatmentInput): Change[] {
   };
   cmp('startedAt', formatDateTime(before.startedAt), formatDateTime(input.startedAt));
   cmp('regionId', str(before.regionId), str(input.regionId));
+  cmp('side', before.side, input.side);
   cmp('diagnosis', before.diagnosis, input.diagnosis);
   cmp('painStart', str(before.painStart), str(input.painStart));
   return changes;
@@ -144,13 +147,15 @@ export async function updateTreatment(
 ) {
   const existing = await db.treatment.findUnique({ where: { id } });
   if (!existing) throw new TreatmentError('notFound');
-  // Behandlung nach der ersten Konsultation: the sheets hang off the area, and no consultation may predate the start
+  // Behandlung nach der ersten Sitzung: the sheets hang off the area and the side (iteration 8, design D4), and no
+  // session may predate the start
   const first = await db.consultation.findFirst({
     where: { treatmentId: id },
     orderBy: { at: 'asc' },
     select: { at: true },
   });
   if (first && input.regionId !== existing.regionId) throw new TreatmentError('regionLocked');
+  if (first && input.side !== existing.side) throw new TreatmentError('sideLocked');
   if (first && input.startedAt > first.at) throw new TreatmentError('startAfterConsultation');
   if (input.regionId !== existing.regionId) await assertRegion(input.regionId, existing.regionId);
   const photos = preparePhotos(existing.patientId, photoChanges.add ?? []);
@@ -174,13 +179,23 @@ export async function updateTreatment(
 async function assertCatalog(sheet: Sheet) {
   const pointIds = sheet.points.map((p) => p.pointId);
   const codes = sheet.exercises.map((x) => x.code);
-  const tools = [...new Set(sheet.rolling.map((r) => r.toolCode).filter((c): c is string => !!c))];
-  const [np, nx, nt] = await Promise.all([
+  const variants = sheet.exercises.filter((x) => x.variant !== null);
+  const [np, nx, nv] = await Promise.all([
     db.osteopressurePoint.count({ where: { id: { in: pointIds } } }),
     db.exercise.count({ where: { code: { in: codes } } }),
-    db.rollingTool.count({ where: { code: { in: tools } } }),
+    variants.length
+      ? db.exerciseVariant.count({
+          where: { OR: variants.map((x) => ({ exerciseCode: x.code, number: x.variant! })) },
+        })
+      : 0,
   ]);
-  if (np !== pointIds.length || nx !== codes.length || nt !== tools.length) throw new TreatmentError('catalog');
+  if (np !== pointIds.length || nx !== codes.length || nv !== variants.length) throw new TreatmentError('catalog');
+}
+
+/** Osteopressur nach Körperseite (design D4): with a side set, the opposite side is never recorded */
+function assertSide(side: Treatment['side'], sheet: Sheet) {
+  if (side === 'LEFT' && sheet.points.some((p) => p.right)) throw new TreatmentError('side');
+  if (side === 'RIGHT' && sheet.points.some((p) => p.left)) throw new TreatmentError('side');
 }
 
 function sheetRows(sheet: Sheet) {
@@ -198,25 +213,22 @@ function sheetRows(sheet: Sheet) {
         exerciseCode: x.code,
         prescribed: x.prescribed,
         difficulty: x.difficulty,
-        variants: x.variants,
+        variant: x.variant,
       })),
-    },
-    rolling: {
-      create: sheet.rolling.map((r) => ({ position: r.position, area: r.area, toolCode: r.toolCode })),
     },
     home: {
       create: sheet.home.map((h) => ({
         exerciseCode: h.code,
-        repetition: h.repetition,
-        intensity: h.intensity,
-        steps: h.steps,
+        variant: h.variant,
+        timesPerDay: h.timesPerDay,
+        weekdays: h.weekdays,
         note: h.note,
       })),
     },
   };
 }
 
-/** Values of a new consultation: date and time now, diagnosis of the treatment (consultations: Konsultation eröffnen) */
+/** Values of a new session: date and time now, Schmerzlokalisation of the treatment (session-form) */
 export async function newConsultationDefaults(treatmentId: string) {
   const t = await db.treatment.findUnique({ where: { id: treatmentId } });
   if (!t) throw new TreatmentError('notFound');
@@ -234,6 +246,7 @@ export async function createConsultation(
   const t = await db.treatment.findUnique({ where: { id: treatmentId } });
   if (!t) throw new TreatmentError('notFound');
   await assertOpenable(t.patientId);
+  assertSide(t.side, input.sheet);
   await assertCatalog(input.sheet);
   const photos = preparePhotos(t.patientId, uploads);
   await writePhotos(photos);
@@ -275,10 +288,9 @@ export async function getConsultation(id: string) {
   return db.consultation.findUnique({
     where: { id },
     include: {
-      treatment: { include: { region: true, patient: true } },
+      treatment: { include: { region: { include: { bodyArea: true } }, patient: true } },
       points: true,
       exercises: true,
-      rolling: { orderBy: { position: 'asc' } },
       home: true,
     },
   });
@@ -287,33 +299,32 @@ export async function getConsultation(id: string) {
 type Stored = NonNullable<Awaited<ReturnType<typeof getConsultation>>>;
 
 /** The sheet of a stored consultation in the shape of the form */
-export function sheetOf(c: Pick<Stored, 'points' | 'exercises' | 'rolling' | 'home'>): Sheet {
+export function sheetOf(c: Pick<Stored, 'points' | 'exercises' | 'home'>): Sheet {
   return {
     points: c.points.map((p) => ({ pointId: p.pointId, left: p.left, right: p.right, sensitivity: p.sensitivity })),
     exercises: c.exercises.map((x) => ({
       code: x.exerciseCode,
       prescribed: x.prescribed,
       difficulty: x.difficulty,
-      variants: x.variants,
+      variant: x.variant,
     })),
-    rolling: c.rolling.map((r) => ({ position: r.position, area: r.area, toolCode: r.toolCode })),
     // In the order of the exercise rows, like the form
     home: c.exercises
       .map((x) => c.home.find((h) => h.exerciseCode === x.exerciseCode))
       .filter((h) => !!h)
       .map((h) => ({
         code: h.exerciseCode,
-        repetition: h.repetition,
-        intensity: h.intensity,
-        steps: h.steps,
+        variant: h.variant,
+        timesPerDay: h.timesPerDay,
+        weekdays: h.weekdays,
         note: h.note,
       })),
   };
 }
 
 /**
- * Field-by-field changes of a consultation for the history. Sheet fields are named "point:<id>:<field>",
- * "exercise:<code>:<field>", "rolling:<position>:<field>" and "home:<code>:<field>" (Selbstausführung).
+ * Field-by-field changes of a session for the history. Sheet fields are named "point:<id>:<field>",
+ * "exercise:<code>:<field>" and "home:<code>:<field>" (Selbstausführung).
  */
 export function consultationChanges(before: Stored, input: ConsultationInput): Change[] {
   const changes: Change[] = [];
@@ -343,28 +354,21 @@ export function consultationChanges(before: Stored, input: ConsultationInput): C
     const b = next.exercises.find((x) => x.code === code);
     cmp(`exercise:${code}:prescribed`, a?.prescribed ?? false, b?.prescribed ?? false);
     cmp(`exercise:${code}:difficulty`, a?.difficulty, b?.difficulty);
-    cmp(`exercise:${code}:variants`, a?.variants, b?.variants);
-  }
-  for (let pos = 1; pos <= 6; pos++) {
-    const a = old.rolling.find((r) => r.position === pos);
-    const b = next.rolling.find((r) => r.position === pos);
-    cmp(`rolling:${pos}:area`, a?.area, b?.area);
-    cmp(`rolling:${pos}:tool`, a?.toolCode, b?.toolCode);
+    cmp(`exercise:${code}:variant`, a?.variant, b?.variant);
   }
   // home-program: Änderungshistorie der Verordnungen (task 2.4)
   const homeCodes = [...new Set([...old.home, ...next.home].map((h) => h.code))];
   for (const code of homeCodes) {
     const a = old.home.find((h) => h.code === code);
     const b = next.home.find((h) => h.code === code);
-    cmp(`home:${code}:repetition`, a?.repetition, b?.repetition);
-    cmp(`home:${code}:intensity`, a?.intensity, b?.intensity);
-    cmp(`home:${code}:steps`, a?.steps, b?.steps);
+    cmp(`home:${code}:timesPerDay`, a?.timesPerDay, b?.timesPerDay);
+    cmp(`home:${code}:weekdays`, a?.weekdays, b?.weekdays);
     cmp(`home:${code}:note`, a?.note, b?.note);
   }
   return changes;
 }
 
-/** consultations: Konsultation ändern, every change in the history; photos added or hidden. No delete. */
+/** session-form: Sitzung ändern, every change in the history; photos added or hidden. No delete. */
 export async function updateConsultation(
   actor: Actor,
   id: string,
@@ -373,8 +377,9 @@ export async function updateConsultation(
 ) {
   const existing = await getConsultation(id);
   if (!existing) throw new TreatmentError('notFound');
-  await assertCatalog(input.sheet);
   const t = existing.treatment;
+  assertSide(t.side, input.sheet);
+  await assertCatalog(input.sheet);
   const photos = preparePhotos(t.patientId, photoChanges.add ?? []);
   await writePhotos(photos);
   const changes = consultationChanges(existing, input);
@@ -392,7 +397,6 @@ export async function updateConsultation(
       // Sheet rows are replaced as a whole; the history keeps every single change. Prescriptions are updated in place.
       await tx.consultationPoint.deleteMany({ where: { consultationId: id } });
       await tx.consultationExercise.deleteMany({ where: { consultationId: id } });
-      await tx.consultationRolling.deleteMany({ where: { consultationId: id } });
       await tx.homePrescription.deleteMany({ where: { consultationId: id, exerciseCode: { in: removed } } });
       for (const h of home.create) {
         const { exerciseCode, ...values } = h;

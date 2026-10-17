@@ -114,7 +114,7 @@ describe('neutral messages (Neutrale Fehlermeldungen)', () => {
     const none = await patient();
     cases.push(['no purpose', (await link(none.id, ago(1))).token]);
     const inactive = await patient({ status: 'INACTIVE' });
-    await consultation(inactive.id, ago(5), [['2A', 'DAILY_1']]);
+    await consultation(inactive.id, ago(5), [['2A', 1]]);
     cases.push(['inactive patient', (await link(inactive.id)).token]);
     for (const [what, token] of cases) {
       expect(confirmable((await lookupLink(token, now))?.state), what).toBe(false);

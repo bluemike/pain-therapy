@@ -3,16 +3,18 @@ import { Document, Image, Page, StyleSheet, Text, View, renderToBuffer } from '@
 import type { Language } from '@prisma/client';
 import { config } from './config';
 import { formatDate, formatDateZurich } from './format';
-import { formatMinutes, repetitionParts, sheetFields, stepsLabel, type Repetition } from './home-program';
+import { formatMinutes, scheduleText } from './home-program';
 import { translator } from './i18n-server';
 import { BORDER, GOLD, INK, MID, registerFonts } from './pdf';
-import type { SheetContent } from './exercise-sheets';
+import type { SheetContent, SheetSegments } from './exercise-sheets';
 import { AccessSheetPage, type AccessSheetInput } from './access-sheet-pdf';
 
 /**
- * exercise-handout: Inhalt des Übungsblatts (design D5). Cover page with the programme and the total time, then the
- * sheet of every prescribed exercise with the prescription in the fields of the paper sheet. Missing media never
- * stop the PDF: the page then shows the texts, or "Blatt nicht verfügbar".
+ * exercise-handout: Inhalt des Übungsblatts (design D5). Cover page with the programme and the total time, then one
+ * page per prescribed exercise. Since iteration 8 (design D7) the page shows the FRM band with its text and tools and
+ * the band of the chosen EPD (Standardübung with its steps, or the variant band with the chosen variant
+ * highlighted), executions per day, weekdays and note. Missing media never stop the PDF: without bands the page
+ * shows the whole sheet, the texts, or "Blatt nicht verfügbar".
  */
 
 const s = StyleSheet.create({
@@ -43,8 +45,8 @@ const s = StyleSheet.create({
   th: { fontSize: 7.5, color: MID, fontWeight: 600, textTransform: 'uppercase', paddingVertical: 4 },
   cImg: { width: 56, paddingVertical: 4 },
   cName: { flex: 1, paddingRight: 6 },
-  cRep: { width: 92 },
-  cNum: { width: 52 },
+  cRep: { width: 70 },
+  cDays: { width: 100 },
   cDur: { width: 60, textAlign: 'right' },
   thumb: { width: 48, height: 36, objectFit: 'cover', borderRadius: 2 },
   thumbMissing: {
@@ -71,6 +73,9 @@ const s = StyleSheet.create({
   sheet: { flexGrow: 1, alignItems: 'center', justifyContent: 'flex-start' },
   sheetImg: { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' },
   h: { fontSize: 10.5, fontWeight: 600, marginTop: 8, marginBottom: 2 },
+  band: { maxWidth: '100%', maxHeight: 210, objectFit: 'contain', marginVertical: 4 },
+  chosen: { backgroundColor: '#FDF3D8', fontWeight: 600 },
+  item: { marginBottom: 3 },
   missing: { marginTop: 30, textAlign: 'center', color: MID },
   footer: {
     position: 'absolute',
@@ -90,16 +95,24 @@ const s = StyleSheet.create({
 export type HandoutItem = {
   code: string;
   name: string;
-  repetition: Repetition;
-  intensity: number | null;
-  steps: number | null;
+  /** EPD: null = Standardübung, otherwise the variant */
+  variant: number | null;
+  timesPerDay: number;
+  weekdays: number;
   note: string | null;
   /** Duration of one execution; stretchMissing: only the rolling is counted */
   seconds: number;
   stretchMissing: boolean;
   timingMissing: boolean;
+  /** FRM tools and aids of the chosen EPD */
+  tools: string[];
+  aids: string[];
   mainImage: Buffer | null;
   sheetImage: Buffer | null;
+  frmImage: Buffer | null;
+  epdImage: Buffer | null;
+  segments: SheetSegments | null;
+  /** Texts of iteration 3, shown while the segments are not uploaded */
   content: SheetContent | null;
 };
 
@@ -133,10 +146,10 @@ export function HandoutPdf({ input }: { input: HandoutPdfInput }) {
   const th = translator(input.language, 'home');
   const name = `${input.patient.firstName} ${input.patient.lastName}`;
   const min = (m: number) => formatMinutes(m, input.language);
-  const rep = (r: Repetition) => {
-    const { daily, times } = repetitionParts(r);
-    return th(daily ? 'repDaily' : 'repWeekly', { n: times });
-  };
+  const epd = (v: number | null) => (v ? t('epdVariant', { n: v }) : t('epdStandard'));
+  // "1× pro Tag · Mo Di Mi" → the weekdays part
+  const days = (it: HandoutItem) =>
+    scheduleText({ timesPerDay: it.timesPerDay, weekdays: it.weekdays }, th).split(' · ')[1] ?? '';
   const header = (
     <View style={s.header} fixed>
       <View>
@@ -185,9 +198,8 @@ export function HandoutPdf({ input }: { input: HandoutPdfInput }) {
           <View style={s.tr}>
             <Text style={[s.th, s.cImg]} />
             <Text style={[s.th, s.cName]}>{t('colExercise')}</Text>
-            <Text style={[s.th, s.cRep]}>{t('colRepetition')}</Text>
-            <Text style={[s.th, s.cNum]}>{t('colIntensity')}</Text>
-            <Text style={[s.th, s.cNum]}>{t('colSteps')}</Text>
+            <Text style={[s.th, s.cRep]}>{t('colPerDay')}</Text>
+            <Text style={[s.th, s.cDays]}>{t('colWeekdays')}</Text>
             <Text style={[s.th, s.cDur]}>{t('colDuration')}</Text>
           </View>
           {input.items.map((it) => {
@@ -208,11 +220,11 @@ export function HandoutPdf({ input }: { input: HandoutPdfInput }) {
                   <Text>
                     <Text style={{ fontWeight: 700 }}>{it.code}</Text> {it.name}
                   </Text>
+                  <Text style={s.muted}>{t('parts', { epd: epd(it.variant) })}</Text>
                   {it.note ? <Text style={s.muted}>{it.note}</Text> : null}
                 </View>
-                <Text style={s.cRep}>{rep(it.repetition)}</Text>
-                <Text style={s.cNum}>{it.intensity ?? '–'}</Text>
-                <Text style={s.cNum}>{stepsLabel(it.steps) ?? '–'}</Text>
+                <Text style={s.cRep}>{th('timesPerDayN', { n: it.timesPerDay })}</Text>
+                <Text style={s.cDays}>{days(it)}</Text>
                 <Text style={s.cDur}>
                   {it.timingMissing ? '–' : min(it.seconds / 60)}
                   {it.stretchMissing && !it.timingMissing ? ' *' : ''}
@@ -231,8 +243,11 @@ export function HandoutPdf({ input }: { input: HandoutPdfInput }) {
         {footer}
       </Page>
       {input.items.map((it) => {
-        const fields = sheetFields(it.repetition);
         const sheet = imageSource(it.sheetImage);
+        const frm = imageSource(it.frmImage);
+        const band = imageSource(it.epdImage);
+        const seg = it.segments;
+        const parts = !!(frm || band || seg);
         return (
           <Page size="A4" style={s.page} key={it.code}>
             {header}
@@ -242,10 +257,9 @@ export function HandoutPdf({ input }: { input: HandoutPdfInput }) {
             <View style={s.fields}>
               {(
                 [
-                  [t('fieldPerWeek'), String(fields.perWeek)],
-                  [t('fieldDaily'), t('times', { n: fields.perDay })],
-                  [t('fieldIntensity'), it.intensity ? String(it.intensity) : '–'],
-                  [t('fieldSteps'), stepsLabel(it.steps) ?? '–'],
+                  [t('fieldPerDay'), th('timesPerDayN', { n: it.timesPerDay })],
+                  [t('fieldWeekdays'), days(it)],
+                  [t('fieldEpd'), epd(it.variant)],
                 ] as [string, string][]
               ).map(([k, v]) => (
                 <View style={s.field} key={k}>
@@ -255,7 +269,51 @@ export function HandoutPdf({ input }: { input: HandoutPdfInput }) {
               ))}
             </View>
             {it.note ? <Text style={[s.muted, { marginBottom: 6 }]}>{it.note}</Text> : null}
-            {sheet ? (
+            {parts ? (
+              <View>
+                <Text style={s.h}>
+                  {t('rolling')}
+                  {it.tools.length ? ` · ${it.tools.join(', ')}` : ''}
+                </Text>
+                {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf image, no alt attribute */}
+                {frm ? <Image style={s.band} src={frm} /> : null}
+                {seg?.frm.items.map((x, i) => (
+                  <Text key={i} style={s.item}>
+                    {x.n.length ? <Text style={{ fontWeight: 600 }}>({x.n.join('/')}) </Text> : null}
+                    {x.text}
+                  </Text>
+                ))}
+                <Text style={s.h} break={!!frm && !!band}>
+                  {t('stretch')} · {epd(it.variant)}
+                  {it.aids.length ? ` · ${it.aids.join(', ')}` : ''}
+                </Text>
+                {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf image, no alt attribute */}
+                {band ? <Image style={s.band} src={band} /> : null}
+                {seg && !it.variant ? (
+                  <>
+                    {seg.standard.intro ? <Text style={s.item}>{seg.standard.intro}</Text> : null}
+                    {seg.standard.steps.map((st, i) => (
+                      <Text key={i} style={s.item}>
+                        {st.label ? <Text style={{ fontWeight: 600 }}>{st.label}: </Text> : null}
+                        {st.text}
+                      </Text>
+                    ))}
+                    {seg.standard.note ? <Text style={s.muted}>{seg.standard.note}</Text> : null}
+                  </>
+                ) : null}
+                {seg && it.variant ? (
+                  <>
+                    {seg.variants.intro ? <Text style={s.item}>{seg.variants.intro}</Text> : null}
+                    {seg.variants.items.map((v) => (
+                      <Text key={v.number} style={v.number === it.variant ? [s.item, s.chosen] : [s.item, s.muted]}>
+                        <Text style={{ fontWeight: 600 }}>{t('epdVariant', { n: v.number })}: </Text>
+                        {v.text}
+                      </Text>
+                    ))}
+                  </>
+                ) : null}
+              </View>
+            ) : sheet ? (
               <View style={s.sheet}>
                 {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf image, no alt attribute */}
                 <Image style={s.sheetImg} src={sheet} />
@@ -272,17 +330,11 @@ export function HandoutPdf({ input }: { input: HandoutPdfInput }) {
                   <>
                     <Text style={s.h}>{t('stretch')}</Text>
                     {it.content.steps.map((st, i) => (
-                      <Text key={i} style={{ marginBottom: 3 }}>
+                      <Text key={i} style={s.item}>
                         {st.label ? <Text style={{ fontWeight: 600 }}>{st.label}: </Text> : null}
                         {st.text}
                       </Text>
                     ))}
-                  </>
-                ) : null}
-                {it.content.variants ? (
-                  <>
-                    <Text style={s.h}>{t('variants')}</Text>
-                    <Text>{it.content.variants}</Text>
                   </>
                 ) : null}
               </View>

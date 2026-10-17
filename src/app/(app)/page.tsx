@@ -2,7 +2,11 @@ import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { requireUser } from '@/lib/session';
 import { dashboardData, listPatients } from '@/lib/patients';
-import { formatDate, formatDateTime, greetingKey, hourInZurich } from '@/lib/format';
+import { cookies } from 'next/headers';
+import { auth } from '@/auth';
+import { formatDate, formatDateTime } from '@/lib/format';
+import { GREETED_COOKIE, shouldGreet } from '@/lib/greeting';
+import { firstName, profileOf } from '@/lib/users';
 import { ConsentPill } from '@/components/Pills';
 import { SearchBox } from '@/components/SearchBox';
 import { PlusIcon } from '@/components/Icons';
@@ -47,9 +51,12 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           : i.kind === 'opened'
             ? tsi('shortOpened', { at: formatDateTime(i.at) })
             : tsi(`shortSent${i.channel}`, { at: formatDateTime(i.at) });
-  const hour = hourInZurich();
-  const first = user.name.split(' ')[0];
-  const greeting = t(greetingKey(hour), { name: first });
+  // user-profile (iteration 8, design D9): "Hallo <Anzeigename>" only on the first page after signing in
+  const [session, jar, profile] = await Promise.all([auth(), cookies(), profileOf(user.id)]);
+  const greet = shouldGreet(jar.get(GREETED_COOKIE)?.value, session?.user?.authTime);
+  const heading = greet
+    ? t('greeting', { name: profile?.greetingName ?? firstName(user.name) })
+    : (await getTranslations('nav'))('dashboard');
   const empty = data.activeCount === 0 && data.recent.length === 0;
 
   return (
@@ -57,7 +64,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       <div className="greet">
         <div>
           <div className="eyebrow">{formatDateTime(new Date()).slice(0, 10)}</div>
-          <h1>{greeting}</h1>
+          <h1 data-testid="greeting">{heading}</h1>
         </div>
       </div>
       <div className="quick">

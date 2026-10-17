@@ -1,7 +1,9 @@
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
-import { signOut } from '@/auth';
+import { auth, signOut } from '@/auth';
 import { requireUser } from '@/lib/session';
+import { profileOf } from '@/lib/users';
+import { GreetedMark } from '@/components/GreetedMark';
 import { Logo } from '@/components/Logo';
 import { LanguageSwitch } from '@/components/LanguageSwitch';
 import { MobileMenu, NavLinks } from '@/components/NavLinks';
@@ -23,7 +25,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .slice(0, 2)
     .join('')
     .toUpperCase();
-  const role = user.roles.includes('ADMIN') ? t('roleAdmin') : t('roleTherapist');
+  // user-profile (iteration 8, design D9): the professional title instead of "Therapeut:in"
+  const [profile, session, tp] = await Promise.all([profileOf(user.id), auth(), getTranslations('profile')]);
+  const title = tp(`title_${profile?.title ?? 'THERAPIST_F'}`);
+  const role = user.roles.includes('ADMIN') ? `${title} · ${t('roleAdmin')}` : title;
+  const profileLink = (
+    <Link className="linkbtn" href="/profile">
+      {t('profile')}
+    </Link>
+  );
   const signOutForm = (
     <form
       action={async () => {
@@ -54,11 +64,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <b>{user.name}</b>
               <small>{role}</small>
             </div>
-            <div className="uname">{signOutForm}</div>
+            <div className="uname">
+              {profileLink}
+              {signOutForm}
+            </div>
           </div>
           <MobileMenu items={items} menuLabel={tc('menu')}>
             <LanguageSwitch />
             <span>{user.name}</span>
+            {profileLink}
             {signOutForm}
           </MobileMenu>
         </div>
@@ -66,6 +80,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <main className="page" id="main">
         {children}
       </main>
+      {session?.user?.authTime ? <GreetedMark authTime={session.user.authTime} /> : null}
     </div>
   );
 }

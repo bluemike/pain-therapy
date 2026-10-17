@@ -2,10 +2,10 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { requireUser } from '@/lib/session';
-import { handoutContext } from '@/lib/handouts';
-import { timingOf } from '@/lib/exercise-sheets';
+import { handoutContext, programTotal } from '@/lib/handouts';
 import { formatDate, formatDateZurich } from '@/lib/format';
-import { formatMinutes, programTime, type Repetition } from '@/lib/home-program';
+import { formatMinutes } from '@/lib/home-program';
+import { regionLabel } from '@/lib/catalog';
 import { HandoutPanel } from '@/components/HandoutPanel';
 import { HandoutList } from '@/components/HandoutList';
 import { zoneEnabled } from '@/lib/patient-access';
@@ -15,7 +15,7 @@ import { db } from '@/lib/db';
 export const dynamic = 'force-dynamic';
 
 /**
- * exercise-handout: Abschluss der Konsultation (design D6, mockup view 2). Offers the exercise sheet once at least one
+ * exercise-handout: Abschluss der Sitzung (design D6, mockup view 2). Offers the exercise sheet once at least one
  * exercise is prescribed for home; it is created only on "Übungsblatt senden" or "Drucken".
  */
 export default async function HandoutPage({
@@ -35,13 +35,7 @@ export default async function HandoutPage({
   const name = `${p.firstName} ${p.lastName}`;
   const base = `/patients/${id}/treatments/${tid}/consultations/${cid}`;
   const record = `/patients/${id}#t-${tid}`;
-  const total = programTime(
-    ctx.prescriptions.map((x) => ({
-      code: x.exerciseCode,
-      repetition: x.repetition as Repetition,
-      timing: timingOf(x.exercise.sheet),
-    })),
-  );
+  const total = programTotal(ctx);
   // patient-access: the link goes with the sheet only while the patient has an active home program (design D2)
   const program = zoneEnabled() && p.status === 'ACTIVE' ? await currentProgram(db, p.id) : null;
   const emailNote = !ctx.consent.granted
@@ -53,7 +47,7 @@ export default async function HandoutPage({
     <>
       <div className="crumb">
         <Link href={record}>
-          ← {name} · {c.treatment.region.id} {locale === 'en' ? c.treatment.region.nameEn : c.treatment.region.nameDe}
+          ← {name} · {regionLabel(c.treatment.region, locale)}
         </Link>
       </div>
       {sp.flash === 'saved' ? (
