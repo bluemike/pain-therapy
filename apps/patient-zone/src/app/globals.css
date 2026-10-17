@@ -831,3 +831,36 @@ a.tcard h2 {
 .doc.pending .ic {
   color: var(--muted);
 }
+
+/* Iteration 8: Anleitung mit FRM- und EPD-Band */
+.guide {
+  margin-top: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+.guide summary {
+  cursor: pointer;
+  color: var(--gold-text);
+  font-weight: 600;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+.guide h3 {
+  margin: 12px 0 4px;
+  font-size: 15px;
+}
+.band {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  margin: 6px 0;
+}
+.chosen {
+  background: var(--gold-pale);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-weight: 600;
+}

@@ -273,6 +273,46 @@ az storage blob upload-batch --account-name <storageAccountName> --auth-mode log
 
 Prüfen: *Katalog → Engpassdehnungen* zeigt bei jeder Übung "Anhören"; ein Klick spielt die Aufnahme. Ersetzte MP3s brauchen keinen Neustart (Browser-Cache höchstens eine Stunde).
 
+## Iteration 8 (Bereiche, Sitzungen, Übungsteile)
+
+4 Bereiche mit je 3 Schmerzbereichen, "Sitzung" statt "Konsultation", Körperseite, Übung = Faszien-Rollmassage (FRM) + Engpassdehnung (Standardübung oder Variante), Selbstausführung pro Tag und Wochentage, "Mein Profil". Kein neuer Parameter, kein Secret, keine Bicep-Änderung.
+
+### 1. Patientendaten löschen (unmittelbar vor dem Deployment)
+
+Die Migration `20261018090000_areas_sessions` bricht ab, solange es Behandlungen gibt (alte Konsultationen lassen sich nicht in das neue Modell übertragen). Deshalb vorher nach dem bestehenden Ablauf löschen (Skript `~/Desktop/pain-therapy-purge` auf dem Mac, nur nach ausdrücklichem OK von Mike Franz; nicht umkehrbar). Katalog, Benutzer und Formulartexte bleiben. Läuft das Deployment ohne Löschen, schlägt der Migrationsjob fehl und die alte Revision bleibt aktiv.
+
+### 2. Medien hochladen
+
+Zusätzlich zu den Bildern und MP3s aus Iteration 3 und 7, im selben flachen Container `exercise-media`:
+
+```
+1A-frm.png  1A-std.png  1A-var.png     Bildbänder FRM, Standardübung, Varianten (fehlt eines, zeigt die App das ganze Blatt)
+1A-frm.mp3  1A-std.mp3  1A-V1.mp3 …    Audio je Teil und Variante
+segments-content.json                  Texte der Teile (= segments.json der Blattanalyse)
+```
+
+Die Quelle ist OneDrive `pain-therapy/exercises/analyse-v2`. Die MP3s nach den Korrekturen von Mike neu erzeugen, damit sie zu den Texten passen:
+
+```bash
+cd "<OneDrive>/pain-therapy/exercises/analyse-v2"
+AZURE_SPEECH_KEY=$(az cognitiveservices account keys list -n spch-pain-therapy -g rg-pain-therapy --query key1 -o tsv) \
+  node make-audio.mjs --force
+cp segments.json segments-content.json
+az storage blob upload-batch --account-name <storageAccountName> --auth-mode login -d exercise-media -s bilder --pattern "*.png" --overwrite
+az storage blob upload-batch --account-name <storageAccountName> --auth-mode login -d exercise-media -s . --pattern "*.mp3" --overwrite
+az storage blob upload --account-name <storageAccountName> --auth-mode login -c exercise-media -f segments-content.json -n segments-content.json --overwrite
+```
+
+Erwartet: 81 Bildbänder, 27 × 2 + 92 = 146 MP3s. Die Variantennummern kommen aus der Id (`1A-V3`) und müssen zu `prisma/catalog/exercise-variants.json` passen.
+
+### 3. Texte einspielen und prüfen
+
+Den Migrationsjob nach dem Upload einmal starten (`az containerapp job start -g rg-pain-therapy -n caj-pain-therapy-migrate`); `catalog:sync` liest `segments-content.json` wie `exercises-content.json`. Fehlt die Datei, bleiben die Texte unverändert.
+
+Prüfen: *L&B Basisdaten* zeigt die 4 Bereiche; *Übungen → 2A* zeigt FRM, Standardübung und Varianten mit Bild und "Anhören". Eine Test-Sitzung mit Körperseite, Verordnung und Wochentagen anlegen, das Übungsblatt drucken und in der Patienten-Zone die Anleitung öffnen. Danach den Testpatienten wieder löschen oder mit Mike Franz abmachen, dass er bleibt.
+
+**Rollback:** nur mit leerer Datenbank sinnvoll (die Migration ist nicht umkehrbar); vorherige Revision aktivieren und Datenbank aus dem Point-in-time-Backup vor der Migration wiederherstellen.
+
 ## Nach dem Go-live
 
 - **Aufbewahrung sperren:** Die Retention-Policy des Containers `signed-documents` ist zunächst entsperrt, damit sie korrigiert werden kann. Nach der Abnahme sperren (nicht umkehrbar):

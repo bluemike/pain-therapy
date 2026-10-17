@@ -135,7 +135,16 @@ describe('therapy catalog', () => {
       ['2E', false],
       ['2F', false],
     ]);
-    expect((await regionSheet(12)).exercises.map((x) => x.code)).toEqual(['2F', '4B', '4C', '4D', '4E', '4F', '4A', '4G']);
+    expect((await regionSheet(12)).exercises.map((x) => x.code)).toEqual([
+      '2F',
+      '4B',
+      '4C',
+      '4D',
+      '4E',
+      '4F',
+      '4A',
+      '4G',
+    ]);
   });
 
   it('marks exercises without rolling or variants as not captured (null)', async () => {

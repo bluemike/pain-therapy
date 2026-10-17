@@ -50,7 +50,7 @@ test('record in the patient zone: tabs, treatment, document, recording yesterday
   const email = `lena.${id}@example.ch`;
   const last = `Akte${id}`;
 
-  // Practice: treatment and consultation 3 days ago with 2A täglich 1x, pain 60 → 30, sheet by email with the link
+  // Practice: treatment and session 3 days ago with 2A 1× per day, pain 60 → 30, sheet by email with the link
   await login(page);
   await createSignedPatient(page, { first: 'Lena', last, dob: '14.02.1985', emailConsent: true, email });
   const recordUrl = page.url().split('?')[0];
@@ -60,18 +60,16 @@ test('record in the patient zone: tabs, treatment, document, recording yesterday
   await page.locator('#f_painStart').selectOption('60');
   await page.locator('#f_diagnosis').fill('Lumbalgie links');
   await page.getByRole('button', { name: 'Behandlung eröffnen' }).click();
-  await page.locator('section.treat').first().getByRole('link', { name: 'Konsultation', exact: true }).click();
+  await page.locator('section.treat').first().getByRole('link', { name: 'Sitzung', exact: true }).click();
   await page.locator('#f_at').fill(zurichLocal(3, 10));
-  await page
-    .getByRole('group', { name: 'Schmerz vor der Konsultation, %' })
-    .getByRole('button', { name: '60' })
-    .click();
-  await page
-    .getByRole('group', { name: 'Schmerz nach der Konsultation (Restschmerz), %' })
-    .getByRole('button', { name: '30' })
-    .click();
+  await page.getByRole('group', { name: 'Schmerz vorher, %' }).getByRole('button', { name: '60' }).click();
+  await page.getByRole('group', { name: 'Schmerz nachher, %' }).getByRole('button', { name: '30' }).click();
   await page.getByLabel('Übung 2A verordnet').check();
-  await page.getByRole('button', { name: 'Konsultation speichern' }).click();
+  await page
+    .getByRole('group', { name: 'Übung 2A: Übung fällt', exact: true })
+    .getByRole('button', { name: 'mittel' })
+    .click();
+  await page.getByRole('button', { name: 'Sitzung speichern' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Übungsblatt' })).toBeVisible({ timeout: 20_000 });
   await page.getByRole('button', { name: 'Übungsblatt senden' }).click();
   await expect(page.getByText('Der Link zur Patienten-Zone steht im Text der E-Mail.')).toBeVisible();
@@ -119,7 +117,7 @@ test('record in the patient zone: tabs, treatment, document, recording yesterday
   const cons = patient.getByTestId('consultation');
   await expect(cons).toHaveCount(1);
   await expect(cons).toContainText('60 % → 30 %');
-  await expect(cons).toContainText('2A täglich 1x');
+  await expect(cons).toContainText('2A 1× pro Tag · jeden Tag');
   await expect(patient.locator('img')).toHaveCount(0);
   await expectNoHorizontalScroll(patient, 'treatment');
   await expectNoA11yViolations(patient, 'treatment');

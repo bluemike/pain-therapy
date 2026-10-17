@@ -38,7 +38,7 @@ test('main screens', async ({ page }, info) => {
   await shot('06-invite');
 });
 
-/** Iteration 2: record with treatments, treatment form, consultation form and catalog (task 5.2, 5.3 preparation) */
+/** Iteration 2: record with treatments, treatment form, session form and catalog (task 5.2, 5.3 preparation) */
 test('treatment screens', async ({ page }, info) => {
   const shot = (name: string) =>
     page.screenshot({ path: `test-results/screenshots/${info.project.name}/${name}.png`, fullPage: true });
@@ -56,20 +56,18 @@ test('treatment screens', async ({ page }, info) => {
   await shot('11-new-treatment');
   await page.getByRole('button', { name: 'Behandlung eröffnen' }).click();
   await expect(page.getByText('Behandlung eröffnet.')).toBeVisible();
-  await page.locator('section.treat').first().getByRole('link', { name: 'Konsultation', exact: true }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Konsultation Nr. 1' })).toBeVisible();
-  await page
-    .getByRole('group', { name: 'Schmerz vor der Konsultation, %' })
-    .getByRole('button', { name: '60' })
-    .click();
+  await page.locator('section.treat').first().getByRole('link', { name: 'Sitzung', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Sitzung Nr. 1' })).toBeVisible();
+  await page.getByRole('group', { name: 'Schmerz vorher, %' }).getByRole('button', { name: '60' }).click();
+  await page.getByTestId('point-filter').selectOption('all');
   await page.getByLabel('Punkt 2.11.1 rechts behandelt').check();
   await page
     .getByRole('group', { name: 'Empfindlichkeit Punkt 2.11.1' })
     .getByRole('button', { name: 'stark' })
     .click();
-  await shot('12-consultation');
-  await page.getByRole('button', { name: 'Konsultation speichern' }).click();
-  await expect(page.getByText('Konsultation Nr. 1 gespeichert.')).toBeVisible();
+  await shot('12-session');
+  await page.getByRole('button', { name: 'Sitzung speichern' }).click();
+  await expect(page.getByText('Sitzung Nr. 1 gespeichert.')).toBeVisible();
   await shot('13-record-treatments');
   await page.goto('/catalog?tab=points&region=6');
   await shot('14-catalog-points');
@@ -87,17 +85,18 @@ test('home exercise screens', async ({ page }, info) => {
   await page.locator('#f_diagnosis').fill('Lumbalgie');
   await page.getByRole('button', { name: 'Behandlung eröffnen' }).click();
   await expect(page.getByText('Behandlung eröffnet.')).toBeVisible();
-  await page.locator('section.treat').first().getByRole('link', { name: 'Konsultation', exact: true }).click();
+  await page.locator('section.treat').first().getByRole('link', { name: 'Sitzung', exact: true }).click();
   await page.getByLabel('Übung 2A verordnet').check();
   await page.getByLabel('Übung 2D verordnet').check();
-  await page
-    .getByRole('group', { name: 'Wiederholung 2D wöchentlich', exact: true })
-    .getByRole('button', { name: '5x' })
-    .click();
+  const group = (name: string) => page.getByRole('group', { name, exact: true });
+  for (const d of ['Samstag', 'Sonntag']) await group('Übung 2D: Wochentage').getByRole('button', { name: d }).click();
   await page.getByLabel('Übung 2C verordnet').check();
+  await page.getByLabel('Übung 2C: EPD').selectOption('1');
+  for (const code of ['2A', '2C', '2D'])
+    await group(`Übung ${code}: Übung fällt`).getByRole('button', { name: 'mittel' }).click();
   await page.locator('section[aria-labelledby="h_home"]').scrollIntoViewIfNeeded();
   await shot('20-home-exercises');
-  await page.getByRole('button', { name: 'Konsultation speichern' }).click();
+  await page.getByRole('button', { name: 'Sitzung speichern' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Übungsblatt' })).toBeVisible();
   await shot('21-handout');
   await page.goto('/catalog/exercises/2A');

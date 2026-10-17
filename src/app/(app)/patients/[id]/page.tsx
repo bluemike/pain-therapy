@@ -461,8 +461,7 @@ async function Treatments({
                 <div className="meta num">
                   {t('opened', { at: formatDateTime(tr.startedAt) })} ·{' '}
                   {t('painStart', { pain: formatPercent(tr.painStart) })} ·{' '}
-                  {t('sideLine', { side: t(`side_${tr.side}`) })} ·{' '}
-                  {t('photoCount', { count: tr.photos.length })}
+                  {t('sideLine', { side: t(`side_${tr.side}`) })} · {t('photoCount', { count: tr.photos.length })}
                 </div>
                 <div className="diag">{t('diagnosisLine', { text: tr.diagnosis })}</div>
               </div>

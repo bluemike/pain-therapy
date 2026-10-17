@@ -103,6 +103,9 @@ export function normalizeContent(entry, stepLabels = []) {
 
 const items = (v) => (Array.isArray(v) ? v : []);
 const numbers = (v) => items(v).filter((n) => Number.isInteger(n) && n > 0);
+/** `number`, or the number of an id like "1A-V3" (segments.json of the sheet analysis) */
+const variantNumber = (v) =>
+  Number.isInteger(v?.number) ? v.number : Number(/-V(\d+)$/.exec(String(v?.id ?? ''))?.[1]) || null;
 
 /**
  * Brings the texts of one sheet from segments-content.json into the stored shape (iteration 8, design D2):
@@ -118,7 +121,7 @@ export function normalizeSegments(entry) {
     .map((st) => ({ label: String(st?.label ?? ''), text: text(st?.text) }))
     .filter((st) => st.text);
   const variants = items(entry.variants?.items)
-    .map((v, i) => ({ number: Number.isInteger(v?.number) ? v.number : i + 1, text: text(v?.text) }))
+    .map((v, i) => ({ number: variantNumber(v) ?? i + 1, text: text(v?.text) }))
     .filter((v) => v.text);
   const out = {
     frm: { items: frm },
@@ -144,17 +147,19 @@ export function contentByCode(content) {
  * `content`: parsed exercises-content.json, or null when it is not available (texts are then left unchanged).
  */
 export async function readCatalog(dir = HERE, content = null, segments = null) {
-  const [areas, regions, points, exercises, tools, regionPoints, regionExercises, sheets, variants] = await Promise.all([
-    json(dir, 'body-areas.json'),
-    json(dir, 'regions.json'),
-    json(dir, 'osteopressure-points.json'),
-    json(dir, 'exercises.json'),
-    json(dir, 'rolling-tools.json'),
-    csv(dir, 'region-points.csv'),
-    csv(dir, 'region-exercises.csv'),
-    json(dir, 'exercise-sheets.json'),
-    json(dir, 'exercise-variants.json'),
-  ]);
+  const [areas, regions, points, exercises, tools, regionPoints, regionExercises, sheets, variants] = await Promise.all(
+    [
+      json(dir, 'body-areas.json'),
+      json(dir, 'regions.json'),
+      json(dir, 'osteopressure-points.json'),
+      json(dir, 'exercises.json'),
+      json(dir, 'rolling-tools.json'),
+      csv(dir, 'region-points.csv'),
+      csv(dir, 'region-exercises.csv'),
+      json(dir, 'exercise-sheets.json'),
+      json(dir, 'exercise-variants.json'),
+    ],
+  );
   const texts = contentByCode(content);
   const segmentTexts = contentByCode(segments);
   const rows = {

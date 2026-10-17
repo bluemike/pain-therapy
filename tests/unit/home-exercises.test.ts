@@ -23,7 +23,7 @@ import { renderHandoutPdf, type HandoutPdfInput } from '@/lib/handout-pdf';
 import { setMailer } from '@/lib/mail';
 import { documentStore, setExerciseMediaStore, sha256 } from '@/lib/storage';
 import type { Actor } from '@/lib/session';
-import { normalizeContent, syncCatalog } from '../../prisma/catalog/sync.mjs';
+import { normalizeContent, normalizeSegments, syncCatalog } from '../../prisma/catalog/sync.mjs';
 import { placeholderPng, writePlaceholderMedia } from '../fixtures/exercise-media';
 import { TINY_JPEG } from '../fixtures/jpeg';
 import { resetDatabase } from './db-reset';
@@ -212,6 +212,30 @@ describe('exercise library', () => {
     });
     expect(normalizeContent({ code: '1A' })).toBeNull();
     expect(normalizeContent(null)).toBeNull();
+  });
+
+  it('loads the texts of FRM, Standardübung and Varianten from segments-content.json (exercise-segments)', async () => {
+    const oneA = await exerciseDetail('1A');
+    expect(oneA?.segments?.frm.items[0]).toEqual({ n: [1], text: expect.stringContaining('Platzhalter 1A') });
+    expect(oneA?.segments?.variants.items.map((v) => v.number)).toEqual(oneA?.epdVariants.map((v) => v.number));
+    // Numbers come from ids like "1A-V3", in any order
+    expect(
+      normalizeSegments({
+        variants: {
+          items: [
+            { id: '1A-V3', text: 'c' },
+            { id: '1A-V1', text: 'a' },
+          ],
+        },
+      })?.variants,
+    ).toEqual({
+      intro: null,
+      items: [
+        { number: 3, text: 'c' },
+        { number: 1, text: 'a' },
+      ],
+    });
+    expect(normalizeSegments({ frm: { items: [{ n: [1], text: ' ' }] } })).toBeNull();
   });
 
   it('delivers images only to signed-in users with a role (Bild ohne Anmeldung)', async () => {

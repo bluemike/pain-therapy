@@ -186,7 +186,8 @@ describe('consultation schema', () => {
   });
 
   it('requires at least one weekday and 1× to 3× per day (Tage abwählen)', () => {
-    const home = (h: object) => parse({ ...sheet, home: [{ code: '2D', timesPerDay: 1, weekdays: 127, note: null, ...h }] });
+    const home = (h: object) =>
+      parse({ ...sheet, home: [{ code: '2D', timesPerDay: 1, weekdays: 127, note: null, ...h }] });
     expect(home({ timesPerDay: 3, weekdays: 64 }).success).toBe(true);
     expect(sheetErrors(home({ weekdays: 0 }).error!)).toEqual({ 'home:2D': 'weekdayRequired' });
     expect(home({ timesPerDay: 4 }).success).toBe(false);

@@ -61,7 +61,7 @@ test.describe('patient zone', () => {
     const email = `anna.${id}@example.ch`;
     const last = `Zone${id}`;
 
-    // Practice: consultation with 2A täglich 2x and 2D wöchentlich 3x, exercise sheet by email with the link
+    // Practice: session with 2A 2× per day and 2D on every day but today, exercise sheet by email with the link
     await login(page);
     await createSignedPatient(page, { first: 'Anna', last, dob: '05.03.1980', emailConsent: true, email });
     const recordUrl = page.url().split('?')[0];
@@ -70,18 +70,17 @@ test.describe('patient zone', () => {
     await page.locator('#f_painStart').selectOption('60');
     await page.locator('#f_diagnosis').fill('Lumbalgie');
     await page.getByRole('button', { name: 'Behandlung eröffnen' }).click();
-    await page.locator('section.treat').first().getByRole('link', { name: 'Konsultation', exact: true }).click();
+    await page.locator('section.treat').first().getByRole('link', { name: 'Sitzung', exact: true }).click();
+    const group = (name: string) => page.getByRole('group', { name, exact: true });
     await page.getByLabel('Übung 2A verordnet').check();
-    await page
-      .getByRole('group', { name: 'Wiederholung 2A täglich', exact: true })
-      .getByRole('button', { name: '2x' })
-      .click();
+    await group('Übung 2A: Übung fällt').getByRole('button', { name: 'mittel' }).click();
+    await group('Übung 2A: pro Tag').getByRole('button', { name: '2×' }).click();
     await page.getByLabel('Übung 2D verordnet').check();
-    await page
-      .getByRole('group', { name: 'Wiederholung 2D wöchentlich', exact: true })
-      .getByRole('button', { name: '3x' })
-      .click();
-    await page.getByRole('button', { name: 'Konsultation speichern' }).click();
+    await page.getByLabel('Übung 2D: EPD').selectOption('1');
+    await group('Übung 2D: Übung fällt').getByRole('button', { name: 'leicht' }).click();
+    const today = new Intl.DateTimeFormat('de-CH', { weekday: 'long', timeZone: 'Europe/Zurich' }).format(new Date());
+    await group('Übung 2D: Wochentage').getByRole('button', { name: today }).click();
+    await page.getByRole('button', { name: 'Sitzung speichern' }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Übungsblatt' })).toBeVisible();
     await expect(page.getByLabel(/Link zur Patienten-Zone mitsenden/)).toBeChecked();
     await page.getByRole('button', { name: 'Übungsblatt senden' }).click();
@@ -104,10 +103,16 @@ test.describe('patient zone', () => {
     await patient.getByLabel('Tag (TT)').fill('05');
     await patient.getByRole('button', { name: 'Bestätigen' }).click();
     await expect(patient.getByRole('heading', { level: 1, name: 'Guten Tag, Anna' })).toBeVisible();
-    await expect(patient.getByText('Heute 0 von 2 täglichen Ausführungen erfasst.')).toBeVisible();
+    await expect(patient.getByText('Heute 0 von 2 Ausführungen erfasst.')).toBeVisible();
     await expect
       .poll(() => patient.getByAltText('Bild der Übung 2A').evaluate((img: HTMLImageElement) => img.naturalWidth))
       .toBeGreaterThan(0);
+    // Schedule per exercise; 2D is free today; the guide shows FRM and the chosen variant (iteration 8)
+    await expect(patient.locator('li.ex[data-code="2A"]')).toContainText('2× pro Tag · jeden Tag');
+    await expect(patient.locator('li.ex[data-code="2D"]')).toContainText('heute frei · 0 erfasst');
+    await expect(patient.locator('li.ex[data-code="2D"]')).toContainText('FRM + EPD Variante 1');
+    await patient.locator('li.ex[data-code="2D"] details.guide summary').click();
+    await expect(patient.locator('li.ex[data-code="2D"] .chosen')).toContainText('Platzhalter 2D: Variante 1');
 
     // Ausführung erfassen: 2A gemacht, 7/10, with a note
     await patient.locator('li.ex[data-code="2A"] summary').click();
@@ -117,7 +122,7 @@ test.describe('patient zone', () => {
     await form.getByLabel('Bemerkung (optional)').fill('Rechte Seite spannt');
     await form.getByRole('button', { name: 'Speichern' }).click();
     await expect(patient.getByText('Gespeichert.')).toBeVisible();
-    await expect(patient.getByText('Heute 1 von 2 täglichen Ausführungen erfasst.')).toBeVisible();
+    await expect(patient.getByText('Heute 1 von 2 Ausführungen erfasst.')).toBeVisible();
     const entries = patient.getByTestId('entry');
     await expect(entries).toHaveCount(1);
     await expect(entries.first()).toContainText('7/10');
