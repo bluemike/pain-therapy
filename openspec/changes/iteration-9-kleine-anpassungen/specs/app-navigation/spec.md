@@ -25,7 +25,7 @@ The practice app and the patient zone SHALL show every dialog centered in the vi
 - **THEN** erscheint der Dialog mittig über der abgedunkelten Seite und nicht oben links
 
 ### Requirement: PDF in der App
-The practice app and the patient zone SHALL open every PDF (signed disclaimer, exercise sheet, preview) in a full-screen view inside the app with a "Zurück" button that returns to the previous page. The view SHALL show all pages scrollable on iPad and iPhone and SHALL offer "Drucken" or "Herunterladen". It SHALL NOT open a new browser tab.
+The practice app and the patient zone SHALL open every PDF (signed disclaimer, exercise sheet, preview) in a full-screen view inside the app with a "Zurück" button that returns to the previous page. The view SHALL show all pages scrollable on iPad and iPhone and SHALL offer "Drucken" or "Herunterladen". It SHALL NOT open a new browser tab. The printout of an exercise sheet keeps its own window, which the browser needs for printing; clinical photos keep their own view.
 
 #### Scenario: Vorschau des Übungsprogramms
 - **WHEN** die Therapeutin in der Sitzung die Vorschau des Übungsprogramms öffnet

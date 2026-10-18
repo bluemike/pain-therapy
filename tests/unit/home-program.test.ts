@@ -46,7 +46,7 @@ describe('time needed', () => {
   it('1D with 6 min, 1× on 5 days: 30 min per week, about 4 min per day (Zeit)', () => {
     const t = programTime([{ code: '1D', schedule: { timesPerDay: 1, weekdays: MO_FR }, timing: twoSides }]);
     expect(t.weekMinutes).toBe(30);
-    expect(formatMinutes(t.dayMinutes)).toBe('4.3 min');
+    expect(formatMinutes(t.dayMinutes)).toBe('4 min');
   });
 
   it('computes one execution as rolling + stretch per side × sides (Übung mit zwei Seiten)', () => {
@@ -94,9 +94,11 @@ describe('time needed', () => {
   });
 
   it('formats minutes in both languages', () => {
-    // Swiss format: decimal point in German too
-    expect(formatMinutes(4.5)).toBe('4.5 min');
-    expect(formatMinutes(4.5, 'en')).toBe('4.5 min');
+    // Whole minutes, rounded half up (iteration 9)
+    expect(formatMinutes(4.5)).toBe('5 min');
+    expect(formatMinutes(4.5, 'en')).toBe('5 min');
+    expect(formatMinutes(12.5)).toBe('13 min');
+    expect(formatMinutes(4.3)).toBe('4 min');
     expect(formatMinutes(10.857)).toBe('11 min');
     expect(formatMinutes(0)).toBe('0 min');
   });

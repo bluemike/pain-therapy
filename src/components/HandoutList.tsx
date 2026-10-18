@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import type { ExerciseHandout, HandoutDelivery } from '@prisma/client';
 import { formatDateTime } from '@/lib/format';
+import { PdfLink } from '@/components/PdfLink';
 import { resendHandout } from '@/app/(app)/handout-actions';
 
 type Row = ExerciseHandout & { deliveries: HandoutDelivery[]; consultation: { number: number } };
@@ -94,9 +95,9 @@ export async function HandoutList({ handouts }: { handouts: Row[] }) {
             </div>
           </div>
           <div className="act">
-            <a className="btn btn--ghost" href={`/documents/${h.id}`} target="_blank" rel="noopener">
+            <PdfLink src={`/documents/${h.id}`} title={t('documentNumber', { number: h.documentNumber })}>
               {tc('openPdf')}
-            </a>
+            </PdfLink>
           </div>
         </div>
       ))}

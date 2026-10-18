@@ -67,7 +67,7 @@ test.describe('treatments and sessions', () => {
     await anonymous.close();
 
     // Sitzung Nr. 1 on the form of area 2.3; the treatment is on the right side
-    await card.getByRole('link', { name: 'Sitzung' }).click();
+    await card.getByRole('link', { name: 'Sitzung', exact: true }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Sitzung Nr. 1' })).toBeVisible();
     await expect(page.getByText('Behandlungsbogen 2.3 · Lendenwirbelsäule, Bauch')).toBeVisible();
     await expect(page.locator('#f_diagnosis')).toHaveValue('Lumbalgie rechts, ausstrahlend in die Leiste');
@@ -112,8 +112,8 @@ test.describe('treatments and sessions', () => {
     await expect(after.getByRole('button', { name: '40' })).toHaveAttribute('aria-pressed', 'false');
     await after.getByRole('button', { name: '30' }).click();
 
-    // Only the side of the treatment can be ticked; a sensitivity ticks it; second tap clears, third sets again
-    await expect(page.getByLabel('Punkt 2.11.1 links behandelt')).toBeDisabled();
+    // Only the side of the treatment is offered (iteration 9); a sensitivity ticks it; second tap clears, third sets again
+    await expect(page.getByLabel('Punkt 2.11.1 links behandelt')).toHaveCount(0);
     const sens = group(page, 'Empfindlichkeit Punkt 2.11.1');
     await sens.getByRole('button', { name: 'stark' }).click();
     await expect(page.getByLabel('Punkt 2.11.1 rechts behandelt')).toBeChecked();
@@ -132,10 +132,16 @@ test.describe('treatments and sessions', () => {
     // Exercise 2D prescribed with variant 1; "Übung fällt" is required
     await page.getByLabel('Übung 2D verordnet').check();
     await page.getByLabel('Übung 2D: EPD').selectOption('1');
-    await page.locator('#f_comparison').fill('Erste Sitzung');
+    // No comparison in session 1 (iteration 9)
+    await expect(page.locator('#f_comparison')).toHaveCount(0);
     await page.getByRole('button', { name: 'Sitzung speichern' }).click();
     await expect(page.getByText('Nicht gespeichert. Bitte prüfen Sie die markierten Felder.')).toBeVisible();
     await expect(page.locator('section[aria-labelledby="h_ex"] tr.bad')).toHaveCount(1);
+    // A treated side needs a sensitivity (iteration 9): the point is marked and nothing is saved
+    const p111 = page.locator('tr[data-point="1.1.1"]');
+    await expect(p111).toHaveClass(/bad/);
+    await expect(p111).toContainText('Bitte die Empfindlichkeit angeben.');
+    await group(page, 'Empfindlichkeit Punkt 1.1.1').getByRole('button', { name: 'niedrig' }).click();
     await group(page, 'Übung 2D: Übung fällt').getByRole('button', { name: 'schwer' }).click();
     // Selbstausführung: 2× per day, without Saturday and Sunday
     await group(page, 'Übung 2D: pro Tag').getByRole('button', { name: '2×' }).click();
@@ -156,12 +162,15 @@ test.describe('treatments and sessions', () => {
     await expect(list).toHaveCount(1);
     await expect(list.first()).toContainText('Nr. 1');
     await expect(list.first()).toContainText('60 % → 30 %');
+    await expect(list.first()).toContainText('Sitzung Nr. 1');
     await expect(list.first()).toContainText('2 Punkte · 1 Übung · 1 Foto');
+    await expect(list.first().getByRole('link', { name: 'Ändern: Sitzung Nr. 1' })).toBeVisible();
 
     // Second session with only the pain before; it starts with the relevant (red) points
-    await page.locator('section.treat').first().getByRole('link', { name: 'Sitzung' }).click();
+    await page.locator('section.treat').first().getByRole('link', { name: 'Sitzung', exact: true }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Sitzung Nr. 2' })).toBeVisible();
     await expect(page.getByTestId('point-filter')).toHaveValue('relevant');
+    await page.locator('#f_comparison').fill('Besser als in Sitzung 1');
     await group(page, 'Schmerz vorher, %').getByRole('button', { name: '50' }).click();
     await page.getByRole('button', { name: 'Sitzung speichern' }).click();
     await expect(page.getByText('Sitzung Nr. 2 gespeichert.')).toBeVisible();
@@ -193,7 +202,7 @@ test.describe('treatments and sessions', () => {
     await page
       .locator('section.treat')
       .first()
-      .getByRole('link', { name: /^Ändern/ })
+      .getByRole('link', { name: /^Ändern: (?!Sitzung)/ })
       .click();
     await expect(page.getByRole('heading', { level: 1, name: 'Behandlung ändern' })).toBeVisible();
     await expect(page.getByRole('button', { name: /Löschen/ })).toHaveCount(0);

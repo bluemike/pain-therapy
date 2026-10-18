@@ -53,19 +53,23 @@ export async function logoutAction() {
   redirect('/?out=1');
 }
 
-/** Entries only with the home program; while a signature is pending the task to sign comes first (iteration 5) */
-async function requireSession() {
+/**
+ * Entries only with the home program; while a signature is pending the task to sign comes first (iteration 5). The
+ * hidden field "b" names the treatment whose program the form belongs to (iteration 9, design D8).
+ */
+async function requireSession(fd: FormData) {
   const s = await getZoneSession();
   if (s?.signaturePending) redirect('/unterschrift');
-  const p = programSession(s);
+  const p = programSession(s, String(fd.get('b') ?? '') || null);
   if (!p) redirect('/');
   return p;
 }
 
-/** Back to the day the patient was looking at (hidden field "tag" of the forms, design D7) */
+/** Back to the day and the program the patient was looking at (hidden fields "tag", design D7, and "b") */
 function homeWith(s: ProgramSession, fd: FormData, query: string) {
   const { day, today } = chosenDay(String(fd.get('tag') ?? ''), s.program.consultationAt);
-  return `/?${query}${today ? '' : `&tag=${day}`}`;
+  const b = s.programs.length > 1 ? `&b=${encodeURIComponent(s.program.treatmentId)}` : '';
+  return `/?${query}${today ? '' : `&tag=${day}`}${b}`;
 }
 
 export type EntryValues = { done: boolean; rating: number | null; date: string; time: string; note: string };
@@ -84,7 +88,7 @@ function entryValues(fd: FormData): EntryValues {
 }
 
 export async function createEntryAction(prev: EntryState, fd: FormData): Promise<EntryState> {
-  const s = await requireSession();
+  const s = await requireSession(fd);
   const failed = (error: EntryError) => ({ error, values: entryValues(fd), attempt: (prev.attempt ?? 0) + 1 });
   const parsed = parseEntryForm(fd);
   if (!parsed.ok) return failed(parsed.error);
@@ -94,7 +98,7 @@ export async function createEntryAction(prev: EntryState, fd: FormData): Promise
 }
 
 export async function correctEntryAction(prev: EntryState, fd: FormData): Promise<EntryState> {
-  const s = await requireSession();
+  const s = await requireSession(fd);
   const failed = (error: EntryError) => ({ error, values: entryValues(fd), attempt: (prev.attempt ?? 0) + 1 });
   const parsed = parseEntryForm(fd);
   if (!parsed.ok) return failed(parsed.error);
@@ -104,14 +108,14 @@ export async function correctEntryAction(prev: EntryState, fd: FormData): Promis
 }
 
 export async function deleteEntryAction(fd: FormData) {
-  const s = await requireSession();
+  const s = await requireSession(fd);
   const error = await deleteEntry(s, String(fd.get('id') ?? ''));
   redirect(homeWith(s, fd, error ? 'err=notEditable' : 'ok=deleted'));
 }
 
 /** "Alle Übungen dieses Tages erledigt" for the day in the hidden field "tag" (today without it) */
 export async function quickEntryAction(fd: FormData) {
-  const s = await requireSession();
+  const s = await requireSession(fd);
   const { day } = chosenDay(String(fd.get('tag') ?? ''), s.program.consultationAt);
   const n = await quickEntry(s, new Date(), day);
   redirect(homeWith(s, fd, `ok=quick&n=${n}`));

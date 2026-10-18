@@ -1,6 +1,7 @@
 import type { ConsentKind, Language } from '@prisma/client';
 import { ZONE_ACTOR } from '@pain-therapy/shared/access';
 import { signatureSize, zonePlace } from '@pain-therapy/shared/signing';
+import { config } from './config';
 import { db } from './db';
 import { audit, SYSTEM_ACTOR } from './audit';
 import { formatDateTime } from './format';
@@ -86,14 +87,17 @@ export async function finalizeSignature(sid: string) {
           sizeBytes: pdf.length,
         },
       });
-      const delivery = await tx.emailDelivery.create({
-        data: {
-          documentId: document.id,
-          recipient: emailStatus === 'PENDING' ? patient.email : null,
-          status: emailStatus,
-          requestedBy,
-        },
-      });
+      // zone-documents (iteration 9, design D4): with the patient zone the document is only there, no email with it
+      const delivery = config.patientZone.url
+        ? null
+        : await tx.emailDelivery.create({
+            data: {
+              documentId: document.id,
+              recipient: emailStatus === 'PENDING' ? patient.email : null,
+              status: emailStatus,
+              requestedBy,
+            },
+          });
       await audit(
         SYSTEM_ACTOR,
         'document.archived',
@@ -127,7 +131,7 @@ export async function finalizePending(now = new Date()) {
       const result = await finalizeSignature(id);
       if (result) {
         done++;
-        if (result.delivery.status === 'PENDING') await deliverEmail(result.delivery.id).catch(console.error);
+        if (result.delivery?.status === 'PENDING') await deliverEmail(result.delivery.id).catch(console.error);
       }
     } catch (e) {
       console.error(`finalizeSignature ${id} failed`, e);

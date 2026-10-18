@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test';
-import { createSignedPatient, fillPatient, login, unique } from './helpers';
+import { createSignedPatient, fillPatient, login, pdfSrcOf, unique } from './helpers';
 
 /**
  * Iteration 6, signing-zone-only (task 1.4): the patient mode on the iPad is gone; the practice invites to sign in the
- * patient zone, and the signed PDF lands in the record and goes out by email with consent.
+ * patient zone, and the signed PDF lands in the record and the patient finds it in the zone (iteration 9: no email).
  */
 test.describe('signing only in the patient zone', () => {
   test('no hand-over, no pages under /sign, invitation after saving', async ({ page }) => {
@@ -18,7 +18,7 @@ test.describe('signing only in the patient zone', () => {
       expect((await page.request.get(path)).status(), path).toBe(404);
   });
 
-  test('signed PDF in the record and sent by email', async ({ page }) => {
+  test('signed PDF in the record, in the zone instead of an email', async ({ page }) => {
     test.setTimeout(120_000);
     await login(page);
     const email = `sarah.${unique()}@example.com`;
@@ -32,17 +32,13 @@ test.describe('signing only in the patient zone', () => {
     await page.goto(`${page.url().split('?')[0]}?tab=documents`);
     await expect(page.getByText('gültig')).toBeVisible();
     await expect(page.getByText(/Textversion \d+/)).toBeVisible();
-    await expect
-      .poll(
-        async () => {
-          await page.reload();
-          return page.getByText(`Per E-Mail an ${email} gesendet`).count();
-        },
-        { timeout: 15_000 },
-      )
-      .toBe(1);
+    // iteration 9 (design D4): no email with the PDF, the patient finds it in the zone
+    await expect(
+      page.getByText('Der Patient findet das Dokument in der Patienten-Zone unter «Dokumente».'),
+    ).toBeVisible();
+    await expect(page.getByText(`Per E-Mail an ${email} gesendet`)).toHaveCount(0);
     const href = await page.getByRole('link', { name: 'PDF öffnen' }).getAttribute('href');
-    const res = await page.request.get(href!);
+    const res = await page.request.get(pdfSrcOf(href!, page.url()));
     expect(res.status()).toBe(200);
     expect(res.headers()['content-type']).toBe('application/pdf');
     expect((await res.body()).subarray(0, 5).toString()).toBe('%PDF-');

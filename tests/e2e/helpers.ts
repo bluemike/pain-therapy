@@ -1,6 +1,6 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { expect, type Browser, type Page } from '@playwright/test';
+import { expect, type Browser, type Locator, type Page } from '@playwright/test';
 
 const OUTBOX = path.resolve(process.env.E2E_OUTBOX_DIR ?? 'data/e2e-outbox');
 
@@ -52,8 +52,8 @@ export async function confirmInZone(patient: Page, link: string, dob: string) {
   await patient.goto(link);
   await patient.getByLabel('Tag (TT)').fill(d);
   await patient.getByLabel('Monat (MM)').fill(m);
+  // zone-login (iteration 9): 4 digits of the year submit the form
   await patient.getByLabel('Jahr (JJJJ)').fill(y);
-  await patient.getByRole('button', { name: 'Bestätigen' }).click();
   await expect(patient.getByRole('heading', { level: 1, name: /^Guten Tag/ })).toBeVisible();
 }
 
@@ -151,4 +151,35 @@ export async function expectNoA11yViolations(page: Page, name: string) {
     .analyze();
   const summary = violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
   expect(summary, `${name} has accessibility violations`).toEqual([]);
+}
+
+/** app-navigation (iteration 9, design D1): opens the menu of the initials button ("Mein Profil", "Abmelden") */
+export async function openUserMenu(page: Page) {
+  await page.getByRole('button', { name: /^Menü für / }).click();
+}
+
+/** app-navigation (iteration 9, design D3): the PDF behind a link to the in-app view `/pdf?src=…` */
+export function pdfSrcOf(href: string, base: string) {
+  const url = new URL(href, base);
+  expect(url.pathname).toBe('/pdf');
+  return new URL(url.searchParams.get('src')!, base).toString();
+}
+
+/** Opens a PDF link in the in-app view, waits for the rendered pages and goes back with «Zurück» */
+export async function viewPdfAndBack(page: Page, link: Locator) {
+  const from = page.url();
+  await link.click();
+  const viewer = page.getByTestId('pdf-viewer');
+  await expect(viewer).toHaveAttribute('data-state', 'ready', { timeout: 20_000 });
+  await expect(viewer.locator('canvas').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Zurück' }).click();
+  await expect(page).toHaveURL(from);
+}
+
+/** app-navigation (iteration 9, design D2): a dialog sits in the middle of the viewport */
+export async function expectCentered(page: Page, dialog: Locator) {
+  const box = (await dialog.boundingBox())!;
+  const view = page.viewportSize()!;
+  expect(Math.abs(box.x + box.width / 2 - view.width / 2)).toBeLessThan(4);
+  if (box.height < view.height - 40) expect(Math.abs(box.y + box.height / 2 - view.height / 2)).toBeLessThan(4);
 }

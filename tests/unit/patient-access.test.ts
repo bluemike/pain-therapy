@@ -4,6 +4,7 @@ import { rm } from 'node:fs/promises';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { linkState } from '@pain-therapy/shared/access';
+import { currentProgram, currentPrograms } from '@pain-therapy/shared/program';
 import { zurichInputs } from '@pain-therapy/shared/time';
 import { db } from '@/lib/db';
 import { config } from '@/lib/config';
@@ -258,8 +259,35 @@ describe('access link from the record (Link senden aus der Akte)', () => {
   });
 });
 
+describe('home programs per treatment (iteration 9, design D8)', () => {
+  it('keeps the latest prescription of each treatment, newest treatment program first', async () => {
+    const { p, c: back } = await withProgram('Zwei', { ago: 10 });
+    const neck = await createTreatment(
+      actor,
+      p.id,
+      treatmentSchema.parse({ startedAt: daysAgo(5), regionId: '1', diagnosis: 'Nacken', painStart: '50' }),
+    );
+    const c = await createConsultation(
+      actor,
+      neck.id,
+      consultationInput(daysAgo(2), {
+        exercises: [prescribed('1A')],
+        home: [{ code: '1A', timesPerDay: 2, weekdays: 127, note: null }],
+      }),
+    );
+    const programs = await currentPrograms(db, p.id);
+    expect(programs.map((x) => [x.consultationId, x.region.code, x.active])).toEqual([
+      [c.id, expect.any(String), true],
+      [back.id, expect.any(String), true],
+    ]);
+    expect(programs[0].prescriptions.map((x) => x.exerciseCode)).toEqual(['1A']);
+    expect(programs[1].prescriptions.map((x) => x.exerciseCode)).toEqual(['2A', '2D']);
+    expect((await currentProgram(db, p.id))?.consultationId).toBe(c.id);
+  });
+});
+
 describe('link with the exercise sheet (Link mit dem Übungsblatt)', () => {
-  it('puts the link into the email text, never into the archived PDF', async () => {
+  it('puts the link into the email text without attachment, never into the archived PDF', async () => {
     const { p, c } = await withProgram('Blatt', { emailConsent: true });
     const { handout, delivery, access } = await createHandout(actor, c.id, 'EMAIL', { withLink: true });
     expect(access?.url).toMatch(/^https:\/\/patient\.example\.ch\/l\//);
@@ -267,7 +295,11 @@ describe('link with the exercise sheet (Link mit dem Übungsblatt)', () => {
     expect(done?.status).toBe('SENT');
     expect(sent).toHaveLength(1);
     expect(sent[0].text).toContain(access!.url);
-    const archived = await pdfText(sent[0].attachment!.data);
+    // iteration 9 (design D4): the email carries only the link, the sheet is in the zone under «Dokumente»
+    expect(sent[0].attachment).toBeUndefined();
+    const archived = await pdfText(
+      Buffer.from(await (await import('@/lib/storage')).documentStore().get(handout.blobPath)),
+    );
     expect(archived.text).not.toContain(tokenOf(access!.url));
     expect(archived.text).not.toContain('Patienten-Zone');
     const linkDelivery = await db.accessLinkDelivery.findFirstOrThrow({ where: { handoutId: handout.id } });

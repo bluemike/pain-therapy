@@ -16,7 +16,9 @@ import { handoutsOf } from '@/lib/handouts';
 import { exerciseLogOf } from '@/lib/exercise-log';
 import { ExerciseLogTab } from '@/components/ExerciseLogTab';
 import { SignatureInvite } from '@/components/SignatureInvite';
-import { inviteStatusOf, zoneEnabled, type InviteStatus } from '@/lib/patient-access';
+import { PdfLink } from '@/components/PdfLink';
+import { consentStateOf, inviteStatusOf, zoneEnabled, type InviteStatus } from '@/lib/patient-access';
+import { ConsentStatePoller } from '@/components/ConsentStatePoller';
 import { reactivatePatient, resendEmail } from '../../actions';
 import { resolveNoteAction } from '../../access-link-actions';
 
@@ -55,6 +57,11 @@ export default async function PatientRecord({
   // zone-consent-invitation (iteration 5, design D3, D9): invite to sign in the patient zone, state of the invitation
   const canInvite = active && p.consent !== 'signed' && zoneEnabled();
   const invite = active && zoneEnabled() ? await inviteStatusOf(p.id, p.consent !== 'signed') : null;
+  // zone-documents (iteration 9, design D5): watch an open invitation and a PDF still being created
+  const watching =
+    !!invite &&
+    (invite.kind === 'sent' || invite.kind === 'opened' || invite.kind === 'failed' || p.finalizing.length > 0);
+  const consentState = watching ? await consentStateOf(p.id) : null;
   const inviteButton = (variant: 'gold' | 'ghost', openOnLoad = false) =>
     canInvite ? (
       <SignatureInvite patientId={p.id} name={name} email={p.email} variant={variant} openOnLoad={openOnLoad} />
@@ -102,6 +109,7 @@ export default async function PatientRecord({
 
   return (
     <>
+      {consentState ? <ConsentStatePoller patientId={p.id} state={consentState} /> : null}
       <div className="crumb">
         <Link href="/patients">← {tp('title')}</Link>
       </div>
@@ -457,7 +465,7 @@ async function Treatments({
           <section className="card treat" id={`t-${tr.id}`} key={tr.id} aria-labelledby={`th-${tr.id}`}>
             <header>
               <div style={{ minWidth: 0 }}>
-                <h2 id={`th-${tr.id}`}>{label}</h2>
+                <h2 id={`th-${tr.id}`}>{t('treatmentTitle', { label })}</h2>
                 <div className="meta num">
                   {t('opened', { at: formatDateTime(tr.startedAt) })} ·{' '}
                   {t('painStart', { pain: formatPercent(tr.painStart) })} ·{' '}
@@ -493,12 +501,14 @@ async function Treatments({
                 })}
               </ul>
             ) : null}
+            {/* session-form (iteration 9): sessions under a dark gold divider, each with its own "Ändern" */}
             {tr.consultations.length ? (
-              <ul className="conslist" aria-label={`${t('consultationsOf')} ${label}`}>
-                {tr.consultations.map((c) => (
-                  <li key={c.id}>
-                    <Link href={`${base}/consultations/${c.id}`}>
-                      <span className="n">{t('number', { n: c.number })}</span>
+              <div className="sessions">
+                <h3 className="sessions-h">{t('consultationsOf')}</h3>
+                <ul className="conslist" aria-label={`${t('consultationsOf')} ${label}`}>
+                  {tr.consultations.map((c) => (
+                    <li key={c.id}>
+                      <span className="n">{t('sessionTitle', { n: c.number })}</span>
                       <span className="d num">{formatDateTime(c.at)}</span>
                       <span className="p num">{pain(c)}</span>
                       <span className="x">
@@ -510,11 +520,17 @@ async function Treatments({
                           .filter(Boolean)
                           .join(' · ')}
                       </span>
-                      <span aria-hidden="true">›</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+                      <Link
+                        className="btn btn--ghost"
+                        href={`${base}/consultations/${c.id}`}
+                        aria-label={`${t('edit')}: ${t('sessionTitle', { n: c.number })}`}
+                      >
+                        {t('edit')}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ) : (
               <div className="body muted">{t('noConsultations')}</div>
             )}
@@ -536,19 +552,20 @@ async function DeliveryLine({
 }) {
   const t = await getTranslations('documents');
   const tc = await getTranslations('common');
-  if (!d) return null;
+  // zone-documents (iteration 9, design D4): with the patient zone the document is sent to nobody, it is there
+  if (!d)
+    return zoneEnabled() ? (
+      <>
+        <span className="pill ok">{t('zonePill')}</span>
+        <span>{t('inZone')}</span>
+      </>
+    ) : null;
   const printLink = (
-    <a
-      className="btn btn--ghost"
-      style={{ minHeight: 36 }}
-      href={`/documents/${documentId}`}
-      target="_blank"
-      rel="noopener"
-    >
+    <PdfLink src={`/documents/${documentId}`} style={{ minHeight: 36 }}>
       {tc('print')}
-    </a>
+    </PdfLink>
   );
-  const resend = (
+  const resend = zoneEnabled() ? null : (
     <form action={resendEmail} className="inline">
       <input type="hidden" name="documentId" value={documentId} />
       <input type="hidden" name="patientId" value={patientId} />
@@ -659,9 +676,9 @@ async function Documents({ p, invite }: { p: Rec; invite: React.ReactNode }) {
             </div>
           </div>
           <div className="act">
-            <a className="btn btn--ghost" href={`/documents/${d.id}`} target="_blank" rel="noopener">
+            <PdfLink src={`/documents/${d.id}`} title={t('documentNumber', { number: d.documentNumber })}>
               {tc('openPdf')}
-            </a>
+            </PdfLink>
           </div>
         </div>
       ))}

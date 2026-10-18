@@ -391,6 +391,14 @@ export const sheetSchema = z
   .refine((s) => new Set(s.points.map((p) => p.pointId)).size === s.points.length, { message: 'sheet' })
   .refine((s) => new Set(s.exercises.map((x) => x.code)).size === s.exercises.length, { message: 'sheet' })
   .superRefine((s, ctx) => {
+    // session-form (iteration 9): a treated side needs a sensitivity and a sensitivity needs a side
+    for (const p of s.points) {
+      const side = p.left || p.right;
+      if (side && !p.sensitivity)
+        ctx.addIssue({ code: 'custom', path: ['points', p.pointId], message: 'sensitivityRequired' });
+      if (!side && p.sensitivity)
+        ctx.addIssue({ code: 'custom', path: ['points', p.pointId], message: 'sideRequired' });
+    }
     // session-form: "Übung fällt" is required for every prescribed exercise
     for (const x of s.exercises)
       if (x.prescribed && !x.difficulty)
@@ -402,12 +410,15 @@ export const sheetSchema = z
 export type Sheet = z.output<typeof sheetSchema>;
 export const EMPTY_SHEET: Sheet = { points: [], exercises: [], home: [] };
 
-/** Errors of single exercises: { "exercises:1A": "difficultyRequired", "home:1A": "weekdayRequired" } */
+/**
+ * Errors of single rows: { "exercises:1A": "difficultyRequired", "home:1A": "weekdayRequired",
+ * "points:2.3.1": "sensitivityRequired" }
+ */
 export function sheetErrors(error: z.ZodError): Record<string, string> {
   const out: Record<string, string> = {};
   for (const issue of error.issues) {
     const [root, part, code] = issue.path;
-    if (root === 'sheet' && (part === 'exercises' || part === 'home') && typeof code === 'string')
+    if (root === 'sheet' && (part === 'exercises' || part === 'home' || part === 'points') && typeof code === 'string')
       out[`${part}:${code}`] ??= issue.message;
   }
   return out;

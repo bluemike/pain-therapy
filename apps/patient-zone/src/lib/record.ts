@@ -175,10 +175,19 @@ export async function documentsOf(s: ZoneSession) {
         consultationId: true,
         version: true,
         createdAt: true,
-        consultation: { select: { number: true, at: true } },
+        consultation: {
+          select: {
+            number: true,
+            at: true,
+            treatment: {
+              select: { id: true, startedAt: true, region: { select: { nameDe: true, nameEn: true } } },
+            },
+          },
+        },
       },
     }),
   ]);
+  const en = s.patient.preferredLanguage === 'en';
   const newest = new Map<string, number>();
   for (const h of sheets) newest.set(h.consultationId, Math.max(newest.get(h.consultationId) ?? 0, h.version));
   return {
@@ -196,6 +205,27 @@ export async function documentsOf(s: ZoneSession) {
       date: h.createdAt,
       current: newest.get(h.consultationId) === h.version,
     })),
+    /**
+     * zone-record (iteration 9, design D8): the exercise sheets grouped by treatment (newest treatment first) and,
+     * within it, by session
+     */
+    treatments: [...new Map(sheets.map((h) => [h.consultation.treatment.id, h.consultation.treatment])).values()]
+      .sort((a, b) => b.startedAt.getTime() - a.startedAt.getTime())
+      .map((tr) => ({
+        id: tr.id,
+        startedAt: tr.startedAt,
+        name: en ? tr.region.nameEn : tr.region.nameDe,
+        sheets: sheets
+          .filter((h) => h.consultation.treatment.id === tr.id)
+          .sort((a, b) => b.consultation.number - a.consultation.number || b.version - a.version)
+          .map((h) => ({
+            documentNumber: h.documentNumber,
+            consultation: h.consultation.number,
+            version: h.version,
+            date: h.createdAt,
+            current: newest.get(h.consultationId) === h.version,
+          })),
+      })),
   };
 }
 

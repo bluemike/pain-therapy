@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { login } from './helpers';
+import { login, openUserMenu } from './helpers';
 
 test.describe('access-control', () => {
   test('without sign-in the app shows only the sign-in page', async ({ page }) => {
@@ -39,7 +39,13 @@ test.describe('access-control', () => {
 
   test('Mein Profil: display name and professional title, greeted again after a new sign-in', async ({ page }) => {
     await login(page, { role: 'Therapist' });
-    await page.getByRole('link', { name: 'Mein Profil' }).first().click();
+    // app-navigation (iteration 9): profile and sign-out sit in the menu of the initials button
+    await openUserMenu(page);
+    await expect(page.getByRole('link', { name: 'Mein Profil' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('link', { name: 'Mein Profil' })).toBeHidden();
+    await openUserMenu(page);
+    await page.getByRole('link', { name: 'Mein Profil' }).click();
     await expect(page.locator('#f_title')).toHaveValue('THERAPIST_M');
     await page.locator('#f_displayName').fill('');
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
@@ -48,7 +54,8 @@ test.describe('access-control', () => {
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
     await expect(page.getByText('Profil gespeichert.')).toBeVisible();
     await expect(page.locator('header').first()).toContainText('Therapeut');
-    await page.getByRole('button', { name: 'Abmelden' }).first().click();
+    await openUserMenu(page);
+    await page.getByRole('button', { name: 'Abmelden' }).click();
     await expect(page).toHaveURL(/\/login/);
     await login(page, { role: 'Therapist' });
     await expect(page.getByTestId('greeting')).toHaveText('Hallo Michael');
@@ -61,7 +68,8 @@ test.describe('access-control', () => {
 
   test('sign out ends the session', async ({ page }) => {
     await login(page);
-    await page.getByRole('button', { name: 'Abmelden' }).first().click();
+    await openUserMenu(page);
+    await page.getByRole('button', { name: 'Abmelden' }).click();
     await expect(page).toHaveURL(/\/login/);
     await page.goto('/');
     await expect(page).toHaveURL(/\/login/);

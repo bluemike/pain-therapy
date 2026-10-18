@@ -35,6 +35,7 @@
     "signedOut": "You are signed out. The next time you open the link, your date of birth will be requested."
   },
   "home": {
+    "programs": "Choose a programme",
     "greeting": "Hello {name}",
     "todaySummary": "Today {done} of {total} executions recorded.",
     "quick": "All of today's exercises done",
@@ -251,7 +252,8 @@
     "title": "My documents",
     "sub": "Tap to view or download.",
     "sheets": "Exercise sheets",
-    "sheet": "Exercise sheet session {n}",
+    "sheet": "Exercise sheet session no. {n}",
+    "since": "Treatment since {date}",
     "current": "current",
     "version": "Version {n}",
     "disclaimers": "Liability waiver",
@@ -264,5 +266,13 @@
     "openLabel": "Open {name} of {date}",
     "noSheets": "No exercise sheets yet.",
     "noDisclaimer": "No signed liability waiver yet."
+  },
+  "pdfView": {
+    "title": "Document",
+    "back": "Back",
+    "download": "Download",
+    "loading": "Loading document …",
+    "error": "The document cannot be shown here.",
+    "page": "Page {n} of {total}"
   }
 }

@@ -299,7 +299,10 @@ export async function deliverHandout(deliveryId: string, opts: { retryDelayMs?: 
             name: `${handout.patient.firstName} ${handout.patient.lastName}`,
             date: formatDateZurich(handout.consultation.at),
           }),
-      attachment: { name: `${handout.documentNumber}.pdf`, contentType: 'application/pdf', data },
+      // zone-documents (iteration 9, design D4): with the link the sheet is in the zone, no attachment
+      attachment: opts.accessUrl
+        ? undefined
+        : { name: `${handout.documentNumber}.pdf`, contentType: 'application/pdf', data },
     },
     {
       retryDelayMs: opts.retryDelayMs,

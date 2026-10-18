@@ -35,6 +35,7 @@
     "signedOut": "Sie sind abgemeldet. Beim nächsten Öffnen des Links wird das Geburtsdatum verlangt."
   },
   "home": {
+    "programs": "Programm wählen",
     "greeting": "Guten Tag, {name}",
     "todaySummary": "Heute {done} von {total} Ausführungen erfasst.",
     "quick": "Alle heutigen Übungen erledigt",
@@ -251,7 +252,8 @@
     "title": "Meine Dokumente",
     "sub": "Tippen zum Ansehen oder Herunterladen.",
     "sheets": "Übungsblätter",
-    "sheet": "Übungsblatt Sitzung {n}",
+    "sheet": "Übungsblatt Sitzung Nr. {n}",
+    "since": "Behandlung seit {date}",
     "current": "aktuell",
     "version": "Version {n}",
     "disclaimers": "Haftungsausschluss",
@@ -264,5 +266,13 @@
     "openLabel": "{name} vom {date} öffnen",
     "noSheets": "Noch keine Übungsblätter.",
     "noDisclaimer": "Noch kein unterschriebener Haftungsausschluss."
+  },
+  "pdfView": {
+    "title": "Dokument",
+    "back": "Zurück",
+    "download": "Herunterladen",
+    "loading": "Dokument wird geladen …",
+    "error": "Das Dokument lässt sich hier nicht anzeigen.",
+    "page": "Seite {n} von {total}"
   }
 }

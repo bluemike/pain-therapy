@@ -1,7 +1,16 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
-import { confirmInZone, createSignedPatient, expectNoA11yViolations, login, phone, unique } from './helpers';
+import {
+  confirmInZone,
+  createSignedPatient,
+  expectNoA11yViolations,
+  login,
+  pdfSrcOf,
+  phone,
+  unique,
+  viewPdfAndBack,
+} from './helpers';
 
 /**
  * Iteration 6, task 6.1: the record in the patient zone on a phone (390 px). Tabs, a treatment with its
@@ -130,12 +139,17 @@ test('record in the patient zone: tabs, treatment, document, recording yesterday
   await expectNoHorizontalScroll(patient, 'documents');
   await expectNoA11yViolations(patient, 'documents');
   // Absolute: the request context's base URL is the practice app
-  const href = new URL((await patient.getByTestId('sheets').locator('a.doc').getAttribute('href'))!, patient.url());
+  const href = new URL(
+    pdfSrcOf((await patient.getByTestId('sheets').locator('a.doc').getAttribute('href'))!, patient.url()),
+  );
   const pdf = await patient.request.get(href.toString());
   expect(pdf.status()).toBe(200);
   expect(pdf.headers()['content-type']).toBe('application/pdf');
   expect(pdf.headers()['content-disposition']).toMatch(/^inline; filename="PT-\d{4}-\d{5}\.pdf"$/);
   expect((await pdf.body()).subarray(0, 5).toString()).toBe('%PDF-');
+  // In-app view with «Zurück» (iteration 9); the sheet sits under its treatment
+  await expect(patient.getByTestId('sheet-group')).toHaveCount(1);
+  await viewPdfAndBack(patient, patient.getByTestId('sheets').locator('a.doc'));
   // Without a session no PDF
   const stranger = await browser.newContext();
   const anon = await stranger.request.get(href.toString(), { maxRedirects: 0 });
@@ -145,7 +159,7 @@ test('record in the patient zone: tabs, treatment, document, recording yesterday
 
   // Practice: the entry of yesterday counts for yesterday; retrieval in the history
   await page.goto(`${recordUrl}?tab=history`);
-  await expect(page.getByText('Dokument in der Patienten-Zone abgerufen')).toBeVisible();
+  await expect(page.getByText('Dokument in der Patienten-Zone abgerufen').first()).toBeVisible();
   await page.goto(`${recordUrl}?tab=log`);
   await expect(page.getByTestId('log-entry')).toHaveCount(2);
   // The entry of two days ago was recorded more than 24 hours later

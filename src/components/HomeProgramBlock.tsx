@@ -12,15 +12,27 @@ import {
   type Timing,
 } from '@/lib/home-program';
 import { ExerciseImage } from './ExerciseImage';
+import { ExerciseAudio } from './ExerciseAudio';
 import { Seg } from './Seg';
+import { TailoredSheet } from './TailoredSheet';
 
 export type HomeEntry = { timesPerDay: number; weekdays: number; note: string };
-export type HomeRowInfo = { code: string; name: string; epd: string; timing: Timing | null };
+export type HomeRowInfo = {
+  code: string;
+  name: string;
+  epd: string;
+  /** Prescribed variant, null = Standardübung */
+  variant: number | null;
+  timing: Timing | null;
+};
 
 /**
  * home-schedule (iteration 8, design D7): Block "Selbstausführung". One row per prescribed exercise with FRM and its
  * EPD, executions per day (1× to 3×), weekdays Mo to So (all preselected, at least one) and a note; the duration of
  * one execution, the time per week of the row and the total time.
+ *
+ * Iteration 9: the name opens the sheet tailored to the prescription, and «Anhören» plays the FRM and then the
+ * prescribed EPD (only here, no longer in the exercise list of the session).
  */
 export function HomeProgramBlock({
   rows,
@@ -61,7 +73,7 @@ export function HomeProgramBlock({
                 <li className={`rx${bad ? ' bad' : ''}`} key={r.code} data-code={r.code}>
                   <ExerciseImage className="rximg" code={r.code} kind="main" alt={t('imageOf', { code: r.code })} />
                   <div className="nm">
-                    <b>{r.code}</b> {r.name}
+                    <TailoredSheet code={r.code} name={r.name} variant={r.variant} epd={r.epd} />
                     <small>{t('parts', { epd: r.epd })}</small>
                     <small>
                       {r.timing ? (r.timing.sides === 2 ? t('bothSides') : t('oneSide')) : t('timingNotSet')}
@@ -70,6 +82,12 @@ export function HomeProgramBlock({
                   <div className="dur">
                     {r.timing ? t('perExecution', { duration: min(e.seconds / 60) }) : '–'}
                     {r.timing && e.stretchMissing ? <small>{t('stretchNotSet')}</small> : null}
+                    <ExerciseAudio
+                      code={r.code}
+                      kind="frm-audio"
+                      then={r.variant ? `v${r.variant}-audio` : 'std-audio'}
+                      label={`${r.code} ${r.epd}`}
+                    />
                     {r.timing ? (
                       <small data-testid={`week-${r.code}`}>
                         {t('rowPerWeek', { duration: min((e.seconds * perWeek(schedule(r.code))) / 60) })}
