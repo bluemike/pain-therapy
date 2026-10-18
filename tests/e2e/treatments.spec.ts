@@ -67,7 +67,7 @@ test.describe('treatments and sessions', () => {
     await anonymous.close();
 
     // Sitzung Nr. 1 on the form of area 2.3; the treatment is on the right side
-    await card.getByRole('link', { name: 'Sitzung' }).click();
+    await card.getByRole('link', { name: 'Sitzung', exact: true }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Sitzung Nr. 1' })).toBeVisible();
     await expect(page.getByText('Behandlungsbogen 2.3 · Lendenwirbelsäule, Bauch')).toBeVisible();
     await expect(page.locator('#f_diagnosis')).toHaveValue('Lumbalgie rechts, ausstrahlend in die Leiste');

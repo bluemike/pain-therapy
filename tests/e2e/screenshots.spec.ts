@@ -16,10 +16,10 @@ test('main screens', async ({ page }, info) => {
   await page.goto('/patients');
   await shot('03-patients');
   if (info.project.name === 'iphone') {
-    await page.getByRole('button', { name: 'Menü' }).click();
+    await page.getByRole('button', { name: 'Menü', exact: true }).click();
     await expect(page.getByRole('link', { name: 'Patienten' }).last()).toBeVisible();
     await shot('03b-menu');
-    await page.getByRole('button', { name: 'Menü' }).click();
+    await page.getByRole('button', { name: 'Menü', exact: true }).click();
   }
   await page.goto('/patients/new');
   await shot('04-new-patient');

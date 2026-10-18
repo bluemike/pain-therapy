@@ -82,7 +82,7 @@ test.describe('home exercises and exercise sheet', () => {
     await expect
       .poll(() =>
         row(page, '2A')
-          .locator('img')
+          .locator('img.rximg')
           .evaluate((img: HTMLImageElement) => img.naturalWidth),
       )
       .toBeGreaterThan(0);

@@ -159,7 +159,7 @@ test('record in the patient zone: tabs, treatment, document, recording yesterday
 
   // Practice: the entry of yesterday counts for yesterday; retrieval in the history
   await page.goto(`${recordUrl}?tab=history`);
-  await expect(page.getByText('Dokument in der Patienten-Zone abgerufen')).toBeVisible();
+  await expect(page.getByText('Dokument in der Patienten-Zone abgerufen').first()).toBeVisible();
   await page.goto(`${recordUrl}?tab=log`);
   await expect(page.getByTestId('log-entry')).toHaveCount(2);
   // The entry of two days ago was recorded more than 24 hours later

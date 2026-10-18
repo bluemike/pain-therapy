@@ -143,6 +143,8 @@ export function ConsultationForm({
       sensitivity,
       ...(sensitivity && side === 'LEFT' ? { left: true } : {}),
       ...(sensitivity && side === 'RIGHT' ? { right: true } : {}),
+      // beidseitig (iteration 9, design D6): both sides, either can be unticked
+      ...(sensitivity && side === 'UNSPECIFIED' ? { left: true, right: true } : {}),
     });
   const exercise = (code: string): ExerciseEntry => exs[code] ?? { prescribed: false, difficulty: null, variant: null };
   const setExercise = (code: string, patch: Partial<ExerciseEntry>) =>
