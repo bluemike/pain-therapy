@@ -22,6 +22,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ sid: st
   if (!s || s.status !== 'SIGNED' || s.channel !== 'PATIENT_ZONE' || s.document)
     return Response.json({ error: 'notFound' }, { status: 404 });
   const result = await finalizeSignature(sid);
-  if (result?.delivery.status === 'PENDING') after(() => deliverEmail(result.delivery.id).catch(console.error));
+  if (result?.delivery?.status === 'PENDING') after(() => deliverEmail(result.delivery!.id).catch(console.error));
   return Response.json({ ok: true, document: result?.document.documentNumber ?? null });
 }

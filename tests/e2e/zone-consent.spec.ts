@@ -1,5 +1,14 @@
 import { expect, test, type Page } from '@playwright/test';
-import { drawSignature, expectNoA11yViolations, fillPatient, inviteFromOutbox, login, phone, unique } from './helpers';
+import {
+  drawSignature,
+  expectCentered,
+  expectNoA11yViolations,
+  fillPatient,
+  inviteFromOutbox,
+  login,
+  phone,
+  unique,
+} from './helpers';
 
 /**
  * Iteration 5, task 3.4: invite a new patient to sign (mail to the outbox instead of Graph), open the link on a phone
@@ -32,6 +41,8 @@ test.describe('signature in the patient zone', () => {
     await page.locator('.banner').getByRole('button', { name: 'Zur Unterschrift einladen' }).click();
     const dialog = page.getByTestId('invite-dialog').filter({ visible: true });
     await expect(dialog).toBeVisible();
+    // Centered with a backdrop (iteration 9)
+    await expectCentered(page, dialog);
     await expectNoA11yViolations(page, 'invitation dialog');
     await dialog.getByRole('button', { name: `Per E-Mail an ${email}` }).click();
     await expect(dialog.getByText(`Die Einladung geht per E-Mail an ${email}.`)).toBeVisible();
@@ -46,7 +57,6 @@ test.describe('signature in the patient zone', () => {
     await patient.getByLabel('Tag (TT)').fill('12');
     await patient.getByLabel('Monat (MM)').fill('03');
     await patient.getByLabel('Jahr (JJJJ)').fill('1978');
-    await patient.getByRole('button', { name: 'Bestätigen' }).click();
     await expect(patient.getByRole('heading', { level: 1, name: 'Guten Tag Zoe' })).toBeVisible();
     await expect(patient.getByRole('heading', { name: /Haftungsausschluss unterschreiben/ })).toBeVisible();
     await expectNoHorizontalScroll(patient, 'task');
@@ -94,9 +104,9 @@ test.describe('signature in the patient zone', () => {
     await expectNoHorizontalScroll(patient, 'thanks');
     await expectNoA11yViolations(patient, 'thanks');
 
-    // Practice: signed online, remark with "Erledigt", PDF with channel "Patienten-Zone"
-    await page.reload();
-    await expect(page.getByText(/Unterschrieben online in der Patienten-Zone am/)).toBeVisible();
+    // Practice: signed online, shown without reloading (iteration 9: status every 15 s while the invitation is open),
+    // remark with "Erledigt", PDF with channel "Patienten-Zone"
+    await expect(page.getByText(/Unterschrieben online in der Patienten-Zone am/)).toBeVisible({ timeout: 25_000 });
     const note = page.getByTestId('patient-note');
     await expect(note).toContainText('Neue Mobile-Nummer 079 765 43 21');
     await expect(page.locator('.rechead').getByRole('link', { name: 'Neue Behandlung' })).toBeVisible();

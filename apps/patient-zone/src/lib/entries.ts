@@ -311,14 +311,15 @@ export const BANDS = ['frm', 'std', 'var'] as const;
 export type Band = (typeof BANDS)[number];
 
 /**
- * Image of an exercise of the current program only (Nur das eigene Heimprogramm): the main image or, since iteration
- * 8, the FRM band and the band of the prescribed EPD (Standardübung or Varianten)
+ * Image of an exercise of the active programs only (Nur das eigene Heimprogramm): the main image or, since iteration
+ * 8, the FRM band and the band of the prescribed EPD (Standardübung or Varianten). With several running treatments
+ * (iteration 9, design D8) the exercise may be prescribed in more than one of them.
  */
 export async function mainImageOf(s: ProgramSession, code: string, band?: Band) {
-  const p = s.program.prescriptions.find((x) => x.exerciseCode === code);
-  if (!p) return null;
-  if (band === 'std' && p.variant) return null;
-  if (band === 'var' && !p.variant) return null;
+  const ps = s.programs.flatMap((x) => x.prescriptions).filter((x) => x.exerciseCode === code);
+  if (!ps.length) return null;
+  if (band === 'std' && ps.every((p) => p.variant)) return null;
+  if (band === 'var' && ps.every((p) => !p.variant)) return null;
   const sheet = await db.exerciseSheet.findUnique({ where: { exerciseCode: code }, select: { mainImage: true } });
   if (!sheet) return null;
   return band ? `${code}-${band}.png` : sheet.mainImage;

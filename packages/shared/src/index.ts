@@ -7,6 +7,7 @@ export * from './adherence';
 export * from './consent-blocks';
 export * from './home-program';
 export * from './log-entry';
+export * from './pdf-view';
 export * from './program';
 export * from './signing';
 export * from './time';

@@ -82,7 +82,9 @@ test.describe('patient zone', () => {
     await group('Übung 2D: Wochentage').getByRole('button', { name: today }).click();
     await page.getByRole('button', { name: 'Sitzung speichern' }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Übungsblatt' })).toBeVisible();
-    await expect(page.getByLabel(/Link zur Patienten-Zone mitsenden/)).toBeChecked();
+    // iteration 9 (design D4): the email always carries the link and no attachment
+    await expect(page.getByText(/Die E-Mail enthält den Link in die Patienten-Zone und keinen Anhang/)).toBeVisible();
+    await expect(page.getByLabel(/Link zur Patienten-Zone mitsenden/)).toHaveCount(0);
     await page.getByRole('button', { name: 'Übungsblatt senden' }).click();
     await expect(page.getByText('Der Link zur Patienten-Zone steht im Text der E-Mail.')).toBeVisible();
     const link = await linkFromOutbox(email);
@@ -95,10 +97,16 @@ test.describe('patient zone', () => {
     await expect(patient.locator('body')).not.toContainText(last);
     await expectNoHorizontalScroll(patient, 'confirmation');
     await expectNoA11yViolations(patient, 'confirmation');
-    await patient.getByLabel('Tag (TT)').fill('06');
-    await patient.getByLabel('Monat (MM)').fill('03');
-    await patient.getByLabel('Jahr (JJJJ)').fill('1980');
-    await patient.getByRole('button', { name: 'Bestätigen' }).click();
+    // zone-login (iteration 9): typed in one go, the cursor moves on after 2 digits and the year submits
+    await patient.getByLabel('Tag (TT)').click();
+    await patient.keyboard.type('060319');
+    await expect(patient.getByLabel('Jahr (JJJJ)')).toBeFocused();
+    await patient.keyboard.press('Backspace');
+    await patient.keyboard.press('Backspace');
+    await patient.keyboard.press('Backspace');
+    await expect(patient.getByLabel('Monat (MM)')).toBeFocused();
+    await patient.getByLabel('Jahr (JJJJ)').click();
+    await patient.keyboard.type('1980');
     await expect(patient.getByText('Die Angabe stimmt nicht.')).toBeVisible();
     await patient.getByLabel('Tag (TT)').fill('05');
     await patient.getByRole('button', { name: 'Bestätigen' }).click();

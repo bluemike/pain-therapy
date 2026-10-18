@@ -7,6 +7,7 @@ import { GreetedMark } from '@/components/GreetedMark';
 import { Logo } from '@/components/Logo';
 import { LanguageSwitch } from '@/components/LanguageSwitch';
 import { MobileMenu, NavLinks } from '@/components/NavLinks';
+import { UserMenu } from '@/components/UserMenu';
 
 /** app-shell: Kopfzeile mit Logo, App-Name, Sprachwahl, Benutzer und Navigation */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -29,11 +30,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const [profile, session, tp] = await Promise.all([profileOf(user.id), auth(), getTranslations('profile')]);
   const title = tp(`title_${profile?.title ?? 'THERAPIST_F'}`);
   const role = user.roles.includes('ADMIN') ? `${title} · ${t('roleAdmin')}` : title;
-  const profileLink = (
-    <Link className="linkbtn" href="/profile">
-      {t('profile')}
-    </Link>
-  );
   const signOutForm = (
     <form
       action={async () => {
@@ -41,7 +37,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         await signOut({ redirectTo: '/login' });
       }}
     >
-      <button className="linkbtn">{t('signOut')}</button>
+      <button className="item">{t('signOut')}</button>
     </form>
   );
   return (
@@ -56,24 +52,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <NavLinks items={items} />
         <div className="hright">
           <LanguageSwitch />
-          <div className="user">
-            <span className="avatar" aria-hidden="true">
-              {initials}
-            </span>
-            <div className="uname">
-              <b>{user.name}</b>
-              <small>{role}</small>
-            </div>
-            <div className="uname">
-              {profileLink}
-              {signOutForm}
-            </div>
-          </div>
+          <UserMenu
+            initials={initials}
+            name={user.name}
+            role={role}
+            menuLabel={t('userMenu', { name: user.name })}
+            profileLabel={t('profile')}
+            signOut={signOutForm}
+          />
           <MobileMenu items={items} menuLabel={tc('menu')}>
             <LanguageSwitch />
-            <span>{user.name}</span>
-            {profileLink}
-            {signOutForm}
           </MobileMenu>
         </div>
       </header>

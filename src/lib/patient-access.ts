@@ -324,3 +324,22 @@ export async function inviteStatusOf(patientId: string, pending: boolean): Promi
   if (invite.status === 'FAILED') return { kind: 'failed', at: invite.updatedAt };
   return { kind: 'sent', channel: invite.channel, at: invite.sentAt ?? invite.createdAt };
 }
+
+/**
+ * zone-documents (iteration 9, design D5): a short fingerprint of the signature state of a patient (invitation,
+ * latest signature session, archived documents). The patient page compares it while an invitation is open and
+ * reloads when it changes.
+ */
+export async function consentStateOf(patientId: string) {
+  const [invite, latest, documents] = await Promise.all([
+    inviteStatusOf(patientId, true),
+    db.signatureSession.findFirst({
+      where: { patientId },
+      orderBy: { startedAt: 'desc' },
+      select: { id: true, status: true },
+    }),
+    db.signedDocument.count({ where: { patientId } }),
+  ]);
+  const at = invite && 'at' in invite ? invite.at.getTime() : 0;
+  return `${invite?.kind ?? '-'}:${at}:${latest?.id ?? '-'}:${latest?.status ?? '-'}:${documents}`;
+}

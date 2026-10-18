@@ -46,8 +46,8 @@ The patient page SHALL separate the sessions of a treatment from the treatment w
 - **THEN** sieht sie unter dem goldenen Trenner «Sitzung Nr. 1» und «Sitzung Nr. 2», je mit «Ändern»
 
 ### Requirement: Abbrechen beim Ändern
-The session form SHALL offer "Abbrechen" next to "Sitzung speichern". "Abbrechen" SHALL return to the patient page without saving.
+The Abschluss page of a session (exercise sheet) SHALL offer "Abbrechen" next to "Sitzung ändern", as the session form does next to "Sitzung speichern". "Abbrechen" SHALL return to the patient page without saving or sending.
 
 #### Scenario: Nur anschauen
-- **WHEN** die Therapeutin eine Sitzung öffnet, die Vorschau anschaut und dann «Abbrechen» wählt
+- **WHEN** die Therapeutin nach dem Speichern auf der Abschlussseite die Vorschau anschaut und dann «Abbrechen» wählt
 - **THEN** ist nichts geändert, und sie ist zurück auf der Patientenseite

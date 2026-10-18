@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createSignedPatient, fillPatient, login, unique } from './helpers';
+import { createSignedPatient, fillPatient, login, pdfSrcOf, unique } from './helpers';
 
 /**
  * Iteration 6, signing-zone-only (task 1.4): the patient mode on the iPad is gone; the practice invites to sign in the
@@ -42,7 +42,7 @@ test.describe('signing only in the patient zone', () => {
       )
       .toBe(1);
     const href = await page.getByRole('link', { name: 'PDF öffnen' }).getAttribute('href');
-    const res = await page.request.get(href!);
+    const res = await page.request.get(pdfSrcOf(href!, page.url()));
     expect(res.status()).toBe(200);
     expect(res.headers()['content-type']).toBe('application/pdf');
     expect((await res.body()).subarray(0, 5).toString()).toBe('%PDF-');

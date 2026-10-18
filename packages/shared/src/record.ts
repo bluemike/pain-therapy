@@ -1,5 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
-import { currentProgram } from './program';
+import { currentPrograms } from './program';
 import { signatureStateOf } from './signing';
 
 /**
@@ -25,10 +25,18 @@ export async function linkPurposeOf(
   patientId: string,
   now = new Date(),
 ) {
-  const [program, signature, record] = await Promise.all([
-    currentProgram(db, patientId, now),
+  const [programs, signature, record] = await Promise.all([
+    currentPrograms(db, patientId, now),
     signatureStateOf(db, patientId),
     hasRecord(db, patientId),
   ]);
-  return { program, signature, hasRecord: record, purposeActive: !!program?.active || signature.pending || record };
+  // The newest program is the youngest, so it is active whenever any program is (iteration 9, design D8)
+  const program = programs[0] ?? null;
+  return {
+    program,
+    programs,
+    signature,
+    hasRecord: record,
+    purposeActive: !!program?.active || signature.pending || record,
+  };
 }

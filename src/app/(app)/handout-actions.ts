@@ -33,7 +33,8 @@ export async function createHandoutAction(_prev: HandoutState, fd: FormData): Pr
   const actor = await requireUser();
   const consultationId = String(fd.get('consultationId') ?? '');
   const channel = fd.get('channel') === 'EMAIL' ? 'EMAIL' : 'PRINT';
-  const withLink = fd.get('withLink') === 'on';
+  // zone-documents (iteration 9, design D4): an email always carries the link, the sheet itself is in the zone
+  const withLink = channel === 'EMAIL' || fd.get('withLink') === 'on';
   try {
     const { handout, delivery, access, printPdf } = await createHandout(actor, consultationId, channel, { withLink });
     if (delivery.status === 'PENDING')

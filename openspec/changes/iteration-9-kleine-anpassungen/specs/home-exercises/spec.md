@@ -18,7 +18,7 @@ The practice app, the exercise sheet PDF and the patient zone SHALL show exercis
 
 #### Scenario: Zeit pro Tag
 - **WHEN** eine Selbstausführung rechnerisch 12,5 Minuten pro Tag ergibt
-- **THEN** zeigt die App «13 Min.»
+- **THEN** zeigt die App «13 min»
 
 ### Requirement: Zugeschnittenes Übungsblatt
 Tapping a prescribed exercise in the Selbstausführung SHALL open an exercise sheet tailored to the prescription: the FRM and the prescribed EPD (the standard exercise, or the chosen variant). It SHALL NOT show segments that are not prescribed.

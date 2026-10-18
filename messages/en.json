@@ -26,7 +26,8 @@
     "roleAdmin": "Administration",
     "skipToContent": "Skip to content",
     "catalog": "L&B reference data",
-    "profile": "My profile"
+    "profile": "My profile",
+    "userMenu": "Menu for {name}"
   },
   "login": {
     "title": "Welcome to Pain Therapy",
@@ -183,7 +184,9 @@
     "sideLocked": "The body side is fixed after the first session. If it is wrong, please open a new treatment.",
     "side": "Only the body side of the treatment can be selected. Please check the side.",
     "difficultyRequired": "Please state how hard the exercise is.",
-    "weekdayRequired": "Choose at least one weekday."
+    "weekdayRequired": "Choose at least one weekday.",
+    "sensitivityRequired": "Please give the sensitivity.",
+    "sideRequired": "Please choose the treated side."
   },
   "duplicate": {
     "title": "Possible duplicate",
@@ -243,7 +246,9 @@
     "channelIPAD": "iPad",
     "channelPATIENT_ZONE": "Patient zone",
     "finalizing": "Creating PDF …",
-    "finalizingMeta": "Signed on {at} · text version {version}"
+    "finalizingMeta": "Signed on {at} · text version {version}",
+    "zonePill": "Patient zone",
+    "inZone": "The patient finds the document in the patient zone under \"Documents\"."
   },
   "history": {
     "note": "Every change is stored with its old and new value and cannot be deleted.",
@@ -315,7 +320,7 @@
     "fExerciseVariant": "Exercise {id} stretch",
     "fHomeTimesPerDay": "Home exercise {id} per day",
     "fHomeWeekdays": "Home exercise {id} weekdays",
-    "side_UNSPECIFIED": "not specified",
+    "side_UNSPECIFIED": "both sides",
     "side_LEFT": "left",
     "side_RIGHT": "right",
     "variantN": "Variant {n}"
@@ -408,9 +413,11 @@
     "side": "Body side",
     "sideLine": "Body side {side}",
     "sideLockedHint": "Fixed since the first session. If the side is wrong, open a new treatment.",
-    "side_UNSPECIFIED": "not specified",
+    "side_UNSPECIFIED": "both sides",
     "side_LEFT": "left",
-    "side_RIGHT": "right"
+    "side_RIGHT": "right",
+    "treatmentTitle": "Treatment {label}",
+    "sessionTitle": "Session no. {n}"
   },
   "consultation": {
     "title": "Session no. {n}",
@@ -467,7 +474,7 @@
     "addExercise": "Add exercise from another area",
     "sideHint": "Body side of the treatment: {side}. Only this side can be selected; a sensitivity sets it automatically.",
     "sideValue": "Body side {side}",
-    "side_UNSPECIFIED": "not specified",
+    "side_UNSPECIFIED": "both sides",
     "side_LEFT": "left",
     "side_RIGHT": "right"
   },
@@ -596,6 +603,7 @@
     "playAudio": "Read exercise {code} aloud",
     "stopAudio": "Stop reading exercise {code}",
     "audioMissing": "Audio not available",
+    "imageCol": "Image",
     "media": "Image · audio",
     "sectionStandard": "Standard exercise",
     "tools": "Tools",
@@ -642,10 +650,10 @@
     "errorNoAddress": "Without an email address the exercise sheet can only be printed.",
     "errorNoPrescription": "No exercise prescribed.",
     "withLink": "Include the link to the patient zone",
-    "withLinkEmail": "The link is in the text of the email, not in the exercise sheet. A new link replaces the previous one.",
     "withLinkPrint": "An access sheet with QR code is printed as well; the archived exercise sheet contains no link.",
     "linkSent": "The link to the patient zone is in the text of the email.",
-    "linkPrinted": "The access sheet to the patient zone is the last page of the printout."
+    "linkPrinted": "The access sheet to the patient zone is the last page of the printout.",
+    "emailZoneHint": "The email contains the link to the patient zone and no attachment. The exercise sheet is there under \"Documents\". A new link replaces the previous one."
   },
   "handoutPdf": {
     "title": "Your exercise programme",
@@ -676,7 +684,7 @@
   "handoutEmail": {
     "subject": "Your exercise sheet ({number})",
     "body": "Hello {name}\n\nAttached is your personal exercise sheet from the session on {date}.\n\nKind regards\nYour pain therapy team\n\nThis email is not encrypted. You agreed to receive documents by unencrypted email and can withdraw this consent at any time.",
-    "bodyWithLink": "Dear {name}\n\nPlease find attached your personal exercise sheet from the session on {date}.\n\nIn the patient zone you can record when you did the exercises and how well they went:\n{url}\n\nWhen you first open it on a device, please confirm with your date of birth. Please do not pass the link on.\n\nKind regards\nYour pain therapy team\n\nThis email is not encrypted. You agreed to receive unencrypted email and can withdraw this consent at any time."
+    "bodyWithLink": "Dear {name}\n\nYour personal exercise sheet from the session on {date} is ready in the patient zone. You find it there under \"Documents\" and can record when you did the exercises and how well they went:\n{url}\n\nWhen you first open it on a device, please confirm with your date of birth. Please do not pass the link on.\n\nKind regards\nYour pain therapy team\n\nThis email is not encrypted. You agreed to receive unencrypted email and can withdraw this consent at any time."
   },
   "accessLinkEmail": {
     "subject": "Your access to the patient zone",
@@ -821,5 +829,13 @@
     "title_THERAPIST_F": "Therapist",
     "title_THERAPIST_M": "Therapist",
     "savedFlash": "Profile saved."
+  },
+  "pdfView": {
+    "title": "Document",
+    "back": "Back",
+    "download": "Download",
+    "loading": "Loading document …",
+    "error": "The document cannot be shown here.",
+    "page": "Page {n} of {total}"
   }
 }

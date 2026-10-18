@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { scheduleParts } from '@pain-therapy/shared/home-program';
+import { pdfViewHref } from '@pain-therapy/shared/pdf-view';
 import { treatmentOf } from '@/lib/record';
 import { recordSession } from '@/lib/record-session';
 
@@ -132,7 +133,10 @@ export default async function Treatment({ params }: { params: Promise<{ id: stri
             </>
           ) : null}
           {c.sheet ? (
-            <a className="btn" href={`/dokumente/${c.sheet}`}>
+            <a
+              className="btn"
+              href={pdfViewHref(`/dokumente/${c.sheet}`, `/behandlungen/${id}`, t('sheet', { nr: c.sheet }))}
+            >
               {t('sheet', { nr: c.sheet })}
             </a>
           ) : null}

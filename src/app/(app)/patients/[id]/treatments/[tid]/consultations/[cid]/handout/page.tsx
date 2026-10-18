@@ -30,7 +30,7 @@ export default async function HandoutPage({
   const sp = await searchParams;
   const ctx = await handoutContext(cid);
   if (!ctx || ctx.consultation.treatmentId !== tid || ctx.patient.id !== id) notFound();
-  const [t, locale] = await Promise.all([getTranslations('handout'), getLocale()]);
+  const [t, tc, locale] = await Promise.all([getTranslations('handout'), getTranslations('common'), getLocale()]);
   const { consultation: c, patient: p } = ctx;
   const name = `${p.firstName} ${p.lastName}`;
   const base = `/patients/${id}/treatments/${tid}/consultations/${cid}`;
@@ -61,6 +61,10 @@ export default async function HandoutPage({
           <div className="sub">{t('sub', { name, n: c.number, date: formatDateZurich(c.at) })}</div>
         </div>
         <div className="actions">
+          {/* session-form (iteration 9): leave without changing the session */}
+          <Link className="btn btn--ghost" href={record}>
+            {tc('cancel')}
+          </Link>
           <Link className="btn btn--ghost" href={base}>
             {t('editConsultation')}
           </Link>

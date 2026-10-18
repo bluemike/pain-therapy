@@ -16,17 +16,20 @@ import { quickEntryAction, deleteEntryAction } from './actions';
  * exercise-log: the exercises of a day and the entries of the program (mockup view 2; iteration 6 mockup view 1 with
  * the day selection of zone-exercise-backfill, design D7). Without a session a neutral start page that asks for the
  * personal link; without an active home program the record (zone-record, design D6). Every view is logged.
+ *
+ * zone-record (iteration 9, design D8): with several running treatments one home program each, chosen by the pain
+ * area at the top ("b" = treatment); with one the page looks as before.
  */
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; n?: string; err?: string; out?: string; tag?: string }>;
+  searchParams: Promise<{ ok?: string; n?: string; err?: string; out?: string; tag?: string; b?: string }>;
 }) {
   const sp = await searchParams;
   const zone = await getZoneSession();
   // zone-consent-signing: Unterschrift vor den Übungen (iteration 5, design D5)
   if (zone?.signaturePending) redirect('/unterschrift');
-  const s = programSession(zone);
+  const s = programSession(zone, sp.b);
   if (zone && !s) redirect('/behandlungen');
   if (!s) {
     const t = await getTranslations('start');
@@ -64,6 +67,11 @@ export default async function Home({
       : long(day.day);
   const until = new Date(s.program.consultationAt.getTime() + PROGRAM_ACTIVE_WEEKS * 7 * 86400_000);
   const tagField = day.today ? undefined : day.day;
+  const many = s.programs.length > 1;
+  const programField = many ? s.program.treatmentId : undefined;
+  const bq = many ? `b=${encodeURIComponent(s.program.treatmentId)}` : '';
+  const home = (tag?: string) => (tag ? `/?tag=${tag}${bq ? `&${bq}` : ''}` : bq ? `/?${bq}` : '/');
+  const regionName = (r: (typeof s.program)['region']) => (s.patient.preferredLanguage === 'en' ? r.nameEn : r.nameDe);
   // Only the exercises prescribed on this weekday count (iteration 8, design D8)
   const dailyTotal = items.reduce((a, i) => a + i.progress.target, 0);
   const dailyDone = items.reduce((a, i) => a + Math.min(i.progress.target, i.progress.done), 0);
@@ -108,6 +116,21 @@ export default async function Home({
         </div>
       ) : null}
       <h1>{t('greeting', { name: s.patient.firstName })}</h1>
+      {many ? (
+        <nav className="programs" aria-label={t('programs')}>
+          {s.programs.map((x) => (
+            <Link
+              key={x.treatmentId}
+              className={`btn${x.treatmentId === s.program.treatmentId ? ' on' : ''}`}
+              aria-current={x.treatmentId === s.program.treatmentId ? 'page' : undefined}
+              href={`/?b=${encodeURIComponent(x.treatmentId)}`}
+            >
+              {regionName(x.region)}
+            </Link>
+          ))}
+        </nav>
+      ) : null}
+      {many ? <h2 className="progtitle">{regionName(s.program.region)}</h2> : null}
       <p className="sub">
         {td('program', {
           since: format.dateTime(s.program.consultationAt, { weekday: 'short', day: 'numeric', month: 'numeric' }),
@@ -116,7 +139,7 @@ export default async function Home({
       </p>
       <nav className="daynav" aria-label={td('choose')}>
         {day.previous ? (
-          <Link className="btn" href={`/?tag=${day.previous}`} aria-label={td('previous')}>
+          <Link className="btn" href={home(day.previous)} aria-label={td('previous')}>
             ‹
           </Link>
         ) : (
@@ -128,10 +151,11 @@ export default async function Home({
             {td('choose')}
           </label>
           <input id="tag" type="date" name="tag" defaultValue={day.day} min={day.first} max={day.last} />
+          {programField ? <input type="hidden" name="b" value={programField} /> : null}
           <button className="linkbtn">{td('show')}</button>
         </form>
         {day.next ? (
-          <Link className="btn" href={day.next === day.last ? '/' : `/?tag=${day.next}`} aria-label={td('next')}>
+          <Link className="btn" href={home(day.next === day.last ? undefined : day.next)} aria-label={td('next')}>
             ›
           </Link>
         ) : (
@@ -150,6 +174,7 @@ export default async function Home({
       {open.length ? (
         <form action={quickEntryAction}>
           {tagField ? <input type="hidden" name="tag" value={tagField} /> : null}
+          {programField ? <input type="hidden" name="b" value={programField} /> : null}
           <button className="btn btn--gold btn--block">{day.today ? t('quick') : td('quick')}</button>
         </form>
       ) : null}
@@ -171,7 +196,7 @@ export default async function Home({
                   <b>{it.code}</b> {it.name}
                   <small>
                     {rep(it.schedule)} · {t('parts', { epd: epd(it.variant) })} ·{' '}
-                    {t('perExecution', { min: format.number(Math.round(it.seconds / 6) / 10) })}
+                    {t('perExecution', { min: format.number(Math.round(it.seconds / 60)) })}
                   </small>
                 </div>
               </div>
@@ -257,6 +282,7 @@ export default async function Home({
                   minDate={day.first}
                   maxDate={day.last}
                   tag={tagField}
+                  program={programField}
                 />
               </details>
             </li>
@@ -322,11 +348,13 @@ export default async function Home({
                             minDate={day.first}
                             maxDate={day.last}
                             tag={tagField}
+                            program={programField}
                           />
                         </details>
                         <form action={deleteEntryAction}>
                           <input type="hidden" name="id" value={e.id} />
                           {tagField ? <input type="hidden" name="tag" value={tagField} /> : null}
+                          {programField ? <input type="hidden" name="b" value={programField} /> : null}
                           <button
                             className="linkbtn"
                             aria-label={t('deleteOf', { code: e.exerciseCode, time: e.inputs.time })}

@@ -26,7 +26,8 @@
     "roleAdmin": "Administration",
     "skipToContent": "Zum Inhalt springen",
     "catalog": "L&B Basisdaten",
-    "profile": "Mein Profil"
+    "profile": "Mein Profil",
+    "userMenu": "Menü für {name}"
   },
   "login": {
     "title": "Willkommen bei der Schmerztherapie",
@@ -183,7 +184,9 @@
     "sideLocked": "Die Körperseite ist nach der ersten Sitzung fest. Bei falscher Seite bitte eine neue Behandlung eröffnen.",
     "side": "Bei dieser Behandlung ist nur die Körperseite der Behandlung wählbar. Bitte Seite prüfen.",
     "difficultyRequired": "Bitte angeben, wie schwer die Übung fällt.",
-    "weekdayRequired": "Mindestens einen Wochentag wählen."
+    "weekdayRequired": "Mindestens einen Wochentag wählen.",
+    "sensitivityRequired": "Bitte die Empfindlichkeit angeben.",
+    "sideRequired": "Bitte die behandelte Seite wählen."
   },
   "duplicate": {
     "title": "Mögliche Dublette",
@@ -243,7 +246,9 @@
     "channelIPAD": "iPad",
     "channelPATIENT_ZONE": "Patienten-Zone",
     "finalizing": "PDF wird erstellt …",
-    "finalizingMeta": "Unterschrieben am {at} · Textversion {version}"
+    "finalizingMeta": "Unterschrieben am {at} · Textversion {version}",
+    "zonePill": "Patienten-Zone",
+    "inZone": "Der Patient findet das Dokument in der Patienten-Zone unter «Dokumente»."
   },
   "history": {
     "note": "Jede Änderung wird mit altem und neuem Wert gespeichert und kann nicht gelöscht werden.",
@@ -315,7 +320,7 @@
     "fExerciseVariant": "Übung {id} EPD",
     "fHomeTimesPerDay": "Selbstausführung {id} pro Tag",
     "fHomeWeekdays": "Selbstausführung {id} Wochentage",
-    "side_UNSPECIFIED": "nicht spezifiziert",
+    "side_UNSPECIFIED": "beidseitig",
     "side_LEFT": "links",
     "side_RIGHT": "rechts",
     "variantN": "Variante {n}"
@@ -408,9 +413,11 @@
     "side": "Körperseite",
     "sideLine": "Körperseite {side}",
     "sideLockedHint": "Fest seit der ersten Sitzung. Bei falscher Seite eine neue Behandlung eröffnen.",
-    "side_UNSPECIFIED": "nicht spezifiziert",
+    "side_UNSPECIFIED": "beidseitig",
     "side_LEFT": "links",
-    "side_RIGHT": "rechts"
+    "side_RIGHT": "rechts",
+    "treatmentTitle": "Behandlung {label}",
+    "sessionTitle": "Sitzung Nr. {n}"
   },
   "consultation": {
     "title": "Sitzung Nr. {n}",
@@ -467,7 +474,7 @@
     "addExercise": "Übung aus anderem Bereich hinzufügen",
     "sideHint": "Körperseite der Behandlung: {side}. Nur diese Seite ist wählbar; eine Empfindlichkeit setzt sie automatisch.",
     "sideValue": "Körperseite {side}",
-    "side_UNSPECIFIED": "nicht spezifiziert",
+    "side_UNSPECIFIED": "beidseitig",
     "side_LEFT": "links",
     "side_RIGHT": "rechts"
   },
@@ -596,6 +603,7 @@
     "playAudio": "Übung {code} vorlesen",
     "stopAudio": "Vorlesen von Übung {code} stoppen",
     "audioMissing": "Audio nicht verfügbar",
+    "imageCol": "Bild",
     "media": "Bild · Audio",
     "sectionStandard": "Standardübung",
     "tools": "Werkzeuge",
@@ -642,10 +650,10 @@
     "errorNoAddress": "Ohne E-Mail-Adresse kann das Übungsblatt nur gedruckt werden.",
     "errorNoPrescription": "Keine Übung verordnet.",
     "withLink": "Link zur Patienten-Zone mitsenden",
-    "withLinkEmail": "Der Link steht im Text der E-Mail, nicht im Übungsblatt. Ein neuer Link ersetzt den bisherigen.",
     "withLinkPrint": "Ein Zugangsblatt mit QR-Code wird mitgedruckt; das abgelegte Übungsblatt enthält keinen Link.",
     "linkSent": "Der Link zur Patienten-Zone steht im Text der E-Mail.",
-    "linkPrinted": "Das Zugangsblatt zur Patienten-Zone ist die letzte Seite des Ausdrucks."
+    "linkPrinted": "Das Zugangsblatt zur Patienten-Zone ist die letzte Seite des Ausdrucks.",
+    "emailZoneHint": "Die E-Mail enthält den Link in die Patienten-Zone und keinen Anhang. Dort liegt das Übungsblatt unter «Dokumente». Ein neuer Link ersetzt den bisherigen."
   },
   "handoutPdf": {
     "title": "Ihr Übungsprogramm",
@@ -676,7 +684,7 @@
   "handoutEmail": {
     "subject": "Ihr Übungsblatt ({number})",
     "body": "Guten Tag {name}\n\nIm Anhang finden Sie Ihr persönliches Übungsblatt aus der Sitzung vom {date}.\n\nFreundliche Grüsse\nIhr Schmerztherapie-Team\n\nDiese E-Mail ist unverschlüsselt. Sie haben dem Versand per unverschlüsselter E-Mail zugestimmt und können diese Einwilligung jederzeit widerrufen.",
-    "bodyWithLink": "Guten Tag {name}\n\nIm Anhang finden Sie Ihr persönliches Übungsblatt aus der Sitzung vom {date}.\n\nIn der Patienten-Zone können Sie eintragen, wann Sie die Übungen gemacht haben und wie gut sie gelungen sind:\n{url}\n\nBeim ersten Öffnen auf einem Gerät bestätigen Sie mit Ihrem Geburtsdatum. Bitte geben Sie den Link nicht weiter.\n\nFreundliche Grüsse\nIhr Schmerztherapie-Team\n\nDiese E-Mail ist unverschlüsselt. Sie haben dem Versand per unverschlüsselter E-Mail zugestimmt und können diese Einwilligung jederzeit widerrufen."
+    "bodyWithLink": "Guten Tag {name}\n\nIhr persönliches Übungsblatt aus der Sitzung vom {date} liegt in der Patienten-Zone bereit. Dort finden Sie es unter «Dokumente» und können eintragen, wann Sie die Übungen gemacht haben und wie gut sie gelungen sind:\n{url}\n\nBeim ersten Öffnen auf einem Gerät bestätigen Sie mit Ihrem Geburtsdatum. Bitte geben Sie den Link nicht weiter.\n\nFreundliche Grüsse\nIhr Schmerztherapie-Team\n\nDiese E-Mail ist unverschlüsselt. Sie haben dem Versand per unverschlüsselter E-Mail zugestimmt und können diese Einwilligung jederzeit widerrufen."
   },
   "accessLinkEmail": {
     "subject": "Ihr Zugang zur Patienten-Zone",
@@ -821,5 +829,13 @@
     "title_THERAPIST_F": "Therapeutin",
     "title_THERAPIST_M": "Therapeut",
     "savedFlash": "Profil gespeichert."
+  },
+  "pdfView": {
+    "title": "Dokument",
+    "back": "Zurück",
+    "download": "Herunterladen",
+    "loading": "Dokument wird geladen …",
+    "error": "Das Dokument lässt sich hier nicht anzeigen.",
+    "page": "Seite {n} von {total}"
   }
 }

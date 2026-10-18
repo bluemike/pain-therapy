@@ -1,10 +1,12 @@
 import { getFormatter, getTranslations } from 'next-intl/server';
+import { pdfViewHref } from '@pain-therapy/shared/pdf-view';
 import { documentsOf } from '@/lib/record';
 import { recordSession } from '@/lib/record-session';
 
 /**
  * zone-documents: Dokumente der Patientin (iteration 6, mockup view 4). Exercise sheets and signed disclaimers,
  * newest first; the newest version of a consultation's sheet is "aktuell". Each link opens the archived PDF.
+ * Since iteration 9 (design D8) the sheets are grouped by treatment and session.
  */
 export default async function Documents() {
   const s = await recordSession();
@@ -12,7 +14,11 @@ export default async function Documents() {
   const date = (d: Date) => format.dateTime(d, { day: 'numeric', month: 'numeric', year: 'numeric' });
   const doc = (nr: string, name: string, at: Date, extra: React.ReactNode, details: string) => (
     <li key={nr}>
-      <a className="doc" href={`/dokumente/${nr}`} aria-label={t('openLabel', { name, date: date(at) })}>
+      <a
+        className="doc"
+        href={pdfViewHref(`/dokumente/${nr}`, '/dokumente', name)}
+        aria-label={t('openLabel', { name, date: date(at) })}
+      >
         <span className="ic" aria-hidden="true">
           PDF
         </span>
@@ -32,18 +38,25 @@ export default async function Documents() {
       <p className="sub">{t('sub')}</p>
       <section className="card" aria-labelledby="h_sheets">
         <h2 id="h_sheets">{t('sheets')}</h2>
-        {docs.sheets.length ? (
-          <ul className="docs" data-testid="sheets">
-            {docs.sheets.map((h) =>
-              doc(
-                h.documentNumber,
-                t('sheet', { n: h.consultation }),
-                h.date,
-                h.current ? <span className="pill ok">{t('current')}</span> : null,
-                `${date(h.date)} · ${h.documentNumber} · ${t('version', { n: h.version })}`,
-              ),
-            )}
-          </ul>
+        {docs.treatments.length ? (
+          docs.treatments.map((tr) => (
+            <div key={tr.id} className="docgroup" data-testid="sheet-group">
+              <h3>
+                {tr.name} <small>{t('since', { date: date(tr.startedAt) })}</small>
+              </h3>
+              <ul className="docs" data-testid="sheets">
+                {tr.sheets.map((h) =>
+                  doc(
+                    h.documentNumber,
+                    t('sheet', { n: h.consultation }),
+                    h.date,
+                    h.current ? <span className="pill ok">{t('current')}</span> : null,
+                    `${date(h.date)} · ${h.documentNumber} · ${t('version', { n: h.version })}`,
+                  ),
+                )}
+              </ul>
+            </div>
+          ))
         ) : (
           <p className="muted">{t('noSheets')}</p>
         )}

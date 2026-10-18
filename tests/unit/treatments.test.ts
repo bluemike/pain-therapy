@@ -332,7 +332,7 @@ describe('consultations', () => {
       createConsultation(
         actor,
         t.id,
-        consultationInput({ points: [{ pointId: '9.9', left: true, right: false, sensitivity: null }] }),
+        consultationInput({ points: [{ pointId: '9.9', left: true, right: false, sensitivity: 'LOW' }] }),
       ),
     ).rejects.toMatchObject({ code: 'catalog' });
   });

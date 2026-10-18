@@ -185,6 +185,15 @@ describe('consultation schema', () => {
     expect(sheetErrors(r.error!)).toEqual({ 'exercises:1A': 'difficultyRequired' });
   });
 
+  it('requires a sensitivity for a chosen side and a side for a sensitivity (iteration 9)', () => {
+    const point = (x: object) => parse({ ...sheet, points: [{ pointId: '2.11.1', left: false, right: false, ...x }] });
+    expect(sheetErrors(point({ right: true, sensitivity: null }).error!)).toEqual({
+      'points:2.11.1': 'sensitivityRequired',
+    });
+    expect(sheetErrors(point({ sensitivity: 'LOW' }).error!)).toEqual({ 'points:2.11.1': 'sideRequired' });
+    expect(point({ left: true, right: true, sensitivity: 'MEDIUM' }).success).toBe(true);
+  });
+
   it('requires at least one weekday and 1× to 3× per day (Tage abwählen)', () => {
     const home = (h: object) =>
       parse({ ...sheet, home: [{ code: '2D', timesPerDay: 1, weekdays: 127, note: null, ...h }] });

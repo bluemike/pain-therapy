@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { startTransition, useActionState, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { PdfLink } from '@/components/PdfLink';
 import { createHandoutAction, type HandoutState } from '@/app/(app)/handout-actions';
 
 /**
@@ -117,20 +118,21 @@ export function HandoutPanel({
           </span>
         </label>
       </fieldset>
-      {zoneEnabled ? (
+      {zoneEnabled && channel === 'EMAIL' ? <p className="hint">{t('emailZoneHint')}</p> : null}
+      {zoneEnabled && channel === 'PRINT' ? (
         <label className="check">
           <input type="checkbox" name="withLink" defaultChecked />
           <span>
             <b>{t('withLink')}</b>
-            <small>{channel === 'EMAIL' ? t('withLinkEmail') : t('withLinkPrint')}</small>
+            <small>{t('withLinkPrint')}</small>
           </span>
         </label>
       ) : null}
       <p className="hint">{t('onDemand')}</p>
       <div className="formbar">
-        <a className="btn btn--ghost" href={previewHref} target="_blank" rel="noopener">
+        <PdfLink src={previewHref} title={t('preview')}>
           {t('preview')}
-        </a>
+        </PdfLink>
         <div className="actions">
           {pending ? (
             <span className="muted">

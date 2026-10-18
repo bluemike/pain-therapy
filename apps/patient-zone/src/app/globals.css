@@ -864,3 +864,70 @@ a.tcard h2 {
   padding: 2px 6px;
   font-weight: 600;
 }
+
+/* Iteration 9: PDF in der App (design D3) */
+.pdfview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.pdfbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.pdfbar h1 {
+  flex: 1;
+  min-width: 0;
+  font-size: 17px;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pdfpages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.pdfpages canvas {
+  max-width: 100%;
+  height: auto;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+}
+.pdfmsg {
+  text-align: center;
+}
+
+/* zone-record (iteration 9, design D8): one home program per running treatment */
+.programs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 12px;
+}
+.programs .btn.on {
+  background: var(--gold-pale);
+  border-color: var(--gold);
+  color: var(--gold-text);
+  font-weight: 600;
+}
+.progtitle {
+  margin: 0 0 4px;
+}
+.docgroup + .docgroup {
+  margin-top: 12px;
+}
+.docgroup h3 small {
+  color: var(--muted);
+  font-weight: 400;
+}

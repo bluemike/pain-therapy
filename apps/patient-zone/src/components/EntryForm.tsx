@@ -11,7 +11,8 @@ const RATINGS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
  * exercise-log: Ausführung erfassen or correct an entry. "Gemacht?" and the rating 1 to 10 are radio buttons shown
  * as segments (44 px targets); with "Nein" the rating is hidden by CSS and not stored. Date and time are prefilled
  * with now, or with the chosen past day at 12:00 (iteration 6, design D7), and may not be in the future or before the
- * consultation. `tag` brings the patient back to the day she was looking at.
+ * consultation. `tag` brings the patient back to the day she was looking at, `program` (the treatment, iteration 9)
+ * to her program.
  */
 export function EntryForm({
   mode,
@@ -21,6 +22,7 @@ export function EntryForm({
   minDate,
   maxDate,
   tag,
+  program,
 }: {
   mode: 'create' | 'correct';
   code: string;
@@ -29,6 +31,7 @@ export function EntryForm({
   minDate: string;
   maxDate: string;
   tag?: string;
+  program?: string;
 }) {
   const t = useTranslations('entry');
   const [state, action, pending] = useActionState<EntryState, FormData>(
@@ -40,6 +43,7 @@ export function EntryForm({
   return (
     <form action={action} className="entry" aria-label={t(mode === 'create' ? 'legend' : 'legendCorrect', { code })}>
       {tag ? <input type="hidden" name="tag" value={tag} /> : null}
+      {program ? <input type="hidden" name="b" value={program} /> : null}
       <Fields
         key={state.attempt ?? 0}
         values={values}

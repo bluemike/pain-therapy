@@ -209,7 +209,7 @@ describe('invitation (Zur Unterschrift einladen)', () => {
 });
 
 describe('PDF of a signature from the zone (PDF, Archiv und Zustellung)', () => {
-  it('creates exactly one PDF when called twice at the same time, and emails it with consent', async () => {
+  it('creates exactly one PDF when called twice at the same time, and sends no email with it (iteration 9)', async () => {
     const p = await newPatient();
     const sid = await signInZone(p.id, { email: true, note: 'Neue Mobile-Nummer' });
     const [a, b] = await Promise.all([finalizeSignature(sid), finalizeSignature(sid)]);
@@ -219,20 +219,37 @@ describe('PDF of a signature from the zone (PDF, Archiv und Zustellung)', () => 
     const { document, delivery } = done[0]!;
     const file = await readFile(path.join(process.env.STORAGE_LOCAL_DIR!, document.blobPath));
     expect(sha256(file)).toBe(document.sha256);
-    expect(delivery).toMatchObject({ status: 'PENDING', recipient: 'anna@example.ch', requestedBy: 'Patienten-Zone' });
-    await deliverEmail(delivery.id, { retryDelayMs: 1 });
-    expect(sent).toHaveLength(1);
+    // zone-documents: the patient finds the PDF under "Dokumente" in the zone
+    expect(delivery).toBeNull();
+    expect(await db.emailDelivery.count({ where: { documentId: document.id } })).toBe(0);
+    expect(sent).toHaveLength(0);
     expect(await finalizeSignature(sid)).toBeNull();
     const rec = await viewPatient(actor, p.id);
     expect(rec?.finalizing).toHaveLength(0);
     expect(rec?.documents[0].session.channel).toBe('PATIENT_ZONE');
   });
 
-  it('sends no email without consent (Ohne E-Mail-Einwilligung)', async () => {
+  it('still emails the PDF with consent when no patient zone is configured', async () => {
+    const p = await newPatient();
+    const sid = await signInZone(p.id, { email: true });
+    config.patientZone.url = '';
+    const r = await finalizeSignature(sid);
+    expect(r?.delivery).toMatchObject({
+      status: 'PENDING',
+      recipient: 'anna@example.ch',
+      requestedBy: 'Patienten-Zone',
+    });
+    await deliverEmail(r!.delivery!.id, { retryDelayMs: 1 });
+    expect(sent).toHaveLength(1);
+    expect(sent[0].attachment).toBeDefined();
+  });
+
+  it('records no consent without the zone and without consent (Ohne E-Mail-Einwilligung)', async () => {
     const p = await newPatient();
     const sid = await signInZone(p.id, { email: false });
+    config.patientZone.url = '';
     const r = await finalizeSignature(sid);
-    expect(r?.delivery.status).toBe('SKIPPED_NO_CONSENT');
+    expect(r?.delivery?.status).toBe('SKIPPED_NO_CONSENT');
   });
 
   it('accepts only signed calls on the internal route', async () => {

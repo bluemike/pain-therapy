@@ -113,9 +113,8 @@ export function programTime(items: ProgramItem[]) {
   };
 }
 
-/** Minutes for display: whole minutes, one decimal below 10 minutes when not whole (e.g. 4.5) */
+/** Minutes for display: always whole minutes, rounded half up (iteration 9, design D7); sums are rounded last */
 export function formatMinutes(minutes: number, locale = 'de'): string {
-  const rounded =
-    minutes < 10 && Math.round(minutes * 10) % 10 !== 0 ? Math.round(minutes * 10) / 10 : Math.round(minutes);
+  const rounded = Math.round(minutes);
   return `${rounded.toLocaleString(locale === 'en' ? 'en-GB' : 'de-CH')} min`;
 }

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { createSignedPatient, login, unique } from './helpers';
+import { createSignedPatient, expectCentered, login, pdfSrcOf, unique, viewPdfAndBack } from './helpers';
 
 /**
  * Iteration 3, task 4.1 (iteration 8, task 5.3): prescribe home exercises, choose times per day and weekdays, check
@@ -114,8 +114,10 @@ test.describe('home exercises and exercise sheet', () => {
     await expect(docs.first()).toContainText('Übungsblatt · Sitzung Nr. 1');
     await expect(docs.first()).toContainText('aktuell');
     const href = await docs.first().getByRole('link', { name: 'PDF öffnen' }).getAttribute('href');
-    const pdf = await page.request.get(href!);
+    const pdf = await page.request.get(pdfSrcOf(href!, page.url()));
     expect(pdf.headers()['content-type']).toBe('application/pdf');
+    // In-app full-screen view with «Zurück», no new tab (iteration 9)
+    await viewPdfAndBack(page, docs.first().getByRole('link', { name: 'PDF öffnen' }));
 
     // Change the prescription, then print a new version; the older one stays
     await page.goto(recordUrl);
@@ -158,6 +160,10 @@ test.describe('home exercises and exercise sheet', () => {
     await expect(page.getByText('Keine Einwilligung in unverschlüsselte E-Mail: nur Ausdruck möglich.')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Übungsblatt senden' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Drucken', exact: true })).toBeVisible();
+    // «Abbrechen» next to «Sitzung ändern» goes back to the record without a sheet (iteration 9)
+    await page.getByRole('link', { name: 'Abbrechen' }).click();
+    await expect(page).toHaveURL(/\/patients\/[^/?]+(\?|$)/);
+    await expect(page.locator('section.treat').first()).toContainText('Sitzung Nr. 1');
   });
 
   // Also iteration 7 (Engpassdehnungen: preview and audio), in this test because the zone allows only 20
@@ -165,29 +171,49 @@ test.describe('home exercises and exercise sheet', () => {
   test('a session without home exercises goes back to the record', async ({ page }) => {
     await openSession(page, false);
     const table = page.locator('section[aria-labelledby="h_ex"]');
-    await expect(table.getByRole('columnheader', { name: 'Bild · Audio' })).toBeVisible();
+    await expect(table.getByRole('columnheader', { name: 'Bild', exact: true })).toBeVisible();
+    // «Anhören» only in the Selbstausführung (iteration 9)
+    await expect(table.getByRole('button', { name: /vorlesen/ })).toHaveCount(0);
 
-    // Bild gross öffnen
+    // Bild gross öffnen, centered with a backdrop (iteration 9)
     await table.getByRole('button', { name: 'Bild von Übung 2A gross öffnen' }).click();
     const popup = page.getByRole('dialog', { name: /^2A / });
     await expect(popup).toBeVisible();
     await expect(popup.getByRole('img', { name: 'Hauptbild 2A' })).toBeVisible();
+    await expectCentered(page, popup);
     await popup.getByRole('button', { name: 'Schliessen' }).click();
     await expect(popup).toBeHidden();
 
+    // Prescribed: the Selbstausführung offers the tailored sheet and «Anhören» (FRM, then the EPD)
+    await page.getByLabel('Übung 2A verordnet').check();
+    await group(page, 'Übung 2A: Übung fällt').getByRole('button', { name: 'leicht' }).click();
+    const home = page.locator('section[aria-labelledby="h_home"]');
+    await home.getByRole('button', { name: /^2A / }).click();
+    const sheet = page.getByTestId('tailored-2A');
+    await expect(sheet).toBeVisible();
+    await expect(sheet.getByRole('heading', { name: /^Faszien-Rollmassage/ })).toBeVisible();
+    await expect(sheet.getByRole('heading', { name: /^Engpassdehnung · Standard/ })).toBeVisible();
+    await expect(sheet.getByRole('img', { name: /2A FRM: Bildband/ })).toBeVisible();
+    await expect(sheet.getByText(/^Variante \d:/)).toHaveCount(0);
+    await expectCentered(page, sheet);
+    await sheet.getByRole('button', { name: 'Schliessen' }).click();
+    await expect(sheet).toBeHidden();
+
     // Audio anhören und stoppen (placeholder: three seconds of silence)
-    const play = table.getByRole('button', { name: 'Übung 2A vorlesen' });
+    const play = home.getByRole('button', { name: 'Übung 2A Standard vorlesen' });
     await play.click();
-    const stop = table.getByRole('button', { name: 'Vorlesen von Übung 2A stoppen' });
+    const stop = home.getByRole('button', { name: 'Vorlesen von Übung 2A Standard stoppen' });
     await expect(stop).toHaveAttribute('aria-pressed', 'true');
     await stop.click();
     await expect(play).toHaveAttribute('aria-pressed', 'false');
 
     // Audio not uploaded yet
-    await page.route('**/api/exercise-media/2D/audio', (r) => r.fulfill({ status: 404, body: 'Not found' }));
-    await table.getByRole('button', { name: 'Übung 2D vorlesen' }).click();
-    await expect(table.getByText('Audio nicht verfügbar')).toBeVisible();
+    await page.route('**/api/exercise-media/2A/frm-audio', (r) => r.fulfill({ status: 404, body: 'Not found' }));
+    await play.click();
+    await expect(home.getByText('Audio nicht verfügbar')).toBeVisible();
 
+    // Without a prescription the session goes back to the record
+    await home.getByRole('button', { name: 'Verordnung 2A entfernen' }).click();
     await page.getByRole('button', { name: 'Sitzung speichern' }).click();
     await expect(page.getByText('Sitzung Nr. 1 gespeichert.')).toBeVisible();
     await expect(page.getByRole('heading', { level: 1, name: 'Übungsblatt' })).toHaveCount(0);

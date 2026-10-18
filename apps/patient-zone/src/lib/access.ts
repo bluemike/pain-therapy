@@ -153,7 +153,7 @@ export async function resolveSession(sessionId: string | undefined, now = new Da
     include: { link: true, patient: { select: PATIENT } },
   });
   if (!session || session.endedAt || session.expiresAt <= now) return null;
-  const { program, signature, purposeActive } = await linkPurposeOf(db, session.patientId, now);
+  const { program, programs, signature, purposeActive } = await linkPurposeOf(db, session.patientId, now);
   const ok = sessionLinkOk(session.link, { patientActive: session.patient.status === 'ACTIVE', purposeActive }, now);
   if (!ok) {
     await db.patientZoneSession.update({ where: { id: session.id }, data: { endedAt: now }, select: { id: true } });
@@ -163,6 +163,8 @@ export async function resolveSession(sessionId: string | undefined, now = new Da
     session: { id: session.id, linkId: session.linkId, createdAt: session.createdAt },
     patient: session.patient,
     program,
+    /** Active home programs, one per running treatment, newest first (iteration 9, design D8) */
+    programs: programs.filter((x) => x.active),
     signaturePending: signature.pending,
   };
 }
@@ -171,10 +173,13 @@ export type ProgramSession = ZoneSession & { program: CurrentProgram };
 
 /**
  * zone-consent-signing: Unterschrift vor den Übungen. Home program, entries and images only with an active program
- * and no pending signature; otherwise null.
+ * and no pending signature; otherwise null. Since iteration 9 (design D8) `treatmentId` chooses the program of a
+ * running treatment; without it, or with one that has no active program, the newest one.
  */
-export function programSession(s: ZoneSession | null): ProgramSession | null {
-  return s && !s.signaturePending && s.program?.active ? (s as ProgramSession) : null;
+export function programSession(s: ZoneSession | null, treatmentId?: string | null): ProgramSession | null {
+  if (!s || s.signaturePending || !s.programs.length) return null;
+  const program = s.programs.find((x) => x.treatmentId === treatmentId) ?? s.programs[0];
+  return { ...s, program };
 }
 
 /** Marks the session as seen and the link as used ("Zuletzt genutzt" in the record) */

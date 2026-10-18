@@ -2762,3 +2762,170 @@ input[type='checkbox']:disabled {
   opacity: 0.35;
   cursor: not-allowed;
 }
+
+/* Iteration 9: Profilmenü, zentrierte Dialoge (design D1, D2) */
+.user {
+  position: relative;
+}
+.avatarbtn {
+  border: 1px solid var(--border);
+  cursor: pointer;
+  width: 44px;
+  height: 44px;
+}
+.avatarbtn[aria-expanded='true'],
+.avatarbtn:hover {
+  background: var(--gold);
+}
+.usermenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 90;
+  min-width: 220px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+}
+.usermenu[hidden] {
+  display: none;
+}
+.usermenu .who-m {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+.usermenu .who-m small {
+  display: block;
+  color: var(--muted);
+}
+.usermenu .item,
+.usermenu form button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.usermenu .item:hover,
+.usermenu form button:hover {
+  background: var(--gold-bg);
+}
+@media (min-width: 761px) {
+  .usermenu .who-m {
+    display: none;
+  }
+}
+dialog[open] {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  max-height: calc(100dvh - 32px);
+  max-width: calc(100vw - 32px);
+  overflow: auto;
+}
+
+/* Iteration 9: PDF in der App (design D3) */
+.pdfview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.pdfbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.pdfbar h1 {
+  flex: 1;
+  min-width: 0;
+  font-size: 17px;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pdfpages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.pdfpages canvas {
+  max-width: 100%;
+  height: auto;
+  background: #fff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+}
+.pdfmsg {
+  text-align: center;
+}
+
+/* Iteration 9: Schmerzknöpfe über die volle Breite, Sitzungen unter der Behandlung */
+.painrow .scale {
+  display: grid;
+  grid-template-columns: repeat(11, minmax(0, 1fr));
+  width: 100%;
+}
+.painrow .scale button {
+  width: auto;
+}
+@media (max-width: 560px) {
+  .painrow .scale {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+.sessions {
+  border-top: 2px solid var(--gold-text);
+  margin: 0 20px;
+}
+.sessions-h {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold-text);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 10px 0 0;
+}
+.sessions .conslist li {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 0;
+  min-height: 52px;
+  border-top: 1px solid var(--line);
+}
+.sessions .conslist li:first-child {
+  border-top: 0;
+}
+.sessions .conslist .n {
+  width: auto;
+  min-width: 110px;
+}
+.sessions .conslist a.btn {
+  display: inline-flex;
+  padding: 0 14px;
+  min-height: 40px;
+  border-top: 1px solid var(--border);
+  margin-left: auto;
+}

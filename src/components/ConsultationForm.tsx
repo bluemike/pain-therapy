@@ -11,7 +11,6 @@ import { PhotoField, usePhotos, type SavedPhoto } from './PhotoField';
 import { Seg } from './Seg';
 import { HomeProgramBlock, type HomeEntry } from './HomeProgramBlock';
 import { ExercisePreview } from './ExercisePreview';
-import { ExerciseAudio } from './ExerciseAudio';
 
 type Sensitivity = (typeof SENSITIVITIES)[number];
 type Difficulty = (typeof DIFFICULTIES)[number];
@@ -263,21 +262,24 @@ export function ConsultationForm({
               </span>
             )}
           </div>
-          <div className={`f w6 ${errors.comparison ? 'bad' : ''}`}>
-            <label className="l" htmlFor="f_comparison">
-              {t('comparison')}
-            </label>
-            <textarea
-              id="f_comparison"
-              name="comparison"
-              className="inp"
-              placeholder={t('comparisonPlaceholder')}
-              value={head.comparison}
-              onChange={(e) => setHead({ ...head, comparison: e.target.value })}
-              {...aria('comparison')}
-            />
-            {err('comparison')}
-          </div>
+          {/* session-form (iteration 9): no earlier session to compare with in session 1 */}
+          {number > 1 ? (
+            <div className={`f w6 ${errors.comparison ? 'bad' : ''}`}>
+              <label className="l" htmlFor="f_comparison">
+                {t('comparison')}
+              </label>
+              <textarea
+                id="f_comparison"
+                name="comparison"
+                className="inp"
+                placeholder={t('comparisonPlaceholder')}
+                value={head.comparison}
+                onChange={(e) => setHead({ ...head, comparison: e.target.value })}
+                {...aria('comparison')}
+              />
+              {err('comparison')}
+            </div>
+          ) : null}
         </div>
       </fieldset>
 
@@ -336,10 +338,15 @@ export function ConsultationForm({
               <tbody>
                 {allPoints.map((p) => {
                   const v = point(p.id);
+                  const bad = errors[`points:${p.id}`];
+                  // session-form (iteration 9): only the sides of the treatment; a side recorded before stays visible
+                  const showLeft = side !== 'RIGHT' || v.left;
+                  const showRight = side !== 'LEFT' || v.right;
                   return (
                     <tr
                       key={p.id}
-                      className={`e-${p.emphasis}`}
+                      data-point={p.id}
+                      className={`e-${p.emphasis}${bad ? ' bad' : ''}`}
                       hidden={filter !== 'all' && p.emphasis !== filter && !p.extra && !recordedPoint(p.id)}
                     >
                       <th scope="row" className="pid num">
@@ -356,26 +363,28 @@ export function ConsultationForm({
                         </small>
                       </td>
                       <td className="lr">
-                        <label>
-                          <input
-                            type="checkbox"
-                            checked={v.left}
-                            disabled={side === 'RIGHT' && !v.left}
-                            aria-label={t('leftLong', { id: p.id })}
-                            onChange={(e) => setPoint(p.id, { left: e.target.checked })}
-                          />
-                          <span aria-hidden="true">{t('left')}</span>
-                        </label>
-                        <label>
-                          <input
-                            type="checkbox"
-                            checked={v.right}
-                            disabled={side === 'LEFT' && !v.right}
-                            aria-label={t('rightLong', { id: p.id })}
-                            onChange={(e) => setPoint(p.id, { right: e.target.checked })}
-                          />
-                          <span aria-hidden="true">{t('right')}</span>
-                        </label>
+                        {showLeft ? (
+                          <label>
+                            <input
+                              type="checkbox"
+                              checked={v.left}
+                              aria-label={t('leftLong', { id: p.id })}
+                              onChange={(e) => setPoint(p.id, { left: e.target.checked })}
+                            />
+                            <span aria-hidden="true">{t('left')}</span>
+                          </label>
+                        ) : null}
+                        {showRight ? (
+                          <label>
+                            <input
+                              type="checkbox"
+                              checked={v.right}
+                              aria-label={t('rightLong', { id: p.id })}
+                              onChange={(e) => setPoint(p.id, { right: e.target.checked })}
+                            />
+                            <span aria-hidden="true">{t('right')}</span>
+                          </label>
+                        ) : null}
                       </td>
                       <td>
                         <Seg
@@ -384,6 +393,11 @@ export function ConsultationForm({
                           value={v.sensitivity}
                           onChange={(s) => setSensitivity(p.id, s)}
                         />
+                        {bad ? (
+                          <span className="msg" role="alert">
+                            {te(bad as 'sensitivityRequired')}
+                          </span>
+                        ) : null}
                       </td>
                     </tr>
                   );
@@ -443,7 +457,7 @@ export function ConsultationForm({
                 <thead>
                   <tr>
                     <th scope="col">{t('colExercise')}</th>
-                    <th scope="col">{tx('media')}</th>
+                    <th scope="col">{tx('imageCol')}</th>
                     <th scope="col">{t('prescribed')}</th>
                     <th scope="col">{t('epd')}</th>
                     <th scope="col">{t('difficulty')}</th>
@@ -463,7 +477,6 @@ export function ConsultationForm({
                         </th>
                         <td className="exmedia">
                           <ExercisePreview code={x.code} name={exName(x)} />
-                          <ExerciseAudio code={x.code} />
                         </td>
                         <td className="lr">
                           <label>
@@ -554,6 +567,7 @@ export function ConsultationForm({
             code: x.code,
             name: exName(x),
             epd: epdLabel(v),
+            variant: v,
             timing: withVariant(o?.timing ?? null, o?.variants.find((w) => w.number === v)?.seconds),
           };
         })}
