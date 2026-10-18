@@ -40,7 +40,7 @@
 ### D1: Bereiche und Schmerzbereiche
 - Neues Modell `BodyArea` (1 Kopf, 2 Rumpf, 3 Schulter/Arm, 4 Becken/Beine) aus `prisma/catalog/body-areas.json`.
 - `Region` (in der Oberfläche "Schmerzbereich") erhält `bodyAreaId` und `code` "1.1" bis "4.3". Die IDs 1 bis 12 bleiben, weil sie den Behandlungsbögen entsprechen: Bereich = ⌈id/3⌉, Nummer im Bereich = (id−1) mod 3 + 1.
-- `Exercise.group` und `OsteopressurePoint.group` werden zu `bodyAreaId` (FK). Die Werte 1 bis 4 passen bereits: Übung 1A bis 1F gehört zu Kopf, 2A bis 2F zu Rumpf usw. Die Oberfläche sagt "Bereich" statt "Gruppe".
+- `Exercise.group` und `OsteopressurePoint.group` werden Fremdschlüssel auf `BodyArea`. Die Spalte behält in der Datenbank den Namen `group` (Umbenennen hätte die Rechte der Rolle `patient_zone` und die Katalogdateien ohne Nutzen geändert). Die Werte 1 bis 4 passen bereits: Übung 1A bis 1F gehört zu Kopf, 2A bis 2F zu Rumpf usw. Die Oberfläche sagt "Bereich" statt "Gruppe".
 - Schmerzbereiche werden überall nach Bereich gruppiert angezeigt (Auswahlliste mit Überschriften, L&B Basisdaten als Baum).
 
 ### D2: Übung = FRM + EPD-Standard + Varianten
@@ -125,7 +125,7 @@
   - Neue Konten erhalten beim ersten Anmelden den Vornamen aus Entra und "Therapeutin" als Vorgabe. Beides lässt sich in "Mein Profil" anpassen.
 - "Mein Profil" im Benutzermenü ändert beide Felder.
 - Dokumente zeigen "<Berufsbezeichnung>: <voller Name>", z.B. "Therapeutin: Christina Franz".
-- Begrüssung: "Hallo <Anzeigename>" bzw. "Hello <Anzeigename>". Sie erscheint nur auf der ersten Seite nach dem Anmelden. Ein Hinweis im Sitzungscookie (`greeted`) unterdrückt sie danach bis zur nächsten Anmeldung.
+- Begrüssung: "Hallo <Anzeigename>" bzw. "Hello <Anzeigename>". Sie erscheint nur auf der ersten Seite nach dem Anmelden. Die Sitzung trägt den Zeitpunkt der Anmeldung (`authTime`); ein Cookie `pt_greeted` mit diesem Zeitpunkt unterdrückt die Begrüssung danach bis zur nächsten Anmeldung. Sitzungen von vor Iteration 8 haben keinen Zeitpunkt und werden nicht begrüsst.
 
 ### D10: Begriffe
 Nur Übersetzungen, Dokumente und E-Mails; keine Umbenennung in Datenbank oder Routen.

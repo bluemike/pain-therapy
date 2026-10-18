@@ -12,7 +12,9 @@
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": []
-    }
+    },
+    "rollingTools": ["MiKu", "MiRo"],
+    "standardAids": []
   },
   {
     "code": "1B",
@@ -27,7 +29,9 @@
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": []
-    }
+    },
+    "rollingTools": ["MiKu", "MiRo"],
+    "standardAids": []
   },
   {
     "code": "1C",
@@ -42,7 +46,9 @@
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": ["Augenübung in mehreren Blickrichtungen; Dauer pro Richtung von der Praxis bestätigen"]
-    }
+    },
+    "rollingTools": ["MiKu"],
+    "standardAids": []
   },
   {
     "code": "1D",
@@ -57,7 +63,9 @@
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": []
-    }
+    },
+    "rollingTools": ["MiKu", "MeRo"],
+    "standardAids": []
   },
   {
     "code": "1E",
@@ -65,14 +73,16 @@
     "sheetPage": 5,
     "mainImage": "1E.jpg",
     "sheetImage": "1E-blatt.png",
-    "stretchStepLabels": ["Schritt 1", "Schritt 2", "Schritt 3 A"],
+    "stretchStepLabels": ["Schritt 1", "Schritt 2", "Schritt 3a", "Schritt 3b"],
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 1,
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": []
-    }
+    },
+    "rollingTools": ["MiKu", "MiRo", "MeRo"],
+    "standardAids": ["Wand"]
   },
   {
     "code": "1F",
@@ -87,7 +97,9 @@
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": []
-    }
+    },
+    "rollingTools": ["MiKu", "MeRo"],
+    "standardAids": ["Wand"]
   },
   {
     "code": "2A",
@@ -95,14 +107,16 @@
     "sheetPage": 7,
     "mainImage": "2A.jpg",
     "sheetImage": "2A-blatt.png",
-    "stretchStepLabels": ["Schritt 1", "Schritt 2", "Schritt 3A", "Schritt 3B"],
+    "stretchStepLabels": ["Schritt 1", "Schritt 2", "Schritt 3a", "Schritt 3b"],
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 1,
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": []
-    }
+    },
+    "rollingTools": ["MiKu", "MeRo"],
+    "standardAids": []
   },
   {
     "code": "2B",
@@ -117,7 +131,9 @@
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": []
-    }
+    },
+    "rollingTools": ["MiKu", "MeRo"],
+    "standardAids": []
   },
   {
     "code": "2C",
@@ -125,14 +141,16 @@
     "sheetPage": 9,
     "mainImage": "2C.jpg",
     "sheetImage": "2C-blatt.png",
-    "stretchStepLabels": ["Schritt 1", "Schritt 2"],
+    "stretchStepLabels": ["Schritt 1", "Schritt 2", "Schritt 3"],
     "timing": {
       "stretchSecondsPerSide": null,
       "sides": 1,
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": ["Atemübung: Schritte mit zwölf Atemzügen statt 30-Sekunden-Takt; Dauer von der Praxis festlegen"]
-    }
+    },
+    "rollingTools": ["MiKu", "MiRo"],
+    "standardAids": []
   },
   {
     "code": "2D",
@@ -147,7 +165,9 @@
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": []
-    }
+    },
+    "rollingTools": ["MiKu", "MeRo"],
+    "standardAids": []
   },
   {
     "code": "2E",
@@ -162,7 +182,9 @@
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": []
-    }
+    },
+    "rollingTools": ["MiKu", "MeKu", "MeRo"],
+    "standardAids": []
   },
   {
     "code": "2F",
@@ -177,7 +199,9 @@
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": []
-    }
+    },
+    "rollingTools": ["MiRo", "MeRo"],
+    "standardAids": ["Schlaufe", "Knieretter"]
   },
   {
     "code": "3A",
@@ -192,7 +216,9 @@
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": []
-    }
+    },
+    "rollingTools": ["MiKu", "MiRo"],
+    "standardAids": ["Schlaufe"]
   },
   {
     "code": "3B",
@@ -207,7 +233,9 @@
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": []
-    }
+    },
+    "rollingTools": ["MiKu", "MiRo"],
+    "standardAids": []
   },
   {
     "code": "3C",
@@ -222,7 +250,9 @@
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": []
-    }
+    },
+    "rollingTools": ["MiKu", "MiRo"],
+    "standardAids": ["Tisch"]
   },
   {
     "code": "3D",
@@ -230,14 +260,16 @@
     "sheetPage": 16,
     "mainImage": "3D.jpg",
     "sheetImage": "3D-blatt.png",
-    "stretchStepLabels": ["Schritt 1", "Schritt 2"],
+    "stretchStepLabels": ["Schritt 1", "Schritt 2", "Schritt 3"],
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 2,
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": []
-    }
+    },
+    "rollingTools": ["MiKu", "MiRo"],
+    "standardAids": ["Tisch"]
   },
   {
     "code": "3E",
@@ -252,7 +284,9 @@
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": []
-    }
+    },
+    "rollingTools": ["MiKu", "MiRo"],
+    "standardAids": ["Schlaufe", "Wand"]
   },
   {
     "code": "3F",
@@ -267,7 +301,9 @@
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": []
-    }
+    },
+    "rollingTools": ["MiKu", "MiRo"],
+    "standardAids": []
   },
   {
     "code": "3G",
@@ -282,7 +318,9 @@
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": []
-    }
+    },
+    "rollingTools": ["MiKu", "MiRo", "MeRo"],
+    "standardAids": ["Knieretter"]
   },
   {
     "code": "3H",
@@ -297,7 +335,9 @@
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": []
-    }
+    },
+    "rollingTools": ["MiKu", "MiRo"],
+    "standardAids": ["Schlaufe"]
   },
   {
     "code": "4A",
@@ -305,14 +345,16 @@
     "sheetPage": 21,
     "mainImage": "4A.jpg",
     "sheetImage": "4A-blatt.png",
-    "stretchStepLabels": ["Schritt 1", "Schritt 3"],
+    "stretchStepLabels": ["Schritt 1", "Schritt 2", "Schritt 3"],
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 2,
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": []
-    }
+    },
+    "rollingTools": ["MiKu", "MeKu", "MeRo"],
+    "standardAids": ["Schlaufe"]
   },
   {
     "code": "4B",
@@ -320,14 +362,16 @@
     "sheetPage": 22,
     "mainImage": "4B.jpg",
     "sheetImage": "4B-blatt.png",
-    "stretchStepLabels": ["Schritt 1", "Schritt 3"],
+    "stretchStepLabels": ["Schritt 1", "Schritt 2", "Schritt 3"],
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 2,
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": []
-    }
+    },
+    "rollingTools": ["MiRo", "MeRo"],
+    "standardAids": ["Schlaufe", "Knieretter"]
   },
   {
     "code": "4C",
@@ -335,14 +379,16 @@
     "sheetPage": 23,
     "mainImage": "4C.jpg",
     "sheetImage": "4C-blatt.png",
-    "stretchStepLabels": ["Schritt 1", "Schritt 2"],
+    "stretchStepLabels": ["Schritt 1", "Schritt 2", "Schritt 3"],
     "timing": {
       "stretchSecondsPerSide": 120,
       "sides": 2,
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": []
-    }
+    },
+    "rollingTools": ["MiKu", "MiRo", "MeRo"],
+    "standardAids": ["Knieretter"]
   },
   {
     "code": "4D",
@@ -357,7 +403,9 @@
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": []
-    }
+    },
+    "rollingTools": ["MiKu", "MiRo", "MeRo"],
+    "standardAids": ["Knieretter"]
   },
   {
     "code": "4E",
@@ -372,7 +420,9 @@
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": []
-    }
+    },
+    "rollingTools": ["MiKu", "MiRo", "MeRo"],
+    "standardAids": []
   },
   {
     "code": "4F",
@@ -387,7 +437,9 @@
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": []
-    }
+    },
+    "rollingTools": ["MiKu", "MiRo", "MeRo"],
+    "standardAids": []
   },
   {
     "code": "4G",
@@ -402,6 +454,8 @@
       "rollingSeconds": 120,
       "source": "abgeleitet: Schritt 1 = 30 s, Schritt 2 = 2 × 30 s, Schritt 3 = 30 s; zwei Seiten, wenn das Blatt die andere Seite nennt; Rollmassage 120 s von der Praxis festgelegt (13.10.2026)",
       "todo": []
-    }
+    },
+    "rollingTools": ["MiRo", "MeRo"],
+    "standardAids": ["Tisch"]
   }
 ]

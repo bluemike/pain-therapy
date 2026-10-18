@@ -15,7 +15,8 @@ export function ExerciseImage({
   lazy,
 }: {
   code: string;
-  kind: 'main' | 'sheet';
+  /** Main image, whole sheet or the image band of FRM, Standardübung or Varianten (iteration 8) */
+  kind: 'main' | 'sheet' | 'frm' | 'std' | 'var';
   alt: string;
   className?: string;
   lazy?: boolean;

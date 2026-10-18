@@ -3,9 +3,10 @@ import { db } from './db';
 import { audit, SYSTEM_ACTOR } from './audit';
 import { formatDateZurich } from './format';
 import { localName } from './catalog';
-import { timingOf, type SheetContent } from './exercise-sheets';
+import { mediaFileOf, timingOf, type SheetContent, type SheetSegments } from './exercise-sheets';
 import { renderHandoutPdf, type HandoutItem, type HandoutPdfInput } from './handout-pdf';
-import { executionTime, programTime, type Repetition } from './home-program';
+import { executionTime, programTime, withVariant } from './home-program';
+import { therapistLine } from './users';
 import { translator } from './i18n-server';
 import { sendWithRetry } from './mail';
 import { nextDocumentNumber } from './signing';
@@ -25,14 +26,16 @@ export class HandoutError extends Error {
 
 export { emailConsentOf };
 
-/** Everything the Abschluss page and the PDF need about one consultation */
+/** Everything the Abschluss page and the PDF need about one session */
 export async function handoutContext(consultationId: string) {
   const c = await db.consultation.findUnique({
     where: { id: consultationId },
     include: {
       treatment: { include: { patient: true, region: true } },
       exercises: true,
-      home: { include: { exercise: { include: { sheet: true } } } },
+      home: {
+        include: { exercise: { include: { sheet: true, epdVariants: { where: { retiredAt: null } } } } },
+      },
       handouts: {
         orderBy: { version: 'desc' },
         include: { deliveries: { orderBy: { createdAt: 'desc' }, take: 1 } },
@@ -59,28 +62,56 @@ export async function handoutContext(consultationId: string) {
 }
 type Context = NonNullable<Awaited<ReturnType<typeof handoutContext>>>;
 
+/** Total time of the prescriptions: FRM + chosen EPD × executions per week (home-schedule, iteration 8) */
+export function programTotal(ctx: Pick<Context, 'prescriptions'>) {
+  return programTime(
+    ctx.prescriptions.map((p) => ({
+      code: p.exerciseCode,
+      schedule: { timesPerDay: p.timesPerDay, weekdays: p.weekdays },
+      timing: withVariant(
+        timingOf(p.exercise.sheet && !p.exercise.sheet.retiredAt ? p.exercise.sheet : null),
+        p.exercise.epdVariants.find((v) => v.number === p.variant)?.seconds,
+      ),
+    })),
+  );
+}
+
 /** Prescriptions with names in the patient's language, timing and media for the PDF */
 async function handoutItems(ctx: Context, language: Language): Promise<HandoutItem[]> {
   const media = exerciseMediaStore();
   return Promise.all(
     ctx.prescriptions.map(async (p) => {
       const sheet = p.exercise.sheet && !p.exercise.sheet.retiredAt ? p.exercise.sheet : null;
-      const e = executionTime(timingOf(sheet));
-      const [mainImage, sheetImage] = sheet
-        ? await Promise.all([media.get(sheet.mainImage), media.get(sheet.sheetImage)])
-        : [null, null];
+      const variant = p.variant ? (p.exercise.epdVariants.find((v) => v.number === p.variant) ?? null) : null;
+      const e = executionTime(withVariant(timingOf(sheet), variant?.seconds));
+      const code = p.exerciseCode;
+      // home-schedule (iteration 8, design D7): FRM band and the band of the chosen EPD; the main image for the
+      // overview and the whole sheet while the bands are not uploaded
+      const [mainImage, sheetImage, frmImage, epdImage] = sheet
+        ? await Promise.all([
+            media.get(sheet.mainImage),
+            media.get(sheet.sheetImage),
+            media.get(mediaFileOf(code, 'frm', sheet)),
+            media.get(mediaFileOf(code, p.variant ? 'var' : 'std', sheet)),
+          ])
+        : [null, null, null, null];
       return {
-        code: p.exerciseCode,
+        code,
         name: localName(p.exercise, language),
-        repetition: p.repetition as Repetition,
-        intensity: p.intensity,
-        steps: p.steps,
+        variant: p.variant,
+        timesPerDay: p.timesPerDay,
+        weekdays: p.weekdays,
         note: p.note,
         seconds: e.seconds,
         stretchMissing: e.stretchMissing,
         timingMissing: !sheet,
+        tools: sheet?.rollingTools ?? [],
+        aids: variant ? variant.aids : (sheet?.standardAids ?? []),
         mainImage,
         sheetImage,
+        frmImage,
+        epdImage,
+        segments: (sheet?.segments ?? null) as SheetSegments | null,
         content: (sheet?.content ?? null) as SheetContent | null,
       };
     }),
@@ -99,13 +130,7 @@ export async function buildHandout(
 ) {
   const language = ctx.patient.preferredLanguage;
   const items = await handoutItems(ctx, language);
-  const total = programTime(
-    ctx.prescriptions.map((p) => ({
-      code: p.exerciseCode,
-      repetition: p.repetition as Repetition,
-      timing: timingOf(p.exercise.sheet && !p.exercise.sheet.retiredAt ? p.exercise.sheet : null),
-    })),
-  );
+  const total = programTotal(ctx);
   const input: HandoutPdfInput = {
     language,
     documentNumber,
@@ -113,7 +138,7 @@ export async function buildHandout(
     createdAt: new Date(),
     patient: ctx.patient,
     consultationAt: ctx.consultation.at,
-    therapist: ctx.consultation.createdBy,
+    therapist: await therapistLine(ctx.consultation.createdBy, language),
     items,
     total,
     accessSheet: accessSheet
@@ -121,12 +146,12 @@ export async function buildHandout(
       : undefined,
   };
   const pdf = await renderHandoutPdf(input);
-  const snapshot = items.map(({ code, name, repetition, intensity, steps, note, seconds, stretchMissing }) => ({
+  const snapshot = items.map(({ code, name, variant, timesPerDay, weekdays, note, seconds, stretchMissing }) => ({
     code,
     name,
-    repetition,
-    intensity,
-    steps,
+    variant,
+    timesPerDay,
+    weekdays,
     note,
     seconds,
     stretchMissing,

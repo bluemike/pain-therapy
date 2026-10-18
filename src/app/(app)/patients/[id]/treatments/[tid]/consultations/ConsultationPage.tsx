@@ -1,13 +1,13 @@
 import Link from 'next/link';
 import { getLocale, getTranslations } from 'next-intl/server';
-import type { Patient, Region, Treatment } from '@prisma/client';
-import { allPoints, localName, regionLabel, regionSheet, rollingTools } from '@/lib/catalog';
+import type { BodyArea, Patient, Region, Treatment } from '@prisma/client';
+import { allPoints, localName, regionLabel, regionSheet } from '@/lib/catalog';
 import { exerciseChoices } from '@/lib/exercise-sheets';
 import { formatDateZurich, formatPercent } from '@/lib/format';
 import { ConsultationForm, type ConsultationValues } from '@/components/ConsultationForm';
 import type { SavedPhoto } from '@/components/PhotoField';
 
-/** Page frame of a new or existing consultation: the treatment form of the area built from the catalog (design D3) */
+/** Page frame of a new or existing session: the treatment form of the Schmerzbereich built from the reference data */
 export async function ConsultationPage({
   treatment,
   number,
@@ -17,7 +17,7 @@ export async function ConsultationPage({
   blocked,
   handoutHref,
 }: {
-  treatment: Treatment & { region: Region; patient: Patient };
+  treatment: Treatment & { region: Region & { bodyArea: BodyArea }; patient: Patient };
   number: number;
   id?: string;
   initial: ConsultationValues;
@@ -34,14 +34,14 @@ export async function ConsultationPage({
     pointIds: initial.sheet.points.map((x) => x.pointId),
     exerciseCodes: initial.sheet.exercises.map((x) => x.code),
   };
-  const [sheet, points, tools, choices] = blocked
-    ? [null, [], [], []]
+  const [sheet, points, choices] = blocked
+    ? [null, [], []]
     : await Promise.all([
         regionSheet(treatment.regionId, recorded),
         allPoints(),
-        rollingTools(initial.sheet.rolling.map((r) => r.toolCode).filter((c): c is string => !!c)),
         exerciseChoices(recorded.exerciseCodes),
       ]);
+  const area = treatment.region.bodyArea;
   return (
     <>
       <div className="crumb">
@@ -52,7 +52,9 @@ export async function ConsultationPage({
       <div className="ptitle">
         <div>
           <h1>{t('title', { n: number })}</h1>
-          <div className="sub">{t('sheet', { region: label })}</div>
+          <div className="sub">
+            {t('sheet', { region: label })} · {t('sideValue', { side: t(`side_${treatment.side}`) })}
+          </div>
         </div>
         {handoutHref ? (
           <div className="actions">
@@ -68,7 +70,10 @@ export async function ConsultationPage({
             patientId={p.id}
             treatmentId={treatment.id}
             id={id}
+            number={number}
+            side={treatment.side}
             regionLabel={label}
+            areaLabel={`${area.id} ${localName(area, locale)}`}
             treatmentInfo={t('treatmentValue', {
               date: formatDateZurich(treatment.startedAt),
               pain: formatPercent(treatment.painStart),
@@ -83,7 +88,6 @@ export async function ConsultationPage({
               group: x.group,
             }))}
             catalogExercises={choices}
-            tools={tools.map((x) => ({ code: x.code, name: localName(x, locale) }))}
             saved={saved}
             cancelHref={`${base}#t-${treatment.id}`}
           />

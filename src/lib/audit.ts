@@ -52,7 +52,9 @@ export type AuditAction =
   | 'exerciseLog.corrected'
   | 'exerciseLog.deleted'
   // adherence-overview: the practice opened the tab "Übungstagebuch"
-  | 'exerciseLog.viewed';
+  | 'exerciseLog.viewed'
+  // user-profile (iteration 8, design D9): display name or professional title changed under "Mein Profil"
+  | 'profile.updated';
 
 type Tx = Prisma.TransactionClient | PrismaClient;
 

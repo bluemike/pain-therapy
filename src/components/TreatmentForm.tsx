@@ -4,12 +4,21 @@ import Link from 'next/link';
 import { startTransition, useActionState, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { saveTreatment, type TreatmentFormState } from '@/app/(app)/treatment-actions';
-import { PAIN_VALUES } from '@/lib/schemas';
+import { PAIN_VALUES, SIDES } from '@/lib/schemas';
 import { PhotoField, usePhotos, type SavedPhoto } from './PhotoField';
 
-export type TreatmentValues = { startedAt: string; regionId: string; diagnosis: string; painStart: string };
+export type TreatmentValues = {
+  startedAt: string;
+  regionId: string;
+  side: string;
+  diagnosis: string;
+  painStart: string;
+};
 
-/** treatments: Formular "Neue Behandlung" und "Behandlung ändern" */
+/**
+ * treatments: Formular "Neue Behandlung" und "Behandlung ändern". Schmerzbereich (grouped by Bereich) and Körperseite
+ * are fixed after the first session (iteration 8, design D4).
+ */
 export function TreatmentForm({
   patientId,
   id,
@@ -22,10 +31,10 @@ export function TreatmentForm({
   patientId: string;
   id?: string;
   initial: TreatmentValues;
-  regions: [string, string][];
+  regions: { label: string; options: [string, string][] }[];
   saved?: SavedPhoto[];
   cancelHref: string;
-  /** after the first consultation the area is fixed (the sheets hang off it) */
+  /** after the first session the Schmerzbereich and the side are fixed (the sheets hang off them) */
   regionLocked?: boolean;
 }) {
   const t = useTranslations('treatments');
@@ -120,16 +129,38 @@ export function TreatmentForm({
               <>
                 <select {...c} disabled={regionLocked} name={regionLocked ? undefined : 'regionId'}>
                   <option value="">{t('choose')}</option>
-                  {regions.map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
+                  {regions.map((g) => (
+                    <optgroup key={g.label} label={g.label}>
+                      {g.options.map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
                 {regionLocked ? <input type="hidden" name="regionId" value={v.regionId} /> : null}
               </>
             ),
             regionLocked ? t('regionLockedHint') : undefined,
+          )}
+          {field(
+            'side',
+            t('side'),
+            '',
+            (c) => (
+              <>
+                <select {...c} disabled={regionLocked} name={regionLocked ? undefined : 'side'}>
+                  {SIDES.map((x) => (
+                    <option key={x} value={x}>
+                      {t(`side_${x}`)}
+                    </option>
+                  ))}
+                </select>
+                {regionLocked ? <input type="hidden" name="side" value={v.side} /> : null}
+              </>
+            ),
+            regionLocked ? t('sideLockedHint') : undefined,
           )}
           {field('painStart', t('painStartLabel'), '', (c) => (
             <select {...c}>

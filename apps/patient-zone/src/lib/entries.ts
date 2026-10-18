@@ -1,6 +1,6 @@
 import type { Language } from '@prisma/client';
 import { openToday, progress } from '@pain-therapy/shared/adherence';
-import { executionTime } from '@pain-therapy/shared/home-program';
+import { executionTime, withVariant } from '@pain-therapy/shared/home-program';
 import {
   dayReference,
   editable,
@@ -33,9 +33,17 @@ const ENTRY = {
   deletedAt: true,
 } as const;
 
+/** FRM and EPD texts of an exercise sheet (iteration 8, design D2), as written by catalog:sync */
+export type Segments = {
+  frm: { items: { n: number[]; text: string }[] };
+  standard: { intro: string | null; steps: { label: string; text: string }[]; note: string | null };
+  variants: { intro: string | null; items: { number: number; text: string }[] };
+};
+
 /**
- * The exercises of the current program with name, image, repetition, duration and progress on the day of `ref`
- * ("Heute" with now, a past day with dayReference(); weekly targets count the week of that day)
+ * The exercises of the current program with name, image, schedule, EPD, duration and progress on the day of `ref`
+ * ("Heute" with now, a past day with dayReference()). Since iteration 8 (design D8) only the selected weekdays
+ * have a target; with the guide of FRM and the chosen EPD.
  */
 export async function today(s: ProgramSession, ref = new Date()) {
   const codes = s.program.prescriptions.map((p) => p.exerciseCode);
@@ -46,7 +54,18 @@ export async function today(s: ProgramSession, ref = new Date()) {
         code: true,
         nameDe: true,
         nameEn: true,
-        sheet: { select: { mainImage: true, stretchSecondsPerSide: true, sides: true, rollingSeconds: true } },
+        sheet: {
+          select: {
+            mainImage: true,
+            stretchSecondsPerSide: true,
+            sides: true,
+            rollingSeconds: true,
+            segments: true,
+            rollingTools: true,
+            standardAids: true,
+          },
+        },
+        epdVariants: { where: { retiredAt: null }, select: { number: true, aids: true, seconds: true } },
       },
     }),
     db.exerciseLogEntry.findMany({
@@ -56,13 +75,22 @@ export async function today(s: ProgramSession, ref = new Date()) {
   ]);
   const items = s.program.prescriptions.map((p) => {
     const x = exercises.find((e) => e.code === p.exerciseCode);
+    const variant = p.variant ? x?.epdVariants.find((v) => v.number === p.variant) : undefined;
     return {
       code: p.exerciseCode,
       name: x ? nameIn(x, s.patient.preferredLanguage) : p.exerciseCode,
-      repetition: p.repetition,
+      schedule: p.schedule,
+      variant: p.variant,
       hasImage: !!x?.sheet?.mainImage,
-      seconds: executionTime(x?.sheet ?? null).seconds,
+      seconds: executionTime(withVariant(x?.sheet ?? null, variant?.seconds)).seconds,
       progress: progress(p, entries, ref),
+      guide: x?.sheet
+        ? {
+            segments: (x.sheet.segments ?? null) as Segments | null,
+            tools: x.sheet.rollingTools,
+            aids: variant ? variant.aids : x.sheet.standardAids,
+          }
+        : null,
     };
   });
   return { items, open: openToday(s.program.prescriptions, entries, ref) };
@@ -278,9 +306,20 @@ export async function deleteEntry(s: ProgramSession, id: string, now = new Date(
   return null;
 }
 
-/** Image of an exercise of the current program only (Nur das eigene Heimprogramm) */
-export async function mainImageOf(s: ProgramSession, code: string) {
-  if (!s.program.prescriptions.some((p) => p.exerciseCode === code)) return null;
+/** The image bands of FRM, Standardübung and Varianten (iteration 8, design D2) */
+export const BANDS = ['frm', 'std', 'var'] as const;
+export type Band = (typeof BANDS)[number];
+
+/**
+ * Image of an exercise of the current program only (Nur das eigene Heimprogramm): the main image or, since iteration
+ * 8, the FRM band and the band of the prescribed EPD (Standardübung or Varianten)
+ */
+export async function mainImageOf(s: ProgramSession, code: string, band?: Band) {
+  const p = s.program.prescriptions.find((x) => x.exerciseCode === code);
+  if (!p) return null;
+  if (band === 'std' && p.variant) return null;
+  if (band === 'var' && !p.variant) return null;
   const sheet = await db.exerciseSheet.findUnique({ where: { exerciseCode: code }, select: { mainImage: true } });
-  return sheet?.mainImage ?? null;
+  if (!sheet) return null;
+  return band ? `${code}-${band}.png` : sheet.mainImage;
 }

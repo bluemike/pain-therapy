@@ -2,15 +2,15 @@ import { expect, test, type Page } from '@playwright/test';
 import { createSignedPatient, login, unique } from './helpers';
 
 /**
- * Iteration 3, task 4.1: prescribe home exercises, choose repetitions, check the time needed, send the exercise
- * sheet and find it in the record. Needs the placeholder media (npm run media:placeholders, then catalog:sync).
+ * Iteration 3, task 4.1 (iteration 8, task 5.3): prescribe home exercises, choose times per day and weekdays, check
+ * the time needed, send the exercise sheet and find it in the record. Needs the placeholder media (npm run media:placeholders, then catalog:sync).
  */
 
 const group = (page: Page, name: string) => page.getByRole('group', { name, exact: true });
 const block = (page: Page) => page.locator('section[aria-labelledby="h_home"]');
 const row = (page: Page, code: string) => block(page).locator(`li.rx[data-code="${code}"]`);
 
-async function openConsultation(page: Page, emailConsent: boolean) {
+async function openSession(page: Page, emailConsent: boolean) {
   await login(page);
   await createSignedPatient(page, { first: 'Anna', last: `Heim${unique()}`, dob: '05.03.1980', emailConsent });
   const recordUrl = page.url().split('?')[0];
@@ -20,48 +20,46 @@ async function openConsultation(page: Page, emailConsent: boolean) {
   await page.locator('#f_diagnosis').fill('Lumbalgie');
   await page.getByRole('button', { name: 'Behandlung eröffnen' }).click();
   await expect(page.getByText('Behandlung eröffnet.')).toBeVisible();
-  await page.locator('section.treat').first().getByRole('link', { name: 'Konsultation', exact: true }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Konsultation Nr. 1' })).toBeVisible();
+  await page.locator('section.treat').first().getByRole('link', { name: 'Sitzung', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Sitzung Nr. 1' })).toBeVisible();
   return recordUrl;
 }
 
 test.describe('home exercises and exercise sheet', () => {
   test('prescribe, time needed, send by email, document in the record, new version printed', async ({ page }) => {
-    const recordUrl = await openConsultation(page, true);
+    const recordUrl = await openSession(page, true);
     await expect(block(page).getByText('Noch keine Übung verordnet.')).toBeVisible();
 
-    // Verordnete Übung erscheint, "täglich 1x" vorgewählt
+    // Verordnete Übung erscheint mit FRM + EPD, "1× pro Tag" an allen Wochentagen vorgewählt (iteration 8)
     await page.getByLabel('Übung 2A verordnet').check();
     await expect(row(page, '2A')).toBeVisible();
-    const daily2A = group(page, 'Wiederholung 2A täglich');
-    await expect(daily2A.getByRole('button', { name: '1x' })).toHaveAttribute('aria-pressed', 'true');
-    // Zehn Optionen
-    await expect(daily2A.getByRole('button')).toHaveText(['1x', '2x', '3x']);
-    await expect(group(page, 'Wiederholung 2A wöchentlich').getByRole('button')).toHaveText([
-      '1x',
-      '2x',
-      '3x',
-      '4x',
-      '5x',
-      '6x',
-      '7x',
-    ]);
+    await expect(row(page, '2A')).toContainText('FRM + EPD Standard');
+    const perDay2A = group(page, 'Übung 2A: pro Tag');
+    await expect(perDay2A.getByRole('button')).toHaveText(['1×', '2×', '3×']);
+    await expect(perDay2A.getByRole('button', { name: '1×' })).toHaveAttribute('aria-pressed', 'true');
+    const days2A = group(page, 'Übung 2A: Wochentage');
+    await expect(days2A.getByRole('button')).toHaveText(['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']);
+    await expect(days2A.locator('button[aria-pressed="true"]')).toHaveCount(7);
     await expect(row(page, '2A')).toContainText('4 min pro Ausführung');
-    // Intensität 10 is never offered
-    await expect(page.getByLabel('Intensität 2A').locator('option')).toHaveText([
-      '–',
-      ...['1', '2', '3', '4', '5', '6', '7', '8', '9'],
-    ]);
+    await expect(page.getByLabel('Intensität 2A')).toHaveCount(0);
 
-    // Zwei Übungen: 2A täglich 2x and 2D wöchentlich 5x → 76 min per week, about 11 per day
-    await daily2A.getByRole('button', { name: '2x' }).click();
+    // Zwei Übungen: 2A 2× pro Tag and 2D 1× Mo–Fr → 76 min per week, about 11 per day
+    await perDay2A.getByRole('button', { name: '2×' }).click();
     await page.getByLabel('Übung 2D verordnet').check();
-    await group(page, 'Wiederholung 2D wöchentlich').getByRole('button', { name: '5x' }).click();
+    const days2D = group(page, 'Übung 2D: Wochentage');
+    await days2D.getByRole('button', { name: 'Samstag' }).click();
+    await days2D.getByRole('button', { name: 'Sonntag' }).click();
     const total = page.getByTestId('home-total');
     await expect(total).toContainText('76 min');
     await expect(total).toContainText('11 min');
-    await page.getByLabel('Intensität 2A').selectOption('7');
-    await page.getByLabel('Schritte 2A').selectOption('3');
+    // At least one weekday
+    for (const d of ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag'])
+      await days2D.getByRole('button', { name: d }).click();
+    await expect(row(page, '2D')).toContainText('Mindestens einen Wochentag wählen.');
+    await days2D.getByRole('button', { name: 'Montag' }).click();
+    for (const d of ['Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag'])
+      await days2D.getByRole('button', { name: d }).click();
+    await expect(total).toContainText('76 min');
 
     // 2C: stretch not set, only the rolling counts
     await page.getByLabel('Übung 2C verordnet').check();
@@ -71,10 +69,12 @@ test.describe('home exercises and exercise sheet', () => {
     await expect(row(page, '2C')).toHaveCount(0);
     await expect(page.getByLabel('Übung 2C verordnet')).not.toBeChecked();
 
-    // Weitere Übung aus dem Katalog: 4B appears and counts as prescribed
-    await block(page).getByRole('button', { name: '+ Übung hinzufügen' }).click();
-    await page.getByLabel('Übung aus dem Katalog').selectOption('4B');
-    await block(page).getByRole('button', { name: 'Hinzufügen', exact: true }).click();
+    // Übung aus anderem Bereich: 4B appears and counts as prescribed
+    await page.getByLabel('Übung aus anderem Bereich hinzufügen').selectOption('4B');
+    await page
+      .locator('section[aria-labelledby="h_ex"]')
+      .getByRole('button', { name: 'Hinzufügen', exact: true })
+      .click();
     await expect(row(page, '4B')).toContainText('6 min pro Ausführung');
     await expect(page.getByLabel('Übung 4B verordnet')).toBeChecked();
     await expect(total).toContainText('118 min');
@@ -86,13 +86,15 @@ test.describe('home exercises and exercise sheet', () => {
           .evaluate((img: HTMLImageElement) => img.naturalWidth),
       )
       .toBeGreaterThan(0);
+    for (const code of ['2A', '2D', '4B'])
+      await group(page, `Übung ${code}: Übung fällt`).getByRole('button', { name: 'mittel' }).click();
 
     // Saving creates no exercise sheet; the Abschluss page offers it
-    await page.getByRole('button', { name: 'Konsultation speichern' }).click();
-    await expect(page.getByText('Konsultation Nr. 1 gespeichert.')).toBeVisible();
+    await page.getByRole('button', { name: 'Sitzung speichern' }).click();
+    await expect(page.getByText('Sitzung Nr. 1 gespeichert.')).toBeVisible();
     await expect(page.getByRole('heading', { level: 1, name: 'Übungsblatt' })).toBeVisible();
     await expect(page.getByText('3 Übungen zur Selbstausführung verordnet, Zeitbedarf 17 min pro Tag.')).toBeVisible();
-    await expect(page.getByText('Für diese Konsultation wurde noch kein Übungsblatt erstellt.')).toBeVisible();
+    await expect(page.getByText('Für diese Sitzung wurde noch kein Übungsblatt erstellt.')).toBeVisible();
     await expect(page.getByLabel(/Per E-Mail senden/)).toBeChecked();
 
     // Senden
@@ -109,7 +111,7 @@ test.describe('home exercises and exercise sheet', () => {
     await page.goto(`${recordUrl}?tab=documents`);
     const docs = page.locator('[data-testid="handout"]');
     await expect(docs).toHaveCount(1);
-    await expect(docs.first()).toContainText('Übungsblatt · Konsultation Nr. 1');
+    await expect(docs.first()).toContainText('Übungsblatt · Sitzung Nr. 1');
     await expect(docs.first()).toContainText('aktuell');
     const href = await docs.first().getByRole('link', { name: 'PDF öffnen' }).getAttribute('href');
     const pdf = await page.request.get(href!);
@@ -118,13 +120,13 @@ test.describe('home exercises and exercise sheet', () => {
     // Change the prescription, then print a new version; the older one stays
     await page.goto(recordUrl);
     await page.locator('section.treat').first().locator('.conslist a').first().click();
-    await expect(page.getByRole('heading', { level: 1, name: 'Konsultation Nr. 1' })).toBeVisible();
-    await expect(group(page, 'Wiederholung 2A täglich').getByRole('button', { name: '2x' })).toHaveAttribute(
+    await expect(page.getByRole('heading', { level: 1, name: 'Sitzung Nr. 1' })).toBeVisible();
+    await expect(group(page, 'Übung 2A: pro Tag').getByRole('button', { name: '2×' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
-    await group(page, 'Wiederholung 2A täglich').getByRole('button', { name: '3x' }).click();
-    await page.getByRole('button', { name: 'Konsultation speichern' }).click();
+    await group(page, 'Übung 2A: pro Tag').getByRole('button', { name: '3×' }).click();
+    await page.getByRole('button', { name: 'Sitzung speichern' }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Übungsblatt' })).toBeVisible();
     await page.getByLabel(/Drucken/).check();
     const popup = page.waitForEvent('popup');
@@ -140,16 +142,17 @@ test.describe('home exercises and exercise sheet', () => {
 
     // History: prescription change and the two sheets
     await page.goto(`${recordUrl}?tab=history`);
-    const change = page.locator('table.hist tr', { hasText: 'Selbstausführung 2A Wiederholung geändert' });
-    await expect(change.locator('del')).toHaveText('täglich 2x');
-    await expect(change.locator('ins')).toHaveText('täglich 3x');
-    await expect(page.locator('table.hist')).toContainText('Konsultation Nr. 1: Übungsblatt ausgedruckt');
+    const change = page.locator('table.hist tr', { hasText: 'Selbstausführung 2A pro Tag geändert' });
+    await expect(change.locator('del')).toHaveText('2× pro Tag');
+    await expect(change.locator('ins')).toHaveText('3× pro Tag');
+    await expect(page.locator('table.hist')).toContainText('Sitzung Nr. 1: Übungsblatt ausgedruckt');
   });
 
   test('without consent to unencrypted email only printing is offered', async ({ page }) => {
-    await openConsultation(page, false);
+    await openSession(page, false);
     await page.getByLabel('Übung 2D verordnet').check();
-    await page.getByRole('button', { name: 'Konsultation speichern' }).click();
+    await group(page, 'Übung 2D: Übung fällt').getByRole('button', { name: 'leicht' }).click();
+    await page.getByRole('button', { name: 'Sitzung speichern' }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Übungsblatt' })).toBeVisible();
     await expect(page.getByLabel(/Per E-Mail senden/)).toBeDisabled();
     await expect(page.getByText('Keine Einwilligung in unverschlüsselte E-Mail: nur Ausdruck möglich.')).toBeVisible();
@@ -159,8 +162,8 @@ test.describe('home exercises and exercise sheet', () => {
 
   // Also iteration 7 (Engpassdehnungen: preview and audio), in this test because the zone allows only 20
   // confirmations per hour and IP address over the whole run
-  test('a consultation without home exercises goes back to the record', async ({ page }) => {
-    await openConsultation(page, false);
+  test('a session without home exercises goes back to the record', async ({ page }) => {
+    await openSession(page, false);
     const table = page.locator('section[aria-labelledby="h_ex"]');
     await expect(table.getByRole('columnheader', { name: 'Bild · Audio' })).toBeVisible();
 
@@ -185,8 +188,8 @@ test.describe('home exercises and exercise sheet', () => {
     await table.getByRole('button', { name: 'Übung 2D vorlesen' }).click();
     await expect(table.getByText('Audio nicht verfügbar')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Konsultation speichern' }).click();
-    await expect(page.getByText('Konsultation Nr. 1 gespeichert.')).toBeVisible();
+    await page.getByRole('button', { name: 'Sitzung speichern' }).click();
+    await expect(page.getByText('Sitzung Nr. 1 gespeichert.')).toBeVisible();
     await expect(page.getByRole('heading', { level: 1, name: 'Übungsblatt' })).toHaveCount(0);
   });
 });
@@ -198,9 +201,16 @@ test.describe('catalog exercise', () => {
     await page.getByRole('link', { name: '2A', exact: true }).click();
     await expect(page.getByRole('heading', { level: 1, name: '2A Wirbelsäulen-Übung' })).toBeVisible();
     await expect(page.getByText('Sammelmappe Seite 7')).toBeVisible();
-    for (const h of ['Faszien-Rollmassage', 'Engpassdehnung', 'Varianten', 'Zeitbedarf', 'Ganzes Blatt'])
-      await expect(page.getByRole('heading', { name: h })).toBeVisible();
+    for (const h of ['Faszien-Rollmassage', 'Standardübung', 'Varianten', 'Zeitbedarf', 'Ganzes Blatt'])
+      await expect(page.getByRole('heading', { name: h, exact: true })).toBeVisible();
     await expect(page.locator('main')).toContainText('Platzhalter 2A');
+    await expect(page.locator('main')).toContainText('Bereich 2 Rumpf');
+    // Image bands and one recording per part (iteration 8, exercise-segments)
+    for (const part of ['Faszien-Rollmassage', 'Standardübung'])
+      await expect
+        .poll(() => page.getByAltText(`2A ${part}: Bildband`).evaluate((img: HTMLImageElement) => img.naturalWidth))
+        .toBeGreaterThan(0);
+    await expect(page.getByRole('button', { name: 'Übung 2A Faszien-Rollmassage vorlesen' })).toBeVisible();
     await expect(page.locator('dl.kv')).toContainText('2 min pro Seite');
     await expect(page.locator('dl.kv')).toContainText('4 min');
     for (const alt of ['Hauptbild 2A', 'Übungsblatt 2A'])

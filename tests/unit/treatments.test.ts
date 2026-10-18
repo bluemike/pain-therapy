@@ -1,3 +1,4 @@
+import type { z } from 'zod';
 import { cp, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -6,7 +7,7 @@ import { db } from '@/lib/db';
 import { createPatient, historyOf, setStatus } from '@/lib/patients';
 import { currentVersionNumber } from '@/lib/consent-texts';
 import { catalogView, regionSheet } from '@/lib/catalog';
-import { consultationSchema, EMPTY_PATIENT, patientSchema, treatmentSchema, type Sheet } from '@/lib/schemas';
+import { consultationSchema, EMPTY_PATIENT, patientSchema, sheetSchema, treatmentSchema } from '@/lib/schemas';
 import {
   createConsultation,
   createTreatment,
@@ -76,14 +77,14 @@ const treatmentInput = (over: Record<string, string> = {}) =>
     ...over,
   });
 
-const consultationInput = (sheet: Partial<Sheet> = {}, over: Record<string, string> = {}) =>
+const consultationInput = (sheet: Partial<z.input<typeof sheetSchema>> = {}, over: Record<string, string> = {}) =>
   consultationSchema.parse({
     at: '2026-10-01T09:30',
     diagnosis: 'Lumbalgie rechts, ausstrahlend in die Leiste',
     painBefore: '',
     painAfter: '',
     comparison: '',
-    sheet: JSON.stringify({ points: [], exercises: [], rolling: [], ...sheet }),
+    sheet: JSON.stringify({ points: [], exercises: [], ...sheet }),
     ...over,
   });
 
@@ -124,8 +125,26 @@ describe('therapy catalog', () => {
       '4.5',
     ]);
     expect(six.points.some((p) => p.emphasis === 'main')).toBe(true);
-    expect(six.exercises.map((x) => x.code)).toEqual(['1F', '2A', '2B', '2C', '2D']);
-    expect((await regionSheet(12)).exercises.map((x) => x.code)).toEqual(['2F', '4B', '4C', '4D', '4E', '4F']);
+    // The exercises of the sheet first, then the other exercises of its Bereich (iteration 8, session-form)
+    expect(six.exercises.map((x) => [x.code, !!x.extra])).toEqual([
+      ['1F', false],
+      ['2A', false],
+      ['2B', false],
+      ['2C', false],
+      ['2D', false],
+      ['2E', false],
+      ['2F', false],
+    ]);
+    expect((await regionSheet(12)).exercises.map((x) => x.code)).toEqual([
+      '2F',
+      '4B',
+      '4C',
+      '4D',
+      '4E',
+      '4F',
+      '4A',
+      '4G',
+    ]);
   });
 
   it('marks exercises without rolling or variants as not captured (null)', async () => {
@@ -236,6 +255,22 @@ describe('treatments', () => {
     expect([saved.regionId, saved.diagnosis, saved.painStart]).toEqual([4, 'Lumbalgie links', 50]);
   });
 
+  it('fixes the body side after the first session and refuses points on the other side (Körperseite)', async () => {
+    const p = await signedPatient('Seite');
+    const t = await createTreatment(actor, p.id, treatmentInput({ side: 'LEFT' }));
+    const right = { points: [{ pointId: '2.11.1', left: false, right: true, sensitivity: 'STRONG' as const }] };
+    await expect(createConsultation(actor, t.id, consultationInput(right))).rejects.toMatchObject({ code: 'side' });
+    // Before any session the side can still be corrected
+    await updateTreatment(actor, t.id, treatmentInput({ side: 'RIGHT' }));
+    await createConsultation(actor, t.id, consultationInput(right));
+    await expect(updateTreatment(actor, t.id, treatmentInput({ side: 'LEFT' }))).rejects.toMatchObject({
+      code: 'sideLocked',
+    });
+    await updateTreatment(actor, t.id, treatmentInput({ side: 'RIGHT', diagnosis: 'Lumbalgie rechts' }));
+    const changes = (await historyOf(p.id)).filter((e) => e.action === 'treatment.updated' && e.field === 'side');
+    expect(changes.map((e) => [e.before, e.after])).toEqual([['LEFT', 'RIGHT']]);
+  });
+
   it('cannot be deleted (database trigger)', async () => {
     const p = await signedPatient('NoDelete');
     const t = await createTreatment(actor, p.id, treatmentInput());
@@ -280,8 +315,7 @@ describe('consultations', () => {
       consultationInput(
         {
           points: [{ pointId: '2.11.1', left: false, right: true, sensitivity: 'STRONG' }],
-          exercises: [{ code: '2D', prescribed: true, difficulty: 'HARD', variants: null }],
-          rolling: [{ position: 1, area: 'Beckenkamm', toolCode: 'MiKu' }],
+          exercises: [{ code: '2D', prescribed: true, difficulty: 'HARD', variant: 1 }],
         },
         { painBefore: '60', painAfter: '30', comparison: 'Morgens besser' },
       ),
@@ -290,9 +324,8 @@ describe('consultations', () => {
     expect(stored).toMatchObject({ painBefore: 60, painAfter: 30, comparison: 'Morgens besser' });
     expect(sheetOf(stored)).toEqual({
       points: [{ pointId: '2.11.1', left: false, right: true, sensitivity: 'STRONG' }],
-      exercises: [{ code: '2D', prescribed: true, difficulty: 'HARD', variants: null }],
-      rolling: [{ position: 1, area: 'Beckenkamm', toolCode: 'MiKu' }],
-      home: [{ code: '2D', repetition: 'DAILY_1', intensity: null, steps: null, note: null }],
+      exercises: [{ code: '2D', prescribed: true, difficulty: 'HARD', variant: 1 }],
+      home: [{ code: '2D', variant: 1, timesPerDay: 1, weekdays: 127, note: null }],
     });
     // Unknown catalog entries are refused
     await expect(

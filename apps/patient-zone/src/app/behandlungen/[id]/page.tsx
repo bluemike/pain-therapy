@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getFormatter, getTranslations } from 'next-intl/server';
-import { repetitionParts } from '@pain-therapy/shared/home-program';
+import { scheduleParts } from '@pain-therapy/shared/home-program';
 import { treatmentOf } from '@/lib/record';
 import { recordSession } from '@/lib/record-session';
 
@@ -9,7 +9,7 @@ import { recordSession } from '@/lib/record-session';
 const width = (v: number | null) => `w${Math.min(100, Math.max(0, Math.round((v ?? 0) / 10) * 10))}`;
 
 /**
- * zone-record: Konsultationen einer Behandlung (iteration 6, mockup view 3), newest first, with the pain course. No
+ * zone-record: Sitzungen einer Behandlung (iteration 6, mockup view 3), newest first, with the pain course. No
  * photos, anamnesis or staff names; an id of another patient is "not found" like an unknown one.
  */
 export default async function Treatment({ params }: { params: Promise<{ id: string }> }) {
@@ -38,7 +38,10 @@ export default async function Treatment({ params }: { params: Promise<{ id: stri
         <Link href="/behandlungen">‹ {t('back')}</Link>
       </p>
       <h1>{tr.region}</h1>
-      <p className="sub num">{t('since', { date: date(tr.startedAt), pain: tr.painStart })}</p>
+      <p className="sub num">
+        {t('since', { date: date(tr.startedAt), pain: tr.painStart })}
+        {tr.side !== 'UNSPECIFIED' ? ` · ${t(`side_${tr.side}`)}` : ''}
+      </p>
       <p>{tr.diagnosis}</p>
       {course.length ? (
         <section className="card" aria-labelledby="h_course">
@@ -105,17 +108,8 @@ export default async function Treatment({ params }: { params: Promise<{ id: stri
                 {c.exercises.map((x) => (
                   <li key={x.code}>
                     {x.code} {x.name}
+                    {x.variant ? ` · ${t('variant', { n: x.variant })}` : ''}
                   </li>
-                ))}
-              </ul>
-            </>
-          ) : null}
-          {c.rolling.length ? (
-            <>
-              <h3>{t('rolling')}</h3>
-              <ul className="tags">
-                {c.rolling.map((r, i) => (
-                  <li key={i}>{[r.tool, r.area].filter(Boolean).join(', ')}</li>
                 ))}
               </ul>
             </>
@@ -125,10 +119,12 @@ export default async function Treatment({ params }: { params: Promise<{ id: stri
               <h3>{t('home')}</h3>
               <ul className="tags">
                 {c.home.map((h) => {
-                  const { daily, times } = repetitionParts(h.repetition);
+                  const p = scheduleParts(h.schedule);
+                  const days = p.everyDay ? t('everyDay') : p.days.map((d) => t(`short_${d}`)).join(' ');
                   return (
                     <li key={h.code}>
-                      {h.code} {t(daily ? 'repDaily' : 'repWeekly', { n: times })}
+                      {h.code} {t('timesPerDay', { n: p.timesPerDay })} · {days}
+                      {h.variant ? ` · ${t('variant', { n: h.variant })}` : ''}
                     </li>
                   );
                 })}

@@ -2714,3 +2714,51 @@ span.lbimg {
   min-width: 240px;
   min-height: 180px;
 }
+
+/* Iteration 8: Bereiche, Körperseite, EPD, Wochentage */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.grouprow th {
+  background: var(--gold-bg);
+  color: var(--gold-text);
+  font-weight: 700;
+  text-align: left;
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+}
+.exband {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  margin: 6px 0 10px;
+}
+.seg.days button {
+  min-width: 42px;
+  padding: 0 8px;
+}
+.sheettab tr.bad td,
+.rx.bad {
+  background: var(--err-bg);
+}
+.sheettab tr.bad td:first-child,
+.rx.bad {
+  box-shadow: inset 3px 0 0 var(--err);
+}
+.rx.bad {
+  padding-left: 8px;
+}
+input[type='checkbox']:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}

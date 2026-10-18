@@ -53,15 +53,16 @@ const input = (x: Record<string, string> = {}) => {
 };
 
 describe('today (Heimprogramm in der Patienten-Zone)', () => {
-  it('shows "heute 1 von 2" and "diese Woche 0 von 5" (Übungen von heute)', async () => {
+  it('shows "heute 1 von 2" on the selected weekdays (Übungen von heute)', async () => {
     const { zone } = await signedIn();
     expect(await createEntry(zone, input({ time: '09:00' }), now)).toBeNull();
     const { items } = await today(zone, now);
-    expect(items.map((i) => [i.code, i.progress.period, i.progress.done, i.progress.target])).toEqual([
-      ['1F', 'today', 0, 1],
-      ['2A', 'today', 1, 2],
-      ['2D', 'week', 0, 5],
+    expect(items.map((i) => [i.code, i.progress.scheduledToday, i.progress.done, i.progress.target])).toEqual([
+      ['1F', true, 0, 1],
+      ['2A', true, 1, 2],
+      ['2D', true, 0, 1],
     ]);
+    expect(items[1].schedule).toEqual({ timesPerDay: 2, weekdays: 127 });
     expect(items[1]).toMatchObject({ name: 'Übung 2A', seconds: 240, hasImage: true });
   });
 
@@ -73,7 +74,7 @@ describe('today (Heimprogramm in der Patienten-Zone)', () => {
   it('shows only the newest prescription; earlier entries stay with theirs (Neue Verordnung)', async () => {
     const { zone, patient: p, consultation: c } = await signedIn();
     await createEntry(zone, input({ time: '09:00' }), now);
-    const newer = await consultation(p.id, ago(0, 2), [['4B', 'DAILY_1']]);
+    const newer = await consultation(p.id, ago(0, 2), [['4B', 1]]);
     const z = programSession(await resolveSession(undefined, now)) ?? (await refreshed(zone));
     expect(z.program.consultationId).toBe(newer.id);
     expect((await today(z, now)).items.map((i) => i.code)).toEqual(['4B']);
@@ -152,14 +153,15 @@ describe('recording an execution (Ausführung erfassen)', () => {
 });
 
 describe('quick entry (Schnelleintrag)', () => {
-  it('fills the open executions of today for daily exercises (Alles erledigt)', async () => {
+  it('fills the open executions of the exercises of today (Alles erledigt)', async () => {
     const { zone } = await signedIn();
     await createEntry(zone, input({ time: '08:00' }), now);
-    expect(await quickEntry(zone, now)).toBe(2);
+    expect(await quickEntry(zone, now)).toBe(3);
     const rows = await admin.exerciseLogEntry.findMany({ where: { quick: true }, orderBy: { exerciseCode: 'asc' } });
     expect(rows.map((r) => [r.exerciseCode, r.done, r.rating])).toEqual([
       ['1F', true, null],
       ['2A', true, null],
+      ['2D', true, null],
     ]);
     expect(await quickEntry(zone, now)).toBe(0);
     // The rating can be added within 24 hours
@@ -178,32 +180,33 @@ describe('backfill (zone-exercise-backfill, iteration 6, task 5.4)', () => {
     const { zone } = await signedIn();
     expect(await createEntry(zone, input({ date: '2026-10-13', time: '12:00', rating: '6' }), now)).toBeNull();
     const yesterday = await today(zone, day(zone, '2026-10-13'));
-    expect(yesterday.items.find((i) => i.code === '2A')?.progress).toMatchObject({ period: 'today', done: 1 });
+    expect(yesterday.items.find((i) => i.code === '2A')?.progress).toMatchObject({ scheduledToday: true, done: 1 });
     const todays = await today(zone, now);
     expect(todays.items.find((i) => i.code === '2A')?.progress.done).toBe(0);
-    // Weekly targets count the week of the chosen day (Mon 12.10. to Sun 18.10.)
-    await createEntry(zone, input({ code: '2D', date: '2026-10-12', time: '18:00' }), now);
-    const weekly = (await today(zone, day(zone, '2026-10-13'))).items.find((i) => i.code === '2D');
-    expect(weekly?.progress).toMatchObject({ period: 'week', done: 1 });
-    expect((await today(zone, day(zone, '2026-10-11'))).items.find((i) => i.code === '2D')?.progress.done).toBe(0);
+    // 2D only Mo to Fr (iteration 8, design D8): Sunday 11.10. is free, an entry there still counts for that day
+    const sunday = (await today(zone, day(zone, '2026-10-11'))).items.find((i) => i.code === '2D');
+    expect(sunday?.progress).toMatchObject({ scheduledToday: false, target: 0, done: 0, complete: true });
+    await createEntry(zone, input({ code: '2D', date: '2026-10-11', time: '18:00' }), now);
+    expect((await today(zone, day(zone, '2026-10-11'))).items.find((i) => i.code === '2D')?.progress.done).toBe(1);
   });
 
   it('fills the open executions of a past day at 12:00 and keeps recorded ones (Ganzer Tag)', async () => {
     const { zone } = await signedIn();
     await createEntry(zone, input({ date: '2026-10-13', time: '08:00' }), now);
-    expect(await quickEntry(zone, now, '2026-10-13')).toBe(2);
+    expect(await quickEntry(zone, now, '2026-10-13')).toBe(3);
     const rows = await admin.exerciseLogEntry.findMany({ where: { quick: true }, orderBy: { exerciseCode: 'asc' } });
     expect(rows.map((r) => [r.exerciseCode, r.performedAt.toISOString(), r.createdAt.toISOString()])).toEqual([
       ['1F', '2026-10-13T10:00:00.000Z', now.toISOString()],
       ['2A', '2026-10-13T10:00:00.000Z', now.toISOString()],
+      ['2D', '2026-10-13T10:00:00.000Z', now.toISOString()],
     ]);
     expect(await quickEntry(zone, now, '2026-10-13')).toBe(0);
     expect(await admin.exerciseLogEntry.count({ where: { quick: false } })).toBe(1);
     // Today is untouched
-    expect((await today(zone, now)).open).toHaveLength(2);
+    expect((await today(zone, now)).open).toHaveLength(3);
   });
 
-  it('uses the time of the consultation on its own day and nothing before it (Grenze Konsultation)', async () => {
+  it('uses the time of the session on its own day, nothing before it, and skips 2D on Sunday (Grenze Sitzung)', async () => {
     const { zone } = await signedIn({ at: new Date('2026-10-04T14:30:00Z') });
     expect(await quickEntry(zone, now, '2026-10-04')).toBe(3);
     const at = (await admin.exerciseLogEntry.findFirstOrThrow()).performedAt;
@@ -256,7 +259,7 @@ describe('last 14 days and corrections (Letzte 14 Tage und Korrektur)', () => {
     expect(await recentEntries(zone, now)).toEqual([]);
     const row = await admin.exerciseLogEntry.findUniqueOrThrow({ where: { id: e.id } });
     expect(row.deletedAt).toEqual(now);
-    const a = adherence([{ exerciseCode: '2A', repetition: 'DAILY_2' }], [row], c.at, now);
+    const a = adherence([{ exerciseCode: '2A', schedule: { timesPerDay: 2, weekdays: 127 } }], [row], c.at, now);
     expect(a.total.done).toBe(0);
     expect(await admin.auditEvent.count({ where: { action: 'exerciseLog.deleted' } })).toBe(1);
   });

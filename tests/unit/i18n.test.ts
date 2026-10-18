@@ -24,6 +24,16 @@ describe('translations', () => {
     ).toEqual([]);
   });
 
+  it('uses the terms of iteration 8: Sitzung, Bereich, Therapeut:in, never Arzt (terminology)', () => {
+    const texts = keys(de).map((k) =>
+      String(k.split('.').reduce<unknown>((a, p) => (a as Record<string, unknown>)[p], de)),
+    );
+    expect(texts.filter((t) => /Konsultation/.test(t))).toEqual([]);
+    expect(texts.filter((t) => /\bGruppe/.test(t))).toEqual([]);
+    expect(texts.filter((t) => /Arzt/.test(t.replace(/Arzt-Diagnose|ärztlich/g, '')))).toEqual([]);
+    expect(texts.filter((t) => /Arzt/.test(t))).toContain('Arzt-Diagnose');
+  });
+
   it('no translation is empty', () => {
     const empty = (o: object) =>
       keys(o).filter(

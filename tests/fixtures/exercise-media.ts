@@ -70,13 +70,41 @@ export function placeholderContent(sheets: SheetRef[]) {
   }));
 }
 
+type VariantRef = { exerciseCode: string; number: number };
+
+async function variantRefs(): Promise<VariantRef[]> {
+  const file = path.resolve(__dirname, '../../prisma/catalog/exercise-variants.json');
+  return JSON.parse(await readFile(file, 'utf8')) as VariantRef[];
+}
+
+/** Placeholder texts in the format of segments-content.json (iteration 8, docs/deployment.md) */
+export function placeholderSegments(sheets: SheetRef[], variants: VariantRef[]) {
+  return sheets.map((s) => ({
+    code: s.code,
+    frm: { items: [{ n: [1], text: `Platzhalter ${s.code}: Faszien-Rollmassage (kein Inhalt von L&B).` }] },
+    standard: {
+      intro: '',
+      steps: s.stretchStepLabels.map((label) => ({ label, text: `Platzhalter ${s.code}: ${label}.` })),
+      note: '',
+    },
+    variants: {
+      intro: '',
+      items: variants
+        .filter((v) => v.exerciseCode === s.code)
+        .map((v) => ({ id: `${s.code}-V${v.number}`, text: `Platzhalter ${s.code}: Variante ${v.number}.` })),
+    },
+  }));
+}
+
 /**
  * Writes placeholder media for every sheet (or the given codes) into `dir`, with the same file names as the real
- * container: <code>.jpg, <code>-blatt.png, <code>.mp3 (iteration 7, silence) and exercises-content.json.
+ * container: <code>.jpg, <code>-blatt.png, <code>.mp3 (iteration 7, silence), exercises-content.json and, since
+ * iteration 8, the bands <code>-frm.png, -std.png, -var.png, the recordings <code>-frm.mp3, -std.mp3, -V<n>.mp3 and
+ * segments-content.json.
  */
 export async function writePlaceholderMedia(
   dir: string,
-  opts: { codes?: string[]; content?: boolean; audio?: boolean } = {},
+  opts: { codes?: string[]; content?: boolean; audio?: boolean; segments?: boolean } = {},
 ) {
   const sheets = (await exerciseSheetRefs()).filter((s) => !opts.codes || opts.codes.includes(s.code));
   await mkdir(dir, { recursive: true });
@@ -85,6 +113,21 @@ export async function writePlaceholderMedia(
     await writeFile(path.join(dir, s.mainImage), TINY_JPEG);
     await writeFile(path.join(dir, s.sheetImage), sheet);
     if (opts.audio !== false) await writeFile(path.join(dir, audioFileOf(s.mainImage)), SILENT_MP3);
+  }
+  if (opts.segments !== false) {
+    const variants = await variantRefs();
+    const band = placeholderPng(350, 120);
+    for (const s of sheets) {
+      for (const part of ['frm', 'std', 'var']) await writeFile(path.join(dir, `${s.code}-${part}.png`), band);
+      if (opts.audio === false) continue;
+      const audio = ['frm', 'std', ...variants.filter((v) => v.exerciseCode === s.code).map((v) => `V${v.number}`)];
+      for (const a of audio) await writeFile(path.join(dir, `${s.code}-${a}.mp3`), SILENT_MP3);
+    }
+    if (opts.content !== false)
+      await writeFile(
+        path.join(dir, 'segments-content.json'),
+        JSON.stringify(placeholderSegments(sheets, variants), null, 2),
+      );
   }
   if (opts.content !== false)
     await writeFile(path.join(dir, 'exercises-content.json'), JSON.stringify(placeholderContent(sheets), null, 2));

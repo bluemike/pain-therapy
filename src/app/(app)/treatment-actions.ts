@@ -2,7 +2,14 @@
 
 import { redirect } from 'next/navigation';
 import { requireUser } from '@/lib/session';
-import { consultationSchema, fieldErrors, pickFields, TREATMENT_FIELDS, treatmentSchema } from '@/lib/schemas';
+import {
+  consultationSchema,
+  fieldErrors,
+  pickFields,
+  sheetErrors,
+  TREATMENT_FIELDS,
+  treatmentSchema,
+} from '@/lib/schemas';
 import {
   createConsultation,
   createTreatment,
@@ -22,6 +29,8 @@ function knownError(e: unknown): TreatmentFormState | null {
   if (e instanceof TreatmentError) {
     if (e.code === 'region') return { errors: { regionId: 'region' } };
     if (e.code === 'regionLocked') return { errors: { regionId: 'regionLocked' } };
+    if (e.code === 'sideLocked') return { errors: { side: 'sideLocked' } };
+    if (e.code === 'side') return { error: 'side' };
     if (e.code === 'startAfterConsultation') return { errors: { startedAt: 'startAfterConsultation' } };
     if (e.code === 'inactive') return { error: 'patientInactive' };
     if (e.code === 'consent') return { error: 'consent' };
@@ -60,7 +69,7 @@ export async function saveTreatment(_prev: TreatmentFormState, fd: FormData): Pr
   redirect(`/patients/${saved.patientId}?flash=${id ? 'treatmentSaved' : 'treatmentCreated'}#t-${saved.id}`);
 }
 
-/** consultations: Konsultation eröffnen / ändern */
+/** session-form: Sitzung eröffnen / ändern */
 export async function saveConsultation(_prev: TreatmentFormState, fd: FormData): Promise<TreatmentFormState> {
   const actor = await requireUser();
   const patientId = String(fd.get('patientId') ?? '');
@@ -68,8 +77,10 @@ export async function saveConsultation(_prev: TreatmentFormState, fd: FormData):
   const id = String(fd.get('id') ?? '');
   const parsed = consultationSchema.safeParse(pickFields(fd, CONSULTATION_FIELDS));
   if (!parsed.success) {
-    const errors = fieldErrors(parsed.error);
-    return errors.sheet ? { errors, error: 'sheet' } : { errors };
+    const perExercise = sheetErrors(parsed.error);
+    const { sheet, ...errors } = fieldErrors(parsed.error);
+    if (Object.keys(perExercise).length) return { errors: { ...errors, ...perExercise } };
+    return sheet ? { errors: { ...errors, sheet }, error: 'sheet' } : { errors };
   }
   let saved: { id: string; number: number };
   try {

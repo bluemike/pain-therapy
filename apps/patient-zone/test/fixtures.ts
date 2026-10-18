@@ -1,7 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { inject } from 'vitest';
 import { linkExpiry } from '@pain-therapy/shared/access';
-import type { Repetition } from '@pain-therapy/shared/home-program';
 import { DAY_MS } from '@pain-therapy/shared/time';
 import { hashToken, newToken } from '@pain-therapy/shared/tokens';
 
@@ -16,7 +15,11 @@ export async function resetDatabase() {
     { tablename: string }[]
   >`SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename <> '_prisma_migrations'`;
   await admin.$executeRawUnsafe(`TRUNCATE ${tables.map((t) => `"${t.tablename}"`).join(', ')} CASCADE`);
-  await admin.region.create({ data: { id: 6, nameDe: 'Lendenwirbelsäule', nameEn: 'Lumbar spine', sheetTitle: 'x' } });
+  for (const id of [1, 2, 3, 4])
+    await admin.bodyArea.create({ data: { id, nameDe: `Bereich ${id}`, nameEn: `Area ${id}` } });
+  await admin.region.create({
+    data: { id: 6, code: '2.3', bodyAreaId: 2, nameDe: 'Lendenwirbelsäule', nameEn: 'Lumbar spine', sheetTitle: 'x' },
+  });
   for (const [i, code] of ['1F', '2A', '2D', '4B'].entries()) {
     await admin.exercise.create({
       data: { code, group: Number(code[0]), nameDe: `Übung ${code}`, nameEn: `Exercise ${code}`, sort: i },
@@ -57,8 +60,13 @@ export async function patient(opts: { language?: 'de' | 'en'; status?: 'ACTIVE' 
   });
 }
 
-/** A consultation (in a new treatment unless given) with the given prescriptions */
-export async function consultation(patientId: string, at: Date, home: [string, Repetition][], treatmentId?: string) {
+/** Weekdays Monday to Friday (bit mask, iteration 8 design D7) */
+export const MO_FR = 31;
+/** Prescription: exercise code, executions per day and weekdays (default: every day) */
+export type Rx = [code: string, timesPerDay: number, weekdays?: number, variant?: number];
+
+/** A session (in a new treatment unless given) with the given prescriptions */
+export async function consultation(patientId: string, at: Date, home: Rx[], treatmentId?: string) {
   const t =
     treatmentId ??
     (
@@ -85,7 +93,13 @@ export async function consultation(patientId: string, at: Date, home: [string, R
       createdBy: 'Test',
       updatedBy: 'Test',
       home: {
-        create: home.map(([exerciseCode, repetition]) => ({ exerciseCode, repetition, note: 'Notiz Therapeutin' })),
+        create: home.map(([exerciseCode, timesPerDay, weekdays = 127, variant = null]) => ({
+          exerciseCode,
+          timesPerDay,
+          weekdays,
+          variant,
+          note: 'Notiz Therapeutin',
+        })),
       },
     },
   });
@@ -107,13 +121,13 @@ export async function link(patientId: string, issuedAt = ago(1), extra: Record<s
   return { token, link: row };
 }
 
-/** Patient with 2A täglich 2x, 2D wöchentlich 5x and 1F täglich 1x from 10 days ago, and a link */
+/** Patient with 2A 2× every day, 2D 1× Mo to Fr and 1F 1× every day from 10 days ago, and a link */
 export async function setup(opts: { language?: 'de' | 'en'; at?: Date } = {}) {
   const p = await patient(opts);
   const c = await consultation(p.id, opts.at ?? ago(10), [
-    ['2A', 'DAILY_2'],
-    ['2D', 'WEEKLY_5'],
-    ['1F', 'DAILY_1'],
+    ['2A', 2],
+    ['2D', 1, MO_FR],
+    ['1F', 1],
   ]);
   const l = await link(p.id);
   return { patient: p, consultation: c, ...l };

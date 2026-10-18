@@ -9,6 +9,10 @@
  * the local folder STORAGE_EXERCISE_LOCAL_DIR. Without that file the texts stay as they are ("noch nicht erfasst"
  * on a fresh database); the deployment does not fail because of it.
  *
+ * Iteration 8 (design D1, D2): Bereiche (BodyArea), Schmerzbereiche with code and Bereich, the variants of the
+ * Engpassdehnungen (ExerciseVariant, structure only) and the texts of FRM, Standardübung and Varianten from
+ * `segments-content.json` in the same place as `exercises-content.json`, read the same way.
+ *
  * Plain JavaScript so it runs in the production image without a build step:
  *   node prisma/catalog/sync.mjs        (migration job, after `prisma migrate deploy`; locally `npm run catalog:sync`)
  */
@@ -36,12 +40,13 @@ async function csv(dir, name) {
 const captured = (v) => (Array.isArray(v) ? v : Prisma.DbNull);
 
 const CONTENT_FILE = 'exercises-content.json';
+const SEGMENTS_FILE = 'segments-content.json';
 
 /**
- * Reads `exercises-content.json` from the exercise media (container or local folder). Returns null when the file is
- * missing or cannot be read, with a warning in the log.
+ * Reads `exercises-content.json` (or another JSON file, iteration 8: `segments-content.json`) from the exercise media
+ * (container or local folder). Returns null when the file is missing or cannot be read, with a warning in the log.
  */
-export async function readExerciseContent(env = process.env) {
+export async function readExerciseContent(env = process.env, file = CONTENT_FILE) {
   try {
     if (env.STORAGE_DRIVER === 'azure') {
       const { BlobServiceClient } = await import('@azure/storage-blob');
@@ -53,16 +58,14 @@ export async function readExerciseContent(env = process.env) {
           );
       const blob = service
         .getContainerClient(env.AZURE_STORAGE_EXERCISE_CONTAINER || 'exercise-media')
-        .getBlockBlobClient(CONTENT_FILE);
+        .getBlockBlobClient(file);
       return JSON.parse((await blob.downloadToBuffer()).toString('utf8'));
     }
     const dir = env.STORAGE_EXERCISE_LOCAL_DIR || './data/exercise-media';
-    return JSON.parse(await readFile(path.join(dir, CONTENT_FILE), 'utf8'));
+    return JSON.parse(await readFile(path.join(dir, file), 'utf8'));
   } catch (e) {
     const missing = e?.code === 'ENOENT' || e?.statusCode === 404;
-    console.warn(
-      `catalog:sync ${CONTENT_FILE}: ${missing ? 'not found' : (e?.message ?? e)}; exercise texts unchanged`,
-    );
+    console.warn(`catalog:sync ${file}: ${missing ? 'not found' : (e?.message ?? e)}; exercise texts unchanged`);
     return null;
   }
 }
@@ -98,6 +101,36 @@ export function normalizeContent(entry, stepLabels = []) {
   return out.rolling || steps.length || out.variants ? out : null;
 }
 
+const items = (v) => (Array.isArray(v) ? v : []);
+const numbers = (v) => items(v).filter((n) => Number.isInteger(n) && n > 0);
+/** `number`, or the number of an id like "1A-V3" (segments.json of the sheet analysis) */
+const variantNumber = (v) =>
+  Number.isInteger(v?.number) ? v.number : Number(/-V(\d+)$/.exec(String(v?.id ?? ''))?.[1]) || null;
+
+/**
+ * Brings the texts of one sheet from segments-content.json into the stored shape (iteration 8, design D2):
+ * { frm: { items: [{ n, text }] }, standard: { intro, steps: [{ label, text }], note },
+ *   variants: { intro, items: [{ number, text }] } }; null if nothing is there.
+ */
+export function normalizeSegments(entry) {
+  if (!entry || typeof entry !== 'object') return null;
+  const frm = items(entry.frm?.items)
+    .map((i) => ({ n: numbers(i?.n), text: text(i?.text) }))
+    .filter((i) => i.text);
+  const steps = items(entry.standard?.steps)
+    .map((st) => ({ label: String(st?.label ?? ''), text: text(st?.text) }))
+    .filter((st) => st.text);
+  const variants = items(entry.variants?.items)
+    .map((v, i) => ({ number: variantNumber(v) ?? i + 1, text: text(v?.text) }))
+    .filter((v) => v.text);
+  const out = {
+    frm: { items: frm },
+    standard: { intro: text(entry.standard?.intro), steps, note: text(entry.standard?.note) },
+    variants: { intro: text(entry.variants?.intro), items: variants },
+  };
+  return frm.length || steps.length || variants.length ? out : null;
+}
+
 /** Entries of exercises-content.json by code: a list of { code, … }, { exercises: [...] } or { "1A": {…}, … } */
 export function contentByCode(content) {
   if (!content) return null;
@@ -113,19 +146,32 @@ export function contentByCode(content) {
  * Reads and checks the reference files; returns the rows per table keyed by their primary key.
  * `content`: parsed exercises-content.json, or null when it is not available (texts are then left unchanged).
  */
-export async function readCatalog(dir = HERE, content = null) {
-  const [regions, points, exercises, tools, regionPoints, regionExercises, sheets] = await Promise.all([
-    json(dir, 'regions.json'),
-    json(dir, 'osteopressure-points.json'),
-    json(dir, 'exercises.json'),
-    json(dir, 'rolling-tools.json'),
-    csv(dir, 'region-points.csv'),
-    csv(dir, 'region-exercises.csv'),
-    json(dir, 'exercise-sheets.json'),
-  ]);
+export async function readCatalog(dir = HERE, content = null, segments = null) {
+  const [areas, regions, points, exercises, tools, regionPoints, regionExercises, sheets, variants] = await Promise.all(
+    [
+      json(dir, 'body-areas.json'),
+      json(dir, 'regions.json'),
+      json(dir, 'osteopressure-points.json'),
+      json(dir, 'exercises.json'),
+      json(dir, 'rolling-tools.json'),
+      csv(dir, 'region-points.csv'),
+      csv(dir, 'region-exercises.csv'),
+      json(dir, 'exercise-sheets.json'),
+      json(dir, 'exercise-variants.json'),
+    ],
+  );
   const texts = contentByCode(content);
+  const segmentTexts = contentByCode(segments);
   const rows = {
-    region: regions.map((r) => ({ id: r.id, nameDe: r.nameDe, nameEn: r.nameEn, sheetTitle: r.sheetTitle })),
+    bodyArea: areas.map((a) => ({ id: a.id, nameDe: a.nameDe, nameEn: a.nameEn })),
+    region: regions.map((r) => ({
+      id: r.id,
+      code: r.code,
+      bodyAreaId: r.bodyArea,
+      nameDe: r.nameDe,
+      nameEn: r.nameEn,
+      sheetTitle: r.sheetTitle,
+    })),
     osteopressurePoint: points.map((p, i) => ({
       id: p.id,
       group: p.group,
@@ -168,11 +214,27 @@ export async function readCatalog(dir = HERE, content = null) {
       rollingSeconds: x.timing?.rollingSeconds ?? null,
       timingSource: x.timing?.source ?? null,
       timingTodo: x.timing?.todo?.length ? x.timing.todo : Prisma.DbNull,
+      rollingTools: x.rollingTools ?? [],
+      standardAids: x.standardAids ?? [],
       // Only written when the content file was read, so a missing file never wipes texts
       ...(texts ? { content: normalizeContent(texts.get(x.code), x.stretchStepLabels) ?? Prisma.DbNull } : {}),
+      ...(segmentTexts ? { segments: normalizeSegments(segmentTexts.get(x.code)) ?? Prisma.DbNull } : {}),
+    })),
+    exerciseVariant: variants.map((v) => ({
+      exerciseCode: v.exerciseCode,
+      number: v.number,
+      images: v.images ?? [],
+      aids: v.aids ?? [],
+      seconds: v.seconds ?? null,
     })),
   };
   // Referential checks, so a typo in a file fails the deployment instead of the database
+  const areaIds = new Set(rows.bodyArea.map((a) => a.id));
+  for (const r of rows.region)
+    if (!areaIds.has(r.bodyAreaId) || r.code !== `${r.bodyAreaId}.${((r.id - 1) % 3) + 1}`)
+      throw new Error(`regions.json: Bereich or code of ${r.id}`);
+  for (const x of [...rows.osteopressurePoint, ...rows.exercise])
+    if (!areaIds.has(x.group)) throw new Error(`Unknown Bereich ${x.group} of ${x.id ?? x.code}`);
   const regionIds = new Set(rows.region.map((r) => r.id));
   const pointIds = new Set(rows.osteopressurePoint.map((p) => p.id));
   const codes = new Set(rows.exercise.map((x) => x.code));
@@ -192,6 +254,25 @@ export async function readCatalog(dir = HERE, content = null) {
     if (!/^[\w.-]+$/.test(x.mainImage) || !/^[\w.-]+$/.test(x.sheetImage))
       throw new Error(`exercise-sheets.json: file names of ${x.exerciseCode}`);
   }
+  const toolCodes = new Set(rows.rollingTool.map((t) => t.code));
+  for (const x of rows.exerciseSheet)
+    for (const t of x.rollingTools)
+      if (!toolCodes.has(t)) throw new Error(`exercise-sheets.json: unknown tool ${t} of ${x.exerciseCode}`);
+  const variantKeys = new Set();
+  for (const v of rows.exerciseVariant) {
+    const k = `${v.exerciseCode}|${v.number}`;
+    if (!codes.has(v.exerciseCode) || !Number.isInteger(v.number) || v.number < 1 || variantKeys.has(k))
+      throw new Error(`exercise-variants.json: ${k}`);
+    if (!seconds(v.seconds)) throw new Error(`exercise-variants.json: seconds of ${k}`);
+    variantKeys.add(k);
+  }
+  for (const code of codes) {
+    const n = rows.exerciseVariant.filter((v) => v.exerciseCode === code).map((v) => v.number);
+    if (n.some((x, i) => x !== i + 1)) throw new Error(`exercise-variants.json: numbers of ${code} must be 1…n`);
+  }
+  if (segmentTexts)
+    for (const code of segmentTexts.keys())
+      if (!codes.has(code)) console.warn(`catalog:sync ${SEGMENTS_FILE}: unknown code ${code} ignored`);
   if (texts)
     for (const code of texts.keys())
       if (!codes.has(code)) console.warn(`catalog:sync ${CONTENT_FILE}: unknown code ${code} ignored`);
@@ -200,6 +281,7 @@ export async function readCatalog(dir = HERE, content = null) {
 
 const TABLES = [
   // Parents before children (foreign keys)
+  { model: 'bodyArea', key: (r) => String(r.id), where: (r) => ({ id: r.id }) },
   { model: 'region', key: (r) => String(r.id), where: (r) => ({ id: r.id }) },
   { model: 'osteopressurePoint', key: (r) => r.id, where: (r) => ({ id: r.id }) },
   { model: 'exercise', key: (r) => r.code, where: (r) => ({ code: r.code }) },
@@ -215,6 +297,11 @@ const TABLES = [
     where: (r) => ({ regionId_exerciseCode: { regionId: r.regionId, exerciseCode: r.exerciseCode } }),
   },
   { model: 'exerciseSheet', key: (r) => r.exerciseCode, where: (r) => ({ exerciseCode: r.exerciseCode }) },
+  {
+    model: 'exerciseVariant',
+    key: (r) => `${r.exerciseCode}|${r.number}`,
+    where: (r) => ({ exerciseCode_number: { exerciseCode: r.exerciseCode, number: r.number } }),
+  },
 ];
 
 /** Key-order independent comparison (jsonb does not keep the key order of the files). */
@@ -233,11 +320,16 @@ const same = (a, b) => JSON.stringify(canon(a)) === JSON.stringify(canon(b));
 
 /**
  * Writes the catalog. Returns per table how many rows were created, updated, retired and left unchanged.
- * `content` replaces reading exercises-content.json from the exercise media (tests); null means not available.
+ * `content` and `segments` replace reading exercises-content.json and segments-content.json from the exercise media
+ * (tests); null means not available.
  * @param {import('@prisma/client').PrismaClient} db
  */
-export async function syncCatalog(db, { dir = HERE, now = new Date(), content } = {}) {
-  const wanted = await readCatalog(dir, content === undefined ? await readExerciseContent() : content);
+export async function syncCatalog(db, { dir = HERE, now = new Date(), content, segments } = {}) {
+  const wanted = await readCatalog(
+    dir,
+    content === undefined ? await readExerciseContent() : content,
+    segments === undefined ? await readExerciseContent(process.env, SEGMENTS_FILE) : segments,
+  );
   const stats = {};
   await db.$transaction(
     async (tx) => {

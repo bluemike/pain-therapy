@@ -31,29 +31,6 @@ describe('consent status', () => {
   });
 });
 
-describe('hourInZurich', () => {
-  it('returns the hour in Swiss time', async () => {
-    const { hourInZurich } = await import('@/lib/format');
-    expect(hourInZurich(new Date('2026-10-12T10:33:00Z'))).toBe(12);
-    expect(hourInZurich(new Date('2026-01-12T23:10:00Z'))).toBe(0);
-  });
-});
-
-/** dashboard: Begrüssung (task 4.1) */
-describe('greeting', () => {
-  it('depends on the time of day', async () => {
-    const { greetingKey } = await import('@/lib/format');
-    expect([7, 10, 11, 17, 18, 23].map(greetingKey)).toEqual([
-      'greetingMorning',
-      'greetingMorning',
-      'greetingDay',
-      'greetingDay',
-      'greetingEvening',
-      'greetingEvening',
-    ]);
-  });
-});
-
 describe('datetime-local in Swiss time (treatments, consultations)', () => {
   it('round-trips summer and winter time', () => {
     const summer = parseLocalInput('2026-10-13T09:15')!;

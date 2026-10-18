@@ -2,7 +2,6 @@ import { adherence, type Adherence } from '@pain-therapy/shared/adherence';
 import { PROGRAM_ACTIVE_WEEKS, currentProgram, programActive } from '@pain-therapy/shared/program';
 import { hasRecord } from '@pain-therapy/shared/record';
 import { signatureStateOf } from '@pain-therapy/shared/signing';
-import type { Repetition } from '@pain-therapy/shared/home-program';
 import { DAY_MS } from '@pain-therapy/shared/time';
 import { db } from './db';
 import { audit } from './audit';
@@ -30,7 +29,7 @@ export async function exerciseLogOf(actor: Actor, patientId: string, now = new D
             number: true,
             at: true,
             treatmentId: true,
-            treatment: { select: { region: { select: { id: true, nameDe: true, nameEn: true } } } },
+            treatment: { select: { region: { select: { id: true, code: true, nameDe: true, nameEn: true } } } },
             home: { include: { exercise: { select: { code: true, nameDe: true, nameEn: true } } } },
             exercises: { select: { exerciseCode: true } },
           },
@@ -61,7 +60,10 @@ export async function exerciseLogOf(actor: Actor, patientId: string, now = new D
     adherence:
       program && consultation
         ? adherence(
-            prescriptions.map((p) => ({ exerciseCode: p.exerciseCode, repetition: p.repetition as Repetition })),
+            prescriptions.map((p) => ({
+              exerciseCode: p.exerciseCode,
+              schedule: { timesPerDay: p.timesPerDay, weekdays: p.weekdays },
+            })),
             entries.filter((e) => e.consultationId === program.consultationId),
             program.consultationAt,
             now,
@@ -91,7 +93,7 @@ export async function homeProgramOverview(now = new Date()): Promise<HomeProgram
     select: {
       id: true,
       at: true,
-      home: { select: { exerciseCode: true, repetition: true } },
+      home: { select: { exerciseCode: true, timesPerDay: true, weekdays: true } },
       treatment: { select: { patient: { select: { id: true, firstName: true, lastName: true } } } },
     },
   });
@@ -124,7 +126,10 @@ export async function homeProgramOverview(now = new Date()): Promise<HomeProgram
     return {
       patient,
       adherence: adherence(
-        c.home.map((h) => ({ exerciseCode: h.exerciseCode, repetition: h.repetition as Repetition })),
+        c.home.map((h) => ({
+          exerciseCode: h.exerciseCode,
+          schedule: { timesPerDay: h.timesPerDay, weekdays: h.weekdays },
+        })),
         entries.filter((e) => e.consultationId === c.id),
         c.at,
         now,

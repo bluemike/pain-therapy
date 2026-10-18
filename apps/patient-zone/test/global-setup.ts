@@ -20,12 +20,17 @@ export default async function setup(project: TestProject) {
   const adminUrl = process.env.TEST_DATABASE_URL ?? 'postgresql://app:app@localhost:5432/pain_therapy_test';
   const name = new URL(adminUrl).pathname.slice(1);
   if (!name.endsWith('_test')) throw new Error(`Refusing to use ${name} as test database (name must end in _test)`);
+  const db = new PrismaClient({ datasourceUrl: adminUrl });
+  // Empty first: a migration may refuse to run on existing patient data (iteration 8, design D11)
+  const tables = await db.$queryRaw<
+    { tablename: string }[]
+  >`SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename <> '_prisma_migrations'`;
+  if (tables.length) await db.$executeRawUnsafe(`TRUNCATE ${tables.map((t) => `"${t.tablename}"`).join(', ')} CASCADE`);
   execSync('npx prisma migrate deploy', {
     cwd: path.resolve(__dirname, '../../..'),
     env: { ...process.env, DATABASE_URL: adminUrl },
     stdio: 'pipe',
   });
-  const db = new PrismaClient({ datasourceUrl: adminUrl });
   let zoneUrl = adminUrl;
   try {
     const [{ allowed }] = await db.$queryRaw<{ allowed: boolean }[]>`
