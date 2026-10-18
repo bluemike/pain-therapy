@@ -6,6 +6,7 @@ import type { Role } from '@prisma/client';
 import { config } from '@/lib/config';
 import { checkClaims, isSessionIdle, type EntraClaims } from '@/lib/access';
 import { presetFor } from '@/lib/profile-presets';
+import { LOGIN_HINT_COOKIE, LOGIN_HINT_MAX_AGE, loginHintFrom } from '@/lib/login-hint';
 
 declare module 'next-auth' {
   interface Session {
@@ -76,6 +77,24 @@ async function signedOutSince(sub: string | undefined, authTime: number | undefi
   return !!u?.signedOutAt && u.signedOutAt.getTime() >= (authTime ?? 0);
 }
 
+/** Next sign-in on this device goes straight to this account (login_hint), see src/lib/login-hint.ts */
+async function rememberLoginHint(email: string | null | undefined) {
+  const hint = loginHintFrom(email ?? undefined);
+  if (!hint) return;
+  try {
+    const { cookies } = await import('next/headers');
+    (await cookies()).set(LOGIN_HINT_COOKIE, hint, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: LOGIN_HINT_MAX_AGE,
+    });
+  } catch {
+    // Outside a request (e.g. tests) there is nothing to remember
+  }
+}
+
 export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
   providers,
   trustHost: true,
@@ -136,6 +155,7 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
       const { db } = await import('@/lib/db');
       const check = checkClaims(claimsFor(account.provider, profile, user), tenantFor(account.provider));
       if (!check.ok) return;
+      await rememberLoginHint(user.email);
       const p = (profile ?? {}) as { oid?: string };
       const oid = account.provider === 'dev' ? user.id! : (p.oid ?? user.id!);
       await db.user.upsert({

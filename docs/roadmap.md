@@ -34,6 +34,10 @@ Patientenakte in der Patienten-Zone: Der Patientenmodus auf dem iPad ("An Patien
 
 Bereiche und Schmerzbereiche (4 × 3, "L&B Basisdaten"), Sitzung statt Konsultation, Übung als FRM + EPD (Standard oder Variante) mit Bildband und Audio je Teil, Körperseite und Punkte pro Sitzung, Pflichtfeld "Übung fällt", Selbstausführung pro Tag und Wochentage, "Mein Profil" mit Begrüssung einmal nach dem Anmelden. Siehe `openspec/changes/iteration-8-bereiche-sitzungen`.
 
+## Iteration 9 (Spec)
+
+Kleine Anpassungen nach dem Test vom 18.10.2026: Profilmenü am Initialen-Button, Dialoge mittig, PDFs im Vollbild mit «Zurück», keine PDF-Anhänge an Patienten, Unterschrift-Status live, schnellere Eingabe des Geburtsdatums, Sitzung klarer gegliedert und geprüft, «Anhören» nur in der Selbstausführung, ganze Minuten, zugeschnittenes Übungsblatt, Patienten-Zone pro Behandlung. Siehe `openspec/changes/iteration-9-kleine-anpassungen`.
+
 ## Offen (to be defined)
 
 - **"Bilder NUR für den Patienten sichtbar machen":** Stichwort aus dem Gespräch mit Christina Franz (17.10.2026), noch ohne Spezifikation. Zu klären: welche Bilder (klinische Fotos oder Übungsbilder) und für wen sie sichtbar oder verborgen sein sollen.

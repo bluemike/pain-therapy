@@ -32,6 +32,8 @@
     "title": "Willkommen bei der Schmerztherapie",
     "text": "Diese Anwendung ist für Mitarbeitende von Ayanta. Melden Sie sich mit Ihrem Ayanta-Konto an.",
     "button": "Mit Microsoft anmelden",
+    "as": "Anmeldung als {email}",
+    "otherAccount": "Anderes Konto",
     "note": "Anmeldung über Ayanta Entra ID. Private Microsoft-Konten und Gastkonten erhalten keinen Zugang.",
     "expired": "Ihre Sitzung ist nach 30 Minuten ohne Aktivität abgelaufen. Bitte melden Sie sich erneut an.",
     "devTitle": "Entwicklungsanmeldung",
