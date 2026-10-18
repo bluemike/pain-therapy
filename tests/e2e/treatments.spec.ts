@@ -167,7 +167,7 @@ test.describe('treatments and sessions', () => {
     await expect(list.first().getByRole('link', { name: 'Ändern: Sitzung Nr. 1' })).toBeVisible();
 
     // Second session with only the pain before; it starts with the relevant (red) points
-    await page.locator('section.treat').first().getByRole('link', { name: 'Sitzung' }).click();
+    await page.locator('section.treat').first().getByRole('link', { name: 'Sitzung', exact: true }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Sitzung Nr. 2' })).toBeVisible();
     await expect(page.getByTestId('point-filter')).toHaveValue('relevant');
     await page.locator('#f_comparison').fill('Besser als in Sitzung 1');
@@ -202,7 +202,7 @@ test.describe('treatments and sessions', () => {
     await page
       .locator('section.treat')
       .first()
-      .getByRole('link', { name: /^Ändern/ })
+      .getByRole('link', { name: /^Ändern: (?!Sitzung)/ })
       .click();
     await expect(page.getByRole('heading', { level: 1, name: 'Behandlung ändern' })).toBeVisible();
     await expect(page.getByRole('button', { name: /Löschen/ })).toHaveCount(0);
