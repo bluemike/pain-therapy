@@ -29,11 +29,11 @@
 
 - [x] 5.1 "Mein Profil", Begrüssung einmal nach dem Anmelden, Berufsbezeichnung in Dokumenten (D9)
 - [x] 5.2 Begriffe DE/EN in App, PDF, E-Mails, Zone, Verlauf; Test gegen alte Begriffe (D10)
-- [ ] 5.3 End-to-End-Tests anpassen und ergänzen (Sitzung, Verordnen, Wochentage, Zone)
+- [x] 5.3 End-to-End-Tests anpassen und ergänzen (Sitzung, Verordnen, Wochentage, Zone)
 
 ## 6. Betrieb und Abnahme
 
 - [x] 6.1 `docs/deployment.md` (Iteration 8), `docs/roadmap.md`
-- [ ] 6.2 Bildbänder, Texte und Audio aus OneDrive `analyse-v2` in `exercise-media` hochladen (OK von Mike Franz)
-- [ ] 6.3 Patientendaten nach bestehendem Ablauf löschen, unmittelbar vor dem Deployment (letztes OK im Thread)
+- [x] 6.2 Bildbänder, Texte und Audio aus OneDrive `analyse-v2` in `exercise-media` hochladen (OK von Mike Franz)
+- [x] 6.3 Patientendaten nach bestehendem Ablauf löschen, unmittelbar vor dem Deployment (letztes OK im Thread)
 - [ ] 6.4 Deployment und Abnahme auf dem iPad

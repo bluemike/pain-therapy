@@ -32,6 +32,8 @@
     "title": "Welcome to Pain Therapy",
     "text": "This application is for Ayanta staff. Sign in with your Ayanta account.",
     "button": "Sign in with Microsoft",
+    "as": "Signing in as {email}",
+    "otherAccount": "Other account",
     "note": "Sign-in uses Ayanta Entra ID. Personal Microsoft accounts and guest accounts get no access.",
     "expired": "Your session ended after 30 minutes without activity. Please sign in again.",
     "devTitle": "Development sign-in",

@@ -1,6 +1,8 @@
+import { cookies } from 'next/headers';
 import { getTranslations } from 'next-intl/server';
 import { signIn } from '@/auth';
 import { config } from '@/lib/config';
+import { LOGIN_HINT_COOKIE, loginHintFrom } from '@/lib/login-hint';
 import { Logo } from '@/components/Logo';
 import { LanguageSwitch } from '@/components/LanguageSwitch';
 
@@ -20,6 +22,7 @@ export default async function LoginPage({
   const t = await getTranslations('login');
   const tc = await getTranslations('common');
   const redirectTo = safeCallback(sp.callbackUrl);
+  const hint = loginHintFrom((await cookies()).get(LOGIN_HINT_COOKIE)?.value);
   return (
     <div className="app">
       <main className="center" id="main">
@@ -33,17 +36,33 @@ export default async function LoginPage({
           ) : null}
           <p>{t('text')}</p>
           {config.entra.clientId ? (
-            <form
-              action={async () => {
-                'use server';
-                await signIn('microsoft-entra-id', { redirectTo });
-              }}
-            >
-              <button className="btn btn--dark" style={{ width: '100%', minHeight: 50 }}>
-                <MicrosoftMark />
-                {t('button')}
-              </button>
-            </form>
+            <>
+              <form
+                action={async () => {
+                  'use server';
+                  await signIn('microsoft-entra-id', { redirectTo }, hint ? { login_hint: hint } : undefined);
+                }}
+              >
+                <button className="btn btn--dark" style={{ width: '100%', minHeight: 50 }}>
+                  <MicrosoftMark />
+                  {t('button')}
+                </button>
+              </form>
+              {hint ? (
+                <form
+                  className="muted"
+                  style={{ fontSize: 13, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}
+                  action={async () => {
+                    'use server';
+                    (await cookies()).delete(LOGIN_HINT_COOKIE);
+                    await signIn('microsoft-entra-id', { redirectTo }, { prompt: 'select_account' });
+                  }}
+                >
+                  <span>{t('as', { email: hint })}</span>
+                  <button className="btn btn--ghost">{t('otherAccount')}</button>
+                </form>
+              ) : null}
+            </>
           ) : null}
           <p className="muted" style={{ fontSize: 13 }}>
             {t('note')}
