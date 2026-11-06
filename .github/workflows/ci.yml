@@ -48,7 +48,7 @@ jobs:
 
   e2e:
     name: End-to-end, accessibility, screenshots
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # Playwright unterstützt ubuntu-latest (26.04) noch nicht
     services:
       postgres:
         image: postgres:16
