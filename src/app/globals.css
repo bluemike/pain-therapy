@@ -1908,6 +1908,36 @@ table.list tr.click:has(a:focus-visible) td {
 .scale button:focus-visible {
   outline-offset: -3px;
 }
+/* pain-input (iteration 11): slider 0 to 100 % in steps of 10, 44 px touch height */
+.painslider {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1 1 320px;
+  max-width: 560px;
+}
+.painslider input[type='range'] {
+  flex: 1 1 auto;
+  min-width: 160px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+.painslider.unset input[type='range'] {
+  opacity: 0.45;
+}
+.painslider output {
+  min-width: 96px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.painslider.unset output {
+  color: var(--muted);
+  font-weight: 400;
+}
 .painrow {
   display: flex;
   gap: 8px 14px;

@@ -60,7 +60,7 @@
   },
   "dashboard": {
     "newPatient": "New patient",
-    "searchPlaceholder": "Name, date of birth or insurance number",
+    "searchPlaceholder": "Name or date of birth",
     "search": "Search",
     "activePatients": "Active patients",
     "pendingSignatures": "Signature pending",
@@ -429,7 +429,7 @@
     "diagnosisHint": "Taken from the treatment, can be changed here.",
     "comparison": "Comparison with the last session",
     "comparisonPlaceholder": "e.g. pain in the morning clearly less",
-    "painHint": "in %; tapping the chosen value clears it",
+    "painHint": "in %, in steps of 10 %; “Clear” removes the value",
     "osteopressure": "Osteopressure",
     "legendMain": "main point",
     "legendRelevant": "important",
@@ -479,6 +479,8 @@
     "side_RIGHT": "right"
   },
   "scales": {
+    "painUnset": "not recorded",
+    "painClear": "Clear",
     "LOW": "low",
     "MEDIUM": "medium",
     "STRONG": "strong",
@@ -619,6 +621,11 @@
     "noVariants": "This exercise has no variants."
   },
   "handout": {
+    "layout": "Content of the exercise sheet",
+    "layoutFULL": "Whole sheet",
+    "layoutFULLText": "The complete sheet of each prescribed exercise",
+    "layoutPARTS": "Prescribed parts only",
+    "layoutPARTSText": "Fascia roll massage and the chosen stretch (standard or variant)",
     "title": "Exercise sheet",
     "savedFlash": "Session no. {n} saved.",
     "sub": "{name} · Session no. {n} · {date}",

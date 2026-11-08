@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { createSignedPatient, fillPatient, login, unique } from './helpers';
+import { createSignedPatient, fillPatient, login, unique, setPain } from './helpers';
 import { TINY_JPEG } from '../fixtures/jpeg';
 
 /** ui-foundation: axe check, no WCAG 2.1 AA violations (task 3.4) */
@@ -62,7 +62,7 @@ test('treatments, session and catalog', async ({ page }) => {
   await expect(page.getByText('Nicht gespeichert.', { exact: false })).toBeVisible();
   await expectNoViolations(page, 'new treatment with errors');
   await page.locator('#f_regionId').selectOption('6');
-  await page.locator('#f_painStart').selectOption('50');
+  await setPain(page, 'f_painStart', 50);
   await page.locator('#f_diagnosis').fill('Lumbalgie');
   await page.locator('#f_photos').setInputFiles([{ name: 'a.jpg', mimeType: 'image/jpeg', buffer: TINY_JPEG }]);
   await expect(page.locator('.ph.new')).toHaveCount(1);
@@ -103,7 +103,7 @@ test('home exercises, exercise sheet and catalog exercise', async ({ page }) => 
   await createSignedPatient(page, { first: 'Lea', last: `Axe${unique()}`, dob: '21.06.1985', emailConsent: true });
   await page.locator('.rechead').getByRole('link', { name: 'Neue Behandlung' }).click();
   await page.locator('#f_regionId').selectOption('6');
-  await page.locator('#f_painStart').selectOption('50');
+  await setPain(page, 'f_painStart', 50);
   await page.locator('#f_diagnosis').fill('Lumbalgie');
   await page.getByRole('button', { name: 'Behandlung eröffnen' }).click();
   await expect(page.getByText('Behandlung eröffnet.')).toBeVisible();

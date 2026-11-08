@@ -60,7 +60,7 @@
   },
   "dashboard": {
     "newPatient": "Neue Patientin / neuer Patient",
-    "searchPlaceholder": "Name, Geburtsdatum oder Versicherungsnummer",
+    "searchPlaceholder": "Name oder Geburtsdatum",
     "search": "Suchen",
     "activePatients": "Aktive Patient:innen",
     "pendingSignatures": "Unterschrift ausstehend",
@@ -429,7 +429,7 @@
     "diagnosisHint": "Aus der Behandlung übernommen, hier änderbar.",
     "comparison": "Vergleich mit der letzten Sitzung",
     "comparisonPlaceholder": "z. B. Schmerz am Morgen deutlich geringer",
-    "painHint": "in %; Tippen auf den gewählten Wert hebt die Wahl auf",
+    "painHint": "in %, in 10-%-Schritten; „Zurücksetzen“ hebt die Wahl auf",
     "osteopressure": "Osteopressur",
     "legendMain": "Hauptpunkt",
     "legendRelevant": "wichtig",
@@ -479,6 +479,8 @@
     "side_RIGHT": "rechts"
   },
   "scales": {
+    "painUnset": "nicht erfasst",
+    "painClear": "Zurücksetzen",
     "LOW": "niedrig",
     "MEDIUM": "mittel",
     "STRONG": "stark",
@@ -619,6 +621,11 @@
     "noVariants": "Diese Übung hat keine Varianten."
   },
   "handout": {
+    "layout": "Inhalt des Übungsblatts",
+    "layoutFULL": "Gesamtes Blatt",
+    "layoutFULLText": "Das ganze Übungsblatt jeder verordneten Übung",
+    "layoutPARTS": "Nur verordnete Teile",
+    "layoutPARTSText": "Faszien-Rollmassage und die gewählte Engpassdehnung (Standard oder Variante)",
     "title": "Übungsblatt",
     "savedFlash": "Sitzung Nr. {n} gespeichert.",
     "sub": "{name} · Sitzung Nr. {n} · {date}",

@@ -4,11 +4,12 @@ import Link from 'next/link';
 import { startTransition, useActionState, useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { saveConsultation, type TreatmentFormState } from '@/app/(app)/treatment-actions';
-import { DIFFICULTIES, PAIN_VALUES, SENSITIVITIES, SIDES, type Sheet } from '@/lib/schemas';
+import { DIFFICULTIES, SENSITIVITIES, SIDES, type Sheet } from '@/lib/schemas';
 import type { SheetExercise, SheetPoint } from '@/lib/catalog';
 import { DEFAULT_SCHEDULE, withVariant, type Timing } from '@/lib/home-program';
 import { PhotoField, usePhotos, type SavedPhoto } from './PhotoField';
 import { Seg } from './Seg';
+import { PainSlider } from './PainSlider';
 import { HomeProgramBlock, type HomeEntry } from './HomeProgramBlock';
 import { ExercisePreview } from './ExercisePreview';
 
@@ -180,7 +181,6 @@ export function ConsultationForm({
     return JSON.stringify(sheet);
   }
 
-  const painOptions = PAIN_VALUES.map((p) => [p, String(p)] as [number, string]);
   const sensOptions = SENSITIVITIES.map((s) => [s, ts(s)] as [Sensitivity, string]);
   const diffOptions = DIFFICULTIES.map((d) => [d, ts(d)] as [Difficulty, string]);
   const err = (name: string, max = 2000) =>
@@ -289,13 +289,7 @@ export function ConsultationForm({
         <h2 id="h_painBefore">{t('painBeforeTitle')}</h2>
         <div className="body">
           <div className="painrow">
-            <Seg
-              className="scale"
-              label={`${t('painBeforeTitle')}, %`}
-              options={painOptions}
-              value={painBefore}
-              onChange={setPainBefore}
-            />
+            <PainSlider id="f_painBefore" label={`${t('painBeforeTitle')}, %`} value={painBefore} onChange={setPainBefore} />
           </div>
           <span className="hint">{t('painHint')}</span>
         </div>
@@ -583,13 +577,7 @@ export function ConsultationForm({
         <h2 id="h_painAfter">{t('painAfterTitle')}</h2>
         <div className="body">
           <div className="painrow">
-            <Seg
-              className="scale"
-              label={`${t('painAfterTitle')}, %`}
-              options={painOptions}
-              value={painAfter}
-              onChange={setPainAfter}
-            />
+            <PainSlider id="f_painAfter" label={`${t('painAfterTitle')}, %`} value={painAfter} onChange={setPainAfter} />
           </div>
           <span className="hint">{t('painHint')}</span>
         </div>

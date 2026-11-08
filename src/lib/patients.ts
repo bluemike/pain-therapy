@@ -38,7 +38,7 @@ function decorate<T extends Patient & { signatureSessions: { textVersion: { vers
   return { ...p, consent: consentStatusOf(p.signatureSessions[0]?.textVersion.version, current) };
 }
 
-/** patient-records: Patientenliste und Suche (name, date of birth or insurance number) */
+/** patient-records: Patientenliste und Suche (name or date of birth; iteration 11: no insurance number) */
 export async function listPatients(opts: { q?: string; filter?: 'active' | 'inactive' | 'all' } = {}) {
   const where: Prisma.PatientWhereInput = {};
   if (opts.filter !== 'all') where.status = opts.filter === 'inactive' ? 'INACTIVE' : 'ACTIVE';
@@ -51,7 +51,6 @@ export async function listPatients(opts: { q?: string; filter?: 'active' | 'inac
       or.push(
         { firstName: { contains: term, mode: 'insensitive' } },
         { lastName: { contains: term, mode: 'insensitive' } },
-        { insuranceNumber: { contains: term, mode: 'insensitive' } },
       );
     }
     where.OR = or;
@@ -70,7 +69,7 @@ export async function listPatients(opts: { q?: string; filter?: 'active' | 'inac
   if (q && !parseSwissDate(q)) {
     const terms = q.toLowerCase().split(/\s+/);
     result = result.filter((p) =>
-      terms.every((t) => `${p.firstName} ${p.lastName} ${p.insuranceNumber ?? ''}`.toLowerCase().includes(t)),
+      terms.every((t) => `${p.firstName} ${p.lastName}`.toLowerCase().includes(t)),
     );
   }
   return result;
