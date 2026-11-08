@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { createSignedPatient, fillPatient, login, unique } from './helpers';
+import { createSignedPatient, fillPatient, login, unique, setPain } from './helpers';
 import { TINY_JPEG, withExif } from '../fixtures/jpeg';
 
 const photoFile = (name: string) => ({ name, mimeType: 'image/jpeg', buffer: withExif(TINY_JPEG) });
@@ -23,9 +23,9 @@ test.describe('treatments and sessions', () => {
     await page.locator('.rechead').getByRole('link', { name: 'Neue Behandlung' }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Neue Behandlung' })).toBeVisible();
     await expect(page.locator('#f_startedAt')).not.toHaveValue('');
-    await expect(page.locator('#f_painStart')).toHaveValue('');
+    await expect(page.locator('#f_painStart')).toHaveAttribute('aria-valuetext', 'nicht erfasst');
     await page.locator('#f_diagnosis').fill('Lumbalgie rechts, ausstrahlend in die Leiste');
-    await page.locator('#f_painStart').selectOption('60');
+    await setPain(page, 'f_painStart', 60);
     await page.getByRole('button', { name: 'Behandlung eröffnen' }).click();
     await expect(page.getByText('Nicht gespeichert. Bitte prüfen Sie die markierten Felder.')).toBeVisible();
     await expect(page.locator('#f_regionId_m')).toHaveText('Bitte ausfüllen.');
@@ -103,14 +103,13 @@ test.describe('treatments and sessions', () => {
       /^2F/,
     ]);
 
-    // Schmerz: two rows, tap again to clear
-    const before = group(page, 'Schmerz vorher, %');
-    const after = group(page, 'Schmerz nachher, %');
-    await before.getByRole('button', { name: '60' }).click();
-    await after.getByRole('button', { name: '40' }).click();
-    await after.getByRole('button', { name: '40' }).click();
-    await expect(after.getByRole('button', { name: '40' })).toHaveAttribute('aria-pressed', 'false');
-    await after.getByRole('button', { name: '30' }).click();
+    // Schmerz: two sliders in steps of 10 % (iteration 11), "Zurücksetzen" clears
+    await expect(page.locator('#f_painAfter')).toHaveAttribute('aria-valuetext', 'nicht erfasst');
+    await setPain(page, 'f_painBefore', 60);
+    await setPain(page, 'f_painAfter', 40);
+    await page.locator('#h_painAfter').locator('..').getByRole('button', { name: 'Zurücksetzen' }).click();
+    await expect(page.locator('#f_painAfter')).toHaveAttribute('aria-valuetext', 'nicht erfasst');
+    await setPain(page, 'f_painAfter', 30);
 
     // Only the side of the treatment is offered (iteration 9); a sensitivity ticks it; second tap clears, third sets again
     await expect(page.getByLabel('Punkt 2.11.1 links behandelt')).toHaveCount(0);
@@ -171,7 +170,7 @@ test.describe('treatments and sessions', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Sitzung Nr. 2' })).toBeVisible();
     await expect(page.getByTestId('point-filter')).toHaveValue('relevant');
     await page.locator('#f_comparison').fill('Besser als in Sitzung 1');
-    await group(page, 'Schmerz vorher, %').getByRole('button', { name: '50' }).click();
+    await setPain(page, 'f_painBefore', 50);
     await page.getByRole('button', { name: 'Sitzung speichern' }).click();
     await expect(page.getByText('Sitzung Nr. 2 gespeichert.')).toBeVisible();
     await expect(list).toHaveCount(2);

@@ -119,6 +119,13 @@ async function handoutItems(ctx: Context, language: Language): Promise<HandoutIt
 }
 
 /**
+ * exercise-handout (iteration 11): Inhalt des Übungsblatts. FULL shows the whole sheet of each prescribed exercise
+ * (default), PARTS only the FRM and the chosen EPD as before.
+ */
+export type HandoutLayout = 'FULL' | 'PARTS';
+export const handoutLayoutOf = (v: unknown): HandoutLayout => (v === 'PARTS' ? 'PARTS' : 'FULL');
+
+/**
  * Renders the exercise sheet of a consultation; `documentNumber` and `version` are printed on every page. With
  * `accessSheet` the printed copy ends with the access sheet to the patient zone (never archived, design D4).
  */
@@ -126,8 +133,9 @@ export async function buildHandout(
   ctx: Context,
   documentNumber: string,
   version: number,
-  accessSheet?: Omit<AccessSheetInput, 'language' | 'patient'>,
+  opts: { accessSheet?: Omit<AccessSheetInput, 'language' | 'patient'>; layout?: HandoutLayout } = {},
 ) {
+  const { accessSheet, layout = 'FULL' } = opts;
   const language = ctx.patient.preferredLanguage;
   const items = await handoutItems(ctx, language);
   const total = programTotal(ctx);
@@ -141,6 +149,7 @@ export async function buildHandout(
     therapist: await therapistLine(ctx.consultation.createdBy, language),
     items,
     total,
+    layout,
     accessSheet: accessSheet
       ? { ...accessSheet, language, patient: ctx.patient, qr: await qrPng(accessSheet.url) }
       : undefined,
@@ -156,7 +165,7 @@ export async function buildHandout(
     seconds,
     stretchMissing,
   }));
-  return { pdf, language, snapshot: { items: snapshot, total } };
+  return { pdf, language, snapshot: { items: snapshot, total, layout } };
 }
 
 /**
@@ -172,8 +181,9 @@ export async function createHandout(
   actor: Actor,
   consultationId: string,
   channel: 'EMAIL' | 'PRINT',
-  opts: { withLink?: boolean } = {},
+  opts: { withLink?: boolean; layout?: HandoutLayout } = {},
 ) {
+  const layout = opts.layout ?? 'FULL';
   const ctx = await handoutContext(consultationId);
   if (!ctx) throw new HandoutError('notFound');
   if (!ctx.prescriptions.length) throw new HandoutError('noPrescription');
@@ -181,7 +191,7 @@ export async function createHandout(
   if (channel === 'EMAIL' && !ctx.patient.email) throw new HandoutError('noAddress');
   const version = (ctx.consultation.handouts[0]?.version ?? 0) + 1;
   const documentNumber = await nextDocumentNumber();
-  const { pdf, language, snapshot } = await buildHandout(ctx, documentNumber, version);
+  const { pdf, language, snapshot } = await buildHandout(ctx, documentNumber, version, { layout });
   const hash = sha256(pdf);
   const blobPath = `${ctx.patient.id}/${documentNumber}.pdf`;
   await documentStore().put(blobPath, pdf, 'application/pdf');
@@ -219,7 +229,7 @@ export async function createHandout(
     await audit(
       actor,
       'handout.created',
-      { patientId: ctx.patient.id, after: documentNumber, details: { ...details, channel, sha256: hash } },
+      { patientId: ctx.patient.id, after: documentNumber, details: { ...details, channel, layout, sha256: hash } },
       tx,
     );
     if (channel === 'PRINT')
@@ -262,8 +272,8 @@ export async function createHandout(
     channel === 'PRINT' && result.access
       ? (
           await buildHandout(ctx, documentNumber, version, {
-            url: result.access.url,
-            expiresAt: result.access.expiresAt,
+            layout,
+            accessSheet: { url: result.access.url, expiresAt: result.access.expiresAt },
           })
         ).pdf
       : null;

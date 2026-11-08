@@ -14,6 +14,8 @@ import { createHandoutAction, type HandoutState } from '@/app/(app)/handout-acti
  * patient-access: "Link zur Patienten-Zone mitsenden" (iteration 4, design D4), selected by default and shown only
  * once the patient zone is set up. A printout with link opens the copy with the access sheet, which exists only in
  * this browser; the archived PDF has no link.
+ *
+ * exercise-handout (iteration 11): Inhalt "Gesamtes Blatt" (default) or "Nur verordnete Teile" (FRM and the chosen EPD).
  */
 export function HandoutPanel({
   consultationId,
@@ -37,6 +39,7 @@ export function HandoutPanel({
   const t = useTranslations('handout');
   const router = useRouter();
   const [channel, setChannel] = useState<'EMAIL' | 'PRINT'>(canEmail ? 'EMAIL' : 'PRINT');
+  const [layout, setLayout] = useState<'FULL' | 'PARTS'>('FULL');
   const [state, action, pending] = useActionState<HandoutState, FormData>(createHandoutAction, {});
   const printWindow = useRef<Window | null>(null);
 
@@ -118,6 +121,18 @@ export function HandoutPanel({
           </span>
         </label>
       </fieldset>
+      <fieldset className="choice">
+        <legend>{t('layout')}</legend>
+        {(['FULL', 'PARTS'] as const).map((l) => (
+          <label key={l} className={`card ${layout === l ? 'on' : ''}`}>
+            <input type="radio" name="layout" value={l} checked={layout === l} onChange={() => setLayout(l)} />
+            <span>
+              <b>{t(`layout${l}`)}</b>
+              <span className="d">{t(`layout${l}Text`)}</span>
+            </span>
+          </label>
+        ))}
+      </fieldset>
       {zoneEnabled && channel === 'EMAIL' ? <p className="hint">{t('emailZoneHint')}</p> : null}
       {zoneEnabled && channel === 'PRINT' ? (
         <label className="check">
@@ -130,7 +145,7 @@ export function HandoutPanel({
       ) : null}
       <p className="hint">{t('onDemand')}</p>
       <div className="formbar">
-        <PdfLink src={previewHref} title={t('preview')}>
+        <PdfLink src={layout === 'PARTS' ? `${previewHref}?layout=PARTS` : previewHref} title={t('preview')}>
           {t('preview')}
         </PdfLink>
         <div className="actions">

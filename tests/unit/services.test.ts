@@ -128,14 +128,14 @@ describe('patients and audit log', () => {
     await expect(db.patient.delete({ where: { id: p.id } })).rejects.toThrow(/cannot be deleted/);
   });
 
-  it('searches by name, date of birth and insurance number, and filters by status', async () => {
+  it('searches by name and date of birth, not by insurance number, and filters by status', async () => {
     const p = await createPatient(
       actor,
       form({ firstName: 'Thomas', lastName: 'Meier', dateOfBirth: '12.11.1967', insuranceNumber: '756.9876.5432.10' }),
     );
     expect((await listPatients({ q: 'meier' })).map((x) => x.id)).toEqual([p.id]);
     expect((await listPatients({ q: '12.11.1967' })).map((x) => x.id)).toEqual([p.id]);
-    expect((await listPatients({ q: '9876' })).map((x) => x.id)).toEqual([p.id]);
+    expect(await listPatients({ q: '9876' })).toEqual([]);
     await setStatus(actor, p.id, 'INACTIVE', 'Behandlung abgeschlossen');
     expect(await listPatients({ q: 'meier' })).toEqual([]);
     expect((await listPatients({ q: 'meier', filter: 'inactive' }))[0].deactivationReason).toBe(

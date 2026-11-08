@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { startTransition, useActionState, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { saveTreatment, type TreatmentFormState } from '@/app/(app)/treatment-actions';
-import { PAIN_VALUES, SIDES } from '@/lib/schemas';
+import { SIDES } from '@/lib/schemas';
+import { PainSlider } from './PainSlider';
 import { PhotoField, usePhotos, type SavedPhoto } from './PhotoField';
 
 export type TreatmentValues = {
@@ -162,15 +163,17 @@ export function TreatmentForm({
             ),
             regionLocked ? t('sideLockedHint') : undefined,
           )}
-          {field('painStart', t('painStartLabel'), '', (c) => (
-            <select {...c}>
-              <option value="">{t('choose')}</option>
-              {PAIN_VALUES.map((p) => (
-                <option key={p} value={String(p)}>
-                  {p} %
-                </option>
-              ))}
-            </select>
+          {field('painStart', t('painStartLabel'), 'w6', (c) => (
+            <PainSlider
+              id={c.id as string}
+              name="painStart"
+              label={`${t('painStartLabel')}, %`}
+              value={v.painStart === '' ? null : Number(v.painStart)}
+              onChange={(n) => setV((prev) => ({ ...prev, painStart: n === null ? '' : String(n) }))}
+              required
+              invalid={!!c['aria-invalid']}
+              describedBy={c['aria-describedby'] as string | undefined}
+            />
           ))}
           {field('diagnosis', t('diagnosis'), 'w6', (c) => (
             <textarea {...c} />

@@ -1908,6 +1908,57 @@ table.list tr.click:has(a:focus-visible) td {
 .scale button:focus-visible {
   outline-offset: -3px;
 }
+/* pain-input (iteration 11): slider 0 to 100 % in steps of 10, 44 px touch height */
+.painslider {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1 1 320px;
+  max-width: 560px;
+}
+.painslider input[type='range'] {
+  flex: 1 1 auto;
+  min-width: 160px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+.painslider.unset input[type='range'] {
+  opacity: 0.45;
+}
+.painslider output {
+  min-width: 96px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.painslider.unset output {
+  color: var(--muted);
+  font-weight: 400;
+}
+/* The slider sits where the old label column was: no fixed width, wraps on phones instead of overflowing */
+.painrow > .painslider:first-child {
+  width: auto;
+  flex-wrap: wrap;
+  min-width: 0;
+  font-weight: 400;
+  color: inherit;
+}
+@media (max-width: 760px) {
+  .painslider {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+  }
+  .painslider input[type='range'] {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  .painrow > .painslider:first-child {
+    width: 100%;
+  }
+}
 .painrow {
   display: flex;
   gap: 8px 14px;
