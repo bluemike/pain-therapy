@@ -289,7 +289,12 @@ export function ConsultationForm({
         <h2 id="h_painBefore">{t('painBeforeTitle')}</h2>
         <div className="body">
           <div className="painrow">
-            <PainSlider id="f_painBefore" label={`${t('painBeforeTitle')}, %`} value={painBefore} onChange={setPainBefore} />
+            <PainSlider
+              id="f_painBefore"
+              label={`${t('painBeforeTitle')}, %`}
+              value={painBefore}
+              onChange={setPainBefore}
+            />
           </div>
           <span className="hint">{t('painHint')}</span>
         </div>
@@ -577,7 +582,12 @@ export function ConsultationForm({
         <h2 id="h_painAfter">{t('painAfterTitle')}</h2>
         <div className="body">
           <div className="painrow">
-            <PainSlider id="f_painAfter" label={`${t('painAfterTitle')}, %`} value={painAfter} onChange={setPainAfter} />
+            <PainSlider
+              id="f_painAfter"
+              label={`${t('painAfterTitle')}, %`}
+              value={painAfter}
+              onChange={setPainAfter}
+            />
           </div>
           <span className="hint">{t('painHint')}</span>
         </div>

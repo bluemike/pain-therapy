@@ -68,9 +68,7 @@ export async function listPatients(opts: { q?: string; filter?: 'active' | 'inac
   // With several words ("Anna Müller") every word must match somewhere
   if (q && !parseSwissDate(q)) {
     const terms = q.toLowerCase().split(/\s+/);
-    result = result.filter((p) =>
-      terms.every((t) => `${p.firstName} ${p.lastName}`.toLowerCase().includes(t)),
-    );
+    result = result.filter((p) => terms.every((t) => `${p.firstName} ${p.lastName}`.toLowerCase().includes(t)));
   }
   return result;
 }
