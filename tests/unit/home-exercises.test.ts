@@ -423,6 +423,34 @@ describe('exercise handout', () => {
     }
   });
 
+  it('offers email as soon as the patient signed in the zone, before its PDF exists (Unterschrift gültig)', async () => {
+    // Older signature with a PDF and without consent, newer zone signature with consent whose PDF is not yet created
+    const p = await signedPatient('ZoneOhnePdf', { emailConsent: false });
+    expect((await emailConsentOf(p.id)).granted).toBe(false);
+    const version = await currentVersionNumber();
+    const text = await db.consentTextVersion.findFirstOrThrow({ where: { version, language: 'de' } });
+    await db.signatureSession.create({
+      data: {
+        patientId: p.id,
+        textVersionId: text.id,
+        language: 'de',
+        status: 'SIGNED',
+        channel: 'PATIENT_ZONE',
+        startedBy: actor.name,
+        completedAt: new Date('2026-11-09T08:00:00Z'),
+        consents: {
+          create: [
+            { kind: 'LIABILITY_WAIVER', granted: true },
+            { kind: 'DATA_PROCESSING', granted: true },
+            { kind: 'UNENCRYPTED_EMAIL', granted: true },
+          ],
+        },
+      },
+    });
+    const consent = await emailConsentOf(p.id);
+    expect(consent).toEqual({ granted: true, signedAt: new Date('2026-11-09T08:00:00Z') });
+  });
+
   it('retries three times, then fails and can be sent again', async () => {
     const { c } = await consultationWithProgram('Fehler', { emailConsent: true });
     let calls = 0;
