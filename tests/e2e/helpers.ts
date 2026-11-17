@@ -183,3 +183,12 @@ export async function expectCentered(page: Page, dialog: Locator) {
   expect(Math.abs(box.x + box.width / 2 - view.width / 2)).toBeLessThan(4);
   if (box.height < view.height - 40) expect(Math.abs(box.y + box.height / 2 - view.height / 2)).toBeLessThan(4);
 }
+
+/** pain-input (iteration 11): sets a pain slider with the keyboard, as a user without a mouse would */
+export async function setPain(page: Page, id: string, value: number) {
+  const slider = page.locator(`#${id}`);
+  await slider.focus();
+  await slider.press('Home');
+  for (let i = 0; i < value / 10; i++) await slider.press('ArrowRight');
+  await expect(slider).toHaveAttribute('aria-valuetext', `${value} %`);
+}

@@ -1,7 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test, type Browser, type Page } from '@playwright/test';
-import { createSignedPatient, expectNoA11yViolations, login, unique } from './helpers';
+import { createSignedPatient, expectNoA11yViolations, login, unique, setPain } from './helpers';
 
 /**
  * Iteration 4, tasks 8.3 and 8.4: send the exercise sheet with the link (mail to the outbox instead of Graph), open
@@ -67,7 +67,7 @@ test.describe('patient zone', () => {
     const recordUrl = page.url().split('?')[0];
     await page.locator('.rechead').getByRole('link', { name: 'Neue Behandlung' }).click();
     await page.locator('#f_regionId').selectOption('6');
-    await page.locator('#f_painStart').selectOption('60');
+    await setPain(page, 'f_painStart', 60);
     await page.locator('#f_diagnosis').fill('Lumbalgie');
     await page.getByRole('button', { name: 'Behandlung eröffnen' }).click();
     await page.locator('section.treat').first().getByRole('link', { name: 'Sitzung', exact: true }).click();

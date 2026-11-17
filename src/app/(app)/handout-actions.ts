@@ -4,7 +4,7 @@ import { after } from 'next/server';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { requireUser } from '@/lib/session';
-import { createHandout, deliverHandout, HandoutError, requestHandoutResend } from '@/lib/handouts';
+import { createHandout, deliverHandout, HandoutError, handoutLayoutOf, requestHandoutResend } from '@/lib/handouts';
 
 /** ok: the new handout; error: key of the "handout" namespace */
 export type HandoutState = {
@@ -36,7 +36,10 @@ export async function createHandoutAction(_prev: HandoutState, fd: FormData): Pr
   // zone-documents (iteration 9, design D4): an email always carries the link, the sheet itself is in the zone
   const withLink = channel === 'EMAIL' || fd.get('withLink') === 'on';
   try {
-    const { handout, delivery, access, printPdf } = await createHandout(actor, consultationId, channel, { withLink });
+    const { handout, delivery, access, printPdf } = await createHandout(actor, consultationId, channel, {
+      withLink,
+      layout: handoutLayoutOf(fd.get('layout')),
+    });
     if (delivery.status === 'PENDING')
       after(() => deliverHandout(delivery.id, { accessUrl: access?.url }).catch(console.error));
     revalidatePath(`/patients/${handout.patientId}`);

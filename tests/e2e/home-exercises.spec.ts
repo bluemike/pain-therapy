@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { createSignedPatient, expectCentered, login, pdfSrcOf, unique, viewPdfAndBack } from './helpers';
+import { createSignedPatient, expectCentered, login, pdfSrcOf, unique, viewPdfAndBack, setPain } from './helpers';
 
 /**
  * Iteration 3, task 4.1 (iteration 8, task 5.3): prescribe home exercises, choose times per day and weekdays, check
@@ -16,7 +16,7 @@ async function openSession(page: Page, emailConsent: boolean) {
   const recordUrl = page.url().split('?')[0];
   await page.locator('.rechead').getByRole('link', { name: 'Neue Behandlung' }).click();
   await page.locator('#f_regionId').selectOption('6');
-  await page.locator('#f_painStart').selectOption('60');
+  await setPain(page, 'f_painStart', 60);
   await page.locator('#f_diagnosis').fill('Lumbalgie');
   await page.getByRole('button', { name: 'Behandlung eröffnen' }).click();
   await expect(page.getByText('Behandlung eröffnet.')).toBeVisible();

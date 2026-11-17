@@ -13,8 +13,9 @@ import { AccessSheetPage, type AccessSheetInput } from './access-sheet-pdf';
  * exercise-handout: Inhalt des Übungsblatts (design D5). Cover page with the programme and the total time, then one
  * page per prescribed exercise. Since iteration 8 (design D7) the page shows the FRM band with its text and tools and
  * the band of the chosen EPD (Standardübung with its steps, or the variant band with the chosen variant
- * highlighted), executions per day, weekdays and note. Missing media never stop the PDF: without bands the page
- * shows the whole sheet, the texts, or "Blatt nicht verfügbar".
+ * highlighted), executions per day, weekdays and note. Since iteration 11 the page shows the whole sheet by default
+ * and these parts only with the layout PARTS. Missing media never stop the PDF: the page falls back to the parts, the
+ * whole sheet, the texts, or "Blatt nicht verfügbar".
  */
 
 const s = StyleSheet.create({
@@ -126,6 +127,8 @@ export interface HandoutPdfInput {
   therapist: string;
   items: HandoutItem[];
   total: { weekMinutes: number; dayMinutes: number; incomplete: string[] };
+  /** iteration 11: FULL = whole sheet per exercise, PARTS = FRM and the chosen EPD; without layout FULL */
+  layout?: 'FULL' | 'PARTS';
   /**
    * Printed copy with the link to the patient zone (iteration 4, design D4): the access sheet as last page with its QR
    * code (PNG data URL). Never set for the archived PDF.
@@ -247,7 +250,8 @@ export function HandoutPdf({ input }: { input: HandoutPdfInput }) {
         const frm = imageSource(it.frmImage);
         const band = imageSource(it.epdImage);
         const seg = it.segments;
-        const parts = !!(frm || band || seg);
+        // iteration 11: the whole sheet unless only the prescribed parts are wanted (or the sheet is not uploaded)
+        const parts = (input.layout === 'PARTS' || !sheet) && !!(frm || band || seg);
         return (
           <Page size="A4" style={s.page} key={it.code}>
             {header}

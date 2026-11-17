@@ -10,6 +10,7 @@ import {
   phone,
   unique,
   viewPdfAndBack,
+  setPain,
 } from './helpers';
 
 /**
@@ -66,13 +67,13 @@ test('record in the patient zone: tabs, treatment, document, recording yesterday
   await page.locator('.rechead').getByRole('link', { name: 'Neue Behandlung' }).click();
   await page.locator('#f_startedAt').fill(zurichLocal(3, 10));
   await page.locator('#f_regionId').selectOption('6');
-  await page.locator('#f_painStart').selectOption('60');
+  await setPain(page, 'f_painStart', 60);
   await page.locator('#f_diagnosis').fill('Lumbalgie links');
   await page.getByRole('button', { name: 'Behandlung eröffnen' }).click();
   await page.locator('section.treat').first().getByRole('link', { name: 'Sitzung', exact: true }).click();
   await page.locator('#f_at').fill(zurichLocal(3, 10));
-  await page.getByRole('group', { name: 'Schmerz vorher, %' }).getByRole('button', { name: '60' }).click();
-  await page.getByRole('group', { name: 'Schmerz nachher, %' }).getByRole('button', { name: '30' }).click();
+  await setPain(page, 'f_painBefore', 60);
+  await setPain(page, 'f_painAfter', 30);
   await page.getByLabel('Übung 2A verordnet').check();
   await page
     .getByRole('group', { name: 'Übung 2A: Übung fällt', exact: true })

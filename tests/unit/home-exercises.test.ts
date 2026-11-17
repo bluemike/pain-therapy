@@ -363,6 +363,7 @@ describe('exercise handout', () => {
     expect(handout).toMatchObject({ version: 1, language: 'de', createdBy: 'Christina Franz' });
     expect(handout.documentNumber).toMatch(/^PT-\d{4}-\d{5}$/);
     expect(delivery).toMatchObject({ channel: 'PRINT', status: null, recipient: null });
+    expect((handout.prescriptions as { layout: string }).layout).toBe('FULL');
     const pdf = await documentStore().get(handout.blobPath);
     expect(sha256(pdf)).toBe(handout.sha256);
     const { pages, text } = await pdfText(pdf);
@@ -420,6 +421,34 @@ describe('exercise handout', () => {
     } finally {
       config.mail.driver = driver;
     }
+  });
+
+  it('offers email as soon as the patient signed in the zone, before its PDF exists (Unterschrift gültig)', async () => {
+    // Older signature with a PDF and without consent, newer zone signature with consent whose PDF is not yet created
+    const p = await signedPatient('ZoneOhnePdf', { emailConsent: false });
+    expect((await emailConsentOf(p.id)).granted).toBe(false);
+    const version = await currentVersionNumber();
+    const text = await db.consentTextVersion.findFirstOrThrow({ where: { version, language: 'de' } });
+    await db.signatureSession.create({
+      data: {
+        patientId: p.id,
+        textVersionId: text.id,
+        language: 'de',
+        status: 'SIGNED',
+        channel: 'PATIENT_ZONE',
+        startedBy: actor.name,
+        completedAt: new Date('2026-11-09T08:00:00Z'),
+        consents: {
+          create: [
+            { kind: 'LIABILITY_WAIVER', granted: true },
+            { kind: 'DATA_PROCESSING', granted: true },
+            { kind: 'UNENCRYPTED_EMAIL', granted: true },
+          ],
+        },
+      },
+    });
+    const consent = await emailConsentOf(p.id);
+    expect(consent).toEqual({ granted: true, signedAt: new Date('2026-11-09T08:00:00Z') });
   });
 
   it('retries three times, then fails and can be sent again', async () => {
@@ -529,5 +558,22 @@ describe('handout PDF', () => {
     expect(withText.text).toContain('Schritt 1: Dehnen');
     const withImages = await renderHandoutPdf(input({ mainImage: TINY_JPEG, sheetImage: placeholderPng(40, 56) }));
     expect((await pdfText(withImages)).text).not.toContain('nicht verfügbar');
+  });
+
+  it('shows the whole sheet by default and only the prescribed parts with PARTS (iteration 11)', async () => {
+    const segments = {
+      frm: { items: [{ n: [1], text: 'Oberschenkel abrollen' }] },
+      standard: { intro: null, steps: [{ label: 'Schritt 1', text: 'Knie beugen' }], note: null },
+      variants: { intro: null, items: [] },
+    } as unknown as HandoutPdfInput['items'][number]['segments'];
+    const media = { sheetImage: placeholderPng(40, 56), frmImage: placeholderPng(60, 20), segments };
+    const full = await pdfText(await renderHandoutPdf(input(media)));
+    expect(full.text).not.toContain('Oberschenkel abrollen');
+    const parts = await pdfText(await renderHandoutPdf({ ...input(media), layout: 'PARTS' }));
+    expect(parts.text).toContain('Oberschenkel abrollen');
+    expect(parts.text).toContain('Schritt 1: Knie beugen');
+    // Without the whole sheet the parts are shown anyway
+    const noSheet = await pdfText(await renderHandoutPdf(input({ ...media, sheetImage: null })));
+    expect(noSheet.text).toContain('Oberschenkel abrollen');
   });
 });

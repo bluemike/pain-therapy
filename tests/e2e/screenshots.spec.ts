@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createSignedPatient, fillPatient, login, unique } from './helpers';
+import { createSignedPatient, fillPatient, login, unique, setPain } from './helpers';
 import { TINY_JPEG, withExif } from '../fixtures/jpeg';
 
 /**
@@ -47,7 +47,7 @@ test('treatment screens', async ({ page }, info) => {
   await shot('10-record-empty');
   await page.locator('.rechead').getByRole('link', { name: 'Neue Behandlung' }).click();
   await page.locator('#f_regionId').selectOption('6');
-  await page.locator('#f_painStart').selectOption('60');
+  await setPain(page, 'f_painStart', 60);
   await page.locator('#f_diagnosis').fill('Lumbalgie rechts, ausstrahlend in die Leiste');
   await page
     .locator('#f_photos')
@@ -58,7 +58,7 @@ test('treatment screens', async ({ page }, info) => {
   await expect(page.getByText('Behandlung eröffnet.')).toBeVisible();
   await page.locator('section.treat').first().getByRole('link', { name: 'Sitzung', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Sitzung Nr. 1' })).toBeVisible();
-  await page.getByRole('group', { name: 'Schmerz vorher, %' }).getByRole('button', { name: '60' }).click();
+  await setPain(page, 'f_painBefore', 60);
   await page.getByTestId('point-filter').selectOption('all');
   await page.getByLabel('Punkt 2.11.1 rechts behandelt').check();
   await page
@@ -81,7 +81,7 @@ test('home exercise screens', async ({ page }, info) => {
   await createSignedPatient(page, { first: 'Anna', last: `Heim${unique()}`, dob: '05.03.1980', emailConsent: true });
   await page.locator('.rechead').getByRole('link', { name: 'Neue Behandlung' }).click();
   await page.locator('#f_regionId').selectOption('6');
-  await page.locator('#f_painStart').selectOption('60');
+  await setPain(page, 'f_painStart', 60);
   await page.locator('#f_diagnosis').fill('Lumbalgie');
   await page.getByRole('button', { name: 'Behandlung eröffnen' }).click();
   await expect(page.getByText('Behandlung eröffnet.')).toBeVisible();
