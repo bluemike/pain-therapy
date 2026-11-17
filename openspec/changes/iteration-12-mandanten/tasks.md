@@ -3,7 +3,7 @@
 ## 0. Voraussetzungen (Mike)
 
 - [ ] 0.1 Domain `pain-therapy.online` kaufen, DNS bei Infomaniak
-- [ ] 0.2 Infomaniak: Postfächer für Mike und Chrissie, `noreply@pain-therapy.online` mit SMTP-Zugang, SPF/DKIM/DMARC
+- [ ] 0.2 Infomaniak: Postfächer `admin@`, Mike und Chrissie, `noreply@pain-therapy.online` mit SMTP-Zugang, SPF/DKIM/DMARC
 - [ ] 0.3 SMTP-Passwort als Key-Vault-Geheimnis `smtp-password` hinterlegen
 
 ## 1. Datenmodell und Trennung (6 bis 8 PT)
@@ -36,6 +36,7 @@
 
 ## 5. Onboarding und Plattform (3 bis 4 PT)
 
+- [ ] 5.0 Plattform-Admin-Konto `admin@pain-therapy.online` per Seed, ohne Praxis-Mitgliedschaft
 - [ ] 5.1 Plattform-Übersicht: Praxen anlegen, Status, sperren, reaktivieren
 - [ ] 5.2 Team: einladen, Rollen, deaktivieren, mindestens eine Praxis-Admin
 - [ ] 5.3 Export als ZIP im Hintergrund-Job, Download-Link 24 Stunden

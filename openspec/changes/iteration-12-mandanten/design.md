@@ -51,7 +51,9 @@ Alternativen: Entra External ID oder B2B-Gäste brauchen Microsoft-Tenants und w
 ### D3 Rollen pro Praxis und Plattform-Admin
 
 - `PracticeMembership(userId, practiceId, roles[])` mit `PRACTICE_ADMIN` und `THERAPIST`. Eine Benutzerin gehört genau einer Praxis (Datenmodell erlaubt später mehrere).
-- `User.platformAdmin` (Boolean) für Mike. Der Plattform-Admin sieht Praxen, Mitgliederzahl, Status und letzte Aktivität, aber keine Patientendaten. Will er in seiner eigenen Praxis arbeiten, tut er das über seine Mitgliedschaft dort.
+- `User.platformAdmin` (Boolean). Der Plattform-Admin ist ein eigenes Konto `admin@pain-therapy.online` (Mike, Wunsch vom 17.11.2026) ohne Mitgliedschaft in einer Praxis. Er sieht Praxen, Mitgliederzahl, Status und letzte Aktivität, aber keine Patientendaten. Als Therapeut arbeitet Mike mit seinem separaten Konto `mike@pain-therapy.online` in der Praxis Falera.
+- Das Admin-Konto meldet sich wie alle mit Passkey oder E-Mail-Code plus TOTP an. Es wird bei der Umstellung per Seed angelegt (Einladung an `admin@pain-therapy.online`), weitere Plattform-Admins nur durch einen bestehenden Plattform-Admin.
+- Eine Praxis hat 1 bis n Mitglieder; die Zahl ist nicht begrenzt.
 - Die bisherige Rolle `ADMIN` wird zu `PRACTICE_ADMIN`, `THERAPIST` bleibt.
 
 ### D4 Einladung

@@ -46,6 +46,10 @@ On accepting an invitation the system SHALL require the user to confirm an e-mai
 ### Requirement: Rollen pro Praxis
 The system SHALL grant the roles «Praxis-Admin» and «Therapeut/in» per Praxis membership and the role «Plattform-Admin» per user. The Plattform-Admin SHALL manage Praxen but SHALL NOT see patient data of a Praxis without a membership in it.
 
+#### Scenario: Eigenes Admin-Konto
+- **WHEN** Mike sich mit admin@pain-therapy.online anmeldet
+- **THEN** sieht er nur die Plattform-Übersicht der Praxen und keine Praxis-Ansicht
+
 #### Scenario: Plattform-Admin ohne Patientendaten
 - **WHEN** Mike als Plattform-Admin die Praxis «Physio Muster» öffnet
 - **THEN** sieht er Name, Status, Mitglieder und letzte Aktivität, aber keine Patientinnen

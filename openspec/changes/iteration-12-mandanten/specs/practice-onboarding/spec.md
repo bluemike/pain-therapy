@@ -3,7 +3,7 @@
 ## ADDED Requirements
 
 ### Requirement: Praxis anlegen und einladen
-The system SHALL let the Plattform-Admin create a Praxis with name, address and contact e-mail and invite its first Praxis-Admin by e-mail. A Praxis-Admin SHALL invite further members with role Therapeut/in or Praxis-Admin. Invitations SHALL be valid for 7 days and usable once.
+The system SHALL let the Plattform-Admin, signed in with the separate account admin@pain-therapy.online, create and activate a Praxis with name, address and contact e-mail and invite its first Praxis-Admin by e-mail. A Praxis-Admin SHALL invite further members with role Therapeut/in or Praxis-Admin. Invitations SHALL be valid for 7 days and usable once.
 
 #### Scenario: Neue Praxis
 - **WHEN** Mike die Praxis «Physio Muster» anlegt und anna@pain-therapy.online als Praxis-Admin einlädt
@@ -14,7 +14,11 @@ The system SHALL let the Plattform-Admin create a Praxis with name, address and 
 - **THEN** zeigt das System «Einladung abgelaufen» und die Praxis-Admin kann sie erneut senden
 
 ### Requirement: Team verwalten
-The system SHALL let a Praxis-Admin list members with role and last sign-in, change roles, reset sign-in factors and deactivate members. A Praxis SHALL always keep at least one active Praxis-Admin.
+A Praxis SHALL have one or more members without a fixed upper limit. The system SHALL let a Praxis-Admin list members with role and last sign-in, change roles, reset sign-in factors and deactivate members. A Praxis SHALL always keep at least one active Praxis-Admin.
+
+#### Scenario: Mehrere Therapeutinnen
+- **WHEN** die Praxis-Admin von «Physio Muster» drei Therapeutinnen einlädt
+- **THEN** arbeiten alle vier mit denselben Patientinnen ihrer Praxis
 
 #### Scenario: Letzte Praxis-Admin
 - **WHEN** die einzige Praxis-Admin sich selbst die Rolle entziehen will
