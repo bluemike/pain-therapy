@@ -1,0 +1,288 @@
+<title>Pain Therapy Mandanten</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+/* Layout: Bildschirm-Auswahl oben, darunter ein Geräterahmen pro Ansicht mit Notiz zur Spec daneben */
+:root{
+  --bg:#F7F5EF; --surface:#FFFFFF; --fg:#1C1A14; --muted:#6B6352; --line:#E2D9C4;
+  --gold:#B99438; --gold-text:#8a6a1c; --on-gold:#1C1A14; --ok:#2f7a4a; --warn:#a4561b; --soft:#F1ECDF;
+  --f-text:'Inter',system-ui,-apple-system,sans-serif; --f-head:'Space Grotesk','Inter',system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#15130e; --surface:#1f1c15; --fg:#efe9da; --muted:#a89e88; --line:#3a3427;
+  --gold:#D4AF4A; --gold-text:#D4AF4A; --on-gold:#1C1A14; --ok:#6cc08a; --warn:#e39a5c; --soft:#29251c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15130e; --surface:#1f1c15; --fg:#efe9da; --muted:#a89e88; --line:#3a3427;
+  --gold:#D4AF4A; --gold-text:#D4AF4A; --on-gold:#1C1A14; --ok:#6cc08a; --warn:#e39a5c; --soft:#29251c; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-text);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+.wrap{max-width:1080px;margin:0 auto;display:grid;gap:20px}
+h1{font-family:var(--f-head);font-size:1.6rem;margin:0;text-wrap:balance}
+h2{font-family:var(--f-head);font-size:1.2rem;margin:0 0 4px}
+h3{font-size:.95rem;margin:0}
+.lead{color:var(--muted);margin:4px 0 0;max-width:70ch}
+nav{display:flex;flex-wrap:wrap;gap:8px}
+nav a{padding:7px 12px;border:1px solid var(--line);border-radius:999px;color:var(--fg);text-decoration:none;font-size:.88rem;background:var(--surface)}
+nav a[aria-current="true"]{background:var(--gold);border-color:var(--gold);color:var(--on-gold);font-weight:600}
+nav a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.view{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:20px;align-items:start}
+@media (max-width:820px){.view{grid-template-columns:1fr}}
+.screen{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;min-width:0}
+.bar{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:.85rem;flex-wrap:wrap}
+.bar .url{color:var(--muted);font-family:ui-monospace,Menlo,monospace;font-size:.78rem}
+.bar .brand{font-family:var(--f-head);font-weight:600}
+.bar .sp{flex:1}
+.body{padding:20px;display:grid;gap:16px}
+.note{border-left:3px solid var(--gold);padding:4px 0 4px 14px;font-size:.88rem;color:var(--muted);display:grid;gap:8px}
+.note b{color:var(--fg)}
+.center{max-width:380px;margin:12px auto;display:grid;gap:14px;text-align:left;width:100%}
+label{font-size:.82rem;font-weight:600;display:block;margin-bottom:4px}
+input,select,textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);font:inherit}
+.btn{display:inline-flex;justify-content:center;align-items:center;gap:6px;padding:10px 16px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;font-weight:600;cursor:pointer}
+.btn.primary{background:var(--gold);border-color:var(--gold);color:var(--on-gold)}
+.btn.block{width:100%}
+.or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.8rem}
+.or::before,.or::after{content:"";flex:1;border-top:1px solid var(--line)}
+.code{display:flex;gap:6px}
+.code input{text-align:center;font-size:1.2rem;font-weight:600;padding:8px 0;font-variant-numeric:tabular-nums}
+.hint{font-size:.8rem;color:var(--muted)}
+.steps{display:flex;gap:6px;font-size:.75rem;color:var(--muted);flex-wrap:wrap}
+.steps span{padding:3px 8px;border-radius:999px;background:var(--soft)}
+.steps span.on{background:var(--gold);color:var(--on-gold);font-weight:600}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+th,td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+td.num{font-variant-numeric:tabular-nums}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.75rem;font-weight:600;border:1px solid currentColor}
+.pill.ok{color:var(--ok)} .pill.warn{color:var(--warn)} .pill.mut{color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:560px){.grid2{grid-template-columns:1fr}}
+.logo{display:flex;align-items:center;gap:12px}
+.logo .box{width:56px;height:56px;border-radius:10px;background:var(--soft);display:grid;place-items:center;font-family:var(--f-head);font-weight:600;color:var(--gold-text)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.mail{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.mail .hd{padding:12px 14px;background:var(--soft);font-size:.82rem;display:grid;gap:2px}
+.mail .bd{padding:16px;display:grid;gap:12px}
+.recov{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;font-family:ui-monospace,Menlo,monospace;font-size:.85rem}
+.recov span{background:var(--soft);padding:5px 8px;border-radius:6px;text-align:center}
+.zone{max-width:400px;margin:0 auto;width:100%;display:grid;gap:12px}
+.tabs{display:flex;border-bottom:1px solid var(--line)}
+.tabs span{flex:1;text-align:center;padding:8px;font-size:.85rem;color:var(--muted)}
+.tabs span.on{color:var(--fg);font-weight:600;border-bottom:2px solid var(--gold)}
+.doc{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:.88rem}
+.danger{color:var(--warn)}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Pain Therapy für mehrere Praxen</h1>
+    <p class="lead">Mockup zu Iteration 12: Anmeldung ohne Entra, Praxen und Team, Praxis-Einstellungen, E-Mail nur mit Links und die Patienten-Zone pro Praxis. Beispieldaten, «Physio Muster» ist eine erfundene Praxis.</p>
+  </header>
+  <nav id="nav" aria-label="Ansichten">
+    <a href="#login">Anmeldung</a>
+    <a href="#einladung">Einladung annehmen</a>
+    <a href="#plattform">Plattform</a>
+    <a href="#praxis">Praxis-Einstellungen</a>
+    <a href="#team">Team</a>
+    <a href="#mail">E-Mail</a>
+    <a href="#zone">Patienten-Zone</a>
+  </nav>
+
+  <!-- Anmeldung -->
+  <section class="view" id="v-login">
+    <div class="screen">
+      <div class="bar"><span class="brand">Pain Therapy</span><span class="sp"></span><span class="url">pain-therapy.online/login</span></div>
+      <div class="body">
+        <div class="center">
+          <h2>Anmelden</h2>
+          <button class="btn primary block" type="button">Mit Passkey anmelden</button>
+          <p class="hint">Face ID, Touch ID oder Geräte-PIN. Schnellster Weg auf iPad und iPhone.</p>
+          <div class="or">oder mit E-Mail</div>
+          <div><label for="lg-mail">E-Mail-Adresse</label><input id="lg-mail" value="chrissie@pain-therapy.online"></div>
+          <div class="steps"><span>1 E-Mail</span><span class="on">2 Code aus der E-Mail</span><span>3 Authenticator</span></div>
+          <div>
+            <label for="c1">Code aus der E-Mail</label>
+            <div class="code"><input id="c1" value="4"><input id="c2" value="8"><input id="c3" value="1"><input id="c4" value="0"><input id="c5" value=""><input id="c6" value=""></div>
+            <p class="hint">Gültig 10 Minuten. Danach folgt der Code aus Ihrer Authenticator-App.</p>
+          </div>
+          <button class="btn block" type="button">Weiter</button>
+        </div>
+      </div>
+    </div>
+    <aside class="note">
+      <b>Zwei Wege, beide mit zwei Faktoren</b>
+      <span>Passkey allein genügt (Gerät plus Biometrie oder PIN). Ohne Passkey: E-Mail-Code plus Authenticator-Code.</span>
+      <span>Unbekannte Adressen bekommen dieselbe Meldung, aber keinen Code. Nach 5 Fehlern 15 Minuten Sperre.</span>
+      <span>Spec: therapist-login</span>
+    </aside>
+  </section>
+
+  <!-- Einladung -->
+  <section class="view" id="v-einladung" hidden>
+    <div class="screen">
+      <div class="bar"><span class="brand">Pain Therapy</span><span class="sp"></span><span class="url">pain-therapy.online/einladung/…</span></div>
+      <div class="body">
+        <div class="center">
+          <div class="steps"><span>1 E-Mail bestätigt</span><span class="on">2 Anmeldung einrichten</span><span>3 Wiederherstellung</span></div>
+          <h2>Willkommen bei Physio Muster</h2>
+          <p class="hint">Anna Beispiel hat Sie als Therapeutin eingeladen. Richten Sie jetzt Ihren zweiten Faktor ein.</p>
+          <button class="btn primary block" type="button">Passkey auf diesem Gerät einrichten</button>
+          <button class="btn block" type="button">Stattdessen Authenticator-App verwenden</button>
+          <h3>Wiederherstellungscodes</h3>
+          <p class="hint">Einmalig angezeigt. Bewahren Sie sie sicher auf, falls Sie Ihr Gerät verlieren.</p>
+          <div class="recov"><span>K7QM-2HXP</span><span>9DWR-TF4L</span><span>P3ZC-8NVB</span><span>H6YJ-RQ2E</span><span>…</span><span>…</span></div>
+        </div>
+      </div>
+    </div>
+    <aside class="note">
+      <b>Konto erst aktiv mit zweitem Faktor</b>
+      <span>Einladung 7 Tage gültig, einmal verwendbar. Die Adresse muss nicht auf pain-therapy.online enden.</span>
+      <span>Spec: therapist-login, practice-onboarding</span>
+    </aside>
+  </section>
+
+  <!-- Plattform -->
+  <section class="view" id="v-plattform" hidden>
+    <div class="screen">
+      <div class="bar"><span class="brand">Pain Therapy</span><span>Plattform</span><span class="sp"></span><span class="url">pain-therapy.online/plattform</span></div>
+      <div class="body">
+        <div class="row"><h2 style="flex:1">Praxen</h2><button class="btn primary" type="button">Praxis anlegen</button></div>
+        <div class="tbl"><table>
+          <thead><tr><th>Praxis</th><th>Ort</th><th>Mitglieder</th><th>Letzte Aktivität</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>Pain Therapy Falera</td><td>Falera</td><td class="num">2</td><td class="num">17.11.2026</td><td><span class="pill ok">Aktiv</span></td><td><button class="btn" type="button">Öffnen</button></td></tr>
+            <tr><td>Physio Muster</td><td>Chur</td><td class="num">1</td><td class="num">16.11.2026</td><td><span class="pill ok">Aktiv</span></td><td><button class="btn" type="button">Öffnen</button></td></tr>
+            <tr><td>Praxis Beispiel</td><td>Ilanz</td><td class="num">0</td><td>–</td><td><span class="pill warn">Einladung offen</span></td><td><button class="btn" type="button">Öffnen</button></td></tr>
+          </tbody>
+        </table></div>
+        <div class="grid2">
+          <div><label for="np-name">Neue Praxis: Name</label><input id="np-name" value="Praxis Beispiel"></div>
+          <div><label for="np-admin">Erste Praxis-Admin (E-Mail)</label><input id="np-admin" value="lea@pain-therapy.online"></div>
+        </div>
+        <p class="hint">Mike sieht hier Praxen, Mitglieder und Status, aber keine Patientendaten. Sperren, Export und Löschen liegen in der Detailansicht.</p>
+      </div>
+    </div>
+    <aside class="note">
+      <b>Plattform-Admin ohne Patientenzugriff</b>
+      <span>Löschen nur nach Export der letzten 7 Tage und zweiter Bestätigung. WORM-Dokumente werden zur Löschung vorgemerkt.</span>
+      <span>Spec: practice-onboarding</span>
+    </aside>
+  </section>
+
+  <!-- Praxis-Einstellungen -->
+  <section class="view" id="v-praxis" hidden>
+    <div class="screen">
+      <div class="bar"><span class="brand">Physio Muster</span><span class="sp"></span><span class="url">pain-therapy.online/praxis</span></div>
+      <div class="body">
+        <h2>Praxis</h2>
+        <div class="logo"><div class="box">PM</div><div><button class="btn" type="button">Logo hochladen</button><p class="hint">PNG oder SVG, höchstens 500 KB. Ohne Logo erscheint der Name als Schriftzug.</p></div></div>
+        <div class="grid2">
+          <div><label for="p-name">Praxisname</label><input id="p-name" value="Physio Muster"></div>
+          <div><label for="p-kurz">Kürzel für Dokumentnummern</label><input id="p-kurz" value="PM"></div>
+          <div><label for="p-str">Strasse</label><input id="p-str" value="Bahnhofstrasse 10"></div>
+          <div><label for="p-ort">PLZ und Ort</label><input id="p-ort" value="7000 Chur"></div>
+          <div><label for="p-mail">Kontakt-E-Mail (Antwortadresse)</label><input id="p-mail" value="anna@pain-therapy.online"></div>
+          <div><label for="p-tel">Telefon</label><input id="p-tel" value="081 000 00 00"></div>
+          <div><label for="p-place">Standardort für Unterschriften</label><input id="p-place" value="Chur"></div>
+        </div>
+        <div class="row"><b style="flex:1">Haftungsausschluss</b><span class="hint">Version 1 · 16.11.2026</span><button class="btn" type="button">Bearbeiten</button></div>
+        <div class="row"><b style="flex:1">Datenschutzhinweis Patienten-Zone</b><span class="hint">Version 1 · 16.11.2026</span><button class="btn" type="button">Bearbeiten</button></div>
+        <p class="hint">Fusszeile im PDF: Physio Muster | Bahnhofstrasse 10 | 7000 Chur · Nächste Nummer PM-2026-00004</p>
+        <div><button class="btn primary" type="button">Speichern</button></div>
+      </div>
+    </div>
+    <aside class="note">
+      <b>Ersetzt die fest verdrahteten Angaben</b>
+      <span>Bisher stehen Falera und pain-therapy@ayanta.ch im Code. Künftig liest jedes PDF, jede E-Mail und die Zone diese Werte.</span>
+      <span>Nur Praxis-Admin. Spec: practice-settings</span>
+    </aside>
+  </section>
+
+  <!-- Team -->
+  <section class="view" id="v-team" hidden>
+    <div class="screen">
+      <div class="bar"><span class="brand">Pain Therapy Falera</span><span class="sp"></span><span class="url">pain-therapy.online/team</span></div>
+      <div class="body">
+        <div class="row"><h2 style="flex:1">Team</h2><button class="btn primary" type="button">Einladen</button></div>
+        <div class="tbl"><table>
+          <thead><tr><th>Name</th><th>E-Mail</th><th>Rolle</th><th>Anmeldung</th><th>Zuletzt</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>Chrissie</td><td>chrissie@pain-therapy.online</td><td>Praxis-Admin, Therapeutin</td><td>Passkey</td><td class="num">17.11.2026</td><td><button class="btn" type="button">…</button></td></tr>
+            <tr><td>Mike</td><td>mike@pain-therapy.online</td><td>Praxis-Admin</td><td>Passkey, Authenticator</td><td class="num">17.11.2026</td><td><button class="btn" type="button">…</button></td></tr>
+            <tr><td>–</td><td>neu@pain-therapy.online</td><td>Therapeut/in</td><td><span class="pill warn">Einladung offen</span></td><td>–</td><td><button class="btn" type="button">Erneut senden</button></td></tr>
+          </tbody>
+        </table></div>
+        <p class="hint">Im Menü «…»: Rolle ändern, Anmeldung zurücksetzen (löscht Passkeys und Authenticator, sendet neue Einladung), deaktivieren. Die letzte Praxis-Admin kann nicht entfernt werden.</p>
+      </div>
+    </div>
+    <aside class="note">
+      <b>Falera nach der Umstellung</b>
+      <span>Alle bisherigen Daten gehören der Praxis «Pain Therapy Falera». Mike und Chrissie werden an ihre neuen Adressen eingeladen.</span>
+      <span>Spec: tenancy, practice-onboarding</span>
+    </aside>
+  </section>
+
+  <!-- E-Mail -->
+  <section class="view" id="v-mail" hidden>
+    <div class="screen">
+      <div class="bar"><span class="brand">Postfach der Patientin</span></div>
+      <div class="body">
+        <div class="mail">
+          <div class="hd">
+            <span><b>Von:</b> Physio Muster &lt;noreply@pain-therapy.online&gt;</span>
+            <span><b>Antwort an:</b> anna@pain-therapy.online</span>
+            <span><b>Betreff:</b> Ein neues Dokument Ihrer Praxis steht bereit</span>
+          </div>
+          <div class="bd">
+            <span>Guten Tag Frau Beispiel</span>
+            <span>Physio Muster hat ein neues Dokument für Sie bereitgestellt. Sie finden es in Ihrer Patienten-Zone unter «Dokumente».</span>
+            <div><button class="btn primary" type="button">Patienten-Zone öffnen</button></div>
+            <span class="hint">Zur Sicherheit bestätigen Sie dort Ihr Geburtsdatum. Diese E-Mail enthält keine Anhänge. Fragen beantworten wir gerne, wenn Sie auf diese E-Mail antworten.</span>
+            <span class="hint">Physio Muster · Bahnhofstrasse 10 · 7000 Chur</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <aside class="note">
+      <b>Nie Dokumente im Postfach</b>
+      <span>Haftungsausschluss und Übungsblatt gehen nur als Link. Betreff und Text nennen weder Diagnose noch Schmerzbereich.</span>
+      <span>Versand über Infomaniak SMTP. Ohne E-Mail-Einwilligung bleibt Ausdruck mit QR-Zugangsblatt.</span>
+      <span>Spec: link-only-mail</span>
+    </aside>
+  </section>
+
+  <!-- Zone -->
+  <section class="view" id="v-zone" hidden>
+    <div class="screen">
+      <div class="bar"><span class="brand">PM · Physio Muster</span><span class="sp"></span><span class="url">patient.pain-therapy.online</span></div>
+      <div class="body">
+        <div class="zone">
+          <div class="tabs"><span>Übungen</span><span>Behandlungen</span><span class="on">Dokumente</span></div>
+          <div class="doc"><span>Übungsblatt · 16.11.2026</span><button class="btn" type="button">Ansehen</button></div>
+          <div class="doc"><span>Haftungsausschluss PM-2026-00003 · 12.11.2026</span><button class="btn" type="button">Ansehen</button></div>
+          <p class="hint">Fragen? Physio Muster, 081 000 00 00, anna@pain-therapy.online</p>
+        </div>
+      </div>
+    </div>
+    <aside class="note">
+      <b>Eine Zone, Praxis aus dem Link</b>
+      <span>Keine Subdomain pro Praxis. Name, Logo, Kontakt, Datenschutzhinweis und Haftungsausschluss kommen aus der Praxis des Links.</span>
+      <span>Alte Links unter patient.pain-therapy.ayanta.ch leiten weiter, bis sie ablaufen.</span>
+      <span>Spec: platform-domain</span>
+    </aside>
+  </section>
+</div>
+
+<script>
+(function(){
+  var ids=['login','einladung','plattform','praxis','team','mail','zone'];
+  function show(){
+    var h=(location.hash||'').slice(1); if(ids.indexOf(h)<0) h='login';
+    ids.forEach(function(id){document.getElementById('v-'+id).hidden=(id!==h);});
+    document.querySelectorAll('#nav a').forEach(function(a){a.setAttribute('aria-current',a.getAttribute('href')==='#'+h?'true':'false');});
+  }
+  window.addEventListener('hashchange',show); show();
+})();
+</script>
