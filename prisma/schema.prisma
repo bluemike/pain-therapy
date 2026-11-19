@@ -12,11 +12,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  THERAPIST
-  ADMIN
-}
-
 enum Language {
   de
   en
@@ -78,24 +73,128 @@ enum ProfessionalTitle {
 
 /// A signed-in Ayanta user. Created on first sign-in from the Entra ID token.
 model User {
-  id            String            @id @default(cuid())
-  entraOid      String            @unique
-  email         String
-  name          String
-  /// "Hallo <displayName>"; first name from Entra until the user changes it under "Mein Profil"
-  displayName   String?
-  title         ProfessionalTitle @default(THERAPIST_F)
-  roles         Role[]
-  locale        Language          @default(de)
-  place         String?
-  createdAt     DateTime          @default(now())
-  lastLoginAt   DateTime          @default(now())
-  /// Sessions issued before this time are rejected (sign-out, access-control)
-  signedOutAt   DateTime?
+  id             String            @id @default(cuid())
+  /// Subject of the former Entra sign-in (until iteration 12); null for users invited afterwards
+  entraOid       String?           @unique
+  /// Sign-in address, lower case (therapist-login)
+  email          String            @unique
+  name           String
+  /// "Hallo <displayName>"; first name of the name until the user changes it under "Mein Profil"
+  displayName    String?
+  title          ProfessionalTitle @default(THERAPIST_F)
+  locale         Language          @default(de)
+  place          String?
+  createdAt      DateTime          @default(now())
+  lastLoginAt    DateTime          @default(now())
+  /// Sessions issued before this time are rejected (sign-out, access-control, reset of the sign-in)
+  signedOutAt    DateTime?
   /// Platform administrator (design D3): manages practices, never sees patient data
-  platformAdmin Boolean           @default(false)
+  platformAdmin  Boolean           @default(false)
+  /// Set once the invited user has set up a second factor (design D2); no sign-in before
+  activatedAt    DateTime?
+  /// TOTP secret, AES-256-GCM encrypted (src/lib/auth/crypto.ts); confirmed with a first code
+  totpSecretEnc  String?
+  /// Secret shown during the TOTP setup, until the first code confirms it
+  totpPendingEnc String?
+  totpEnabledAt  DateTime?
 
-  memberships PracticeMembership[]
+  memberships   PracticeMembership[]
+  passkeys      Passkey[]
+  recoveryCodes RecoveryCode[]
+}
+
+/// WebAuthn credential of a user (design D2), registered with user verification
+model Passkey {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// base64url credential id
+  credentialId String    @unique
+  publicKey    Bytes
+  counter      BigInt    @default(0)
+  transports   String[]
+  /// e.g. "iPad" from the user agent, for the list under "Anmeldung"
+  label        String
+  createdAt    DateTime  @default(now())
+  lastUsedAt   DateTime?
+
+  @@index([userId])
+}
+
+/// Single-use recovery code (10 per user), stored as HMAC (design D2)
+model RecoveryCode {
+  id       String    @id @default(cuid())
+  userId   String
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash String    @unique
+  usedAt   DateTime?
+
+  @@index([userId])
+}
+
+enum LoginCodePurpose {
+  LOGIN
+  INVITATION
+}
+
+/// 6-digit code sent by email (design D2): valid 10 minutes, single use. After the code is confirmed, the ticket
+/// (httpOnly cookie) carries the first factor to the second step.
+model LoginCode {
+  id           String           @id @default(cuid())
+  email        String
+  purpose      LoginCodePurpose
+  invitationId String?
+  invitation   Invitation?      @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  codeHash     String
+  expiresAt    DateTime
+  verifiedAt   DateTime?
+  ticketHash   String?          @unique
+  /// Set when the ticket signed in (or the code was replaced by a newer one)
+  usedAt       DateTime?
+  createdAt    DateTime         @default(now())
+
+  @@index([email, createdAt])
+}
+
+/// Wrong codes per address and IP, for the 15-minute lock after 5 failures (therapist-login: Schutz vor Erraten)
+model LoginFailure {
+  id        String   @id @default(cuid())
+  email     String
+  ip        String
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
+  @@index([ip, createdAt])
+}
+
+/// WebAuthn challenge, single use, valid 5 minutes
+model WebAuthnChallenge {
+  id        String   @id @default(cuid())
+  challenge String   @unique
+  /// Registration: the user the passkey is for; null for a sign-in
+  userId    String?
+  expiresAt DateTime
+}
+
+/// Invitation to a practice or to the platform (design D4): 7 days, single use
+model Invitation {
+  id            String         @id @default(cuid())
+  email         String
+  /// null for an invitation as platform administrator
+  practiceId    String?
+  practice      Practice?      @relation(fields: [practiceId], references: [id])
+  roles         PracticeRole[]
+  platformAdmin Boolean        @default(false)
+  tokenHash     String         @unique
+  expiresAt     DateTime
+  acceptedAt    DateTime?
+  revokedAt     DateTime?
+  invitedBy     String
+  createdAt     DateTime       @default(now())
+
+  loginCodes LoginCode[]
+
+  @@index([email])
 }
 
 model Patient {
@@ -851,6 +950,7 @@ model Practice {
   updatedAt      DateTime       @updatedAt
 
   memberships           PracticeMembership[]
+  invitations           Invitation[]
   patients              Patient[]
   anamneses             Anamnesis[]
   consentTexts          ConsentTextVersion[]

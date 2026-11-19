@@ -12,8 +12,8 @@ export const currentPracticeId = cache(async (): Promise<string | null> => {
   const explicit = explicitPracticeId();
   if (explicit) return explicit;
   const session = await import('@/auth').then(({ auth }) => auth()).catch(() => null);
-  const sub = session?.user?.id;
-  if (sub) return practiceIdOfUser(sub);
+  // The session reads the membership from the database on every request (src/auth.ts)
+  if (session?.user?.id) return session.user.practiceId ?? null;
   return databaseDefaultPracticeId();
 });
 
@@ -24,10 +24,10 @@ async function databaseDefaultPracticeId(): Promise<string | null> {
   return row?.p ?? null;
 }
 
-/** Active membership of a user (by sign-in subject) in an active practice; a user belongs to one practice */
-export async function practiceIdOfUser(sub: string): Promise<string | null> {
+/** Active membership of a user in an active practice; a user belongs to one practice */
+export async function practiceIdOfUser(userId: string): Promise<string | null> {
   const m = await rawDb.practiceMembership.findFirst({
-    where: { active: true, user: { entraOid: sub }, practice: { status: 'ACTIVE' } },
+    where: { active: true, userId, practice: { status: 'ACTIVE' } },
     select: { practiceId: true },
     orderBy: { createdAt: 'asc' },
   });

@@ -16,10 +16,10 @@
 
 ## 2. Anmeldung (3 bis 4 PT)
 
-- [ ] 2.1 E-Mail-Code (Hash, 10 Minuten, Sperre nach 5 Fehlern)
-- [ ] 2.2 Passkeys mit `@simplewebauthn`, TOTP mit verschlüsseltem Geheimnis, Wiederherstellungscodes
-- [ ] 2.3 Einladung annehmen, Faktoren einrichten, Anmeldung zurücksetzen
-- [ ] 2.4 Entra-Anbieter und `entraOid`-Pflicht entfernen, Rollen aus der Mitgliedschaft
+- [x] 2.1 E-Mail-Code (Hash, 10 Minuten, Sperre nach 5 Fehlern)
+- [x] 2.2 Passkeys mit `@simplewebauthn`, TOTP mit verschlüsseltem Geheimnis, Wiederherstellungscodes
+- [x] 2.3 Einladung annehmen, Faktoren einrichten, Anmeldung zurücksetzen (Funktion; Knopf auf der Team-Seite mit 5.2)
+- [x] 2.4 Entra-Anbieter und `entraOid`-Pflicht entfernen, Rollen aus der Mitgliedschaft
 
 ## 3. Praxis-Einstellungen (2 bis 3 PT)
 
@@ -53,7 +53,7 @@
 - [ ] 7.0 «Test-Praxis» mit `test-therapist@pain-therapy.online` auf Produktion für die Abnahme der Trennung
 - [ ] 7.1 E2E mit zwei Praxen: jede Seite und API gegen IDs der fremden Praxis
 - [ ] 7.2 Unit-Tests RLS (Abfrage ohne Praxis, Schreiben in fremde Praxis)
-- [ ] 7.3 Tests Anmeldung (Passkey virtuell, E-Mail-Code, TOTP, Sperre)
+- [x] 7.3 Tests Anmeldung (Passkey virtuell, E-Mail-Code, TOTP, Sperre)
 - [ ] 7.4 Sicherheitsreview vor dem Anlegen der ersten fremden Praxis
 
 ## 8. Umstellung und Abnahme (1 bis 2 PT)

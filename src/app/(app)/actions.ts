@@ -90,7 +90,7 @@ export async function setLocale(fd: FormData) {
   });
   const { auth } = await import('@/auth');
   const session = await auth();
-  if (session?.user?.id) await db.user.updateMany({ where: { entraOid: session.user.id }, data: { locale } });
+  if (session?.user?.id) await db.user.updateMany({ where: { id: session.user.id }, data: { locale } });
   revalidatePath('/', 'layout');
 }
 

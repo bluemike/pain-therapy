@@ -57,20 +57,41 @@ export async function confirmInZone(patient: Page, link: string, dob: string) {
   await expect(patient.getByRole('heading', { level: 1, name: /^Guten Tag/ })).toBeVisible();
 }
 
+/** Development sign-in (AUTH_DEV_LOGIN): user with a membership in the practice Falera, no email code */
 export async function login(
   page: Page,
   opts: {
-    role?: 'Therapist' | 'Admin' | 'Therapist,Admin' | 'none';
-    tenant?: 'member' | 'guest' | 'other';
+    role?: 'Therapist' | 'Admin' | 'Therapist,Admin' | 'none' | 'platform';
     name?: string;
+    email?: string;
+    practice?: string;
   } = {},
 ) {
   await page.goto('/login');
   await page.getByLabel(/^(Name)$/).fill(opts.name ?? 'Mike Franz');
+  if (opts.email) await page.getByLabel(/^(E-Mail|Email)$/).fill(opts.email);
   await page.locator('#role').selectOption(opts.role ?? 'Therapist,Admin');
-  await page.locator('#tenant').selectOption(opts.tenant ?? 'member');
+  if (opts.practice) await page.locator('#practice').fill(opts.practice);
   await page.getByRole('button', { name: /^(Anmelden|Sign in)$/ }).click();
   await page.waitForURL((url) => !url.pathname.startsWith('/login'));
+}
+
+/** The newest sign-in code sent to `to` (outbox), ignoring mails listed in `before` */
+export async function codeFromOutbox(to: string, before = new Set<string>()) {
+  let code = '';
+  await expect(async () => {
+    const files = (await readdir(OUTBOX)).filter((f) => f.endsWith('.json') && !before.has(f)).sort();
+    for (const f of files.reverse()) {
+      const mail = JSON.parse(await readFile(path.join(OUTBOX, f), 'utf8')) as { to: string; subject: string };
+      const m = mail.to === to ? /Anmeldecode: (\d{6})/.exec(mail.subject) : null;
+      if (m) {
+        code = m[1]!;
+        return;
+      }
+    }
+    throw new Error(`No sign-in code to ${to} yet`);
+  }).toPass({ timeout: 20_000 });
+  return code;
 }
 
 export const unique = () => `${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;

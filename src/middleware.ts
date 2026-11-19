@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 
 // /api/internal: calls of the patient zone and the finalize job, signed with ZONE_INTERNAL_SECRET (iteration 5, D7)
-const PUBLIC = ['/login', '/no-access', '/api/auth', '/api/health', '/api/internal'];
+const PUBLIC = ['/login', '/einladung', '/no-access', '/api/auth', '/api/health', '/api/internal'];
 const SESSION_COOKIES = ['authjs.session-token', '__Secure-authjs.session-token'];
 
 export default auth((req) => {
@@ -28,6 +28,7 @@ export default auth((req) => {
     return res;
   }
 
+  // An invitation link opened while signed in still shows the invitation (e.g. a second account on the iPad)
   if (pathname === '/login') return NextResponse.redirect(new URL('/', req.nextUrl));
   return NextResponse.next();
 });

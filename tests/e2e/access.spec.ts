@@ -5,23 +5,14 @@ test.describe('access-control', () => {
   test('without sign-in the app shows only the sign-in page', async ({ page }) => {
     await page.goto('/patients');
     await expect(page).toHaveURL(/\/login/);
-    await expect(page.getByRole('heading', { name: /Willkommen/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Anmelden', exact: true })).toBeVisible();
   });
 
-  test('an account of another tenant gets "Kein Zugang"', async ({ page }) => {
-    await login(page, { tenant: 'other' });
-    await expect(page).toHaveURL(/no-access/);
-    await expect(page.getByRole('heading', { name: 'Kein Zugang' })).toBeVisible();
-  });
-
-  test('a guest account gets "Kein Zugang"', async ({ page }) => {
-    await login(page, { tenant: 'guest' });
-    await expect(page.getByRole('heading', { name: 'Kein Zugang' })).toBeVisible();
-  });
-
-  test('an Ayanta user without role is told to request one', async ({ page }) => {
-    await login(page, { role: 'none' });
-    await expect(page.getByText(/keine Rolle für diese Anwendung/)).toBeVisible();
+  test('a user without membership is not let in', async ({ page }) => {
+    await page.goto('/login');
+    await page.locator('#role').selectOption('none');
+    await page.getByRole('button', { name: /^(Anmelden|Sign in)$/ }).click();
+    await expect(page.getByText('Ihr Konto gehört zu keiner Praxis.')).toBeVisible();
     await page.goto('/');
     await expect(page).toHaveURL(/\/login/);
   });

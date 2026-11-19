@@ -1,18 +1,16 @@
 import { cookies } from 'next/headers';
 import { getTranslations } from 'next-intl/server';
-import { signIn } from '@/auth';
 import { config } from '@/lib/config';
 import { LOGIN_HINT_COOKIE, loginHintFrom } from '@/lib/login-hint';
+import { safeCallback } from '@/lib/auth/request';
 import { Logo } from '@/components/Logo';
 import { LanguageSwitch } from '@/components/LanguageSwitch';
+import { LoginForm } from './LoginForm';
+import { devSignInAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 
-function safeCallback(url?: string) {
-  return url && url.startsWith('/') && !url.startsWith('//') ? url : '/';
-}
-
-/** access-control: Anmeldung über Ayanta Entra ID */
+/** therapist-login (iteration 12): Anmeldung mit Passkey oder E-Mail-Code plus Authenticator */
 export default async function LoginPage({
   searchParams,
 }: {
@@ -21,7 +19,7 @@ export default async function LoginPage({
   const sp = await searchParams;
   const t = await getTranslations('login');
   const tc = await getTranslations('common');
-  const redirectTo = safeCallback(sp.callbackUrl);
+  const callbackUrl = safeCallback(sp.callbackUrl);
   const hint = loginHintFrom((await cookies()).get(LOGIN_HINT_COOKIE)?.value);
   return (
     <div className="app">
@@ -34,57 +32,14 @@ export default async function LoginPage({
               <p>{t('expired')}</p>
             </div>
           ) : null}
-          <p>{t('text')}</p>
-          {config.entra.clientId ? (
-            <>
-              <form
-                action={async () => {
-                  'use server';
-                  await signIn('microsoft-entra-id', { redirectTo }, hint ? { login_hint: hint } : undefined);
-                }}
-              >
-                <button className="btn btn--dark" style={{ width: '100%', minHeight: 50 }}>
-                  <MicrosoftMark />
-                  {t('button')}
-                </button>
-              </form>
-              {hint ? (
-                <form
-                  className="muted"
-                  style={{ fontSize: 13, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}
-                  action={async () => {
-                    'use server';
-                    (await cookies()).delete(LOGIN_HINT_COOKIE);
-                    await signIn('microsoft-entra-id', { redirectTo }, { prompt: 'select_account' });
-                  }}
-                >
-                  <span>{t('as', { email: hint })}</span>
-                  <button className="btn btn--ghost">{t('otherAccount')}</button>
-                </form>
-              ) : null}
-            </>
-          ) : null}
-          <p className="muted" style={{ fontSize: 13 }}>
-            {t('note')}
-          </p>
+          <LoginForm hint={hint} callbackUrl={callbackUrl} />
           {config.devLogin ? (
-            <form
-              className="devbox"
-              action={async (fd: FormData) => {
-                'use server';
-                await signIn('dev', {
-                  name: fd.get('name'),
-                  email: fd.get('email'),
-                  role: fd.get('role'),
-                  tenant: fd.get('tenant'),
-                  redirectTo,
-                });
-              }}
-            >
+            <form className="devbox" action={devSignInAction}>
               <b>{t('devTitle')}</b>
               <span className="muted" style={{ fontSize: 13 }}>
                 {t('devNote')}
               </span>
+              <input type="hidden" name="callbackUrl" value={callbackUrl} />
               <div className="grid2">
                 <div className="f">
                   <label className="l" htmlFor="name">
@@ -103,21 +58,18 @@ export default async function LoginPage({
                     {t('devRole')}
                   </label>
                   <select className="inp" id="role" name="role" defaultValue="Therapist,Admin">
-                    <option value="Therapist">Therapist</option>
-                    <option value="Admin">Admin</option>
-                    <option value="Therapist,Admin">Therapist + Admin</option>
+                    <option value="Therapist">{t('devRoleTherapist')}</option>
+                    <option value="Admin">{t('devRoleAdmin')}</option>
+                    <option value="Therapist,Admin">{t('devRoleBoth')}</option>
                     <option value="none">{t('devRoleNone')}</option>
+                    <option value="platform">{t('devRolePlatform')}</option>
                   </select>
                 </div>
                 <div className="f">
-                  <label className="l" htmlFor="tenant">
-                    {t('devTenant')}
+                  <label className="l" htmlFor="practice">
+                    {t('devPractice')}
                   </label>
-                  <select className="inp" id="tenant" name="tenant" defaultValue="member">
-                    <option value="member">{t('devTenantAyanta')}</option>
-                    <option value="guest">{t('devTenantGuest')}</option>
-                    <option value="other">{t('devTenantOther')}</option>
-                  </select>
+                  <input className="inp" id="practice" name="practice" defaultValue="falera" />
                 </div>
               </div>
               <button className="btn btn--gold">{t('devSubmit')}</button>
@@ -129,16 +81,5 @@ export default async function LoginPage({
         </div>
       </main>
     </div>
-  );
-}
-
-function MicrosoftMark() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true">
-      <rect width="9" height="9" fill="#f25022" />
-      <rect x="11" width="9" height="9" fill="#7fba00" />
-      <rect y="11" width="9" height="9" fill="#00a4ef" />
-      <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
-    </svg>
   );
 }

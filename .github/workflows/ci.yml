@@ -65,6 +65,8 @@ jobs:
       DATABASE_URL: postgresql://app:app@localhost:5432/pain_therapy
       AUTH_SECRET: ci-e2e-only-secret-0123456789abcdef
       AUTH_URL: http://localhost:3000
+      # Key for the TOTP secrets (iteration 12), required by the production build; test-only value
+      AUTH_ENCRYPTION_KEY: Y2ktZTJlLW9ubHkta2V5LTAxMjM0NTY3ODlhYmNkZWY=
       AUTH_DEV_LOGIN: 'true'
       STORAGE_DRIVER: local
       MAIL_DRIVER: outbox

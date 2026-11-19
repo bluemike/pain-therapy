@@ -2,18 +2,29 @@
 export const config = {
   /** Sliding session timeout (access-control: Abmeldung) */
   idleTimeoutMs: 30 * 60 * 1000,
-  entra: {
-    tenantId: process.env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID ?? '',
-    clientId: process.env.AUTH_MICROSOFT_ENTRA_ID_ID ?? '',
-    clientSecret: process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET ?? '',
+  /** Sign-in without Entra (iteration 12, therapist-login, design D2) */
+  auth: {
+    /** Public address of the practice app; its host name is the WebAuthn relying party id */
+    appUrl: (process.env.AUTH_URL ?? 'http://localhost:3000').replace(/\/$/, ''),
+    rpName: 'Pain Therapy',
+    /**
+     * Key for the TOTP secrets (32 bytes, base64): Key Vault secret auth-encryption-key in Azure. Outside production
+     * it is derived from AUTH_SECRET.
+     */
+    encryptionKey: process.env.AUTH_ENCRYPTION_KEY ?? '',
+    codeTtlMs: 10 * 60 * 1000,
+    /** Lock after this many wrong codes per address within lockMs (Schutz vor Erraten) */
+    maxFailures: 5,
+    /** Per IP address, a little higher for practices behind one router */
+    maxFailuresPerIp: 20,
+    lockMs: 15 * 60 * 1000,
+    invitationTtlMs: 7 * 24 * 60 * 60 * 1000,
   },
   /**
-   * Local sign-in without Entra ID for development and end-to-end tests.
+   * Local sign-in without email code for development and end-to-end tests.
    * Never active inside Azure Container Apps (CONTAINER_APP_NAME is always set there).
    */
   devLogin: process.env.AUTH_DEV_LOGIN === 'true' && !process.env.CONTAINER_APP_NAME,
-  /** Tenant id the development sign-in treats as "Ayanta" */
-  devTenantId: '00000000-0000-0000-0000-00000000a7a7',
   storage: {
     driver: (process.env.STORAGE_DRIVER ?? 'local') as 'local' | 'azure',
     localDir: process.env.STORAGE_LOCAL_DIR ?? './data/documents',
