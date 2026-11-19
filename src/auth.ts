@@ -6,6 +6,7 @@ import type { Role } from '@prisma/client';
 import { config } from '@/lib/config';
 import { checkClaims, isSessionIdle, type EntraClaims } from '@/lib/access';
 import { presetFor } from '@/lib/profile-presets';
+import { FALERA_PRACTICE_ID } from '@/lib/practice-ids';
 import { LOGIN_HINT_COOKIE, LOGIN_HINT_MAX_AGE, loginHintFrom } from '@/lib/login-hint';
 
 declare module 'next-auth' {
@@ -72,7 +73,7 @@ function tenantFor(provider: string) {
 
 async function signedOutSince(sub: string | undefined, authTime: number | undefined) {
   if (!sub) return true;
-  const { db } = await import('@/lib/db');
+  const { rawDb: db } = await import('@/lib/db');
   const u = await db.user.findUnique({ where: { entraOid: sub }, select: { signedOutAt: true } });
   return !!u?.signedOutAt && u.signedOutAt.getTime() >= (authTime ?? 0);
 }
@@ -147,18 +148,18 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
     async signOut(message) {
       const sub = 'token' in message ? message.token?.sub : undefined;
       if (!sub) return;
-      const { db } = await import('@/lib/db');
+      const { rawDb: db } = await import('@/lib/db');
       await db.user.updateMany({ where: { entraOid: sub }, data: { signedOutAt: new Date() } });
     },
     async signIn({ user, account, profile }) {
       if (!account) return;
-      const { db } = await import('@/lib/db');
+      const { rawDb: db } = await import('@/lib/db');
       const check = checkClaims(claimsFor(account.provider, profile, user), tenantFor(account.provider));
       if (!check.ok) return;
       await rememberLoginHint(user.email);
       const p = (profile ?? {}) as { oid?: string };
       const oid = account.provider === 'dev' ? user.id! : (p.oid ?? user.id!);
-      await db.user.upsert({
+      const u = await db.user.upsert({
         where: { entraOid: oid },
         // user-profile (iteration 8, design D9): Mike and Chrissie get their preset on the first sign-in
         create: {
@@ -169,6 +170,16 @@ export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
           ...presetFor(user.email ?? ''),
         },
         update: { email: user.email ?? '', name: user.name ?? '', roles: check.roles, lastLoginAt: new Date() },
+      });
+      // Until the sign-in without Entra (iteration 12, phase 2), every Ayanta user works in the practice Falera
+      await db.practiceMembership.upsert({
+        where: { userId_practiceId: { userId: u.id, practiceId: FALERA_PRACTICE_ID } },
+        create: {
+          userId: u.id,
+          practiceId: FALERA_PRACTICE_ID,
+          roles: check.roles.map((r) => (r === 'ADMIN' ? 'PRACTICE_ADMIN' : 'THERAPIST')),
+        },
+        update: { roles: check.roles.map((r) => (r === 'ADMIN' ? 'PRACTICE_ADMIN' : 'THERAPIST')) },
       });
     },
   },

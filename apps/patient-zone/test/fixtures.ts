@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { inject } from 'vitest';
+import { TEST_PRACTICE_SQL } from '../../../tests/unit/test-practice';
 import { linkExpiry } from '@pain-therapy/shared/access';
 import { DAY_MS } from '@pain-therapy/shared/time';
 import { hashToken, newToken } from '@pain-therapy/shared/tokens';
@@ -15,6 +16,7 @@ export async function resetDatabase() {
     { tablename: string }[]
   >`SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename <> '_prisma_migrations'`;
   await admin.$executeRawUnsafe(`TRUNCATE ${tables.map((t) => `"${t.tablename}"`).join(', ')} CASCADE`);
+  await admin.$executeRawUnsafe(TEST_PRACTICE_SQL);
   for (const id of [1, 2, 3, 4])
     await admin.bodyArea.create({ data: { id, nameDe: `Bereich ${id}`, nameEn: `Area ${id}` } });
   await admin.region.create({

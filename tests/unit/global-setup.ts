@@ -1,5 +1,6 @@
 import { execSync } from 'node:child_process';
 import { PrismaClient } from '@prisma/client';
+import { TEST_PRACTICE_ID, TEST_PRACTICE_SQL } from './test-practice';
 
 /**
  * Prepares the dedicated test database: applies migrations, then empties all tables.
@@ -21,5 +22,8 @@ export default async function setup() {
   await truncate();
   execSync('npx prisma migrate deploy', { env: { ...process.env, DATABASE_URL: url }, stdio: 'pipe' });
   await truncate();
+  // Iteration 12: every connection to the test database works in the test practice unless a test switches
+  await db.$executeRawUnsafe(`ALTER DATABASE "${name}" SET app.practice_id = '${TEST_PRACTICE_ID}'`);
+  await db.$executeRawUnsafe(TEST_PRACTICE_SQL);
   await db.$disconnect();
 }

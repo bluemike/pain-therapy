@@ -78,5 +78,10 @@ BEGIN
 
   -- Append only, without reading back (the zone inserts without RETURNING)
   GRANT INSERT ON "AuditEvent" TO patient_zone;
+
+  -- Iteration 12 (design D6): row-level security limits every table above to the practice of the request; the
+  -- practice of a link token or device session comes from these two owner functions
+  GRANT EXECUTE ON FUNCTION zone_practice_of_link(text) TO patient_zone;
+  GRANT EXECUTE ON FUNCTION zone_practice_of_session(text) TO patient_zone;
 END
 $$;

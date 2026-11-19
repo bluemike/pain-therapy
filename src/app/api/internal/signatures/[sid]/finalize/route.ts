@@ -1,7 +1,9 @@
 import { after } from 'next/server';
 import { verifyInternalToken } from '@pain-therapy/shared/internal-auth';
+import { runInPractice } from '@pain-therapy/shared/practice-context';
 import { config } from '@/lib/config';
 import { db } from '@/lib/db';
+import { practiceIdOfSignatureSession } from '@/lib/practice';
 import { deliverEmail, finalizeSignature } from '@/lib/signing';
 
 export const dynamic = 'force-dynamic';
@@ -15,6 +17,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ sid: st
   const { sid } = await params;
   if (!verifyInternalToken(sid, config.internalSecret, req.headers.get('authorization')))
     return Response.json({ error: 'unauthorized' }, { status: 401 });
+  // No user here: the practice comes from the session itself (iteration 12, design D1)
+  const practiceId = await practiceIdOfSignatureSession(sid);
+  if (!practiceId) return Response.json({ error: 'notFound' }, { status: 404 });
+  return runInPractice(practiceId, () => finalizeIn(sid, practiceId));
+}
+
+async function finalizeIn(sid: string, practiceId: string) {
   const s = await db.signatureSession.findUnique({
     where: { id: sid },
     select: { status: true, channel: true, document: { select: { id: true } } },
@@ -22,6 +31,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ sid: st
   if (!s || s.status !== 'SIGNED' || s.channel !== 'PATIENT_ZONE' || s.document)
     return Response.json({ error: 'notFound' }, { status: 404 });
   const result = await finalizeSignature(sid);
-  if (result?.delivery?.status === 'PENDING') after(() => deliverEmail(result.delivery!.id).catch(console.error));
+  if (result?.delivery?.status === 'PENDING')
+    after(() => runInPractice(practiceId, () => deliverEmail(result.delivery!.id)).catch(console.error));
   return Response.json({ ok: true, document: result?.document.documentNumber ?? null });
 }

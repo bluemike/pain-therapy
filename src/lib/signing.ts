@@ -2,8 +2,10 @@ import type { ConsentKind, Language } from '@prisma/client';
 import { ZONE_ACTOR } from '@pain-therapy/shared/access';
 import { signatureSize, zonePlace } from '@pain-therapy/shared/signing';
 import { config } from './config';
-import { db } from './db';
+import { runInPractice } from '@pain-therapy/shared/practice-context';
+import { db, rawDb } from './db';
 import { audit, SYSTEM_ACTOR } from './audit';
+import { requirePractice } from './practice';
 import { formatDateTime } from './format';
 import { translator } from './i18n-server';
 import { sendWithRetry } from './mail';
@@ -12,15 +14,19 @@ import { signatureSvg, type Stroke } from './signature';
 import { documentStore, sha256 } from './storage';
 import type { Actor } from './session';
 
-/** Next human-readable document number PT-YYYY-NNNNN, shared by signed forms and exercise sheets */
+/**
+ * Next human-readable document number <Kürzel>-YYYY-NNNNN of the current practice, shared by signed forms and
+ * exercise sheets (iteration 12, design D5: counter and prefix per practice)
+ */
 export async function nextDocumentNumber(): Promise<string> {
+  const practice = await requirePractice();
   const year = new Date().getUTCFullYear();
   const row = await db.documentCounter.upsert({
-    where: { year },
+    where: { practiceId_year: { practiceId: practice.id, year } },
     create: { year, last: 1 },
     update: { last: { increment: 1 } },
   });
-  return `PT-${year}-${String(row.last).padStart(5, '0')}`;
+  return `${practice.documentPrefix}-${year}-${String(row.last).padStart(5, '0')}`;
 }
 
 /**
@@ -119,20 +125,22 @@ export async function finalizeSignature(sid: string) {
  * app restarted while the patient signed in the zone. Called by the job caj-pain-therapy-finalize every 5 minutes.
  */
 export async function finalizePending(now = new Date()) {
-  const open = await db.signatureSession.findMany({
+  // Over all practices (owner connection), then each session in its own practice (iteration 12, design D1)
+  const open = await rawDb.signatureSession.findMany({
     where: { status: 'SIGNED', document: null, completedAt: { lt: new Date(now.getTime() - 60_000) } },
-    select: { id: true },
+    select: { id: true, practiceId: true },
     orderBy: { completedAt: 'asc' },
     take: 50,
   });
   let done = 0;
-  for (const { id } of open) {
+  for (const { id, practiceId } of open) {
     try {
-      const result = await finalizeSignature(id);
-      if (result) {
-        done++;
-        if (result.delivery?.status === 'PENDING') await deliverEmail(result.delivery.id).catch(console.error);
-      }
+      const result = await runInPractice(practiceId, async () => {
+        const r = await finalizeSignature(id);
+        if (r?.delivery?.status === 'PENDING') await deliverEmail(r.delivery.id).catch(console.error);
+        return r;
+      });
+      if (result) done++;
     } catch (e) {
       console.error(`finalizeSignature ${id} failed`, e);
     }

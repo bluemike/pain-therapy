@@ -1,4 +1,5 @@
-import { db } from '@/lib/db';
+import { rawDb as db } from '@/lib/db';
+import { TEST_PRACTICE_SQL } from './test-practice';
 
 /**
  * Empties all tables of the test database, like global-setup.ts. Files that create their own data call it before
@@ -11,4 +12,5 @@ export async function resetDatabase() {
     { tablename: string }[]
   >`SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename <> '_prisma_migrations'`;
   await db.$executeRawUnsafe(`TRUNCATE ${tables.map((t) => `"${t.tablename}"`).join(', ')} CASCADE`);
+  await db.$executeRawUnsafe(TEST_PRACTICE_SQL);
 }

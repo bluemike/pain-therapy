@@ -8,11 +8,11 @@
 
 ## 1. Datenmodell und Trennung (6 bis 8 PT)
 
-- [ ] 1.1 `Practice`, `PracticeMembership`, `Invitation`; `practiceId` auf allen Praxis-Tabellen, Migration A mit «Pain Therapy Falera»
-- [ ] 1.2 Rollen `practice_app` und `platform_admin`, RLS-Policies, Rolle `patient_zone` unter RLS
-- [ ] 1.3 Prisma-Extension: `SET LOCAL app.practice_id` pro Anfrage in Praxis-App und Zone
-- [ ] 1.4 Alle Abfragen, Server-Actions und API-Routen auf die Praxis der Session umstellen
-- [ ] 1.5 `DocumentCounter` und `ConsentTextVersion` pro Praxis, Dateipfade `<practiceId>/…`
+- [x] 1.1 `Practice`, `PracticeMembership`, `Invitation`; `practiceId` auf allen Praxis-Tabellen, Migration A mit «Pain Therapy Falera»
+- [x] 1.2 Rollen `practice_app` und `platform_admin`, RLS-Policies, Rolle `patient_zone` unter RLS
+- [x] 1.3 Prisma-Extension: `SET LOCAL app.practice_id` pro Anfrage in Praxis-App und Zone
+- [x] 1.4 Alle Abfragen, Server-Actions und API-Routen auf die Praxis der Session umstellen (über RLS und Spalten-Default statt Änderung jeder Abfrage; interne Routen und Finalize-Job mit `runInPractice`)
+- [ ] 1.5 `DocumentCounter` und `ConsentTextVersion` pro Praxis (erledigt), Dateipfade `<practiceId>/…` (offen, mit Phase 3)
 
 ## 2. Anmeldung (3 bis 4 PT)
 
