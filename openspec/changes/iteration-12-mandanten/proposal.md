@@ -19,7 +19,7 @@ Entscheide von Mike (17.11.2026):
 - **Onboarding:** Der Plattform-Admin legt eine Praxis an und lädt ihre erste Praxis-Admin ein; diese lädt ihr Team ein. Praxis sperren, Daten einer Praxis exportieren und löschen (ersetzt das Löschskript auf Mikes Mac).
 - **E-Mail nur mit Links:** Unterschriebener Haftungsausschluss und Übungsblatt gehen nicht mehr als Anhang, sondern als Link in die Patienten-Zone (Tab «Dokumente»), geschützt wie bisher durch das Geburtsdatum. Versand über SMTP von Infomaniak mit Absender `noreply@pain-therapy.online` und Antwortadresse der Praxis. Microsoft Graph entfällt. **BREAKING**
 - **Domain:** Praxis-App unter `https://pain-therapy.online`, Patienten-Zone unter `https://patient.pain-therapy.online`. Die Zone erkennt die Praxis am Link. Die alten Adressen unter `ayanta.ch` leiten während einer Übergangszeit weiter.
-- **Daten von Falera:** Alle bestehenden Daten gehen an die Praxis «Pain Therapy Falera». Mike und Chrissie werden dort mit ihren neuen Adressen eingeladen.
+- **Daten von Falera:** Alle bestehenden Daten gehen an die Praxis «Pain Therapy Falera». Chrissie wird dort mit `christina.franz@pain-therapy.online` als Praxis-Admin eingeladen.
 
 ## Nicht Teil dieser Änderung
 

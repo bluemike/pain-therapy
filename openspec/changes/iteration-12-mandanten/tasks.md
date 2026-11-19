@@ -2,8 +2,8 @@
 
 ## 0. Voraussetzungen (Mike)
 
-- [ ] 0.1 Domain `pain-therapy.online` kaufen, DNS bei Infomaniak
-- [ ] 0.2 Infomaniak: Postfächer `admin@`, Mike und Chrissie, `noreply@pain-therapy.online` mit SMTP-Zugang, SPF/DKIM/DMARC
+- [x] 0.1 Domain `pain-therapy.online` kaufen (Swizzonic, DNS dort)
+- [x] 0.2 Infomaniak Mail Service: `admin@`, `christina.franz@`, `noreply@`, `test-therapist@`; MX, SPF, DKIM, DMARC (`p=none`)
 - [ ] 0.3 SMTP-Passwort als Key-Vault-Geheimnis `smtp-password` hinterlegen
 
 ## 1. Datenmodell und Trennung (6 bis 8 PT)
@@ -50,6 +50,7 @@
 
 ## 7. Tests und Sicherheit (3 bis 4 PT)
 
+- [ ] 7.0 «Test-Praxis» mit `test-therapist@pain-therapy.online` auf Produktion für die Abnahme der Trennung
 - [ ] 7.1 E2E mit zwei Praxen: jede Seite und API gegen IDs der fremden Praxis
 - [ ] 7.2 Unit-Tests RLS (Abfrage ohne Praxis, Schreiben in fremde Praxis)
 - [ ] 7.3 Tests Anmeldung (Passkey virtuell, E-Mail-Code, TOTP, Sperre)
@@ -57,7 +58,7 @@
 
 ## 8. Umstellung und Abnahme (1 bis 2 PT)
 
-- [ ] 8.1 Deployment mit Migration, Mike und Chrissie an neue Adressen einladen
+- [ ] 8.1 Deployment mit Migration, Chrissie (`christina.franz@`) als Praxis-Admin von Falera einladen
 - [ ] 8.2 Abnahme durch die Praxis Falera am iPad
 - [ ] 8.3 Entra-Anmeldung abschalten, `Mail.Send` und Entra-App entfernen
 - [ ] 8.4 Erste fremde Praxis anlegen

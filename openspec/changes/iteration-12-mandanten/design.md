@@ -51,7 +51,7 @@ Alternativen: Entra External ID oder B2B-Gäste brauchen Microsoft-Tenants und w
 ### D3 Rollen pro Praxis und Plattform-Admin
 
 - `PracticeMembership(userId, practiceId, roles[])` mit `PRACTICE_ADMIN` und `THERAPIST`. Eine Benutzerin gehört genau einer Praxis (Datenmodell erlaubt später mehrere).
-- `User.platformAdmin` (Boolean). Der Plattform-Admin ist ein eigenes Konto `admin@pain-therapy.online` (Mike, Wunsch vom 17.11.2026) ohne Mitgliedschaft in einer Praxis. Er sieht Praxen, Mitgliederzahl, Status und letzte Aktivität, aber keine Patientendaten. Als Therapeut arbeitet Mike mit seinem separaten Konto `mike@pain-therapy.online` in der Praxis Falera.
+- `User.platformAdmin` (Boolean). Der Plattform-Admin ist ein eigenes Konto `admin@pain-therapy.online` (Mike, Wunsch vom 17.11.2026) ohne Mitgliedschaft in einer Praxis. Er sieht Praxen, Mitgliederzahl, Status und letzte Aktivität, aber keine Patientendaten. Braucht Mike später Zugang zur Praxis Falera, erhält er dafür ein separates Konto; vorerst ist das nicht nötig.
 - Das Admin-Konto meldet sich wie alle mit Passkey oder E-Mail-Code plus TOTP an. Es wird bei der Umstellung per Seed angelegt (Einladung an `admin@pain-therapy.online`), weitere Plattform-Admins nur durch einen bestehenden Plattform-Admin.
 - Eine Praxis hat 1 bis n Mitglieder; die Zahl ist nicht begrenzt.
 - Die bisherige Rolle `ADMIN` wird zu `PRACTICE_ADMIN`, `THERAPIST` bleibt.
@@ -101,7 +101,11 @@ Alternativen: Entra External ID oder B2B-Gäste brauchen Microsoft-Tenants und w
 
 - `pain-therapy.online` (Apex, A- und TXT-Eintrag) auf `ca-pain-therapy`, `www` leitet weiter, `patient.pain-therapy.online` auf `ca-pain-therapy-zone`, verwaltete Zertifikate.
 - `pain-therapy.ayanta.ch` leitet auf `pain-therapy.online` weiter. `patient.pain-therapy.ayanta.ch` bleibt gebunden, bis der letzte dort versandte Link abgelaufen ist (höchstens 6 Monate), und leitet dann weiter.
-- Reihenfolge: (1) Domain und Mail bei Infomaniak bereit, (2) Deployment mit Migration (alle Daten an «Pain Therapy Falera»), (3) Mike und Chrissie über Einladung an ihre neuen Adressen, (4) Entra-Anmeldung abschalten, (5) Graph-Berechtigung `Mail.Send` und die Entra-App entfernen.
+- Reihenfolge: (1) Domain und Mail bei Infomaniak bereit, (2) Deployment mit Migration (alle Daten an «Pain Therapy Falera»), (3) Chrissie über Einladung an `christina.franz@pain-therapy.online` als Praxis-Admin von Falera, Admin-Konto `admin@pain-therapy.online`, (4) Entra-Anmeldung abschalten, (5) Graph-Berechtigung `Mail.Send` und die Entra-App entfernen.
+
+### D11 Postfächer (eingerichtet 19.11.2026)
+
+Bei Infomaniak (Mail Service, 10 Adressen) bestehen `admin@` (Plattform-Admin), `christina.franz@` (Praxis Falera), `noreply@` (Versand der App per SMTP) und `test-therapist@` (Testkonto für eine zweite Praxis «Test-Praxis» zum Prüfen der Trennung). SPF und DKIM sind aktiv, DMARC vorerst `p=none`.
 
 ## Risks / Trade-offs
 
