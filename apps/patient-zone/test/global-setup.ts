@@ -3,7 +3,7 @@ import path from 'node:path';
 import { PrismaClient } from '@prisma/client';
 import type { TestProject } from 'vitest/node';
 import { applyPatientZoneRole } from '../../../prisma/patient-zone-role.mjs';
-import { TEST_PRACTICE_ID, TEST_PRACTICE_SQL } from '../../../tests/unit/test-practice';
+import { TEST_PRACTICE_ID, TEST_PRACTICE_SQL } from '@pain-therapy/shared/test-practice';
 
 declare module 'vitest' {
   export interface ProvidedContext {

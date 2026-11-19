@@ -106,6 +106,18 @@ describe.skipIf(!allowed)('row-level security per practice (Daten gehören genau
     expect(names.sort()).toEqual(['Fremde', 'Neu']);
   });
 
+  it('keeps the practice for calls of the outer client inside an interactive transaction', async () => {
+    // Like finalizeSignature(), which takes a document number through `db` while its transaction runs
+    const names = await runInPractice(OTHER, () =>
+      app.$transaction(async (tx) => {
+        const inner = await tx.patient.count();
+        const outer = await app.patient.findMany({ select: { lastName: true } });
+        return { inner, outer: outer.map((p) => p.lastName).sort() };
+      }),
+    );
+    expect(names).toEqual({ inner: 2, outer: ['Fremde', 'Neu'] });
+  });
+
   it('numbers documents per practice with the practice prefix (Dokumentnummern pro Praxis)', async () => {
     const year = new Date().getUTCFullYear();
     expect(await runInPractice(OTHER, () => nextDocumentNumber())).toBe(`PM-${year}-00001`);

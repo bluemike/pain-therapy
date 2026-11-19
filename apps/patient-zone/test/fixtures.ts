@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { inject } from 'vitest';
-import { TEST_PRACTICE_SQL } from '../../../tests/unit/test-practice';
+import { TEST_PRACTICE_SQL } from '@pain-therapy/shared/test-practice';
 import { linkExpiry } from '@pain-therapy/shared/access';
 import { DAY_MS } from '@pain-therapy/shared/time';
 import { hashToken, newToken } from '@pain-therapy/shared/tokens';

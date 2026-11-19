@@ -8,7 +8,8 @@ import type { PrismaClient } from '@prisma/client';
  * and new rows take their practiceId from the same setting by column default. This module sets the setting for each
  * database call:
  * - a single query runs in a short batch transaction `[set_config(...), query]`;
- * - an interactive `db.$transaction(fn)` sets it once as the first statement, then runs fn unchanged.
+ * - an interactive `db.$transaction(fn)` sets it once as the first statement; the calls of fn through its transaction
+ *   client run as they are, calls of the outer client inside fn get their own batch.
  *
  * The practice comes from `runInPractice()` (jobs, internal routes, tests) or else from the resolver the app installs
  * (the signed-in user's practice, the zone session's practice). Without a practice the setting stays empty: reads
@@ -31,6 +32,33 @@ export function runInPractice<T>(practiceId: string, fn: () => Promise<T>): Prom
 /** The practice set by runInPractice(), if any (for code that needs the id itself, e.g. blob paths). */
 export function explicitPracticeId(): string | null {
   return store.getStore()?.practiceId ?? null;
+}
+
+/**
+ * The transaction client handed to fn: its calls run with `inTx`, so they use the transaction (which has the setting)
+ * as they are. Calls of the outer client inside fn (e.g. a helper that uses `db`) keep their own batch with the
+ * setting; a flag for the whole callback would send them to another connection without it.
+ */
+function throughTransaction<T>(tx: T, ctx: Ctx): T {
+  const wrap =
+    (f: (...a: unknown[]) => unknown, self: unknown) =>
+    (...args: unknown[]) =>
+      // Await inside the context: the query runs when awaited (see runInPractice)
+      store.run(ctx, async () => await f.apply(self, args));
+  return new Proxy(tx as object, {
+    get(target, prop, receiver) {
+      const value = Reflect.get(target, prop, receiver);
+      if (typeof value === 'function') return wrap(value as (...a: unknown[]) => unknown, target);
+      if (value && typeof value === 'object' && typeof prop === 'string' && !prop.startsWith('$'))
+        return new Proxy(value as object, {
+          get(model, op, r) {
+            const v = Reflect.get(model, op, r);
+            return typeof v === 'function' ? wrap(v as (...a: unknown[]) => unknown, model) : v;
+          },
+        });
+      return value;
+    },
+  }) as T;
 }
 
 /**
@@ -65,15 +93,17 @@ export function withPracticeContext<C extends PrismaClient>(base: C, resolve: Pr
 
   const interactive = async (fn: (tx: unknown) => Promise<unknown>, options?: unknown) => {
     const practiceId = await practiceOf();
-    return store.run({ practiceId, inTx: true }, () =>
-      (extended.$transaction as (f: (tx: unknown) => Promise<unknown>, o?: unknown) => Promise<unknown>)(async (tx) => {
+    return (extended.$transaction as (f: (tx: unknown) => Promise<unknown>, o?: unknown) => Promise<unknown>)(
+      async (tx) => {
         if (practiceId)
-          await (tx as PrismaClient).$executeRaw`SELECT set_config('app.practice_id', ${practiceId}, true)`;
-        return fn(tx);
-      }, options),
+          await store.run({ practiceId, inTx: true }, async () => {
+            await (tx as PrismaClient).$executeRaw`SELECT set_config('app.practice_id', ${practiceId}, true)`;
+          });
+        return fn(throughTransaction(tx, { practiceId, inTx: true }));
+      },
+      options,
     );
   };
-
   return new Proxy(extended, {
     get(target, prop, receiver) {
       if (prop === '$transaction') {
