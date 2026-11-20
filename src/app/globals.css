@@ -3223,3 +3223,81 @@ ol.auth-steps li.done .n {
   padding: 12px;
   margin-top: 8px;
 }
+
+/* six-digit codes as boxes and the sign-in form (iteration 13) */
+.login-flow form .f,
+.lcard form .f {
+  grid-column: auto;
+}
+.btn--wide {
+  width: 100%;
+}
+.linkbtn.inline {
+  min-height: 0;
+  padding: 0;
+  font-size: inherit;
+  text-decoration: underline;
+}
+.otp {
+  position: relative;
+  max-width: 360px;
+}
+.otp-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  z-index: 1;
+  font-size: 16px;
+  cursor: text;
+}
+.otp-boxes {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+.otp-boxes span {
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 24px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.otp-boxes span:nth-child(3) {
+  margin-right: 8px;
+}
+.otp-input:focus + .otp-boxes span.cur {
+  border-color: var(--gold);
+  outline: 2px solid var(--gold-pale);
+}
+.otp-input:focus-visible + .otp-boxes {
+  outline: none;
+}
+ol.auth-steps li:has(button.back) {
+  padding: 0;
+}
+ol.auth-steps button.back {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 6px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+ol.auth-steps button.back:hover .t {
+  color: var(--gold-text);
+  text-decoration: underline;
+}
+ol.auth-steps button.back:focus-visible {
+  outline: 2px solid var(--gold);
+}

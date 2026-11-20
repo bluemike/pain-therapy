@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { AuthSteps } from '@/components/auth/AuthSteps';
+import { CodeInput } from '@/components/auth/CodeInput';
 import { browserSupportsWebAuthn, startAuthentication } from '@simplewebauthn/browser';
 import {
   passkeyOptionsAction,
@@ -84,6 +85,18 @@ export function LoginForm({ hint, callbackUrl }: { hint?: string; callbackUrl: s
       label={t('stepsLabel')}
       current={step}
       steps={(['email', 'code', 'second'] as Step[]).map((s) => ({ key: s, label: t(`step_${s}`) }))}
+      onBack={{
+        email: {
+          label: t('otherEmail'),
+          go: () => {
+            setStep('email');
+            setCode('');
+            setSecond('');
+            setInfo(null);
+            setError(null);
+          },
+        },
+      }}
     />
   );
 
@@ -136,7 +149,7 @@ export function LoginForm({ hint, callbackUrl }: { hint?: string; callbackUrl: s
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
-          <button className="btn btn--gold" style={{ width: '100%' }} disabled={pending || !email}>
+          <button className="btn btn--gold btn--wide" disabled={pending || !email}>
             {t('sendCode')}
           </button>
         </form>
@@ -153,41 +166,17 @@ export function LoginForm({ hint, callbackUrl }: { hint?: string; callbackUrl: s
             <label className="l" htmlFor="login-code">
               {t('code')}
             </label>
-            <input
-              className="inp code-inp"
-              id="login-code"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              pattern="[0-9 ]{6,7}"
-              maxLength={7}
-              required
-              autoFocus
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-            />
-            <p className="muted" style={{ fontSize: 13 }}>
-              {t('codeHint', { email })}
+            <CodeInput id="login-code" value={code} onChange={setCode} autoFocus describedBy="login-code-hint" />
+            <p className="muted" id="login-code-hint" style={{ fontSize: 13, margin: 0 }}>
+              {t('codeHint', { email })}{' '}
+              <button type="button" className="linkbtn inline" onClick={() => sendCode(true)} disabled={pending}>
+                {t('resend')}
+              </button>
             </p>
           </div>
-          <button className="btn btn--gold" style={{ width: '100%' }} disabled={pending}>
+          <button className="btn btn--gold btn--wide" disabled={pending || code.length < 6}>
             {t('next')}
           </button>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button type="button" className="btn btn--ghost" onClick={() => sendCode(true)} disabled={pending}>
-              {t('resend')}
-            </button>
-            <button
-              type="button"
-              className="btn btn--ghost"
-              onClick={() => {
-                setStep('email');
-                setInfo(null);
-                setError(null);
-              }}
-            >
-              {t('otherEmail')}
-            </button>
-          </div>
         </form>
       ) : null}
 
@@ -202,22 +191,26 @@ export function LoginForm({ hint, callbackUrl }: { hint?: string; callbackUrl: s
             <label className="l" htmlFor="login-second">
               {useRecovery ? t('recovery') : t('totp')}
             </label>
-            <input
-              className="inp code-inp"
-              id="login-second"
-              inputMode={useRecovery ? 'text' : 'numeric'}
-              autoComplete="one-time-code"
-              autoCapitalize="characters"
-              required
-              autoFocus
-              value={second}
-              onChange={(e) => setSecond(e.target.value)}
-            />
+            {useRecovery ? (
+              <input
+                className="inp code-inp"
+                id="login-second"
+                inputMode="text"
+                autoComplete="one-time-code"
+                autoCapitalize="characters"
+                required
+                autoFocus
+                value={second}
+                onChange={(e) => setSecond(e.target.value)}
+              />
+            ) : (
+              <CodeInput id="login-second" value={second} onChange={setSecond} autoFocus />
+            )}
             <p className="muted" style={{ fontSize: 13 }}>
               {useRecovery ? (hasTotp ? t('recoveryHint') : t('noTotpHint')) : t('totpHint')}
             </p>
           </div>
-          <button className="btn btn--gold" style={{ width: '100%' }} disabled={pending}>
+          <button className="btn btn--gold btn--wide" disabled={pending}>
             {t('submit')}
           </button>
           {hasTotp ? (

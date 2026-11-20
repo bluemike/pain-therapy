@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { browserSupportsWebAuthn, startRegistration } from '@simplewebauthn/browser';
 import type { PublicKeyCredentialCreationOptionsJSON, RegistrationResponseJSON } from '@simplewebauthn/browser';
+import { CodeInput } from './CodeInput';
 
 type R<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 
@@ -123,16 +124,7 @@ export function FactorSetup({
             <label className="l" htmlFor="totp-confirm">
               {t('totpCode')}
             </label>
-            <input
-              className="inp code-inp"
-              id="totp-confirm"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={7}
-              required
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-            />
+            <CodeInput id="totp-confirm" value={code} onChange={setCode} />
           </div>
           <button className="btn btn--gold" disabled={pending}>
             {t('totpConfirm')}
