@@ -1,3 +1,4 @@
+import { PLATFORM_NAME } from '@pain-therapy/shared/brand';
 import type { OutgoingMail } from './mail';
 import { currentPractice } from './practice';
 
@@ -9,7 +10,7 @@ export async function practiceSender(): Promise<
   Required<Pick<OutgoingMail, 'fromName'>> & Pick<OutgoingMail, 'replyTo'>
 > {
   const p = await currentPractice().catch(() => null);
-  return p ? { fromName: p.name, replyTo: p.contactEmail || undefined } : { fromName: 'Pain Therapy' };
+  return p ? { fromName: p.name, replyTo: p.contactEmail || undefined } : { fromName: PLATFORM_NAME };
 }
 
 /** Link of a document mail: opens the tab «Dokumente» of the zone after the date of birth */

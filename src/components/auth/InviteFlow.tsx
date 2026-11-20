@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
+import { AuthSteps } from './AuthSteps';
 import {
   inviteFinishAction,
   invitePasskeyAction,
@@ -59,13 +60,11 @@ export function InviteFlow({ token, email }: { token: string; email: string }) {
 
   return (
     <div style={{ display: 'grid', gap: 12 }}>
-      <ol className="steps" aria-label={tl('stepsLabel')}>
-        {labels.map((s, i) => (
-          <li key={s} className={s === current ? 'on' : undefined} aria-current={s === current ? 'step' : undefined}>
-            {i + 1} {t(`step_${s}`)}
-          </li>
-        ))}
-      </ol>
+      <AuthSteps
+        label={tl('stepsLabel')}
+        current={current}
+        steps={labels.map((s) => ({ key: s, label: t(`step_${s}`) }))}
+      />
       {error ? (
         <div className="banner err" role="alert">
           <p>{error}</p>

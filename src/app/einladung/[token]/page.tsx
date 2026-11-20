@@ -10,13 +10,12 @@ export const dynamic = 'force-dynamic';
 export default async function InvitationPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const t = await getTranslations('invite');
-  const tc = await getTranslations('common');
   const inv = await invitationByToken(token);
   return (
     <div className="app">
       <main className="center" id="main">
         <div className="lcard">
-          <Logo appName={tc('appName')} />
+          <Logo />
           {inv.ok ? (
             <>
               <h1>{inv.practiceName ? t('title', { practice: inv.practiceName }) : t('titlePlatform')}</h1>

@@ -1,4 +1,5 @@
 import 'server-only';
+import { PLATFORM_NAME } from '@pain-therapy/shared/brand';
 import type { PracticeRole, Prisma } from '@prisma/client';
 import { authDb } from '../db';
 import { config } from '../config';
@@ -129,20 +130,31 @@ export async function createInvitation(input: InvitationInput): Promise<{ id: st
         expiresAt: new Date(Date.now() + config.auth.invitationTtlMs),
         invitedBy: input.invitedBy,
       },
-      include: { practice: { select: { name: true } } },
+      include: { practice: { select: { name: true, contactEmail: true } } },
     });
   });
   const url = `${config.auth.appUrl}/einladung/${token}`;
   const t = translator('de', 'authMail');
-  await getMailer().send({
-    to: email,
-    subject: t('invitationSubject'),
-    text: t('invitationText', {
-      inviter: input.invitedBy,
-      practice: inv.practice?.name ?? t('platform'),
-      url,
-    }),
-  });
+  const vars = { inviter: input.invitedBy, name: inv.name ? ` ${inv.name}` : '', url };
+  // Iteration 13: own wording for the platform account; practice invitations come from the practice (display name,
+  // reply to its contact address), the practice name in bold
+  await getMailer().send(
+    inv.practice
+      ? {
+          to: email,
+          subject: t('invitationSubject', { practice: inv.practice.name }),
+          text: t('invitationText', { ...vars, practice: inv.practice.name }),
+          fromName: inv.practice.name,
+          replyTo: inv.practice.contactEmail || undefined,
+          bold: [inv.practice.name],
+        }
+      : {
+          to: email,
+          subject: t('invitationPlatformSubject'),
+          text: t('invitationPlatformText', vars),
+          bold: [PLATFORM_NAME],
+        },
+  );
   return { id: inv.id, url };
 }
 

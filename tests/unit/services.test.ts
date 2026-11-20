@@ -192,7 +192,7 @@ describe('signing, PDF archive and email', () => {
     });
     expect(sent[0].text).toContain(`${access!.url}?tab=dokumente`);
     expect(sent[0].text).not.toMatch(/waiver|PT-\d{4}/i);
-    expect(Object.keys(sent[0]).sort()).toEqual(['fromName', 'replyTo', 'subject', 'text', 'to']);
+    expect(Object.keys(sent[0]).sort()).toEqual(['bold', 'fromName', 'replyTo', 'subject', 'text', 'to']);
     const consents = await db.consent.findMany({ where: { sessionId: s.id } });
     expect(consents.map((c) => [c.kind, c.granted]).sort()).toEqual([
       ['DATA_PROCESSING', true],

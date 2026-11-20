@@ -1,3 +1,4 @@
+import { PLATFORM_NAME } from '@pain-therapy/shared/brand';
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { auth, signOut } from '@/auth';
@@ -62,7 +63,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <Link
           href="/"
           className="logo"
-          aria-label={`${practice?.name ?? 'Pain Therapy'} ${tc('appName')}`}
+          aria-label={`${practice?.name ?? PLATFORM_NAME} ${tc('appName')}`}
           style={{ textDecoration: 'none' }}
         >
           <Logo

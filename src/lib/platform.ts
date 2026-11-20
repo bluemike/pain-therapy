@@ -49,6 +49,102 @@ export const newPracticeSchema = z.object({
 });
 export type NewPractice = z.infer<typeof newPracticeSchema>;
 
+/**
+ * Iteration 13 (Mike 20.11.2026, «(vor-)erfassen»): the platform admin captures or corrects the details of an existing
+ * practice and can invite its practice admin in the same step; the practice admin adjusts them later on «Praxis».
+ * Name and e-mail of the admin are optional, but only together.
+ */
+export const practiceDetailsSchema = z
+  .object({
+    name: z.string().trim().min(1, 'required').max(120, 'tooLong'),
+    street: z.string().trim().max(120, 'tooLong'),
+    zip: z
+      .string()
+      .trim()
+      .regex(/^(\d{4,5})?$/, 'zip'),
+    city: z.string().trim().min(1, 'required').max(80, 'tooLong'),
+    defaultPlace: z.string().trim().min(1, 'required').max(80, 'tooLong'),
+    contactEmail: z.string().trim().toLowerCase().email('email').max(254, 'tooLong'),
+    phone: z.string().trim().max(40, 'tooLong'),
+    documentPrefix: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(/^[A-Z]{2,4}$/, 'prefix'),
+    adminName: z.string().trim().max(100, 'tooLong'),
+    adminEmail: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .max(200, 'tooLong')
+      .refine((v) => v === '' || z.email().safeParse(v).success, 'email'),
+  })
+  .superRefine((v, ctx) => {
+    if (v.adminName && !v.adminEmail) ctx.addIssue({ code: 'custom', path: ['adminEmail'], message: 'required' });
+    if (v.adminEmail && !v.adminName) ctx.addIssue({ code: 'custom', path: ['adminName'], message: 'required' });
+  });
+export type PracticeDetails = z.infer<typeof practiceDetailsSchema>;
+
+/** Practice details as the platform form shows them */
+export async function practiceDetailsOf(practiceId: string) {
+  const p = await rawDb.practice.findUnique({
+    where: { id: practiceId },
+    select: {
+      name: true,
+      street: true,
+      zip: true,
+      city: true,
+      defaultPlace: true,
+      contactEmail: true,
+      phone: true,
+      documentPrefix: true,
+    },
+  });
+  if (!p) return null;
+  return Object.fromEntries(Object.entries(p).map(([k, v]) => [k, v ?? ''])) as Record<keyof typeof p, string>;
+}
+
+/**
+ * Saves the details of a practice (only the fields the platform form has; logo and privacy notice stay with the
+ * practice admin) and, with name and e-mail, invites its practice admin. Returns whether someone was invited.
+ */
+export async function updatePracticeDetails(actor: Actor, practiceId: string, input: PracticeDetails) {
+  const before = await livePractice(practiceId);
+  if (input.adminEmail) await assertInvitable(input.adminEmail, before.id);
+  const data = {
+    name: input.name,
+    street: input.street || null,
+    zip: input.zip || null,
+    city: input.city,
+    addressLine: addressLineOf(input),
+    defaultPlace: input.defaultPlace,
+    contactEmail: input.contactEmail,
+    phone: input.phone || null,
+    documentPrefix: input.documentPrefix,
+  };
+  await rawDb.practice.update({ where: { id: before.id }, data });
+  const changed = (Object.keys(data) as (keyof typeof data)[]).filter(
+    (k) => String(before[k] ?? '') !== String(data[k] ?? ''),
+  );
+  if (changed.length)
+    await runInPractice(before.id, () =>
+      audit(actor, 'practice.updated', { details: { fields: changed, by: 'platform' } }),
+    );
+  if (!input.adminEmail) return { invited: false };
+  await invitePracticeAdmin(actor, before.id, { name: input.adminName, email: input.adminEmail });
+  return { invited: true };
+}
+
+/** A practice admin must not be the platform account nor an active member of another practice (design D3) */
+async function assertInvitable(email: string, practiceId: string | null) {
+  const u = await authDb.user.findUnique({
+    where: { email: normalizeEmail(email) },
+    select: { platformAdmin: true, memberships: { where: { active: true }, select: { practiceId: true } } },
+  });
+  if (u?.platformAdmin || u?.memberships.some((m) => m.practiceId !== practiceId))
+    throw new PlatformError('otherPractice');
+}
+
 /** Practices with status, number of active members and the last sign-in of a member; no patient data */
 export async function practicesOverview() {
   const practices = await rawDb.practice.findMany({
@@ -100,11 +196,7 @@ export async function practicesOverview() {
 export async function createPractice(actor: Actor, input: NewPractice) {
   if (await rawDb.practice.findUnique({ where: { slug: input.slug }, select: { id: true } }))
     throw new PlatformError('slugTaken');
-  const admin = await authDb.user.findUnique({
-    where: { email: normalizeEmail(input.adminEmail) },
-    select: { platformAdmin: true, memberships: { where: { active: true }, select: { id: true } } },
-  });
-  if (admin?.platformAdmin || admin?.memberships.length) throw new PlatformError('otherPractice');
+  await assertInvitable(input.adminEmail, null);
   const practice = await rawDb.practice.create({
     data: {
       name: input.name,
@@ -137,6 +229,7 @@ export async function createPractice(actor: Actor, input: NewPractice) {
 /** Invites a practice admin (first one, or after the only admin lost every factor, design risks) */
 export async function invitePracticeAdmin(actor: Actor, practiceId: string, input: { name: string; email: string }) {
   const p = await livePractice(practiceId);
+  await assertInvitable(input.email, p.id);
   const inv = await createInvitation({
     email: input.email,
     name: input.name,
@@ -280,7 +373,7 @@ export async function ensurePlatformAdmin(email = config.platformAdminEmail) {
     practiceId: null,
     roles: [],
     platformAdmin: true,
-    invitedBy: 'Pain Therapy',
+    invitedBy: config.operator.name,
   });
   return { invited: true };
 }

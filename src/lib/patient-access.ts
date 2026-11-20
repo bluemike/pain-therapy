@@ -190,13 +190,17 @@ export async function inviteToSign(actor: Actor, patientId: string, channel: 'EM
 /** Invitation to sign, in the patient's language: practice, request, link, date of birth; no health data */
 export function signatureInviteEmail(language: 'de' | 'en', name: string, url: string, practice: string) {
   const t = translator(language, 'signatureInviteEmail');
-  return { subject: t('subject'), text: t('body', { name, url, practice }) };
+  return { subject: t('subject'), text: t('body', { name, url, practice }), bold: [practice] };
 }
 
 /** Text of the email with the link, in the patient's language (Text von der Praxis zu bestätigen, task 10.3) */
 export function accessLinkEmail(language: 'de' | 'en', name: string, url: string, expiresAt: Date, practice: string) {
   const t = translator(language, 'accessLinkEmail');
-  return { subject: t('subject'), text: t('body', { name, url, practice, date: formatDateZurich(expiresAt) }) };
+  return {
+    subject: t('subject'),
+    text: t('body', { name, url, practice, date: formatDateZurich(expiresAt) }),
+    bold: [practice],
+  };
 }
 
 /**
@@ -217,6 +221,7 @@ export function documentEmail(
   return {
     subject: t('subject', { practice }),
     text: t('body', { name, practice, url: link, date: formatDateZurich(expiresAt) }),
+    bold: [practice],
   };
 }
 

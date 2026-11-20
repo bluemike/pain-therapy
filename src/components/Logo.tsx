@@ -1,5 +1,5 @@
 /**
- * Platform wordmark «Pain Therapy» (iteration 12, design D5), or inside the app the logo or name of the practice of the
+ * Platform wordmark «Pain Therapy Online» (iteration 12, design D5), or inside the app the logo or name of the practice of the
  * signed-in user.
  */
 export function Logo({ appName, practice }: { appName?: string; practice?: { name: string; logoUrl: string | null } }) {
@@ -12,10 +12,13 @@ export function Logo({ appName, practice }: { appName?: string; practice?: { nam
         <span className="mark">{practice.name}</span>
       ) : (
         <span className="mark">
-          pain therapy<i>.</i>
+          Pain Therapy <i>Online</i>
         </span>
       )}
-      {appName ? <span className="app">{appName}</span> : null}
+      {/* iteration 13: the app name only beside a practice, never twice (e.g. practice «Pain Therapy», English app name) */}
+      {appName && practice && appName.toLowerCase() !== practice.name.toLowerCase() ? (
+        <span className="app">{appName}</span>
+      ) : null}
     </span>
   );
 }

@@ -78,7 +78,12 @@ export async function requestCode(
   ]);
   const t = translator('de', 'authMail');
   try {
-    await getMailer().send({ to: email, subject: t('codeSubject', { code }), text: t('codeText', { code }) });
+    await getMailer().send({
+      to: email,
+      subject: t('codeSubject', { code }),
+      text: t('codeText', { code }),
+      bold: [code],
+    });
   } catch (e) {
     console.error('Sign-in code could not be sent', e instanceof Error ? e.message : e);
   }

@@ -1,3 +1,4 @@
+import { PLATFORM_NAME } from '@pain-therapy/shared/brand';
 /** Runtime configuration read from environment variables (see .env.example). */
 export const config = {
   /** Sliding session timeout (access-control: Abmeldung) */
@@ -6,7 +7,7 @@ export const config = {
   auth: {
     /** Public address of the practice app; its host name is the WebAuthn relying party id */
     appUrl: (process.env.AUTH_URL ?? 'http://localhost:3000').replace(/\/$/, ''),
-    rpName: 'Pain Therapy',
+    rpName: PLATFORM_NAME,
     /**
      * Key for the TOTP secrets (32 bytes, base64): Key Vault secret auth-encryption-key in Azure. Outside production
      * it is derived from AUTH_SECRET.
@@ -53,7 +54,7 @@ export const config = {
     outboxDir: process.env.MAIL_OUTBOX_DIR ?? './data/outbox',
     /** Iteration 12, design D7: one sender for all practices, with the practice as display name */
     from: process.env.MAIL_FROM ?? 'noreply@pain-therapy.online',
-    fromName: 'Pain Therapy',
+    fromName: PLATFORM_NAME,
     smtp: {
       host: process.env.SMTP_HOST ?? 'mail.infomaniak.com',
       port: Number(process.env.SMTP_PORT ?? 465),
