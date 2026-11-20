@@ -146,5 +146,9 @@ test.describe('therapist-login', () => {
     await page.getByLabel('Code aus der E-Mail').fill('123456');
     await page.getByRole('button', { name: 'Weiter', exact: true }).click();
     await expect(page.getByText('Zu viele falsche Codes. Bitte versuchen Sie es in 15 Minuten wieder.')).toBeVisible();
+    // Iteration 13: six boxes; «E-Mail» in the steps leads back to change the address
+    await expect(page.locator('.otp-boxes span')).toHaveCount(6);
+    await page.getByRole('button', { name: /E-Mail.*Andere Adresse/ }).click();
+    await expect(page.getByLabel('E-Mail-Adresse')).toBeVisible();
   });
 });

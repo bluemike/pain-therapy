@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { AuthSteps } from './AuthSteps';
+import { CodeInput } from './CodeInput';
 import {
   inviteFinishAction,
   invitePasskeyAction,
@@ -92,26 +93,16 @@ export function InviteFlow({ token, email }: { token: string; email: string }) {
             <label className="l" htmlFor="invite-code">
               {tl('code')}
             </label>
-            <input
-              className="inp code-inp"
-              id="invite-code"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={7}
-              required
-              autoFocus
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-            />
-            <p className="muted" style={{ fontSize: 13 }}>
-              {tl('codeHint', { email })}
+            <CodeInput id="invite-code" value={code} onChange={setCode} autoFocus describedBy="invite-code-hint" />
+            <p className="muted" id="invite-code-hint" style={{ fontSize: 13, margin: 0 }}>
+              {tl('codeHint', { email })}{' '}
+              <button type="button" className="linkbtn inline" onClick={send} disabled={pending}>
+                {tl('resend')}
+              </button>
             </p>
           </div>
-          <button className="btn btn--gold" disabled={pending}>
+          <button className="btn btn--gold btn--wide" disabled={pending || code.length < 6}>
             {tl('next')}
-          </button>
-          <button type="button" className="btn btn--ghost" onClick={send} disabled={pending}>
-            {tl('resend')}
           </button>
         </form>
       ) : null}
