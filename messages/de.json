@@ -27,7 +27,8 @@
     "skipToContent": "Zum Inhalt springen",
     "catalog": "L&B Basisdaten",
     "profile": "Mein Profil",
-    "userMenu": "Menü für {name}"
+    "userMenu": "Menü für {name}",
+    "practice": "Praxis"
   },
   "login": {
     "title": "Anmelden",
@@ -737,7 +738,7 @@
     "step3": "Nach jeder Übung eintragen: gemacht oder nicht, und wie gut Sie sie ausführen konnten (1 bis 10).",
     "validity": "Gültig bis {date}, solange Ihr Heimprogramm läuft.",
     "keep": "Bitte bewahren Sie dieses Blatt sorgfältig auf und geben Sie es nicht weiter. Ein neues Zugangsblatt ersetzt dieses.",
-    "footer": "Ihre Einträge sehen nur Ihre Therapeutin und die Praxis. Fragen: pain-therapy@ayanta.ch",
+    "footer": "Ihre Einträge sehen nur Ihre Therapeutin und die Praxis. Fragen: {email}",
     "introSign": "Für {name}: Bitte lesen und unterschreiben Sie den Haftungsausschluss mit Patienteninformation und Datenschutzhinweis auf Ihrem Telefon.",
     "step3Sign": "Den Text bis zum Ende lesen, die Einwilligungen bestätigen und mit dem Finger unterschreiben. Das dauert etwa 5 Minuten.",
     "validitySign": "Gültig bis {date}, solange Ihre Unterschrift aussteht oder Ihr Heimprogramm läuft."
@@ -958,5 +959,47 @@
     "invitationSubject": "Einladung zu Pain Therapy",
     "invitationText": "Guten Tag\n\n{inviter} lädt Sie ein, bei {practice} mit Pain Therapy zu arbeiten.\n\nÖffnen Sie diesen Link, um Ihre Anmeldung einzurichten (7 Tage gültig):\n{url}\n\nPain Therapy",
     "platform": "der Plattform"
+  },
+  "practice": {
+    "title": "Praxis",
+    "sub": "Angaben für PDFs, E-Mails und die Patienten-Zone",
+    "saved": "Praxis gespeichert. Neue Dokumente verwenden die neuen Angaben, archivierte bleiben unverändert.",
+    "logo": "Logo",
+    "logoCurrent": "Aktuelles Logo",
+    "logoUpload": "Logo hochladen",
+    "logoHint": "PNG oder JPEG, höchstens 500 KB. Ohne Logo erscheint der Name als Schriftzug.",
+    "logoRemove": "Logo entfernen",
+    "details": "Angaben",
+    "name": "Praxisname",
+    "documentPrefix": "Kürzel für Dokumentnummern",
+    "documentPrefixHint": "2 bis 4 Grossbuchstaben, z. B. PT.",
+    "street": "Strasse",
+    "zip": "PLZ",
+    "city": "Ort",
+    "contactEmail": "Kontakt-E-Mail (Antwortadresse)",
+    "contactEmailHint": "Antworten auf E-Mails der App gehen an diese Adresse; die Zone nennt sie als Kontakt.",
+    "phone": "Telefon",
+    "defaultPlace": "Standardort für Unterschriften",
+    "defaultPlaceHint": "Steht auf dem PDF, wenn in der Praxis unterschrieben wird.",
+    "footerPreview": "Kopfzeile im PDF: {line} · Nächste Nummer {next}",
+    "privacyNotice": "Datenschutzhinweis Patienten-Zone",
+    "privacyNoticeLabel": "Eigener Text (optional)",
+    "privacyNoticeHint": "Leer lassen für die Vorlage mit Praxisname, Adresse und Kontakt. Absätze mit einer Leerzeile trennen.",
+    "consentText": "Haftungsausschluss",
+    "consentVersion": "Version {version}",
+    "consentNone": "Noch keine Version",
+    "edit": "Bearbeiten",
+    "save": "Speichern",
+    "error_zip": "Bitte eine PLZ mit 4 oder 5 Ziffern eingeben.",
+    "error_prefix": "Bitte 2 bis 4 Grossbuchstaben eingeben.",
+    "error_logoType": "Nur PNG oder JPEG.",
+    "error_logoSize": "Das Logo ist grösser als 500 KB."
+  },
+  "platform": {
+    "footer": "Pain Therapy · betrieben von {operator}",
+    "imprint": "Impressum",
+    "imprintText": "Pain Therapy ist eine Plattform für Praxen, die nach Liebscher & Bracht arbeiten. Betreiberin:",
+    "imprintPractices": "Für Behandlungen und Ihre Daten ist die jeweilige Praxis verantwortlich. Wenden Sie sich mit Fragen an Ihre Praxis.",
+    "back": "Zurück"
   }
 }

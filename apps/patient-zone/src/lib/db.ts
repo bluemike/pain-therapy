@@ -25,6 +25,28 @@ export async function practiceOfSessionHash(idHash: string): Promise<string | nu
   return row?.p ?? null;
 }
 
+/** Practice details for header, footer and privacy notice (no row-level security on Practice, column grants only) */
+const PRACTICE_SELECT = {
+  id: true,
+  slug: true,
+  name: true,
+  status: true,
+  addressLine: true,
+  contactEmail: true,
+  phone: true,
+  logoType: true,
+  privacyNotice: true,
+  updatedAt: true,
+} as const;
+
+export async function practiceDetails(where: { id: string } | { slug: string }) {
+  return base.practice.findUnique({ where, select: PRACTICE_SELECT });
+}
+
+export async function practiceLogo(id: string) {
+  return base.practice.findUnique({ where: { id }, select: { logo: true, logoType: true } });
+}
+
 export const db = withPracticeContext(base, async () => {
   const { sessionPracticeId } = await import('./session-practice');
   return sessionPracticeId();

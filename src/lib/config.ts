@@ -62,7 +62,10 @@ export const config = {
   internalSecret:
     process.env.ZONE_INTERNAL_SECRET ??
     (process.env.NODE_ENV === 'production' ? '' : 'local-development-zone-internal-secret'),
-  defaultPlace: process.env.DEFAULT_PLACE ?? 'Falera',
-  /** Printed in the header of every signed PDF */
-  practiceAddress: 'Pain Therapy | Via Prau da Cuort 5 | 7153 Falera',
+  /** Operator of the platform in footer and imprint (Mike, 19.11.2026: Ayanta) */
+  operator: {
+    name: process.env.OPERATOR_NAME ?? 'Ayanta',
+    address: process.env.OPERATOR_ADDRESS ?? '',
+    email: process.env.OPERATOR_EMAIL ?? 'admin@pain-therapy.online',
+  },
 };

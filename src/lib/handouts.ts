@@ -10,6 +10,7 @@ import { therapistLine } from './users';
 import { translator } from './i18n-server';
 import { sendWithRetry } from './mail';
 import { nextDocumentNumber } from './signing';
+import { blobFolder } from './practice';
 import { documentStore, exerciseMediaStore, sha256 } from './storage';
 import type { Actor } from './session';
 import { emailConsentOf } from './email-consent';
@@ -193,7 +194,7 @@ export async function createHandout(
   const documentNumber = await nextDocumentNumber();
   const { pdf, language, snapshot } = await buildHandout(ctx, documentNumber, version, { layout });
   const hash = sha256(pdf);
-  const blobPath = `${ctx.patient.id}/${documentNumber}.pdf`;
+  const blobPath = `${await blobFolder(ctx.patient.id)}/${documentNumber}.pdf`;
   await documentStore().put(blobPath, pdf, 'application/pdf');
   const details = {
     consultationId,

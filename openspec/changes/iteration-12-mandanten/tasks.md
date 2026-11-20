@@ -12,7 +12,7 @@
 - [x] 1.2 Rollen `practice_app` und `platform_admin`, RLS-Policies, Rolle `patient_zone` unter RLS
 - [x] 1.3 Prisma-Extension: `SET LOCAL app.practice_id` pro Anfrage in Praxis-App und Zone
 - [x] 1.4 Alle Abfragen, Server-Actions und API-Routen auf die Praxis der Session umstellen (über RLS und Spalten-Default statt Änderung jeder Abfrage; interne Routen und Finalize-Job mit `runInPractice`)
-- [ ] 1.5 `DocumentCounter` und `ConsentTextVersion` pro Praxis (erledigt), Dateipfade `<practiceId>/…` (offen, mit Phase 3)
+- [x] 1.5 `DocumentCounter` und `ConsentTextVersion` pro Praxis, Dateipfade `<practiceId>/…` (ältere Dateien bleiben unter `<patientId>/…` lesbar)
 
 ## 2. Anmeldung (3 bis 4 PT)
 
@@ -23,10 +23,10 @@
 
 ## 3. Praxis-Einstellungen (2 bis 3 PT)
 
-- [ ] 3.1 Seite «Praxis» mit Name, Adresse, Kontakt, Standardort, Kürzel, Logo
-- [ ] 3.2 PDFs, Mails und Zone lesen die Praxisangaben; Konstanten aus `config.ts` und `Invalid.tsx` entfernen
-- [ ] 3.3 Haftungsausschluss und Datenschutzhinweis pro Praxis mit Versionen
-- [ ] 3.4 Neutrale Plattform-Marke «Pain Therapy» statt Ayanta
+- [x] 3.1 Seite «Praxis» mit Name, Adresse, Kontakt, Standardort, Kürzel, Logo
+- [x] 3.2 PDFs, Mails und Zone lesen die Praxisangaben; Konstanten aus `config.ts` und `Invalid.tsx` entfernen (Absender der Mails mit Phase 4)
+- [x] 3.3 Haftungsausschluss und Datenschutzhinweis pro Praxis mit Versionen (Haftungsausschluss mit Versionen pro Praxis; Datenschutzhinweis als eigener Text der Praxis ohne Versionen, sonst die Vorlage)
+- [x] 3.4 Neutrale Plattform-Marke «Pain Therapy» statt Ayanta
 
 ## 4. E-Mail nur mit Links (1 bis 2 PT)
 

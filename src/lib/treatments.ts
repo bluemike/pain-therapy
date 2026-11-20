@@ -4,6 +4,7 @@ import { audit } from './audit';
 import { formatDateTime } from './format';
 import { consentStatusOf } from './patients';
 import { currentVersionNumber } from './consent-texts';
+import { blobFolder } from './practice';
 import { addPhotoRows, preparePhotos, removePhotoRows, writePhotos, type PhotoUpload } from './photos';
 import type { ConsultationInput, Sheet, TreatmentInput } from './schemas';
 import type { Actor } from './session';
@@ -104,7 +105,7 @@ export async function createTreatment(
 ) {
   await assertOpenable(patientId);
   await assertRegion(input.regionId);
-  const photos = preparePhotos(patientId, uploads);
+  const photos = preparePhotos(await blobFolder(patientId), uploads);
   await writePhotos(photos);
   return db.$transaction(async (tx) => {
     const t = await tx.treatment.create({
@@ -158,7 +159,7 @@ export async function updateTreatment(
   if (first && input.side !== existing.side) throw new TreatmentError('sideLocked');
   if (first && input.startedAt > first.at) throw new TreatmentError('startAfterConsultation');
   if (input.regionId !== existing.regionId) await assertRegion(input.regionId, existing.regionId);
-  const photos = preparePhotos(existing.patientId, photoChanges.add ?? []);
+  const photos = preparePhotos(await blobFolder(existing.patientId), photoChanges.add ?? []);
   await writePhotos(photos);
   const changes = treatmentChanges(existing, input);
   return db.$transaction(async (tx) => {
@@ -248,7 +249,7 @@ export async function createConsultation(
   await assertOpenable(t.patientId);
   assertSide(t.side, input.sheet);
   await assertCatalog(input.sheet);
-  const photos = preparePhotos(t.patientId, uploads);
+  const photos = preparePhotos(await blobFolder(t.patientId), uploads);
   await writePhotos(photos);
   return db.$transaction(async (tx) => {
     // Serialises concurrent saves on the same treatment so numbers stay gapless and unique
@@ -380,7 +381,7 @@ export async function updateConsultation(
   const t = existing.treatment;
   assertSide(t.side, input.sheet);
   await assertCatalog(input.sheet);
-  const photos = preparePhotos(t.patientId, photoChanges.add ?? []);
+  const photos = preparePhotos(await blobFolder(t.patientId), photoChanges.add ?? []);
   await writePhotos(photos);
   const changes = consultationChanges(existing, input);
   // exercise-log (iteration 4, design D8): entries of the patient point to their prescription, which therefore stays

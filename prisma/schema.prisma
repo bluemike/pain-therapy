@@ -943,8 +943,11 @@ model Practice {
   defaultPlace   String
   contactEmail   String
   phone          String?
-  /// Blob path of the logo in practice-assets, or null for the name as text
-  logoPath       String?
+  /// Logo (PNG or JPEG, at most 500 KB) for app, zone and PDFs; null shows the name as text (design D5)
+  logo           Bytes?
+  logoType       String?
+  /// Own text of the zone privacy notice (paragraphs); null uses the platform template with the practice details
+  privacyNotice  String?
   documentPrefix String         @default("PT")
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt

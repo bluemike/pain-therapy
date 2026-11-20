@@ -27,7 +27,8 @@
     "skipToContent": "Skip to content",
     "catalog": "L&B reference data",
     "profile": "My profile",
-    "userMenu": "Menu for {name}"
+    "userMenu": "Menu for {name}",
+    "practice": "Practice"
   },
   "login": {
     "title": "Sign in",
@@ -737,7 +738,7 @@
     "step3": "After each exercise record whether you did it and how well you could do it (1 to 10).",
     "validity": "Valid until {date} while your home programme runs.",
     "keep": "Please keep this sheet safe and do not pass it on. A new access sheet replaces this one.",
-    "footer": "Only your therapist and the practice see your entries. Questions: pain-therapy@ayanta.ch",
+    "footer": "Only your therapist and the practice see your entries. Questions: {email}",
     "introSign": "For {name}: please read and sign the liability waiver with patient information and privacy notice on your phone.",
     "step3Sign": "Read the text to the end, confirm the consents and sign with your finger. This takes about 5 minutes.",
     "validitySign": "Valid until {date} while your signature is pending or your home programme runs."
@@ -958,5 +959,47 @@
     "invitationSubject": "Einladung zu Pain Therapy",
     "invitationText": "Guten Tag\n\n{inviter} lädt Sie ein, bei {practice} mit Pain Therapy zu arbeiten.\n\nÖffnen Sie diesen Link, um Ihre Anmeldung einzurichten (7 Tage gültig):\n{url}\n\nPain Therapy",
     "platform": "der Plattform"
+  },
+  "practice": {
+    "title": "Practice",
+    "sub": "Details for PDFs, emails and the patient zone",
+    "saved": "Practice saved. New documents use the new details, archived ones stay unchanged.",
+    "logo": "Logo",
+    "logoCurrent": "Current logo",
+    "logoUpload": "Upload logo",
+    "logoHint": "PNG or JPEG, at most 500 KB. Without a logo the name is shown as text.",
+    "logoRemove": "Remove logo",
+    "details": "Details",
+    "name": "Practice name",
+    "documentPrefix": "Prefix for document numbers",
+    "documentPrefixHint": "2 to 4 capital letters, e.g. PT.",
+    "street": "Street",
+    "zip": "Postcode",
+    "city": "Town",
+    "contactEmail": "Contact email (reply address)",
+    "contactEmailHint": "Replies to emails from the app go to this address; the zone shows it as contact.",
+    "phone": "Phone",
+    "defaultPlace": "Default place for signatures",
+    "defaultPlaceHint": "Printed on the PDF when signed in the practice.",
+    "footerPreview": "PDF header: {line} · Next number {next}",
+    "privacyNotice": "Patient zone privacy notice",
+    "privacyNoticeLabel": "Own text (optional)",
+    "privacyNoticeHint": "Leave empty for the template with practice name, address and contact. Separate paragraphs with an empty line.",
+    "consentText": "Disclaimer",
+    "consentVersion": "Version {version}",
+    "consentNone": "No version yet",
+    "edit": "Edit",
+    "save": "Save",
+    "error_zip": "Please enter a postcode with 4 or 5 digits.",
+    "error_prefix": "Please enter 2 to 4 capital letters.",
+    "error_logoType": "PNG or JPEG only.",
+    "error_logoSize": "The logo is larger than 500 KB."
+  },
+  "platform": {
+    "footer": "Pain Therapy · operated by {operator}",
+    "imprint": "Imprint",
+    "imprintText": "Pain Therapy is a platform for practices working according to Liebscher & Bracht. Operator:",
+    "imprintPractices": "Each practice is responsible for its treatments and your data. Please contact your practice with questions.",
+    "back": "Back"
   }
 }

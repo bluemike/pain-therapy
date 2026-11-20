@@ -4,6 +4,8 @@ import type { Actor } from './session';
 
 export type AuditAction =
   | 'patient.viewed'
+  // practice-settings (iteration 12): Praxisangaben, Logo, Datenschutzhinweis geändert
+  | 'practice.updated'
   | 'patient.created'
   | 'patient.updated'
   | 'patient.deactivated'

@@ -13,7 +13,7 @@ export const currentPracticeId = cache(async (): Promise<string | null> => {
   if (explicit) return explicit;
   const session = await import('@/auth').then(({ auth }) => auth()).catch(() => null);
   // The session reads the membership from the database on every request (src/auth.ts)
-  if (session?.user?.id) return session.user.practiceId ?? null;
+  if (session?.user?.id && session.user.practiceId !== undefined) return session.user.practiceId;
   return databaseDefaultPracticeId();
 });
 
@@ -45,6 +45,14 @@ export async function requirePractice(): Promise<Practice> {
   const p = await currentPractice();
   if (!p) throw new Error('No practice for this request');
   return p;
+}
+
+/**
+ * Folder of a patient's new files in Blob Storage, under the practice (iteration 12, design D8). Files written before
+ * keep their paths; every row stores its own path.
+ */
+export async function blobFolder(patientId: string): Promise<string> {
+  return `${(await requirePractice()).id}/${patientId}`;
 }
 
 /** Practice of a signature session, for the internal routes and the finalize job that run without a user */

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { confirmable, lookupLink } from '@/lib/access';
 import { getZoneSession } from '@/lib/session';
+import { practiceOfToken } from '@/lib/practice';
 import { ConfirmForm } from '@/components/ConfirmForm';
 import { Invalid } from '@/components/Invalid';
 import { PrivacyNote } from '@/components/PrivacyNote';
@@ -30,7 +31,7 @@ export default async function LinkPage({ params }: { params: Promise<{ token: st
       <h1>{t('title')}</h1>
       <p className="sub">{t('text')}</p>
       <ConfirmForm token={token} locked={found.state === 'locked'} />
-      <PrivacyNote />
+      <PrivacyNote practiceSlug={(await practiceOfToken(token))?.slug} />
     </>
   );
 }

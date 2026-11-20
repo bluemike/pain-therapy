@@ -59,6 +59,9 @@ BEGIN
   GRANT SELECT ("exerciseCode", "number", "images", "aids", "seconds", "retiredAt") ON "ExerciseVariant" TO patient_zone;
 
   -- Access link: read, and update only the counters and the last use
+  -- Practice of the patient (iteration 12, design D6): name, contact, logo and privacy notice for header and footer
+  GRANT SELECT ("id", "slug", "name", "status", "addressLine", "contactEmail", "phone", "logo", "logoType",
+                "privacyNotice", "updatedAt") ON "Practice" TO patient_zone;
   GRANT SELECT ON "PatientAccessLink" TO patient_zone;
   GRANT UPDATE ("failedAttempts", "lockedUntil", "blockedAt", "lastUsedAt") ON "PatientAccessLink" TO patient_zone;
 

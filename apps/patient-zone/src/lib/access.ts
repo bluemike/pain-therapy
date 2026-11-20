@@ -11,7 +11,7 @@ import type { CurrentProgram } from '@pain-therapy/shared/program';
 import { linkPurposeOf } from '@pain-therapy/shared/record';
 import { DAY_MS } from '@pain-therapy/shared/time';
 import { hashIp, hashToken, isTokenShaped, newToken } from '@pain-therapy/shared/tokens';
-import { runInPractice } from '@pain-therapy/shared/practice-context';
+import { explicitPracticeId, runInPractice } from '@pain-therapy/shared/practice-context';
 import { db, practiceOfLinkHash, practiceOfSessionHash } from './db';
 import { zoneAudit } from './audit';
 import { config } from './config';
@@ -187,6 +187,8 @@ async function resolveSessionIn(sessionId: string, now: Date) {
   }
   return {
     session: { id: session.id, linkId: session.linkId, createdAt: session.createdAt },
+    /** Practice of the session (iteration 12, design D6), for archive paths */
+    practiceId: explicitPracticeId(),
     patient: session.patient,
     program,
     /** Active home programs, one per running treatment, newest first (iteration 9, design D8) */

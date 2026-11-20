@@ -2,10 +2,11 @@ import path from 'node:path';
 import React from 'react';
 import { Document, Font, Page, Path, StyleSheet, Svg, Text, View, renderToBuffer } from '@react-pdf/renderer';
 import type { Language } from '@prisma/client';
-import { config } from './config';
 import { parseBlocks } from './consent-texts';
 import { formatDate } from './format';
 import { translator } from './i18n-server';
+import { currentBrand, type Brand } from './brand';
+import { BrandMark } from './pdf-brand';
 
 /** consent-documents: PDF of the signed form, in the patient's language (design D7). */
 
@@ -82,6 +83,8 @@ const s = StyleSheet.create({
 });
 
 export interface PdfInput {
+  /** Practice shown in the header; the current practice when left out */
+  brand?: Brand;
   language: Language;
   documentNumber: string;
   textVersion: number;
@@ -132,18 +135,16 @@ export function SignedFormPdf({ input }: { input: PdfInput }) {
   return (
     <Document
       title={`${input.title} – ${name}`}
-      author="Ayanta"
+      author={input.brand!.name}
       subject={input.documentNumber}
       language={input.language}
     >
       <Page size="A4" style={s.page}>
         <View style={s.header} fixed>
           <View>
-            <Text style={s.mark}>
-              ayanta<Text style={s.dot}>.</Text>
-            </Text>
+            <BrandMark brand={input.brand!} textStyle={s.mark} />
             <Text style={s.muted}>{t('practice')}</Text>
-            <Text style={s.muted}>{config.practiceAddress}</Text>
+            <Text style={s.muted}>{input.brand!.addressLine}</Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
             <Text style={s.muted}>{t('version', { version: input.textVersion })}</Text>
@@ -234,5 +235,6 @@ export function SignedFormPdf({ input }: { input: PdfInput }) {
 
 export async function renderSignedFormPdf(input: PdfInput): Promise<Buffer> {
   registerFonts();
-  return renderToBuffer(<SignedFormPdf input={input} />);
+  const brand = input.brand ?? (await currentBrand());
+  return renderToBuffer(<SignedFormPdf input={{ ...input, brand }} />);
 }

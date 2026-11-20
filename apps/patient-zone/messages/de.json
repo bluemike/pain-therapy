@@ -8,7 +8,9 @@
     "privacyShort": "Ihre Einträge sehen nur Ihre Therapeutin und die Praxis. Sie dienen der Begleitung Ihres Heimprogramms und werden mit Ihrer Akte aufbewahrt.",
     "privacyMore": "Mehr zum Datenschutz",
     "footerNote": "Bei Schmerzen oder Fragen wenden Sie sich an die Praxis.",
-    "contact": "{name} · {email}"
+    "contact": "{name} · {email}",
+    "footerPractice": "Fragen: {name} · {email}",
+    "platform": "Pain Therapy"
   },
   "confirm": {
     "title": "Willkommen",
@@ -110,7 +112,7 @@
   "privacy": {
     "title": "Datenschutz",
     "who": "Wer sieht Ihre Einträge?",
-    "whoText": "Nur Ihre Therapeutin und die Praxis {name}. Es gibt keine Weitergabe an Dritte und keine Dienste von Drittanbietern; die Daten liegen in der Schweiz.",
+    "whoText": "Nur Ihre Therapeutin und die Praxis{name}. Es gibt keine Weitergabe an Dritte und keine Dienste von Drittanbietern; die Daten liegen in der Schweiz.",
     "what": "Was wird gespeichert?",
     "whatText": "Ihre Einträge (gemacht oder nicht, Bewertung, Datum und Zeit, Bemerkung) sowie ein Protokoll der Zugriffe. Ihre IP-Adresse wird nur als verschlüsselter Prüfwert gespeichert, um wiederholte Fehlversuche zu begrenzen, und nach 30 Tagen gelöscht. Für den Haftungsausschluss zeigt die Patienten-Zone Ihre Personalien zur Prüfung und speichert Ihre Unterschrift, Ihre Einwilligungen und Ihre Anmerkung.",
     "why": "Wozu?",
@@ -119,7 +121,9 @@
     "howLongText": "Die Einträge werden mit Ihrer Akte aufbewahrt. Das Gerät bleibt nach der Bestätigung 30 Tage angemeldet; dafür wird nur ein technisch notwendiges Cookie gesetzt.",
     "contact": "Kontakt",
     "contactText": "Fragen, Auskunft oder Berichtigung: {name}, {address}, {email}.",
-    "back": "Zurück"
+    "back": "Zurück",
+    "yourPractice": ", bei der Sie in Behandlung sind",
+    "contactGeneric": "Fragen, Auskunft oder Berichtigung: Bitte wenden Sie sich an Ihre Praxis."
   },
   "notFound": {
     "title": "Seite nicht gefunden",

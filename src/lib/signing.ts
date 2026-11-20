@@ -5,7 +5,7 @@ import { config } from './config';
 import { runInPractice } from '@pain-therapy/shared/practice-context';
 import { db, rawDb } from './db';
 import { audit, SYSTEM_ACTOR } from './audit';
-import { requirePractice } from './practice';
+import { blobFolder, requirePractice } from './practice';
 import { formatDateTime } from './format';
 import { translator } from './i18n-server';
 import { sendWithRetry } from './mail';
@@ -65,14 +65,14 @@ export async function finalizeSignature(sid: string) {
         patient,
         consents,
         note: session.patientNote,
-        place: session.place ?? (zone ? zonePlace(session.language) : ''),
+        place: session.place ?? (zone ? zonePlace(session.language) : (await requirePractice()).defaultPlace),
         signedAtText: formatDateTime(session.completedAt ?? new Date()),
         signature: { paths, width: size.width, height: size.height },
         online:
           zone && session.zoneSession ? { confirmedAtText: formatDateTime(session.zoneSession.createdAt) } : undefined,
       });
       const hash = sha256(pdf);
-      const blobPath = `${patient.id}/${documentNumber}.pdf`;
+      const blobPath = `${await blobFolder(patient.id)}/${documentNumber}.pdf`;
       await documentStore().put(blobPath, pdf, 'application/pdf');
 
       const emailStatus = !consents.unencryptedEmail
