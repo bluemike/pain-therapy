@@ -100,6 +100,8 @@ export type InvitationInput = {
   practiceId: string | null;
   roles: PracticeRole[];
   platformAdmin?: boolean;
+  /** Name of the invited person, taken over by the new account */
+  name?: string | null;
   /** Name of who invites, shown in the mail and on the page */
   invitedBy: string;
 };
@@ -122,6 +124,7 @@ export async function createInvitation(input: InvitationInput): Promise<{ id: st
         practiceId: input.practiceId,
         roles: input.roles,
         platformAdmin: input.platformAdmin ?? false,
+        name: input.name?.trim() || null,
         tokenHash: hashToken(token),
         expiresAt: new Date(Date.now() + config.auth.invitationTtlMs),
         invitedBy: input.invitedBy,
@@ -194,7 +197,7 @@ export async function userForInvitation(invitationId: string): Promise<string> {
   const inv = await authDb.invitation.findUniqueOrThrow({ where: { id: invitationId } });
   const u = await authDb.user.upsert({
     where: { email: inv.email },
-    create: { email: inv.email, name: inv.email.split('@')[0] ?? inv.email, ...presetFor(inv.email) },
+    create: { email: inv.email, name: inv.name ?? inv.email.split('@')[0] ?? inv.email, ...presetFor(inv.email) },
     update: {},
     select: { id: true },
   });
@@ -256,6 +259,7 @@ export async function resetSignIn(userId: string, invitedBy: string): Promise<{ 
     practiceId: m?.practiceId ?? null,
     roles: m?.roles ?? [],
     platformAdmin: u.platformAdmin,
+    name: u.name,
     invitedBy,
   });
   return { url };

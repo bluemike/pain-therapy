@@ -73,8 +73,9 @@ export async function resendEmail(fd: FormData) {
   const actor = await requireUser();
   const documentId = String(fd.get('documentId'));
   const patientId = String(fd.get('patientId'));
-  const delivery = await requestResend(actor, documentId);
-  if (delivery.status === 'PENDING') after(() => deliverEmail(delivery.id).catch(console.error));
+  const { delivery, access } = await requestResend(actor, documentId);
+  if (delivery.status === 'PENDING')
+    after(() => deliverEmail(delivery.id, { access: access ?? undefined }).catch(console.error));
   revalidatePath(`/patients/${patientId}`);
   redirect(`/patients/${patientId}?tab=documents&flash=resent`);
 }

@@ -28,7 +28,9 @@
     "catalog": "L&B reference data",
     "profile": "My profile",
     "userMenu": "Menu for {name}",
-    "practice": "Practice"
+    "practice": "Practice",
+    "team": "Team",
+    "practices": "Practices"
   },
   "login": {
     "title": "Sign in",
@@ -393,9 +395,9 @@
     "signedAt": "Signed on {at}",
     "online": "Signed online in the patient zone, access confirmed with the date of birth on {at}"
   },
-  "email": {
-    "subject": "Your signed liability waiver ({number})",
-    "body": "Hello {name}\n\nAttached is the liability waiver with patient information and privacy notice that you signed on {date}.\n\nKind regards\nYour pain therapy team\n\nThis email is not encrypted. You agreed to receive documents by unencrypted email and can withdraw this consent at any time."
+  "documentEmail": {
+    "subject": "New document from {practice}",
+    "body": "Dear {name}\n\nA new document is ready for you in your patient zone. You find it under «Documents»:\n{url}\n\nWhen you first open it on a device, please confirm with your date of birth. The link is valid until {date}. Please do not pass it on; an earlier link no longer works.\n\nKind regards\n{practice}\n\nThis email only contains a link. Your documents stay in the patient zone."
   },
   "admin": {
     "title": "Form texts",
@@ -688,6 +690,7 @@
     "error": "The exercise sheet could not be created.",
     "errorNoConsent": "Without consent to unencrypted email the exercise sheet can only be printed.",
     "errorNoAddress": "Without an email address the exercise sheet can only be printed.",
+    "errorNoZone": "An email only carries a link to the patient zone. Without the patient zone the exercise sheet can only be printed.",
     "errorNoPrescription": "No exercise prescribed.",
     "withLink": "Include the link to the patient zone",
     "withLinkPrint": "An access sheet with QR code is printed as well; the archived exercise sheet contains no link.",
@@ -721,14 +724,9 @@
     "epdVariant": "Variant {n}",
     "parts": "Fascia rolling + stretch {epd}"
   },
-  "handoutEmail": {
-    "subject": "Your exercise sheet ({number})",
-    "body": "Hello {name}\n\nAttached is your personal exercise sheet from the session on {date}.\n\nKind regards\nYour pain therapy team\n\nThis email is not encrypted. You agreed to receive documents by unencrypted email and can withdraw this consent at any time.",
-    "bodyWithLink": "Dear {name}\n\nYour personal exercise sheet from the session on {date} is ready in the patient zone. You find it there under \"Documents\" and can record when you did the exercises and how well they went:\n{url}\n\nWhen you first open it on a device, please confirm with your date of birth. Please do not pass the link on.\n\nKind regards\nYour pain therapy team\n\nThis email is not encrypted. You agreed to receive unencrypted email and can withdraw this consent at any time."
-  },
   "accessLinkEmail": {
     "subject": "Your access to the patient zone",
-    "body": "Dear {name}\n\nWith this personal link you record when you did your exercises and how well they went:\n{url}\n\nWhen you first open it on a device, please confirm with your date of birth. The link is valid until {date} while your home programme runs. Please do not pass it on; an earlier link no longer works.\n\nKind regards\nYour pain therapy team\n\nThis email is not encrypted. You agreed to receive unencrypted email and can withdraw this consent at any time."
+    "body": "Dear {name}\n\nWith this personal link you record when you did your exercises and how well they went:\n{url}\n\nWhen you first open it on a device, please confirm with your date of birth. The link is valid until {date} while your home programme runs. Please do not pass it on; an earlier link no longer works.\n\nKind regards\n{practice}"
   },
   "accessSheet": {
     "title": "Your access to the patient zone",
@@ -821,7 +819,7 @@
   },
   "signatureInviteEmail": {
     "subject": "Please sign the liability waiver",
-    "body": "Dear {name}\n\nBefore your treatment, please read the patient information, the liability waiver and the privacy notice and sign them online. This takes about 5 minutes:\n{url}\n\nFor your security we ask for your date of birth when you open the link. The link is personal, please do not forward it.\n\nKind regards\nPain Therapy · Via Prau da Cuort 5 · 7153 Falera"
+    "body": "Dear {name}\n\nBefore your treatment, please read the patient information, the liability waiver and the privacy notice and sign them online. This takes about 5 minutes:\n{url}\n\nFor your security we ask for your date of birth when you open the link. The link is personal, please do not forward it.\n\nKind regards\n{practice}"
   },
   "signatureInvite": {
     "invite": "Invite to sign",
@@ -1001,5 +999,107 @@
     "imprintText": "Pain Therapy is a platform for practices working according to Liebscher & Bracht. Operator:",
     "imprintPractices": "Each practice is responsible for its treatments and your data. Please contact your practice with questions.",
     "back": "Back"
+  },
+  "team": {
+    "title": "Team",
+    "sub": "Who works with the app in this practice. New people get an invitation by email and set up their sign-in themselves.",
+    "invite": "Invite a person",
+    "name": "Name",
+    "email": "Email",
+    "roles": "Roles",
+    "role_THERAPIST": "Therapist",
+    "role_PRACTICE_ADMIN": "Practice admin",
+    "send": "Send invitation",
+    "members": "Members",
+    "invitations": "Open invitations",
+    "noInvitations": "No open invitations.",
+    "status_active": "active",
+    "status_pending": "setup open",
+    "status_inactive": "deactivated",
+    "lastLogin": "Last sign-in {at}",
+    "you": "You",
+    "saveRoles": "Save roles",
+    "deactivate": "Deactivate",
+    "reactivate": "Reactivate",
+    "reset": "Reset sign-in",
+    "resetHint": "For a lost device: passkeys, authenticator and recovery codes are removed and the person gets a new invitation.",
+    "revoke": "Withdraw",
+    "validUntil": "valid until {date}",
+    "invitedBy": "invited by {name}",
+    "flash_invited": "The invitation is on its way.",
+    "flash_revoked": "The invitation no longer works.",
+    "flash_roles": "Roles saved.",
+    "flash_deactivated": "The person is deactivated and signed out.",
+    "flash_reactivated": "The person is active again.",
+    "flash_reset": "Sign-in reset. A new invitation is on its way.",
+    "error_lastAdmin": "The practice needs at least one active practice admin.",
+    "error_self": "Not possible for your own account.",
+    "error_member": "This person is already in the team.",
+    "error_otherPractice": "This address already belongs to another practice or to the platform.",
+    "error_noRole": "Please choose at least one role.",
+    "error_invalid": "Please enter a name, a valid email and at least one role.",
+    "error_notFound": "Not found."
+  },
+  "exports": {
+    "title": "Export data",
+    "sub": "All PDFs, photos and data of the practice as a ZIP. The download works for 24 hours.",
+    "start": "Create export",
+    "started": "The export is being created. Reload the page in a minute.",
+    "status_PENDING": "being created …",
+    "status_DONE": "ready",
+    "status_FAILED": "failed",
+    "expired": "expired",
+    "download": "Download ({size})",
+    "by": "{date}, by {name}"
+  },
+  "platformAdmin": {
+    "title": "Practices",
+    "sub": "Practices of the platform. Patient data is not visible here.",
+    "new": "New practice",
+    "name": "Practice name",
+    "slug": "Short name (for addresses)",
+    "slugHint": "Lower case letters, digits and hyphen, e.g. physio-muster",
+    "street": "Street, no.",
+    "zip": "Postcode",
+    "city": "Town",
+    "contactEmail": "Contact email of the practice",
+    "documentPrefix": "Prefix of document numbers",
+    "adminName": "Name of the practice admin",
+    "adminEmail": "Email of the practice admin",
+    "create": "Create practice and invite",
+    "members": "{count, plural, =0 {no members} one {1 member} other {# members}}",
+    "lastActivity": "last active {at}",
+    "neverActive": "never signed in",
+    "openInvitations": "Invitation open: {emails}",
+    "status_ACTIVE": "active",
+    "status_SUSPENDED": "suspended",
+    "deleted": "deleted on {date}",
+    "suspend": "Suspend",
+    "reactivate": "Reactivate",
+    "inviteAdmin": "Invite practice admin",
+    "export": "Create export",
+    "download": "Download export",
+    "delete": "Delete practice",
+    "deleteHint": "Only for suspended practices with an export of the last 7 days. Deletes all data and photos at once; signed PDFs are deleted after their retention. Cannot be undone.",
+    "deleteConfirm": "To confirm, type the short name «{slug}»",
+    "deleteCheck": "I have saved the export and understand that the data is deleted for good.",
+    "platformAdmins": "Platform admins",
+    "invitePlatformAdmin": "Invite platform admin",
+    "invite": "Invite",
+    "security": "Sign-in",
+    "flash_created": "The practice is created and its admin invited.",
+    "flash_suspended": "The practice is suspended.",
+    "flash_reactivated": "The practice is active again.",
+    "flash_invited": "The invitation is on its way.",
+    "flash_exporting": "The export is being created.",
+    "flash_deleted": "The practice is deleted.",
+    "error_slugTaken": "This short name is taken.",
+    "error_notSuspended": "Please suspend the practice first.",
+    "error_noExport": "Please create and download an export first.",
+    "error_confirm": "The short name does not match or the confirmation is missing.",
+    "error_otherPractice": "This address already belongs to a practice or to the platform.",
+    "error_invalid": "Please check the marked fields.",
+    "error_notFound": "Not found.",
+    "error_deleted": "The practice is deleted."
   }
 }

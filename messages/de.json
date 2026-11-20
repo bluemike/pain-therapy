@@ -28,7 +28,9 @@
     "catalog": "L&B Basisdaten",
     "profile": "Mein Profil",
     "userMenu": "Menü für {name}",
-    "practice": "Praxis"
+    "practice": "Praxis",
+    "team": "Team",
+    "practices": "Praxen"
   },
   "login": {
     "title": "Anmelden",
@@ -393,9 +395,9 @@
     "signedAt": "Unterschrieben am {at}",
     "online": "Unterschrieben online in der Patienten-Zone, Zugang bestätigt mit Geburtsdatum am {at}"
   },
-  "email": {
-    "subject": "Ihr unterschriebener Haftungsausschluss ({number})",
-    "body": "Guten Tag {name}\n\nIm Anhang finden Sie den Haftungsausschluss mit Patienteninformation und Datenschutzhinweis, den Sie am {date} unterschrieben haben.\n\nFreundliche Grüsse\nIhr Schmerztherapie-Team\n\nDiese E-Mail ist unverschlüsselt. Sie haben dem Versand per unverschlüsselter E-Mail zugestimmt und können diese Einwilligung jederzeit widerrufen."
+  "documentEmail": {
+    "subject": "Neues Dokument von {practice}",
+    "body": "Guten Tag {name}\n\nIn Ihrer Patienten-Zone steht ein neues Dokument für Sie bereit. Sie finden es unter «Dokumente»:\n{url}\n\nBeim ersten Öffnen auf einem Gerät bestätigen Sie mit Ihrem Geburtsdatum. Der Link ist gültig bis {date}. Bitte geben Sie ihn nicht weiter; ein früherer Link gilt nicht mehr.\n\nFreundliche Grüsse\n{practice}\n\nDiese E-Mail enthält nur einen Link. Ihre Dokumente bleiben in der Patienten-Zone."
   },
   "admin": {
     "title": "Formulartexte",
@@ -688,6 +690,7 @@
     "error": "Das Übungsblatt konnte nicht erstellt werden.",
     "errorNoConsent": "Ohne Einwilligung in unverschlüsselte E-Mail kann das Übungsblatt nur gedruckt werden.",
     "errorNoAddress": "Ohne E-Mail-Adresse kann das Übungsblatt nur gedruckt werden.",
+    "errorNoZone": "Per E-Mail geht nur ein Link in die Patienten-Zone. Ohne Patienten-Zone kann das Übungsblatt nur gedruckt werden.",
     "errorNoPrescription": "Keine Übung verordnet.",
     "withLink": "Link zur Patienten-Zone mitsenden",
     "withLinkPrint": "Ein Zugangsblatt mit QR-Code wird mitgedruckt; das abgelegte Übungsblatt enthält keinen Link.",
@@ -721,14 +724,9 @@
     "epdVariant": "Variante {n}",
     "parts": "Faszien-Rollmassage + Engpassdehnung {epd}"
   },
-  "handoutEmail": {
-    "subject": "Ihr Übungsblatt ({number})",
-    "body": "Guten Tag {name}\n\nIm Anhang finden Sie Ihr persönliches Übungsblatt aus der Sitzung vom {date}.\n\nFreundliche Grüsse\nIhr Schmerztherapie-Team\n\nDiese E-Mail ist unverschlüsselt. Sie haben dem Versand per unverschlüsselter E-Mail zugestimmt und können diese Einwilligung jederzeit widerrufen.",
-    "bodyWithLink": "Guten Tag {name}\n\nIhr persönliches Übungsblatt aus der Sitzung vom {date} liegt in der Patienten-Zone bereit. Dort finden Sie es unter «Dokumente» und können eintragen, wann Sie die Übungen gemacht haben und wie gut sie gelungen sind:\n{url}\n\nBeim ersten Öffnen auf einem Gerät bestätigen Sie mit Ihrem Geburtsdatum. Bitte geben Sie den Link nicht weiter.\n\nFreundliche Grüsse\nIhr Schmerztherapie-Team\n\nDiese E-Mail ist unverschlüsselt. Sie haben dem Versand per unverschlüsselter E-Mail zugestimmt und können diese Einwilligung jederzeit widerrufen."
-  },
   "accessLinkEmail": {
     "subject": "Ihr Zugang zur Patienten-Zone",
-    "body": "Guten Tag {name}\n\nÜber diesen persönlichen Link tragen Sie ein, wann Sie Ihre Übungen gemacht haben und wie gut sie gelungen sind:\n{url}\n\nBeim ersten Öffnen auf einem Gerät bestätigen Sie mit Ihrem Geburtsdatum. Der Link ist gültig bis {date}, solange Ihr Heimprogramm läuft. Bitte geben Sie ihn nicht weiter; ein früherer Link gilt nicht mehr.\n\nFreundliche Grüsse\nIhr Schmerztherapie-Team\n\nDiese E-Mail ist unverschlüsselt. Sie haben dem Versand per unverschlüsselter E-Mail zugestimmt und können diese Einwilligung jederzeit widerrufen."
+    "body": "Guten Tag {name}\n\nÜber diesen persönlichen Link tragen Sie ein, wann Sie Ihre Übungen gemacht haben und wie gut sie gelungen sind:\n{url}\n\nBeim ersten Öffnen auf einem Gerät bestätigen Sie mit Ihrem Geburtsdatum. Der Link ist gültig bis {date}, solange Ihr Heimprogramm läuft. Bitte geben Sie ihn nicht weiter; ein früherer Link gilt nicht mehr.\n\nFreundliche Grüsse\n{practice}"
   },
   "accessSheet": {
     "title": "Ihr Zugang zur Patienten-Zone",
@@ -821,7 +819,7 @@
   },
   "signatureInviteEmail": {
     "subject": "Bitte unterschreiben Sie den Haftungsausschluss",
-    "body": "Guten Tag {name}\n\nVor Ihrer Behandlung bitten wir Sie, die Patienteninformation, den Haftungsausschluss und den Datenschutzhinweis zu lesen und online zu unterschreiben. Das dauert etwa 5 Minuten:\n{url}\n\nZur Sicherheit fragen wir beim Öffnen nach Ihrem Geburtsdatum. Der Link ist persönlich, bitte leiten Sie ihn nicht weiter.\n\nFreundliche Grüsse\nPain Therapy · Via Prau da Cuort 5 · 7153 Falera"
+    "body": "Guten Tag {name}\n\nVor Ihrer Behandlung bitten wir Sie, die Patienteninformation, den Haftungsausschluss und den Datenschutzhinweis zu lesen und online zu unterschreiben. Das dauert etwa 5 Minuten:\n{url}\n\nZur Sicherheit fragen wir beim Öffnen nach Ihrem Geburtsdatum. Der Link ist persönlich, bitte leiten Sie ihn nicht weiter.\n\nFreundliche Grüsse\n{practice}"
   },
   "signatureInvite": {
     "invite": "Zur Unterschrift einladen",
@@ -1001,5 +999,107 @@
     "imprintText": "Pain Therapy ist eine Plattform für Praxen, die nach Liebscher & Bracht arbeiten. Betreiberin:",
     "imprintPractices": "Für Behandlungen und Ihre Daten ist die jeweilige Praxis verantwortlich. Wenden Sie sich mit Fragen an Ihre Praxis.",
     "back": "Zurück"
+  },
+  "team": {
+    "title": "Team",
+    "sub": "Wer in der Praxis mit der App arbeitet. Neue Personen bekommen eine Einladung per E-Mail und richten ihre Anmeldung selbst ein.",
+    "invite": "Person einladen",
+    "name": "Name",
+    "email": "E-Mail",
+    "roles": "Rollen",
+    "role_THERAPIST": "Therapeut:in",
+    "role_PRACTICE_ADMIN": "Praxis-Admin",
+    "send": "Einladung senden",
+    "members": "Mitglieder",
+    "invitations": "Offene Einladungen",
+    "noInvitations": "Keine offenen Einladungen.",
+    "status_active": "aktiv",
+    "status_pending": "Einrichtung offen",
+    "status_inactive": "deaktiviert",
+    "lastLogin": "Letzte Anmeldung {at}",
+    "you": "Sie",
+    "saveRoles": "Rollen speichern",
+    "deactivate": "Deaktivieren",
+    "reactivate": "Reaktivieren",
+    "reset": "Anmeldung zurücksetzen",
+    "resetHint": "Für ein verlorenes Gerät: Passkeys, Authenticator und Wiederherstellungscodes werden gelöscht, die Person bekommt eine neue Einladung.",
+    "revoke": "Zurückziehen",
+    "validUntil": "gültig bis {date}",
+    "invitedBy": "eingeladen von {name}",
+    "flash_invited": "Die Einladung ist unterwegs.",
+    "flash_revoked": "Die Einladung gilt nicht mehr.",
+    "flash_roles": "Rollen gespeichert.",
+    "flash_deactivated": "Die Person ist deaktiviert und abgemeldet.",
+    "flash_reactivated": "Die Person ist wieder aktiv.",
+    "flash_reset": "Anmeldung zurückgesetzt. Eine neue Einladung ist unterwegs.",
+    "error_lastAdmin": "Die Praxis braucht mindestens eine aktive Praxis-Admin.",
+    "error_self": "Das geht nicht für Ihr eigenes Konto.",
+    "error_member": "Diese Person ist schon im Team.",
+    "error_otherPractice": "Diese Adresse gehört bereits zu einer anderen Praxis oder zur Plattform.",
+    "error_noRole": "Bitte mindestens eine Rolle wählen.",
+    "error_invalid": "Bitte Name, gültige E-Mail und mindestens eine Rolle angeben.",
+    "error_notFound": "Nicht gefunden."
+  },
+  "exports": {
+    "title": "Daten exportieren",
+    "sub": "Alle PDFs, Fotos und Daten der Praxis als ZIP. Der Download ist 24 Stunden gültig.",
+    "start": "Export erstellen",
+    "started": "Der Export wird erstellt. Laden Sie die Seite in einer Minute neu.",
+    "status_PENDING": "wird erstellt …",
+    "status_DONE": "bereit",
+    "status_FAILED": "fehlgeschlagen",
+    "expired": "abgelaufen",
+    "download": "Herunterladen ({size})",
+    "by": "{date}, von {name}"
+  },
+  "platformAdmin": {
+    "title": "Praxen",
+    "sub": "Praxen der Plattform. Patientendaten sind hier nicht sichtbar.",
+    "new": "Neue Praxis",
+    "name": "Name der Praxis",
+    "slug": "Kurzname (für Adressen)",
+    "slugHint": "Kleinbuchstaben, Ziffern und Bindestrich, z. B. physio-muster",
+    "street": "Strasse, Nr.",
+    "zip": "PLZ",
+    "city": "Ort",
+    "contactEmail": "Kontakt-E-Mail der Praxis",
+    "documentPrefix": "Kürzel für Dokumentnummern",
+    "adminName": "Name der Praxis-Admin",
+    "adminEmail": "E-Mail der Praxis-Admin",
+    "create": "Praxis anlegen und einladen",
+    "members": "{count, plural, =0 {keine Mitglieder} one {1 Mitglied} other {# Mitglieder}}",
+    "lastActivity": "zuletzt aktiv {at}",
+    "neverActive": "noch nie angemeldet",
+    "openInvitations": "Einladung offen: {emails}",
+    "status_ACTIVE": "aktiv",
+    "status_SUSPENDED": "gesperrt",
+    "deleted": "gelöscht am {date}",
+    "suspend": "Sperren",
+    "reactivate": "Reaktivieren",
+    "inviteAdmin": "Praxis-Admin einladen",
+    "export": "Export erstellen",
+    "download": "Export herunterladen",
+    "delete": "Praxis löschen",
+    "deleteHint": "Nur für gesperrte Praxen mit einem Export der letzten 7 Tage. Löscht alle Daten und Fotos sofort; unterschriebene PDFs werden nach Ablauf der Aufbewahrung gelöscht. Nicht rückgängig zu machen.",
+    "deleteConfirm": "Zur Bestätigung den Kurznamen «{slug}» eingeben",
+    "deleteCheck": "Ich habe den Export gesichert und verstehe, dass die Daten endgültig gelöscht werden.",
+    "platformAdmins": "Plattform-Admins",
+    "invitePlatformAdmin": "Plattform-Admin einladen",
+    "invite": "Einladen",
+    "security": "Anmeldung",
+    "flash_created": "Die Praxis ist angelegt und die Praxis-Admin eingeladen.",
+    "flash_suspended": "Die Praxis ist gesperrt.",
+    "flash_reactivated": "Die Praxis ist wieder aktiv.",
+    "flash_invited": "Die Einladung ist unterwegs.",
+    "flash_exporting": "Der Export wird erstellt.",
+    "flash_deleted": "Die Praxis ist gelöscht.",
+    "error_slugTaken": "Dieser Kurzname ist vergeben.",
+    "error_notSuspended": "Bitte die Praxis zuerst sperren.",
+    "error_noExport": "Bitte zuerst einen Export erstellen und herunterladen.",
+    "error_confirm": "Der Kurzname stimmt nicht oder die Bestätigung fehlt.",
+    "error_otherPractice": "Diese Adresse gehört bereits zu einer Praxis oder zur Plattform.",
+    "error_invalid": "Bitte die markierten Felder prüfen.",
+    "error_notFound": "Nicht gefunden.",
+    "error_deleted": "Die Praxis ist gelöscht."
   }
 }

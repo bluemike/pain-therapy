@@ -34,6 +34,13 @@ export async function inviteFromOutbox(to: string, before = new Set<string>()) {
   return url;
 }
 
+/**
+ * An address from the documentation range for one phone. The zone allows 20 confirmations per hour and IP address and
+ * takes the last X-Forwarded-For entry as the address (behind the Azure ingress); one address per phone keeps a full
+ * test run under that limit, as patients on their own phones would be.
+ */
+export const phoneIp = () => `203.0.113.${1 + Math.floor(Math.random() * 254)}`;
+
 /** A phone (390 px, touch) in its own browser context, like the patient's own device */
 export async function phone(browser: Browser) {
   const context = await browser.newContext({
@@ -42,6 +49,7 @@ export async function phone(browser: Browser) {
     hasTouch: true,
     locale: 'de-CH',
     timezoneId: 'Europe/Zurich',
+    extraHTTPHeaders: { 'X-Forwarded-For': phoneIp() },
   });
   return context.newPage();
 }

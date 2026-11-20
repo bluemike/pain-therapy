@@ -8,6 +8,7 @@ import { DAY_MS } from '@pain-therapy/shared/time';
 import { confirmLink, endSession, programSession, type ConfirmResult, type ProgramSession } from '@/lib/access';
 import { correctEntry, createEntry, deleteEntry, parseEntryForm, quickEntry, type EntryError } from '@/lib/entries';
 import { getZoneSession } from '@/lib/session';
+import { landingOf } from '@/lib/landing';
 
 /** Server actions of the patient zone; the rules live in src/lib/access.ts and src/lib/entries.ts */
 
@@ -43,7 +44,7 @@ export async function confirmAction(_prev: ConfirmState, fd: FormData): Promise<
     path: '/',
     maxAge: (SESSION_DAYS * DAY_MS) / 1000,
   });
-  redirect('/');
+  redirect(landingOf(fd.get('tab')));
 }
 
 export async function logoutAction() {

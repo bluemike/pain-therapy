@@ -1,26 +1,25 @@
 import type { Language, Prisma } from '@prisma/client';
 import { db } from './db';
 import { audit, SYSTEM_ACTOR } from './audit';
-import { formatDateZurich } from './format';
 import { localName } from './catalog';
 import { mediaFileOf, timingOf, type SheetContent, type SheetSegments } from './exercise-sheets';
 import { renderHandoutPdf, type HandoutItem, type HandoutPdfInput } from './handout-pdf';
 import { executionTime, programTime, withVariant } from './home-program';
 import { therapistLine } from './users';
-import { translator } from './i18n-server';
 import { sendWithRetry } from './mail';
 import { nextDocumentNumber } from './signing';
 import { blobFolder } from './practice';
 import { documentStore, exerciseMediaStore, sha256 } from './storage';
 import type { Actor } from './session';
 import { emailConsentOf } from './email-consent';
-import { AccessLinkError, issueAccessLink, zoneEnabled } from './patient-access';
+import { AccessLinkError, documentEmail, issueAccessLink, issueMailLink, zoneEnabled } from './patient-access';
+import { practiceSender } from './practice-mail';
 import { qrPng, type AccessSheetInput } from './access-sheet-pdf';
 
 /** exercise-handout: Übungsblatt erstellen, ablegen, senden oder drucken (design D5, D6). */
 
 export class HandoutError extends Error {
-  constructor(public code: 'notFound' | 'noPrescription' | 'noConsent' | 'noAddress') {
+  constructor(public code: 'notFound' | 'noPrescription' | 'noConsent' | 'noAddress' | 'noZone') {
     super(code);
   }
 }
@@ -190,6 +189,9 @@ export async function createHandout(
   if (!ctx.prescriptions.length) throw new HandoutError('noPrescription');
   if (channel === 'EMAIL' && !ctx.consent.granted) throw new HandoutError('noConsent');
   if (channel === 'EMAIL' && !ctx.patient.email) throw new HandoutError('noAddress');
+  // Iteration 12, design D7: an email carries only the link to the zone, so without the zone there is no email
+  if (channel === 'EMAIL' && !zoneEnabled()) throw new HandoutError('noZone');
+  const withLink = channel === 'EMAIL' || !!opts.withLink;
   const version = (ctx.consultation.handouts[0]?.version ?? 0) + 1;
   const documentNumber = await nextDocumentNumber();
   const { pdf, language, snapshot } = await buildHandout(ctx, documentNumber, version, { layout });
@@ -236,12 +238,13 @@ export async function createHandout(
     if (channel === 'PRINT')
       await audit(actor, 'handout.printed', { patientId: ctx.patient.id, after: documentNumber, details }, tx);
     let access: { url: string; linkId: string; expiresAt: Date } | null = null;
-    if (opts.withLink && zoneEnabled()) {
+    if (withLink && zoneEnabled()) {
       try {
         const issued = await issueAccessLink(actor, ctx.patient.id, tx);
         access = { url: issued.url, linkId: issued.link.id, expiresAt: issued.link.expiresAt };
       } catch (e) {
         if (!(e instanceof AccessLinkError)) throw e;
+        if (channel === 'EMAIL') throw new HandoutError('noZone');
       }
     }
     if (access) {
@@ -281,67 +284,66 @@ export async function createHandout(
   return { ...result, printPdf };
 }
 
+/** A zone link that a document email carries: its address and until when it is valid */
+export type MailAccess = { url: string; expiresAt: Date };
+
 /**
- * Sends a handout by email with the retries of the signed form; status and attempts on the delivery row. With
- * `accessUrl` the link to the patient zone is in the text, and the link's delivery row gets the same status.
+ * Sends the link to a new exercise sheet with the retries of the signed form; status and attempts on the delivery
+ * row, the link's delivery row gets the same status. Iteration 12, design D7: the mail names only the practice and
+ * carries the link to «Dokumente», never the sheet; without a link nothing is sent.
  */
-export async function deliverHandout(deliveryId: string, opts: { retryDelayMs?: number; accessUrl?: string } = {}) {
+export async function deliverHandout(deliveryId: string, opts: { retryDelayMs?: number; access?: MailAccess } = {}) {
   const delivery = await db.handoutDelivery.findUnique({
     where: { id: deliveryId },
-    include: { handout: { include: { patient: true, consultation: true } } },
+    include: { handout: { include: { patient: true } } },
   });
   if (!delivery || delivery.channel !== 'EMAIL' || delivery.status !== 'PENDING' || !delivery.recipient)
     return delivery;
   const { handout } = delivery;
-  const t = translator(handout.language, 'handoutEmail');
-  const data = await documentStore().get(handout.blobPath);
-  if (sha256(data) !== handout.sha256) throw new Error(`Checksum mismatch for ${handout.documentNumber}`);
-  const result = await sendWithRetry(
-    {
-      to: delivery.recipient,
-      subject: t('subject', { number: handout.documentNumber }),
-      text: opts.accessUrl
-        ? t('bodyWithLink', {
-            name: `${handout.patient.firstName} ${handout.patient.lastName}`,
-            date: formatDateZurich(handout.consultation.at),
-            url: opts.accessUrl,
-          })
-        : t('body', {
-            name: `${handout.patient.firstName} ${handout.patient.lastName}`,
-            date: formatDateZurich(handout.consultation.at),
-          }),
-      // zone-documents (iteration 9, design D4): with the link the sheet is in the zone, no attachment
-      attachment: opts.accessUrl
-        ? undefined
-        : { name: `${handout.documentNumber}.pdf`, contentType: 'application/pdf', data },
-    },
-    {
-      retryDelayMs: opts.retryDelayMs,
-      onFailedAttempt: async (attempt, lastError) => {
-        await db.handoutDelivery.update({ where: { id: deliveryId }, data: { attempts: attempt, lastError } });
-      },
-    },
-  );
   const details = { document: handout.documentNumber };
   const linkDelivery = { handoutId: handout.id, channel: 'EMAIL' as const, status: 'PENDING' as const };
+  const sender = await practiceSender();
+  const result = opts.access
+    ? await sendWithRetry(
+        {
+          to: delivery.recipient,
+          ...sender,
+          ...documentEmail(
+            handout.language,
+            `${handout.patient.firstName} ${handout.patient.lastName}`,
+            opts.access.url,
+            opts.access.expiresAt,
+            sender.fromName,
+            { home: true },
+          ),
+        },
+        {
+          retryDelayMs: opts.retryDelayMs,
+          onFailedAttempt: async (attempt, lastError) => {
+            await db.handoutDelivery.update({ where: { id: deliveryId }, data: { attempts: attempt, lastError } });
+          },
+        },
+      )
+    : ({ ok: false, attempts: 0, lastError: 'No link to the patient zone' } as const);
   if (result.ok) {
     await db.handoutDelivery.update({
       where: { id: deliveryId },
       data: { status: 'SENT', attempts: result.attempts, sentAt: new Date(), lastError: null },
     });
-    if (opts.accessUrl)
-      await db.accessLinkDelivery.updateMany({
-        where: linkDelivery,
-        data: { status: 'SENT', attempts: result.attempts, sentAt: new Date() },
-      });
+    await db.accessLinkDelivery.updateMany({
+      where: linkDelivery,
+      data: { status: 'SENT', attempts: result.attempts, sentAt: new Date() },
+    });
     await audit(SYSTEM_ACTOR, 'email.sent', { patientId: handout.patientId, after: delivery.recipient, details });
   } else {
-    await db.handoutDelivery.update({ where: { id: deliveryId }, data: { status: 'FAILED' } });
-    if (opts.accessUrl)
-      await db.accessLinkDelivery.updateMany({
-        where: linkDelivery,
-        data: { status: 'FAILED', attempts: result.attempts, lastError: result.lastError.slice(0, 300) },
-      });
+    await db.handoutDelivery.update({
+      where: { id: deliveryId },
+      data: { status: 'FAILED', attempts: result.attempts, lastError: result.lastError.slice(0, 300) },
+    });
+    await db.accessLinkDelivery.updateMany({
+      where: linkDelivery,
+      data: { status: 'FAILED', attempts: result.attempts, lastError: result.lastError.slice(0, 300) },
+    });
     await audit(SYSTEM_ACTOR, 'email.failed', {
       patientId: handout.patientId,
       after: result.lastError.slice(0, 300),
@@ -351,26 +353,34 @@ export async function deliverHandout(deliveryId: string, opts: { retryDelayMs?: 
   return db.handoutDelivery.findUnique({ where: { id: deliveryId } });
 }
 
-/** "Erneut senden": a new email of the same archived handout, to the current address, if consent is still given. */
+/**
+ * "Erneut senden": a new email with a new link to the same archived handout, to the current address, if consent is
+ * still given. Returns the link for deliverHandout (iteration 12, design D7).
+ */
 export async function requestHandoutResend(actor: Actor, handoutId: string) {
   const h = await db.exerciseHandout.findUniqueOrThrow({ where: { id: handoutId }, include: { patient: true } });
   const consent = await emailConsentOf(h.patientId);
   const status = !consent.granted ? 'SKIPPED_NO_CONSENT' : !h.patient.email ? 'SKIPPED_NO_ADDRESS' : 'PENDING';
-  const delivery = await db.handoutDelivery.create({
-    data: {
-      handoutId,
-      channel: 'EMAIL',
-      recipient: status === 'PENDING' ? h.patient.email : null,
-      status,
-      requestedBy: actor.name,
-    },
+  return db.$transaction(async (tx) => {
+    const delivery = await tx.handoutDelivery.create({
+      data: {
+        handoutId,
+        channel: 'EMAIL',
+        recipient: status === 'PENDING' ? h.patient.email : null,
+        status,
+        requestedBy: actor.name,
+      },
+    });
+    await audit(
+      actor,
+      'email.resend',
+      { patientId: h.patientId, after: h.patient.email, details: { document: h.documentNumber } },
+      tx,
+    );
+    const access =
+      status === 'PENDING' ? await issueMailLink(actor, h.patientId, h.patient.email!, tx, handoutId) : null;
+    return { delivery, access };
   });
-  await audit(actor, 'email.resend', {
-    patientId: h.patientId,
-    after: h.patient.email,
-    details: { document: h.documentNumber },
-  });
-  return delivery;
 }
 
 /** Handouts of a patient for "Dokumente", newest first, with the latest delivery */

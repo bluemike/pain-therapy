@@ -30,31 +30,31 @@
 
 ## 4. E-Mail nur mit Links (1 bis 2 PT)
 
-- [ ] 4.1 SMTP-Mailer (Nodemailer, Infomaniak), Reply-To der Praxis, Graph-Mailer entfernen
-- [ ] 4.2 Anhänge entfernen; Haftungsausschluss und Übungsblatt als Link in die Zone «Dokumente»
-- [ ] 4.3 Mailtexte ohne Gesundheitsangaben (de/en)
+- [x] 4.1 SMTP-Mailer (Nodemailer, Infomaniak), Reply-To der Praxis, Graph-Mailer entfernen (Bicep, Deploy und Doku mit Phase 6)
+- [x] 4.2 Anhänge entfernen; Haftungsausschluss und Übungsblatt als Link in die Zone «Dokumente» (Übungsblatt-Link öffnet die Startseite mit dem neuen Heimprogramm; bei der Unterschrift in der Zone keine Mail)
+- [x] 4.3 Mailtexte ohne Gesundheitsangaben (de/en)
 
 ## 5. Onboarding und Plattform (3 bis 4 PT)
 
-- [ ] 5.0 Plattform-Admin-Konto `admin@pain-therapy.online` per Seed, ohne Praxis-Mitgliedschaft
-- [ ] 5.1 Plattform-Übersicht: Praxen anlegen, Status, sperren, reaktivieren
-- [ ] 5.2 Team: einladen, Rollen, deaktivieren, mindestens eine Praxis-Admin
-- [ ] 5.3 Export als ZIP im Hintergrund-Job, Download-Link 24 Stunden
-- [ ] 5.4 Löschen mit Export-Pflicht und Vormerkung der WORM-Dokumente
+- [x] 5.0 Plattform-Admin-Konto `admin@pain-therapy.online` per Seed, ohne Praxis-Mitgliedschaft (der 5-Minuten-Job lädt `PLATFORM_ADMIN_EMAIL` ein, solange kein Plattform-Admin existiert)
+- [x] 5.1 Plattform-Übersicht: Praxen anlegen, Status, sperren, reaktivieren
+- [x] 5.2 Team: einladen, Rollen, deaktivieren, mindestens eine Praxis-Admin
+- [x] 5.3 Export als ZIP im Hintergrund-Job, Download-Link 24 Stunden (nach der Anfrage im Hintergrund, Rückfall im 5-Minuten-Job; neuer Container `practice-exports`)
+- [x] 5.4 Löschen mit Export-Pflicht und Vormerkung der WORM-Dokumente
 
 ## 6. Domain und Infrastruktur (1 bis 2 PT)
 
-- [ ] 6.1 Custom Domains `pain-therapy.online`, `www`, `patient.pain-therapy.online` mit verwalteten Zertifikaten (Bicep, Deploy-Workflow)
-- [ ] 6.2 Weiterleitungen von `pain-therapy.ayanta.ch` und `patient.pain-therapy.ayanta.ch`
-- [ ] 6.3 Neue Datenbankrollen-Passwörter in Key Vault und GitHub-Umgebung
+- [x] 6.1 Custom Domains `pain-therapy.online`, `www`, `patient.pain-therapy.online` mit verwalteten Zertifikaten (Bicep, Deploy-Workflow) — Variablen `DOMAIN_MODE`/`ZONE_DOMAIN_MODE` (off → add → bind), Apex per HTTP-Validierung, Ausgabe `environmentStaticIp` für den A-Eintrag; Bicep lokal nicht kompiliert (kein Bicep-CLI in der Umgebung), prüft der erste Workflow-Lauf bzw. `what-if`
+- [x] 6.2 Weiterleitungen von `pain-therapy.ayanta.ch` und `patient.pain-therapy.ayanta.ch` — App: 308 auf `AUTH_URL` für `LEGACY_HOSTS` (`src/lib/legacy-host.ts`, ab `bind`); Zone: alter Hostname bleibt gebunden und bedient alte Links (D10), Abschalten nach höchstens 6 Monaten per `ZONE_CUSTOM_DOMAIN_MODE=off`
+- [x] 6.3 Neue Datenbankrollen-Passwörter in Key Vault und GitHub-Umgebung — Bicep legt `practice-app-db-password`, `practice-app-database-url`, `auth-encryption-key`, `smtp-password` an; Workflow prüft die GitHub-Secrets und bereitet den ersten Lauf vor. Die Werte setzt Mike vor dem Deployment (docs/deployment.md, Iteration 12)
 
 ## 7. Tests und Sicherheit (3 bis 4 PT)
 
 - [ ] 7.0 «Test-Praxis» mit `test-therapist@pain-therapy.online` auf Produktion für die Abnahme der Trennung
-- [ ] 7.1 E2E mit zwei Praxen: jede Seite und API gegen IDs der fremden Praxis
-- [ ] 7.2 Unit-Tests RLS (Abfrage ohne Praxis, Schreiben in fremde Praxis)
+- [x] 7.1 E2E mit zwei Praxen: jede Seite und API gegen IDs der fremden Praxis — `tests/e2e/isolation.spec.ts`; die ganze E2E-Suite läuft jetzt als `practice_app` (45 Tests grün); `/api/patients/[id]/consent-state` gibt für fremde IDs jetzt 404 statt eines leeren Status
+- [x] 7.2 Unit-Tests RLS (Abfrage ohne Praxis, Schreiben in fremde Praxis) — `tenancy.test.ts`, zusätzlich: jede Tabelle mit `practiceId` hat eine Policy, `practice_app` umgeht RLS nicht, Katalog nur lesbar, Löschfunktion nicht ausführbar
 - [x] 7.3 Tests Anmeldung (Passkey virtuell, E-Mail-Code, TOTP, Sperre)
-- [ ] 7.4 Sicherheitsreview vor dem Anlegen der ersten fremden Praxis
+- [x] 7.4 Sicherheitsreview vor dem Anlegen der ersten fremden Praxis — [security-review.md](security-review.md); Befund: E2E lief als Eigentümer ohne RLS, behoben
 
 ## 8. Umstellung und Abnahme (1 bis 2 PT)
 

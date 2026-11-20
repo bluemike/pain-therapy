@@ -4,13 +4,21 @@ import { requireUser } from '@/lib/session';
 import { requirePractice } from '@/lib/practice';
 import { db } from '@/lib/db';
 import { PracticeForm } from '@/components/PracticeForm';
+import { ExportList } from '@/components/ExportList';
+import { exportsOf } from '@/lib/practice-export';
+import { exportAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 
 /** practice-settings (iteration 12, design D5): Seite «Praxis», nur für die Praxis-Admin */
 export default async function PracticePage({ searchParams }: { searchParams: Promise<{ flash?: string }> }) {
   await requireUser('manageConsentTexts');
-  const [t, p, sp] = await Promise.all([getTranslations('practice'), requirePractice(), searchParams]);
+  const [t, te, p, sp] = await Promise.all([
+    getTranslations('practice'),
+    getTranslations('exports'),
+    requirePractice(),
+    searchParams,
+  ]);
   const year = new Date().getUTCFullYear();
   const [counter, consent] = await Promise.all([
     db.documentCounter.findUnique({ where: { practiceId_year: { practiceId: p.id, year } } }),
@@ -28,6 +36,11 @@ export default async function PracticePage({ searchParams }: { searchParams: Pro
       {sp.flash === 'saved' ? (
         <div className="banner ok" role="status">
           <p>{t('saved')}</p>
+        </div>
+      ) : null}
+      {sp.flash === 'exporting' ? (
+        <div className="banner ok" role="status">
+          <p>{te('started')}</p>
         </div>
       ) : null}
       <PracticeForm
@@ -51,6 +64,14 @@ export default async function PracticePage({ searchParams }: { searchParams: Pro
         <Link className="btn btn--ghost" href="/admin/consent-texts">
           {t('edit')}
         </Link>
+      </section>
+      <section className="card team-card" id="export" aria-labelledby="h_export">
+        <h2 id="h_export">{te('title')}</h2>
+        <p className="muted">{te('sub')}</p>
+        <ExportList exports={await exportsOf(p.id)} />
+        <form action={exportAction}>
+          <button className="btn btn--ghost">{te('start')}</button>
+        </form>
       </section>
     </>
   );

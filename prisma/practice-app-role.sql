@@ -19,5 +19,10 @@ BEGIN
   GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO practice_app;
   -- Migration history stays with the owner
   REVOKE ALL ON "_prisma_migrations" FROM practice_app;
+  -- Paths of a deleted practice's files, only for the platform (iteration 12, design D9)
+  REVOKE ALL ON "PendingBlobDeletion" FROM practice_app;
+  -- The therapy catalog is written only by catalog:sync as the owner; the practice app reads it (security review 7.4)
+  REVOKE INSERT, UPDATE, DELETE ON "BodyArea", "Region", "RegionPoint", "RegionExercise", "OsteopressurePoint",
+    "Exercise", "ExerciseSheet", "ExerciseVariant", "RollingTool" FROM practice_app;
 END
 $$;

@@ -26,6 +26,7 @@ const ERRORS: Record<HandoutError['code'], string> = {
   noPrescription: 'errorNoPrescription',
   noConsent: 'errorNoConsent',
   noAddress: 'errorNoAddress',
+  noZone: 'errorNoZone',
 };
 
 /** exercise-handout: "Übungsblatt senden" or "Drucken" on the Abschluss page */
@@ -41,7 +42,7 @@ export async function createHandoutAction(_prev: HandoutState, fd: FormData): Pr
       layout: handoutLayoutOf(fd.get('layout')),
     });
     if (delivery.status === 'PENDING')
-      after(() => deliverHandout(delivery.id, { accessUrl: access?.url }).catch(console.error));
+      after(() => deliverHandout(delivery.id, { access: access ?? undefined }).catch(console.error));
     revalidatePath(`/patients/${handout.patientId}`);
     return {
       ok: {
@@ -64,8 +65,9 @@ export async function resendHandout(fd: FormData) {
   const actor = await requireUser();
   const handoutId = String(fd.get('handoutId'));
   const patientId = String(fd.get('patientId'));
-  const delivery = await requestHandoutResend(actor, handoutId);
-  if (delivery.status === 'PENDING') after(() => deliverHandout(delivery.id).catch(console.error));
+  const { delivery, access } = await requestHandoutResend(actor, handoutId);
+  if (delivery.status === 'PENDING')
+    after(() => deliverHandout(delivery.id, { access: access ?? undefined }).catch(console.error));
   revalidatePath(`/patients/${patientId}`);
   redirect(`/patients/${patientId}?tab=documents&flash=resent`);
 }

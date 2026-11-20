@@ -124,4 +124,47 @@ describe.skipIf(!allowed)('row-level security per practice (Daten gehören genau
     expect(await runInPractice(TEST_PRACTICE_ID, () => nextDocumentNumber())).toBe(`PT-${year}-00001`);
     expect(await runInPractice(OTHER, () => nextDocumentNumber())).toBe(`PM-${year}-00002`);
   });
+
+  /**
+   * Task 7.2: a table added later with a practiceId but without a policy would be readable across practices. Only
+   * these tables carry a practiceId without row-level security, on purpose: the sign-in looks up memberships and
+   * invitations by email before a practice is known (src/lib/team.ts filters by practice), and the practice app has
+   * no rights at all on PendingBlobDeletion.
+   */
+  it('protects every table with a practiceId by a policy, and practice_app cannot bypass it', async () => {
+    const tables = await rawDb.$queryRaw<{ table: string; rls: boolean; policies: number; select: boolean }[]>`
+      SELECT c.relname AS "table", c.relrowsecurity AS rls,
+             (SELECT count(*)::int FROM pg_policy p WHERE p.polrelid = c.oid) AS policies,
+             has_table_privilege('practice_app', c.oid, 'SELECT') AS "select"
+      FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' AND c.relkind = 'r'
+        AND EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid = c.oid AND a.attname = 'practiceId' AND NOT a.attisdropped)
+      ORDER BY 1`;
+    const exempt = ['Invitation', 'PendingBlobDeletion', 'PracticeMembership'];
+    const unprotected = tables.filter((t) => !(t.rls && t.policies > 0)).map((t) => t.table);
+    expect(unprotected).toEqual(exempt);
+    expect(tables.find((t) => t.table === 'PendingBlobDeletion')?.select).toBe(false);
+    expect(tables.length).toBeGreaterThan(20);
+
+    const [role] = await rawDb.$queryRaw<{ bypass: boolean; superuser: boolean; owns: number }[]>`
+      SELECT r.rolbypassrls AS bypass, r.rolsuper AS superuser,
+             (SELECT count(*)::int FROM pg_class c WHERE c.relowner = r.oid) AS owns
+      FROM pg_roles r WHERE r.rolname = 'practice_app'`;
+    expect(role).toEqual({ bypass: false, superuser: false, owns: 0 });
+  });
+
+  it('lets practice_app read the therapy catalog but not change it', async () => {
+    const [grants] = await rawDb.$queryRaw<{ read: boolean; write: boolean }[]>`
+      SELECT bool_and(has_table_privilege('practice_app', t, 'SELECT')) AS read,
+             bool_or(has_table_privilege('practice_app', t, 'INSERT,UPDATE,DELETE')) AS write
+      FROM unnest(ARRAY['"BodyArea"', '"Region"', '"RegionPoint"', '"RegionExercise"', '"OsteopressurePoint"',
+                        '"Exercise"', '"ExerciseSheet"', '"ExerciseVariant"', '"RollingTool"']) AS t`;
+    expect(grants).toEqual({ read: true, write: false });
+  });
+
+  it('does not let practice_app delete a practice or read the blob deletion list', async () => {
+    await expect(base.$queryRaw`SELECT platform_purge_practice(${OTHER})`).rejects.toThrow(/permission denied/);
+    await expect(base.$queryRaw`SELECT * FROM "PendingBlobDeletion"`).rejects.toThrow(/permission denied/);
+  });
 });

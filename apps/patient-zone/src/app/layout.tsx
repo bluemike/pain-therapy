@@ -61,9 +61,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </NextIntlClientProvider>
         <footer className="foot">
           <Link href="/privacy">{t('privacy')}</Link> ·{' '}
-          {practice
-            ? t('footerPractice', { name: practice.name, email: practice.contactEmail })
-            : t('footerNote')}
+          {practice ? t('footerPractice', { name: practice.name, email: practice.contactEmail }) : t('footerNote')}
           <br />
           <span className="platform">{t('platform')}</span>
         </footer>

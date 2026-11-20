@@ -6,7 +6,10 @@ export async function PrivacyNote({ practiceSlug }: { practiceSlug?: string }) {
   const t = await getTranslations('common');
   return (
     <aside className="privacy" aria-label={t('privacy')}>
-      <b>{t('privacy')}:</b> {t('privacyShort')} <Link href={practiceSlug ? `/privacy?praxis=${encodeURIComponent(practiceSlug)}` : '/privacy'}>{t('privacyMore')}</Link>
+      <b>{t('privacy')}:</b> {t('privacyShort')}{' '}
+      <Link href={practiceSlug ? `/privacy?praxis=${encodeURIComponent(practiceSlug)}` : '/privacy'}>
+        {t('privacyMore')}
+      </Link>
     </aside>
   );
 }

@@ -7,7 +7,10 @@ export function BrandMark({ brand, textStyle }: { brand: Brand; textStyle: Style
   if (brand.logo)
     return (
       // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image has no alt
-      <Image src={{ data: brand.logo.data, format: brand.logo.type === 'image/png' ? 'png' : 'jpg' }} style={{ height: 32, maxWidth: 160, objectFit: 'contain', objectPosition: 'left' }} />
+      <Image
+        src={{ data: brand.logo.data, format: brand.logo.type === 'image/png' ? 'png' : 'jpg' }}
+        style={{ height: 32, maxWidth: 160, objectFit: 'contain', objectPosition: 'left' }}
+      />
     );
   return <Text style={textStyle}>{brand.name}</Text>;
 }

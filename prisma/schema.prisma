@@ -185,6 +185,8 @@ model Invitation {
   practice      Practice?      @relation(fields: [practiceId], references: [id])
   roles         PracticeRole[]
   platformAdmin Boolean        @default(false)
+  /// Name of the invited person, taken over by the account (phase 5)
+  name          String?
   tokenHash     String         @unique
   expiresAt     DateTime
   acceptedAt    DateTime?
@@ -951,6 +953,8 @@ model Practice {
   documentPrefix String         @default("PT")
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+  /// Set when the platform deleted the practice's data (design D9); the row keeps the slug from being given again
+  deletedAt      DateTime?
 
   memberships           PracticeMembership[]
   invitations           Invitation[]
@@ -975,6 +979,43 @@ model Practice {
   logEntries            ExerciseLogEntry[]
   auditEvents           AuditEvent[]
   documentCounters      DocumentCounter[]
+  exports               PracticeExport[]
+}
+
+enum ExportStatus {
+  PENDING
+  DONE
+  FAILED
+}
+
+/// Export of a practice as ZIP (design D9): PDFs, photos and the data as JSON; download for 24 hours
+model PracticeExport {
+  practiceId  String       @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice    Practice     @relation(fields: [practiceId], references: [id])
+  id          String       @id @default(cuid())
+  status      ExportStatus @default(PENDING)
+  requestedBy String
+  blobPath    String?
+  sizeBytes   Int?
+  error       String?
+  createdAt   DateTime     @default(now())
+  finishedAt  DateTime?
+  expiresAt   DateTime?
+
+  @@index([practiceId, createdAt])
+}
+
+/// Signed PDFs of a deleted practice still under WORM retention; a job removes them afterwards (design D9)
+model PendingBlobDeletion {
+  id          String    @id @default(cuid())
+  practiceId  String
+  container   String
+  path        String
+  deleteAfter DateTime
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([deleteAfter])
 }
 
 /// Membership of a user in a practice, with roles per practice (design D3)

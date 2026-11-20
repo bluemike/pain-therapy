@@ -2,13 +2,7 @@
  * Platform wordmark «Pain Therapy» (iteration 12, design D5), or inside the app the logo or name of the practice of the
  * signed-in user.
  */
-export function Logo({
-  appName,
-  practice,
-}: {
-  appName?: string;
-  practice?: { name: string; logoUrl: string | null };
-}) {
+export function Logo({ appName, practice }: { appName?: string; practice?: { name: string; logoUrl: string | null } }) {
   return (
     <span className="logo">
       {practice?.logoUrl ? (

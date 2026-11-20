@@ -33,6 +33,11 @@ export const config = {
     container: process.env.AZURE_STORAGE_CONTAINER ?? 'signed-documents',
     photoLocalDir: process.env.STORAGE_PHOTO_LOCAL_DIR ?? './data/clinical-photos',
     photoContainer: process.env.AZURE_STORAGE_PHOTO_CONTAINER ?? 'clinical-photos',
+    /** WORM retention of signed PDFs and exercise sheets in days (infra/main.bicep documentRetentionDays) */
+    documentRetentionDays: Number(process.env.DOCUMENT_RETENTION_DAYS ?? 7300),
+    /** Exports of a practice as ZIP (iteration 12, design D9), 24 hours */
+    exportLocalDir: process.env.STORAGE_EXPORT_LOCAL_DIR ?? './data/exports',
+    exportContainer: process.env.AZURE_STORAGE_EXPORT_CONTAINER ?? 'practice-exports',
     /** Images and texts of the L&B exercise sheets (iteration 3, design D2); never in the repository */
     exerciseLocalDir: process.env.STORAGE_EXERCISE_LOCAL_DIR ?? './data/exercise-media',
     exerciseContainer: process.env.AZURE_STORAGE_EXERCISE_CONTAINER ?? 'exercise-media',
@@ -44,9 +49,18 @@ export const config = {
     maxThumbBytes: 1024 * 1024,
   },
   mail: {
-    driver: (process.env.MAIL_DRIVER ?? 'outbox') as 'outbox' | 'graph' | 'fail',
+    driver: (process.env.MAIL_DRIVER ?? 'outbox') as 'outbox' | 'smtp' | 'fail',
     outboxDir: process.env.MAIL_OUTBOX_DIR ?? './data/outbox',
-    sender: process.env.MAIL_SENDER ?? 'pain-therapy@ayanta.ch',
+    /** Iteration 12, design D7: one sender for all practices, with the practice as display name */
+    from: process.env.MAIL_FROM ?? 'noreply@pain-therapy.online',
+    fromName: 'Pain Therapy',
+    smtp: {
+      host: process.env.SMTP_HOST ?? 'mail.infomaniak.com',
+      port: Number(process.env.SMTP_PORT ?? 465),
+      user: process.env.SMTP_USER ?? process.env.MAIL_FROM ?? 'noreply@pain-therapy.online',
+      /** Key Vault secret smtp-password: the device password of noreply@ at Infomaniak */
+      password: process.env.SMTP_PASSWORD ?? '',
+    },
     maxAttempts: 3,
     retryDelayMs: Number(process.env.MAIL_RETRY_DELAY_MS ?? 2000),
   },
@@ -63,6 +77,8 @@ export const config = {
     process.env.ZONE_INTERNAL_SECRET ??
     (process.env.NODE_ENV === 'production' ? '' : 'local-development-zone-internal-secret'),
   /** Operator of the platform in footer and imprint (Mike, 19.11.2026: Ayanta) */
+  /** Address of the platform account invited by the job while none exists (iteration 12, task 5.0) */
+  platformAdminEmail: (process.env.PLATFORM_ADMIN_EMAIL ?? 'admin@pain-therapy.online').trim().toLowerCase(),
   operator: {
     name: process.env.OPERATOR_NAME ?? 'Ayanta',
     address: process.env.OPERATOR_ADDRESS ?? '',

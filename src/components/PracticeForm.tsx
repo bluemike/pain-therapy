@@ -27,7 +27,15 @@ const MAX: Record<string, number> = {
 };
 
 /** practice-settings: Formular «Praxis» */
-export function PracticeForm({ initial, logoUrl, footer }: { initial: Values; logoUrl: string | null; footer: string }) {
+export function PracticeForm({
+  initial,
+  logoUrl,
+  footer,
+}: {
+  initial: Values;
+  logoUrl: string | null;
+  footer: string;
+}) {
   const t = useTranslations('practice');
   const te = useTranslations('errors');
   const [state, action, pending] = useActionState<PracticeFormState, FormData>(savePractice, {});
@@ -36,7 +44,9 @@ export function PracticeForm({ initial, logoUrl, footer }: { initial: Values; lo
   const msg = (k: string) =>
     errors[k] ? (
       <span className="msg" id={`f_${k}_m`}>
-        {t.has(`error_${errors[k]}`) ? t(`error_${errors[k]}` as never) : te(errors[k] as 'required', { max: MAX[k] ?? 0 })}
+        {t.has(`error_${errors[k]}`)
+          ? t(`error_${errors[k]}` as never)
+          : te(errors[k] as 'required', { max: MAX[k] ?? 0 })}
       </span>
     ) : null;
   const field = (k: keyof Values, opts: { type?: string; required?: boolean; hint?: string } = {}) => (

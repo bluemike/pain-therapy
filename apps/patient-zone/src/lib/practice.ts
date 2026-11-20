@@ -18,4 +18,5 @@ export async function practiceOfToken(token: string): Promise<ZonePractice | nul
   return id ? practiceDetails({ id }) : null;
 }
 
-export const logoUrlOf = (p: ZonePractice) => (p.logoType ? `/api/practice-logo/${p.id}?v=${p.updatedAt.getTime()}` : null);
+export const logoUrlOf = (p: ZonePractice) =>
+  p.logoType ? `/api/practice-logo/${p.id}?v=${p.updatedAt.getTime()}` : null;

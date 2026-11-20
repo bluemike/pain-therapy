@@ -9,7 +9,10 @@ import './globals.css';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('common');
-  return { title: { default: `${t('appName')} · Pain Therapy`, template: `%s · ${t('appName')}` }, robots: { index: false } };
+  return {
+    title: { default: `${t('appName')} · Pain Therapy`, template: `%s · ${t('appName')}` },
+    robots: { index: false },
+  };
 }
 
 export const viewport: Viewport = {

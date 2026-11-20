@@ -3,14 +3,18 @@ import path from 'node:path';
 import { config } from './config';
 
 /**
- * Email delivery (design D9): Microsoft Graph sendMail in Azure, a local outbox folder in development. The link to
- * the patient zone goes without attachment (iteration 4, design D4).
+ * Email delivery (iteration 12, design D7): SMTP at Infomaniak in Azure, a local outbox folder in development. Mails
+ * carry only links, never a document: the Mailer knows no attachments. The sender is noreply@ with the display name of
+ * the practice; answers go to the practice (Reply-To).
  */
 export interface OutgoingMail {
   to: string;
   subject: string;
   text: string;
-  attachment?: { name: string; contentType: string; data: Buffer };
+  /** Display name of the sender, e.g. the practice; default "Pain Therapy" */
+  fromName?: string;
+  /** Contact address of the practice */
+  replyTo?: string;
 }
 
 export interface Mailer {
@@ -22,16 +26,8 @@ class OutboxMailer implements Mailer {
     const dir = path.resolve(config.mail.outboxDir);
     await mkdir(dir, { recursive: true });
     const base = `${new Date().toISOString().replace(/[:.]/g, '-')}-${mail.to.replace(/[^a-z0-9@.]/gi, '_')}`;
-    const { attachment } = mail;
-    await writeFile(
-      path.join(dir, `${base}.json`),
-      JSON.stringify(
-        { ...mail, attachment: attachment ? { name: attachment.name, bytes: attachment.data.length } : undefined },
-        null,
-        2,
-      ),
-    );
-    if (attachment) await writeFile(path.join(dir, `${base}-${attachment.name}`), attachment.data);
+    const from = `${mail.fromName ?? config.mail.fromName} <${config.mail.from}>`;
+    await writeFile(path.join(dir, `${base}.json`), JSON.stringify({ from, ...mail }, null, 2));
   }
 }
 
@@ -41,44 +37,49 @@ class FailingMailer implements Mailer {
   }
 }
 
-class GraphMailer implements Mailer {
-  async send(mail: OutgoingMail) {
-    const { DefaultAzureCredential } = await import('@azure/identity');
-    const token = await new DefaultAzureCredential().getToken('https://graph.microsoft.com/.default');
-    const res = await fetch(
-      `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(config.mail.sender)}/sendMail`,
-      {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token.token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: {
-            subject: mail.subject,
-            body: { contentType: 'Text', content: mail.text },
-            toRecipients: [{ emailAddress: { address: mail.to } }],
-            attachments: mail.attachment
-              ? [
-                  {
-                    '@odata.type': '#microsoft.graph.fileAttachment',
-                    name: mail.attachment.name,
-                    contentType: mail.attachment.contentType,
-                    contentBytes: mail.attachment.data.toString('base64'),
-                  },
-                ]
-              : [],
-          },
-          saveToSentItems: true,
-        }),
-      },
+/** Header-safe display name: no line breaks or quotes, at most 70 characters */
+const displayName = (name: string) =>
+  name
+    .replace(/[\r\n"<>]/g, ' ')
+    .trim()
+    .slice(0, 70) || config.mail.fromName;
+
+class SmtpMailer implements Mailer {
+  private transport: Promise<import('nodemailer').Transporter> | null = null;
+
+  private connect() {
+    const { host, port, user, password } = config.mail.smtp;
+    if (!password) throw new Error('SMTP_PASSWORD is not set');
+    this.transport ??= import('nodemailer').then((m) =>
+      (m.default ?? m).createTransport({
+        host,
+        port,
+        // 465: TLS from the start; 587: STARTTLS, required
+        secure: port === 465,
+        requireTLS: port !== 465,
+        auth: { user, pass: password },
+      }),
     );
-    if (!res.ok) throw new Error(`Graph sendMail ${res.status}: ${(await res.text()).slice(0, 300)}`);
+    return this.transport;
+  }
+
+  async send(mail: OutgoingMail) {
+    const transport = await this.connect();
+    await transport.sendMail({
+      from: { name: displayName(mail.fromName ?? config.mail.fromName), address: config.mail.from },
+      to: mail.to,
+      replyTo: mail.replyTo || undefined,
+      subject: mail.subject,
+      text: mail.text,
+    });
   }
 }
 
 let mailer: Mailer | null = null;
 export function getMailer(): Mailer {
   mailer ??=
-    config.mail.driver === 'graph'
-      ? new GraphMailer()
+    config.mail.driver === 'smtp'
+      ? new SmtpMailer()
       : config.mail.driver === 'fail'
         ? new FailingMailer()
         : new OutboxMailer();

@@ -73,6 +73,9 @@ jobs:
       MAIL_RETRY_DELAY_MS: '200'
       # Role of the patient zone, created by prisma/patient-zone-role.mjs; playwright.config.ts starts the zone with it
       PATIENT_ZONE_DB_PASSWORD: patient_zone
+      # Role practice_app (iteration 12), created by prisma/practice-app-role.mjs; playwright.config.ts starts the
+      # practice app with it, so that row-level security applies as in Azure
+      PRACTICE_APP_DB_PASSWORD: practice_app
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -82,6 +85,7 @@ jobs:
       - run: npm ci
       - run: npx prisma migrate deploy
       - run: node prisma/patient-zone-role.mjs
+      - run: node prisma/practice-app-role.mjs
       # Synthetic exercise media (no L&B content), read by catalog:sync and the app
       - run: npm run media:placeholders
       - run: npm run catalog:sync

@@ -23,6 +23,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     ...(user.roles.includes('ADMIN')
       ? [
           { href: '/practice', label: t('practice') },
+          { href: '/practice/team', label: t('team') },
           { href: '/admin/consent-texts', label: t('consentTexts') },
         ]
       : []),

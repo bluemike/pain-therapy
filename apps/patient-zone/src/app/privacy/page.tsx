@@ -19,9 +19,7 @@ export default async function Privacy({ searchParams }: { searchParams: Promise<
       <h1>{t('title')}</h1>
       <section className="card prose">
         {p?.privacyNotice ? (
-          p.privacyNotice
-            .split(/\n\s*\n/)
-            .map((para, i) => <p key={i}>{para.trim()}</p>)
+          p.privacyNotice.split(/\n\s*\n/).map((para, i) => <p key={i}>{para.trim()}</p>)
         ) : (
           <>
             <h2>{t('who')}</h2>

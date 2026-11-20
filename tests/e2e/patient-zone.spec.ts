@@ -1,7 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test, type Browser, type Page } from '@playwright/test';
-import { createSignedPatient, expectNoA11yViolations, login, unique, setPain } from './helpers';
+import { createSignedPatient, expectNoA11yViolations, login, unique, setPain, phoneIp } from './helpers';
 
 /**
  * Iteration 4, tasks 8.3 and 8.4: send the exercise sheet with the link (mail to the outbox instead of Graph), open
@@ -18,9 +18,14 @@ async function linkFromOutbox(to: string) {
   await expect(async () => {
     const files = (await readdir(OUTBOX)).filter((f) => f.endsWith('.json')).sort();
     for (const f of files.reverse()) {
-      const mail = JSON.parse(await readFile(path.join(OUTBOX, f), 'utf8')) as { to: string; text: string };
+      const mail = JSON.parse(await readFile(path.join(OUTBOX, f), 'utf8')) as {
+        to: string;
+        subject: string;
+        text: string;
+      };
       const m = mail.to === to ? /https?:\/\/\S+\/l\/[A-Za-z0-9_-]{43}/.exec(mail.text) : null;
-      if (m) {
+      // Iteration 12 (design D7): the exercise sheet comes as «Neues Dokument», not the earlier invitation to sign
+      if (m && mail.subject.startsWith('Neues Dokument')) {
         url = m[0];
         return;
       }
@@ -37,6 +42,7 @@ async function phone(browser: Browser) {
     hasTouch: true,
     locale: 'de-CH',
     timezoneId: 'Europe/Zurich',
+    extraHTTPHeaders: { 'X-Forwarded-For': phoneIp() },
   });
   return context.newPage();
 }

@@ -1,5 +1,7 @@
 # Entra ID einrichten
 
+> **Veraltet seit Iteration 12:** Die App meldet nicht mehr über Entra an und versendet keine Mails mehr über Graph. Diese Anleitung gilt nur noch historisch; zum Entfernen siehe [deployment.md, Iteration 12, Schritt 5](deployment.md#5-aufräumen-nach-der-abnahme).
+
 Die App meldet Mitarbeitende über Ayanta Entra ID an (Single Tenant) und versendet die unterschriebenen PDFs über Microsoft Graph. Dafür braucht es eine App-Registrierung und eine Berechtigung für die Managed Identity der Container App. Die Schritte brauchen die Rolle *Application Administrator* (App-Registrierung) und *Privileged Role Administrator* oder *Global Administrator* (Graph-Berechtigung), für Schritt 6 Exchange-Administration.
 
 ## 1. App-Registrierung anlegen

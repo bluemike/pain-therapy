@@ -6,8 +6,13 @@ import { useEffect, useState } from 'react';
 
 type Item = { href: string; label: string };
 
-function isActive(pathname: string, href: string) {
-  return href === '/' ? pathname === '/' : pathname.startsWith(href);
+const matches = (pathname: string, href: string) =>
+  href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(`${href}/`);
+
+/** The most specific item is the current one: «Team» under /practice/team, not also «Praxis» */
+function isActive(pathname: string, href: string, items: Item[]) {
+  if (!matches(pathname, href)) return false;
+  return !items.some((i) => i.href.length > href.length && matches(pathname, i.href));
 }
 
 export function NavLinks({ items }: { items: Item[] }) {
@@ -15,7 +20,7 @@ export function NavLinks({ items }: { items: Item[] }) {
   return (
     <nav className="nav" aria-label="Main">
       {items.map((i) => (
-        <Link key={i.href} href={i.href} aria-current={isActive(pathname, i.href) ? 'page' : undefined}>
+        <Link key={i.href} href={i.href} aria-current={isActive(pathname, i.href, items) ? 'page' : undefined}>
           {i.label}
         </Link>
       ))}
@@ -53,7 +58,7 @@ export function MobileMenu({
             key={i.href}
             className="item"
             href={i.href}
-            aria-current={isActive(pathname, i.href) ? 'page' : undefined}
+            aria-current={isActive(pathname, i.href, items) ? 'page' : undefined}
           >
             {i.label}
           </Link>

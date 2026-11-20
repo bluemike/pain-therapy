@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { mkdir, readFile, writeFile, chmod } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, chmod, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { config } from './config';
 
@@ -10,6 +10,11 @@ import { config } from './config';
 export interface DocumentStore {
   put(blobPath: string, data: Buffer, contentType: string): Promise<void>;
   get(blobPath: string): Promise<Buffer>;
+  /**
+   * Removes a file; false if it was not there. Under WORM retention (signed documents) Azure refuses until the
+   * retention has passed (iteration 12, design D9: deletion of a practice).
+   */
+  delete(blobPath: string): Promise<boolean>;
 }
 
 export const sha256 = (data: Buffer) => createHash('sha256').update(data).digest('hex');
@@ -29,6 +34,17 @@ class LocalStore implements DocumentStore {
   }
   async get(p: string) {
     return readFile(this.full(p));
+  }
+  async delete(p: string) {
+    const f = this.full(p);
+    try {
+      await chmod(f, 0o644);
+      await unlink(f);
+      return true;
+    } catch (e) {
+      if ((e as { code?: string }).code === 'ENOENT') return false;
+      throw e;
+    }
   }
 }
 
@@ -58,6 +74,10 @@ class AzureStore implements DocumentStore {
   async get(p: string) {
     return (await this.client).getBlockBlobClient(p).downloadToBuffer();
   }
+  async delete(p: string) {
+    const r = await (await this.client).getBlockBlobClient(p).deleteIfExists({ deleteSnapshots: 'include' });
+    return r.succeeded;
+  }
 }
 
 let store: DocumentStore | null = null;
@@ -80,6 +100,19 @@ export function photoStore(): DocumentStore {
       ? new AzureStore(config.storage.photoContainer)
       : new LocalStore(config.storage.photoLocalDir);
   return photos;
+}
+
+/**
+ * Private container `practice-exports` (iteration 12, design D9): ZIP exports of a practice, downloadable for 24
+ * hours, then removed by the job.
+ */
+let exportsStore: DocumentStore | null = null;
+export function exportStore(): DocumentStore {
+  exportsStore ??=
+    config.storage.driver === 'azure'
+      ? new AzureStore(config.storage.exportContainer)
+      : new LocalStore(config.storage.exportLocalDir);
+  return exportsStore;
 }
 
 /** Read-only access to the exercise media; a missing file is null, so the app can show "Bild nicht verfügbar". */
