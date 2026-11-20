@@ -1,3 +1,4 @@
+import { PLATFORM_NAME } from '@pain-therapy/shared/brand';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { signOut } from '@/auth';
@@ -10,24 +11,15 @@ import { PlatformFooter } from '@/components/PlatformFooter';
 /** platform-admin (iteration 12, design D3): own frame for the platform account, without practice navigation */
 export default async function PlatformLayout({ children }: { children: React.ReactNode }) {
   const user = await requirePlatformAdmin();
-  const [t, tp, tc] = await Promise.all([
-    getTranslations('nav'),
-    getTranslations('platformAdmin'),
-    getTranslations('common'),
-  ]);
+  const [t, tp] = await Promise.all([getTranslations('nav'), getTranslations('platformAdmin')]);
   return (
     <div className="app">
       <a className="skip" href="#main">
         {t('skipToContent')}
       </a>
       <header className="hdr">
-        <Link
-          href="/platform"
-          className="logo"
-          aria-label={`Pain Therapy ${tc('appName')}`}
-          style={{ textDecoration: 'none' }}
-        >
-          <Logo appName={tc('appName')} />
+        <Link href="/platform" className="logo" aria-label={PLATFORM_NAME} style={{ textDecoration: 'none' }}>
+          <Logo />
         </Link>
         <NavLinks
           items={[

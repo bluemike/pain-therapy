@@ -1,6 +1,7 @@
+import { PLATFORM_NAME } from '@pain-therapy/shared/brand';
 import type { Metadata, Viewport } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
-import { getLocale, getTranslations } from 'next-intl/server';
+import { getLocale } from 'next-intl/server';
 import '@fontsource/inter/400.css';
 import '@fontsource/inter/500.css';
 import '@fontsource/inter/600.css';
@@ -8,9 +9,8 @@ import '@fontsource/inter/700.css';
 import './globals.css';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations('common');
   return {
-    title: { default: `${t('appName')} · Pain Therapy`, template: `%s · ${t('appName')}` },
+    title: { default: PLATFORM_NAME, template: `%s · ${PLATFORM_NAME}` },
     robots: { index: false },
   };
 }

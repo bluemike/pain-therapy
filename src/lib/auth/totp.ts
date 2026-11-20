@@ -1,3 +1,4 @@
+import { PLATFORM_NAME } from '@pain-therapy/shared/brand';
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 /** TOTP after RFC 6238 (SHA-1, 6 digits, 30 s), as Google Authenticator, Microsoft Authenticator and 1Password use */
@@ -61,7 +62,7 @@ export function verifyTotp(secret: string, code: string, nowMs = Date.now()): bo
 }
 
 /** otpauth:// URI for the QR code of the authenticator app */
-export function otpauthUri(secret: string, account: string, issuer = 'Pain Therapy'): string {
+export function otpauthUri(secret: string, account: string, issuer = PLATFORM_NAME): string {
   const label = encodeURIComponent(`${issuer}:${account}`);
   const params = new URLSearchParams({ secret, issuer, algorithm: 'SHA1', digits: '6', period: '30' });
   return `otpauth://totp/${label}?${params.toString()}`;

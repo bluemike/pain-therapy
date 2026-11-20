@@ -41,7 +41,7 @@ test.describe('practice-settings', () => {
     await expect(page.getByText(/^Praxis gespeichert\./)).toBeVisible();
     await expect(page.locator('header img.plogo')).toHaveCount(0);
     await expect(page.locator('header')).toContainText('Pain Therapy Falera');
-    await expect(page.getByText('Pain Therapy · betrieben von Ayanta')).toBeVisible();
+    await expect(page.getByText('Pain Therapy Online · betrieben von Ayanta')).toBeVisible();
   });
 
   test('the zone names the practice of the patient, an invalid link names no address', async ({ page }) => {

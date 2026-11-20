@@ -17,17 +17,36 @@ test.describe('platform and team', () => {
     await expect(page.getByRole('link', { name: 'Patienten' })).toHaveCount(0);
     await expectNoA11yViolations(page, 'platform');
 
-    await page.getByLabel(/^Name der Praxis \*/).fill(`E2E Praxis ${id}`);
-    await page.getByLabel(/^Kurzname/).fill(slug);
-    await page.getByLabel(/^Ort/).fill('Chur');
-    await page.getByLabel(/^Kontakt-E-Mail/).fill(`praxis.${id}@example.test`);
-    await page.getByLabel(/^Kürzel/).fill('EP');
-    await page.getByLabel(/^Name der Praxis-Admin/).fill('Erika Praxis');
-    await page.getByLabel(/^E-Mail der Praxis-Admin/).fill(`erika.${id}@example.test`);
+    const form = page.locator('section', { has: page.getByRole('heading', { name: 'Neue Praxis' }) });
+    await form.getByLabel(/^Name der Praxis \*/).fill(`E2E Praxis ${id}`);
+    await form.getByLabel(/^Kurzname/).fill(slug);
+    await form.getByLabel(/^Ort/).fill('Chur');
+    await form.getByLabel(/^Kontakt-E-Mail/).fill(`praxis.${id}@example.test`);
+    await form.getByLabel(/^Kürzel/).fill('EP');
+    await form.getByLabel(/^Name der Praxis-Admin/).fill('Erika Praxis');
+    await form.getByLabel(/^E-Mail der Praxis-Admin/).fill(`erika.${id}@example.test`);
     await page.getByRole('button', { name: 'Praxis anlegen und einladen' }).click();
     await expect(page.getByText('Die Praxis ist angelegt und die Praxis-Admin eingeladen.')).toBeVisible();
     const card = page.getByTestId('practice').filter({ hasText: `E2E Praxis ${id}` });
     await expect(card).toContainText(`Einladung offen: erika.${id}@example.test`);
+
+    // Iteration 13: details of an existing practice, with the invitation of a further practice admin
+    await card.locator('summary', { hasText: 'Praxisangaben und Praxis-Admin' }).click();
+    await expect(card.getByLabel(/^Ort \*/)).toHaveValue('Chur');
+    await expect(card.getByLabel(/^Ort \*/)).toHaveCSS('border-top-style', 'solid');
+    await card.getByLabel(/^Ort \*/).fill('Falera');
+    await card.getByLabel(/^Standardort/).fill('Falera');
+    await card.getByLabel(/^Telefon/).fill('081 000 00 00');
+    await expect(card.getByRole('button', { name: 'Angaben speichern' })).toBeVisible();
+    await card.getByLabel(/^Name der Praxis-Admin/).fill('Chris Praxis');
+    await card.getByLabel(/^E-Mail der Praxis-Admin/).fill(`chris.${id}@example.test`);
+    await expectNoA11yViolations(page, 'platform details');
+    await card.getByRole('button', { name: 'Speichern und einladen' }).click();
+    await expect(page.getByText('Die Praxisangaben sind gespeichert und die Praxis-Admin eingeladen.')).toBeVisible();
+    await expect(card).toContainText(`chris.${id}@example.test`);
+    await card.locator('summary', { hasText: 'Praxisangaben und Praxis-Admin' }).click();
+    await expect(card.getByLabel(/^Ort \*/)).toHaveValue('Falera');
+    await expect(card.getByLabel(/^Telefon/)).toHaveValue('081 000 00 00');
 
     await card.getByRole('button', { name: 'Sperren' }).click();
     await expect(page.getByText('Die Praxis ist gesperrt.')).toBeVisible();

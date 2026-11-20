@@ -3040,10 +3040,175 @@ ul.team .acts {
 .team-form,
 .platform-form {
   display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  align-items: end;
+  gap: 14px 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  margin-top: 12px;
 }
+.team-form .f,
+.platform-form .f {
+  grid-column: auto;
+}
+.platform-form .f.wide,
+.platform-form .full,
+.team-form .full {
+  grid-column: 1 / -1;
+}
+.platform-form .group {
+  grid-column: 1 / -1;
+  margin: 8px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.platform-form .group:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.platform-form .group small {
+  display: block;
+  margin-top: 2px;
+  font-weight: 400;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.team-form > .btn,
+.platform-form > .btn {
+  justify-self: start;
+  grid-column: 1 / -1;
+}
+@media (max-width: 640px) {
+  .team-form,
+  .platform-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.team-card .meta {
+  margin: 0 0 12px;
+  font-size: 13.5px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.team-card .acts {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 4px 0 8px;
+}
+.team-card details {
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0 14px;
+  background: var(--surface);
+}
+.team-card details[open] {
+  padding-bottom: 14px;
+}
+.team-card details > summary {
+  cursor: pointer;
+  list-style: none;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.team-card details > summary::-webkit-details-marker {
+  display: none;
+}
+.team-card details > summary::before {
+  content: '▸';
+  color: var(--gold-text);
+  transition: transform 0.15s;
+}
+.team-card details[open] > summary::before {
+  transform: rotate(90deg);
+}
+.team-card details > p {
+  margin: 0 0 8px;
+}
+
+/* sign-in and invitation steps (iteration 13) */
+.login-flow,
+.login-flow form {
+  display: grid;
+  gap: 14px;
+}
+.login-flow .or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.login-flow .or::before,
+.login-flow .or::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--border);
+}
+ol.auth-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 8px;
+  counter-reset: none;
+}
+ol.auth-steps li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px 6px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 12.5px;
+  line-height: 1.2;
+  color: var(--muted);
+  background: var(--surface);
+}
+ol.auth-steps li .n {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 12px;
+  background: var(--line);
+  color: var(--mid);
+}
+ol.auth-steps li .t {
+  min-width: 0;
+  max-width: 100%;
+  hyphens: auto;
+}
+ol.auth-steps li.on {
+  border-color: var(--gold);
+  background: var(--gold-bg);
+  color: var(--ink);
+  font-weight: 600;
+}
+ol.auth-steps li.on .n {
+  background: var(--gold);
+  color: #fff;
+}
+ol.auth-steps li.done .n {
+  background: var(--gold-pale);
+  color: var(--gold-text);
+}
+
 .team-form fieldset {
   border: 0;
   padding: 0;

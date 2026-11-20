@@ -1,15 +1,15 @@
 import { getTranslations } from 'next-intl/server';
 import { authDb } from '@/lib/db';
-import { practicesOverview } from '@/lib/platform';
+import { practiceDetailsOf, practicesOverview } from '@/lib/platform';
 import { exportsOf } from '@/lib/practice-export';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { ExportList } from '@/components/ExportList';
-import { NewPracticeForm } from '@/components/NewPracticeForm';
-import { deleteAction, exportAction, inviteAdminAction, invitePlatformAdminAction, statusAction } from './actions';
+import { PlatformPracticeForm } from '@/components/PlatformPracticeForm';
+import { deleteAction, exportAction, invitePlatformAdminAction, statusAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 
-const FLASH = ['created', 'suspended', 'reactivated', 'invited', 'exporting', 'deleted'];
+const FLASH = ['created', 'suspended', 'reactivated', 'invited', 'exporting', 'deleted', 'saved', 'savedInvited'];
 const ERRORS = ['slugTaken', 'notSuspended', 'noExport', 'confirm', 'otherPractice', 'invalid', 'notFound', 'deleted'];
 
 function PersonForm({
@@ -30,15 +30,23 @@ function PersonForm({
         <label className="l" htmlFor={`${id}_name`}>
           {names.name}
         </label>
-        <input id={`${id}_name`} name="name" required maxLength={100} autoComplete="off" />
+        <input className="inp" id={`${id}_name`} name="name" required maxLength={100} autoComplete="off" />
       </div>
       <div className="f">
         <label className="l" htmlFor={`${id}_email`}>
           {names.email}
         </label>
-        <input id={`${id}_email`} name="email" type="email" required maxLength={200} autoComplete="off" />
+        <input
+          className="inp"
+          id={`${id}_email`}
+          name="email"
+          type="email"
+          required
+          maxLength={200}
+          autoComplete="off"
+        />
       </div>
-      <button className="btn btn--ghost">{label}</button>
+      <button className="btn btn--gold">{label}</button>
     </form>
   );
 }
@@ -62,6 +70,9 @@ export default async function PlatformPage({
   ]);
   const names = { name: tt('name'), email: tt('email') };
   const exports = new Map(await Promise.all(practices.map(async (p) => [p.id, await exportsOf(p.id)] as const)));
+  const details = new Map(
+    await Promise.all(practices.map(async (p) => [p.id, (await practiceDetailsOf(p.id)) ?? {}] as const)),
+  );
   return (
     <>
       <div className="ptitle">
@@ -89,14 +100,14 @@ export default async function PlatformPage({
               {p.deletedAt ? t('deleted', { date: formatDate(p.deletedAt) }) : t(`status_${p.status}`)}
             </span>
           </h2>
-          <p className="muted">
+          <p className="meta">
             {p.slug} · {p.contactEmail} · {t('members', { count: p.members })} ·{' '}
             {p.lastActivity ? t('lastActivity', { at: formatDateTime(p.lastActivity) }) : t('neverActive')}
             {p.openInvitations.length ? ` · ${t('openInvitations', { emails: p.openInvitations.join(', ') })}` : ''}
           </p>
           {p.deletedAt ? null : (
             <>
-              <div className="acts" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <div className="acts">
                 <form action={statusAction}>
                   <input type="hidden" name="id" value={p.id} />
                   <input type="hidden" name="status" value={p.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE'} />
@@ -109,8 +120,8 @@ export default async function PlatformPage({
               </div>
               <ExportList exports={exports.get(p.id) ?? []} />
               <details>
-                <summary>{t('inviteAdmin')}</summary>
-                <PersonForm id={p.id} action={inviteAdminAction} label={t('invite')} names={names} />
+                <summary>{t('editDetails')}</summary>
+                <PlatformPracticeForm practice={{ id: p.id, values: details.get(p.id) ?? {} }} />
               </details>
               {p.status === 'SUSPENDED' ? (
                 <details className="danger-zone">
@@ -122,9 +133,9 @@ export default async function PlatformPage({
                       <label className="l" htmlFor={`del_${p.id}`}>
                         {t('deleteConfirm', { slug: p.slug })}
                       </label>
-                      <input id={`del_${p.id}`} name="confirm" required autoComplete="off" />
+                      <input className="inp" id={`del_${p.id}`} name="confirm" required autoComplete="off" />
                     </div>
-                    <label className="ck">
+                    <label className="ck full">
                       <input type="checkbox" name="understood" required /> {t('deleteCheck')}
                     </label>
                     <button className="btn btn--danger">{t('delete')}</button>
@@ -138,7 +149,7 @@ export default async function PlatformPage({
 
       <section className="card team-card" aria-labelledby="h_new">
         <h2 id="h_new">{t('new')}</h2>
-        <NewPracticeForm />
+        <PlatformPracticeForm />
       </section>
 
       <section className="card team-card" aria-labelledby="h_admins">

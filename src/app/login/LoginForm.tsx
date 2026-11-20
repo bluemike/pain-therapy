@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
+import { AuthSteps } from '@/components/auth/AuthSteps';
 import { browserSupportsWebAuthn, startAuthentication } from '@simplewebauthn/browser';
 import {
   passkeyOptionsAction,
@@ -79,13 +80,11 @@ export function LoginForm({ hint, callbackUrl }: { hint?: string; callbackUrl: s
     });
 
   const steps = (
-    <ol className="steps" aria-label={t('stepsLabel')}>
-      {(['email', 'code', 'second'] as Step[]).map((s, i) => (
-        <li key={s} className={s === step ? 'on' : undefined} aria-current={s === step ? 'step' : undefined}>
-          {i + 1} {t(`step_${s}`)}
-        </li>
-      ))}
-    </ol>
+    <AuthSteps
+      label={t('stepsLabel')}
+      current={step}
+      steps={(['email', 'code', 'second'] as Step[]).map((s) => ({ key: s, label: t(`step_${s}`) }))}
+    />
   );
 
   return (

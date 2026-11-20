@@ -8,10 +8,11 @@ import {
   createPractice,
   deletePractice,
   invitePlatformAdmin,
-  invitePracticeAdmin,
   newPracticeSchema,
+  practiceDetailsSchema,
   PlatformError,
   setPracticeStatus,
+  updatePracticeDetails,
 } from '@/lib/platform';
 import { buildExport, requestExport } from '@/lib/practice-export';
 import { z } from 'zod';
@@ -23,7 +24,10 @@ const person = z.object({
   email: z.string().trim().toLowerCase().email().max(200),
 });
 
-async function run(fn: (actor: Awaited<ReturnType<typeof requirePlatformAdmin>>) => Promise<unknown>, flash: string) {
+async function run(
+  fn: (actor: Awaited<ReturnType<typeof requirePlatformAdmin>>) => Promise<unknown>,
+  flash: string | (() => string),
+) {
   const actor = await requirePlatformAdmin();
   try {
     await fn(actor);
@@ -31,7 +35,7 @@ async function run(fn: (actor: Awaited<ReturnType<typeof requirePlatformAdmin>>)
     if (e instanceof PlatformError) redirect(`/platform?error=${e.code}`);
     throw e;
   }
-  redirect(`/platform?flash=${flash}`);
+  redirect(`/platform?flash=${typeof flash === 'string' ? flash : flash()}`);
 }
 
 export type NewPracticeState = { errors?: Record<string, string>; values?: Record<string, string> };
@@ -55,10 +59,33 @@ export async function statusAction(fd: FormData) {
   );
 }
 
-export async function inviteAdminAction(fd: FormData) {
-  const parsed = person.safeParse({ name: fd.get('name'), email: fd.get('email') });
-  if (!parsed.success) redirect('/platform?error=invalid');
-  await run((actor) => invitePracticeAdmin(actor, String(fd.get('id')), parsed.data), 'invited');
+const DETAIL_FIELDS = [
+  'name',
+  'street',
+  'zip',
+  'city',
+  'defaultPlace',
+  'contactEmail',
+  'phone',
+  'documentPrefix',
+  'adminName',
+  'adminEmail',
+];
+
+/** Iteration 13: details of an existing practice, optionally with the invitation of its practice admin */
+export async function practiceDetailsAction(_prev: NewPracticeState, fd: FormData): Promise<NewPracticeState> {
+  await requirePlatformAdmin();
+  const values = Object.fromEntries(DETAIL_FIELDS.map((k) => [k, String(fd.get(k) ?? '')]));
+  const parsed = practiceDetailsSchema.safeParse(values);
+  if (!parsed.success) return { errors: fieldErrors(parsed.error), values };
+  let invited = false;
+  await run(
+    async (actor) => {
+      invited = (await updatePracticeDetails(actor, String(fd.get('id')), parsed.data)).invited;
+    },
+    () => (invited ? 'savedInvited' : 'saved'),
+  );
+  return {};
 }
 
 export async function invitePlatformAdminAction(fd: FormData) {

@@ -8,9 +8,12 @@ import {
   createPractice,
   deletePractice,
   ensurePlatformAdmin,
+  practiceDetailsOf,
+  practiceDetailsSchema,
   practicesOverview,
   removeDueBlobs,
   setPracticeStatus,
+  updatePracticeDetails,
 } from '@/lib/platform';
 import { buildExport, exportFile, requestExport } from '@/lib/practice-export';
 import { photoStore } from '@/lib/storage';
@@ -40,7 +43,7 @@ describe('team of a practice (team-management)', () => {
   it('invites with name and roles, refuses members and people of other practices', async () => {
     const admin = await member('chef@example.test', ['PRACTICE_ADMIN', 'THERAPIST']);
     await inviteMember(admin, TEST_PRACTICE_ID, { email: 'Neu@Example.test', name: 'Nora Neu', roles: ['THERAPIST'] });
-    expect(sent.at(-1)).toMatchObject({ to: 'neu@example.test', subject: 'Einladung zu Pain Therapy' });
+    expect(sent.at(-1)).toMatchObject({ to: 'neu@example.test', subject: 'Einladung von Pain Therapy Test' });
     const team = await teamOf(TEST_PRACTICE_ID);
     expect(team.invitations).toMatchObject([{ email: 'neu@example.test', name: 'Nora Neu', roles: ['THERAPIST'] }]);
     await expect(
@@ -93,6 +96,11 @@ describe('platform (platform-admin)', () => {
     expect(await ensurePlatformAdmin('admin@example.test')).toEqual({ invited: true });
     expect(await ensurePlatformAdmin('admin@example.test')).toEqual({ invited: false });
     expect(sent.filter((m) => m.to === 'admin@example.test')).toHaveLength(1);
+    // Iteration 13: own wording, not «bei der Plattform mit Pain Therapy zu arbeiten»
+    const mail = sent.find((m) => m.to === 'admin@example.test')!;
+    expect(mail.subject).toBe('Einladung als Plattform-Admin von Pain Therapy Online');
+    expect(mail.text).toContain('als Plattform-Admin von Pain Therapy Online eingeladen');
+    expect(mail.text).not.toMatch(/bei der Plattform|Pain Therapy\b(?! Online)/);
   });
 
   it('creates a practice with its disclaimer and invites its admin; a slug is given once', async () => {
@@ -132,6 +140,67 @@ describe('platform (platform-admin)', () => {
     ).rejects.toMatchObject({ code: 'slugTaken' });
     const overview = await practicesOverview();
     expect(overview.find((x) => x.id === p.id)).toMatchObject({ members: 0, openInvitations: ['anna@muster.test'] });
+  });
+
+  it('lets the platform correct the details of a practice and invite its admin in the same step (iteration 13)', async () => {
+    const values = {
+      ...(await practiceDetailsOf(practiceId))!,
+      city: 'Falera',
+      defaultPlace: 'Falera',
+      phone: '081 000 00 00',
+      adminName: '',
+      adminEmail: '',
+    };
+    // Admin name and e-mail only together
+    expect(practiceDetailsSchema.safeParse({ ...values, adminName: 'Nur Name' }).success).toBe(false);
+    const before = sent.length;
+    expect(await updatePracticeDetails(platform, practiceId, practiceDetailsSchema.parse(values))).toEqual({
+      invited: false,
+    });
+    expect(sent.length).toBe(before);
+    expect(await rawDb.practice.findUniqueOrThrow({ where: { id: practiceId } })).toMatchObject({
+      city: 'Falera',
+      defaultPlace: 'Falera',
+      phone: '081 000 00 00',
+      addressLine: 'Physio Muster | Bahnhofstrasse 10 | 7000 Falera',
+    });
+    const r = await updatePracticeDetails(
+      platform,
+      practiceId,
+      practiceDetailsSchema.parse({ ...values, adminName: 'Bea Muster', adminEmail: 'Bea@Muster.test' }),
+    );
+    expect(r).toEqual({ invited: true });
+    // From the practice, practice name in bold, the link in the HTML part
+    expect(sent.at(-1)).toMatchObject({
+      to: 'bea@muster.test',
+      subject: 'Einladung von Physio Muster',
+      fromName: 'Physio Muster',
+      replyTo: 'praxis@muster.test',
+      bold: ['Physio Muster'],
+    });
+    expect(sent.at(-1)!.text).toMatch(/^Guten Tag Bea Muster\n/);
+    const log = await runInPractice(practiceId, () =>
+      rawDb.auditEvent.findMany({ where: { practiceId, action: 'practice.updated' } }),
+    );
+    expect(log).toHaveLength(1);
+    // The platform account or a member of another practice cannot be invited
+    await rawDb.user.create({ data: { email: 'plattform@example.test', name: 'P', platformAdmin: true } });
+    await expect(
+      updatePracticeDetails(
+        platform,
+        practiceId,
+        practiceDetailsSchema.parse({ ...values, adminName: 'X', adminEmail: 'plattform@example.test' }),
+      ),
+    ).rejects.toMatchObject({ code: 'otherPractice' });
+    await member('fremd@example.test', ['PRACTICE_ADMIN']);
+    await expect(
+      updatePracticeDetails(
+        platform,
+        practiceId,
+        practiceDetailsSchema.parse({ ...values, city: 'Ilanz', adminName: 'X', adminEmail: 'fremd@example.test' }),
+      ),
+    ).rejects.toMatchObject({ code: 'otherPractice' });
+    expect((await rawDb.practice.findUniqueOrThrow({ where: { id: practiceId } })).city).toBe('Falera');
   });
 
   it('suspends a practice: its zone links resolve to no practice', async () => {

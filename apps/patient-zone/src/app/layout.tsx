@@ -1,3 +1,4 @@
+import { PLATFORM_NAME } from '@pain-therapy/shared/brand';
 import type { Metadata, Viewport } from 'next';
 import Link from 'next/link';
 import { NextIntlClientProvider } from 'next-intl';
@@ -16,7 +17,11 @@ export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('common');
-  return { title: `${t('appName')} · Pain Therapy`, robots: { index: false, follow: false }, referrer: 'no-referrer' };
+  return {
+    title: `${t('appName')} · ${PLATFORM_NAME}`,
+    robots: { index: false, follow: false },
+    referrer: 'no-referrer',
+  };
 }
 
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#1C1A14' };
@@ -45,7 +50,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <span className="logo">{practice.name}</span>
           ) : (
             <span className="logo">
-              pain therapy<i>.</i>
+              Pain Therapy <i>Online</i>
             </span>
           )}
           <span className="appname">{t('appName')}</span>

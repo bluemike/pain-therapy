@@ -18,14 +18,13 @@ export default async function LoginPage({
 }) {
   const sp = await searchParams;
   const t = await getTranslations('login');
-  const tc = await getTranslations('common');
   const callbackUrl = safeCallback(sp.callbackUrl);
   const hint = loginHintFrom((await cookies()).get(LOGIN_HINT_COOKIE)?.value);
   return (
     <div className="app">
       <main className="center" id="main">
         <div className="lcard">
-          <Logo appName={tc('appName')} />
+          <Logo />
           <h1>{t('title')}</h1>
           {sp.expired ? (
             <div className="banner info" role="status">

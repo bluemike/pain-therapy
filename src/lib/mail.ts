@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { config } from './config';
+import { mailHtml } from './mail-html';
 
 /**
  * Email delivery (iteration 12, design D7): SMTP at Infomaniak in Azure, a local outbox folder in development. Mails
@@ -11,10 +12,12 @@ export interface OutgoingMail {
   to: string;
   subject: string;
   text: string;
-  /** Display name of the sender, e.g. the practice; default "Pain Therapy" */
+  /** Display name of the sender, e.g. the practice; default "Pain Therapy Online" */
   fromName?: string;
   /** Contact address of the practice */
   replyTo?: string;
+  /** Phrases set in bold in the HTML part (iteration 13), e.g. the practice name or a code; links are always bold */
+  bold?: string[];
 }
 
 export interface Mailer {
@@ -27,7 +30,8 @@ class OutboxMailer implements Mailer {
     await mkdir(dir, { recursive: true });
     const base = `${new Date().toISOString().replace(/[:.]/g, '-')}-${mail.to.replace(/[^a-z0-9@.]/gi, '_')}`;
     const from = `${mail.fromName ?? config.mail.fromName} <${config.mail.from}>`;
-    await writeFile(path.join(dir, `${base}.json`), JSON.stringify({ from, ...mail }, null, 2));
+    const html = mailHtml(mail.text, mail.bold);
+    await writeFile(path.join(dir, `${base}.json`), JSON.stringify({ from, ...mail, html }, null, 2));
   }
 }
 
@@ -71,6 +75,7 @@ class SmtpMailer implements Mailer {
       replyTo: mail.replyTo || undefined,
       subject: mail.subject,
       text: mail.text,
+      html: mailHtml(mail.text, mail.bold),
     });
   }
 }
