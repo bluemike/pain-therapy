@@ -83,7 +83,7 @@ export function PracticeForm({
       ) : null}
       <fieldset>
         <legend>{t('logo')}</legend>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="fs-body" style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
           {logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- logo from the database
             <img src={logoUrl} alt={t('logoCurrent')} style={{ height: 48, maxWidth: 200, objectFit: 'contain' }} />
@@ -126,11 +126,11 @@ export function PracticeForm({
           {field('phone', { type: 'tel' })}
           {field('defaultPlace', { required: true, hint: t('defaultPlaceHint') })}
         </div>
-        <p className="hint">{footer}</p>
+        <p className="hint fs-foot">{footer}</p>
       </fieldset>
       <fieldset>
         <legend>{t('privacyNotice')}</legend>
-        <div className={`f ${errors.privacyNotice ? 'bad' : ''}`}>
+        <div className={`f fs-body ${errors.privacyNotice ? 'bad' : ''}`}>
           <label className="l" htmlFor="f_privacyNotice">
             {t('privacyNoticeLabel')}
           </label>
