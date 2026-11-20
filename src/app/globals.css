@@ -160,6 +160,22 @@ a {
   font-style: normal;
   color: var(--gold-text);
 }
+.logo .plogo {
+  display: block;
+  height: 32px;
+  max-width: 160px;
+  object-fit: contain;
+  align-self: center;
+}
+.platform-foot {
+  padding: 16px 20px;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+.platform-foot a {
+  color: inherit;
+}
 .logo .app {
   font-size: 13px;
   color: var(--muted);
@@ -2979,4 +2995,66 @@ dialog[open] {
   min-height: 40px;
   border-top: 1px solid var(--border);
   margin-left: auto;
+}
+
+/* team-management and platform (iteration 12, phase 5) */
+.team-card {
+  padding: 20px;
+  margin-top: 16px;
+}
+.team-card h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+ul.team {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+ul.team > li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  align-items: center;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+ul.team > li:first-child {
+  border-top: 0;
+}
+ul.team .who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 240px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+ul.team .roles,
+ul.team .acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+}
+.team-form,
+.platform-form {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  align-items: end;
+}
+.team-form fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.danger-zone {
+  border: 1px solid var(--danger, #b42318);
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 8px;
 }

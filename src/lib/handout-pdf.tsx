@@ -1,13 +1,14 @@
 import React from 'react';
 import { Document, Image, Page, StyleSheet, Text, View, renderToBuffer } from '@react-pdf/renderer';
 import type { Language } from '@prisma/client';
-import { config } from './config';
 import { formatDate, formatDateZurich } from './format';
 import { formatMinutes, scheduleText } from './home-program';
 import { translator } from './i18n-server';
 import { BORDER, GOLD, INK, MID, registerFonts } from './pdf';
 import type { SheetContent, SheetSegments } from './exercise-sheets';
 import { AccessSheetPage, type AccessSheetInput } from './access-sheet-pdf';
+import { currentBrand, type Brand } from './brand';
+import { BrandMark } from './pdf-brand';
 
 /**
  * exercise-handout: Inhalt des Übungsblatts (design D5). Cover page with the programme and the total time, then one
@@ -118,6 +119,8 @@ export type HandoutItem = {
 };
 
 export interface HandoutPdfInput {
+  /** Practice shown in the header; the current practice when left out */
+  brand?: Brand;
   language: Language;
   documentNumber: string;
   version: number;
@@ -156,10 +159,8 @@ export function HandoutPdf({ input }: { input: HandoutPdfInput }) {
   const header = (
     <View style={s.header} fixed>
       <View>
-        <Text style={s.mark}>
-          ayanta<Text style={s.dot}>.</Text>
-        </Text>
-        <Text style={s.muted}>{config.practiceAddress}</Text>
+        <BrandMark brand={input.brand!} textStyle={s.mark} />
+        <Text style={s.muted}>{input.brand!.addressLine}</Text>
       </View>
       <View style={{ alignItems: 'flex-end' }}>
         <Text style={s.muted}>{input.documentNumber}</Text>
@@ -182,7 +183,7 @@ export function HandoutPdf({ input }: { input: HandoutPdfInput }) {
   return (
     <Document
       title={`${t('title')} – ${name}`}
-      author="Ayanta"
+      author={input.brand!.name}
       subject={input.documentNumber}
       language={input.language}
     >
@@ -356,5 +357,7 @@ export function HandoutPdf({ input }: { input: HandoutPdfInput }) {
 
 export async function renderHandoutPdf(input: HandoutPdfInput): Promise<Buffer> {
   registerFonts();
-  return renderToBuffer(<HandoutPdf input={input} />);
+  const brand = input.brand ?? (await currentBrand());
+  const accessSheet = input.accessSheet ? { ...input.accessSheet, brand: input.accessSheet.brand ?? brand } : undefined;
+  return renderToBuffer(<HandoutPdf input={{ ...input, brand, accessSheet }} />);
 }

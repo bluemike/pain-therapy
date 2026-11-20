@@ -11,7 +11,8 @@ import type { CurrentProgram } from '@pain-therapy/shared/program';
 import { linkPurposeOf } from '@pain-therapy/shared/record';
 import { DAY_MS } from '@pain-therapy/shared/time';
 import { hashIp, hashToken, isTokenShaped, newToken } from '@pain-therapy/shared/tokens';
-import { db } from './db';
+import { explicitPracticeId, runInPractice } from '@pain-therapy/shared/practice-context';
+import { db, practiceOfLinkHash, practiceOfSessionHash } from './db';
 import { zoneAudit } from './audit';
 import { config } from './config';
 
@@ -23,9 +24,22 @@ import { config } from './config';
 
 const PATIENT = { id: true, firstName: true, preferredLanguage: true, dateOfBirth: true, status: true } as const;
 
+/**
+ * Runs fn in the practice of a link token or device session (iteration 12, design D6). Unknown tokens run without a
+ * practice, so every query in fn finds nothing.
+ */
+async function inPracticeOf<T>(practiceId: Promise<string | null>, fn: () => Promise<T>): Promise<T> {
+  const id = await practiceId;
+  return id ? runInPractice(id, fn) : fn();
+}
+
 /** The link of a token with its state; null for unknown tokens */
 export async function lookupLink(token: string, now = new Date()) {
   if (!isTokenShaped(token)) return null;
+  return inPracticeOf(practiceOfLinkHash(hashToken(token)), () => lookupLinkIn(token, now));
+}
+
+async function lookupLinkIn(token: string, now: Date) {
   const link = await db.patientAccessLink.findUnique({
     where: { tokenHash: hashToken(token) },
     include: { patient: { select: PATIENT } },
@@ -57,6 +71,14 @@ const ipHashOf = (ip: string) => {
 export async function confirmLink(
   input: { token: string; day: string; month: string; year: string; ip: string },
   now = new Date(),
+): Promise<ConfirmResult> {
+  const practiceId = isTokenShaped(input.token) ? practiceOfLinkHash(hashToken(input.token)) : Promise.resolve(null);
+  return inPracticeOf(practiceId, () => confirmLinkIn(input, now));
+}
+
+async function confirmLinkIn(
+  input: { token: string; day: string; month: string; year: string; ip: string },
+  now: Date,
 ): Promise<ConfirmResult> {
   const ipHash = ipHashOf(input.ip);
   const recent = await db.patientZoneAttempt.count({
@@ -148,6 +170,10 @@ export async function confirmLink(
  */
 export async function resolveSession(sessionId: string | undefined, now = new Date()) {
   if (!sessionId || !isTokenShaped(sessionId)) return null;
+  return inPracticeOf(practiceOfSessionHash(hashToken(sessionId)), () => resolveSessionIn(sessionId, now));
+}
+
+async function resolveSessionIn(sessionId: string, now: Date) {
   const session = await db.patientZoneSession.findUnique({
     where: { idHash: hashToken(sessionId) },
     include: { link: true, patient: { select: PATIENT } },
@@ -161,6 +187,8 @@ export async function resolveSession(sessionId: string | undefined, now = new Da
   }
   return {
     session: { id: session.id, linkId: session.linkId, createdAt: session.createdAt },
+    /** Practice of the session (iteration 12, design D6), for archive paths */
+    practiceId: explicitPracticeId(),
     patient: session.patient,
     program,
     /** Active home programs, one per running treatment, newest first (iteration 9, design D8) */

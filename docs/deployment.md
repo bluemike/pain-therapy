@@ -1,6 +1,6 @@
 # Deployment nach Azure
 
-Ziel: `https://pain-therapy.ayanta.ch`, alle Daten in **Switzerland North**. Die Infrastruktur steht in [`infra/main.bicep`](../infra/main.bicep), das Deployment läuft über [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml).
+Ziel: `https://pain-therapy.online` (bis Iteration 11 `https://pain-therapy.ayanta.ch`, siehe [Iteration 12](#iteration-12-praxen-pain-therapyonline)), alle Daten in **Switzerland North**. Die Infrastruktur steht in [`infra/main.bicep`](../infra/main.bicep), das Deployment läuft über [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml).
 
 ## Was angelegt wird
 
@@ -27,7 +27,7 @@ Voraussetzungen: Azure CLI ≥ 2.60, Rechte *Owner* auf der Subscription (für R
 
 ### 1. Entra ID
 
-App-Registrierung, Rollen und Client Secret nach [entra.md](entra.md) Schritte 1–5 anlegen.
+Bis Iteration 11: App-Registrierung, Rollen und Client Secret nach [entra.md](entra.md) Schritte 1–5 anlegen. Seit Iteration 12 entfällt dieser Schritt (Anmeldung ohne Entra).
 
 ### 2. Ressourcengruppe und erstes Deployment
 
@@ -312,6 +312,71 @@ Den Migrationsjob nach dem Upload einmal starten (`az containerapp job start -g 
 Prüfen: *L&B Basisdaten* zeigt die 4 Bereiche; *Übungen → 2A* zeigt FRM, Standardübung und Varianten mit Bild und "Anhören". Eine Test-Sitzung mit Körperseite, Verordnung und Wochentagen anlegen, das Übungsblatt drucken und in der Patienten-Zone die Anleitung öffnen. Danach den Testpatienten wieder löschen oder mit Mike Franz abmachen, dass er bleibt.
 
 **Rollback:** nur mit leerer Datenbank sinnvoll (die Migration ist nicht umkehrbar); vorherige Revision aktivieren und Datenbank aus dem Point-in-time-Backup vor der Migration wiederherstellen.
+
+## Iteration 12 (Praxen, pain-therapy.online)
+
+Die App wird mandantenfähig (design.md der Änderung `iteration-12-mandanten`). Was sich im Betrieb ändert:
+
+- **Anmeldung ohne Entra:** E-Mail-Code mit Passkey oder Authenticator. Die Entra-App, `Mail.Send` und das Secret `entra-client-secret` werden nach der Umstellung nicht mehr gebraucht (Schritt 5).
+- **Datenbank:** Die Praxis-App verbindet sich als Rolle `practice_app` (Key-Vault-Secret `practice-app-database-url`), begrenzt durch Row-Level Security auf die Praxis der Anmeldung. Der Eigentümer (`database-url`) bleibt für Benutzer, Praxen, die Plattform-Funktionen und die Jobs als `DATABASE_ADMIN_URL`.
+- **Mail:** nur noch Links, per SMTP über `noreply@pain-therapy.online` bei Infomaniak (`mail.infomaniak.com:465`), Anzeigename = Praxis, Antwort an die Kontaktadresse der Praxis. Keine Anhänge, kein Graph.
+- **Neu im Storage Account:** Container `practice-exports` (Export einer Praxis als ZIP, 24 Stunden abrufbar, danach vom 5-Minuten-Job gelöscht).
+- **Plattform-Konto:** Solange es keinen Plattform-Admin gibt, lädt der 5-Minuten-Job `admin@pain-therapy.online` ein (`PLATFORM_ADMIN_EMAIL`). Unter `/platform` legt er Praxen an und lädt deren Admin ein.
+
+### 1. Vor dem ersten Deployment (Mike)
+
+1. **GitHub-Secrets** in der Umgebung `production` anlegen:
+
+   | Secret | Wert |
+   | --- | --- |
+   | `PRACTICE_APP_DB_PASSWORD` | `openssl rand -base64 32 \| tr -d '/+='` |
+   | `AUTH_ENCRYPTION_KEY` | `openssl rand -base64 32`, **nie mehr ändern** (alle Authenticator-Apps hängen daran) |
+   | `SMTP_PASSWORD` | Gerätepasswort von `noreply@pain-therapy.online` bei Infomaniak (Schlüsselbund) |
+
+   Fehlt eines, bricht der Workflow im ersten Schritt mit *Missing secret* ab, ohne etwas zu ändern.
+2. **GitHub-Variablen:** `DOMAIN_MODE` und `ZONE_DOMAIN_MODE` (erst `off`, siehe Schritt 3). Die Variablen `ENTRA_TENANT_ID`, `ENTRA_CLIENT_ID`, `MAIL_SENDER` und das Secret `ENTRA_CLIENT_SECRET` werden nicht mehr gelesen und können nach der Umstellung weg.
+3. Optional `what-if` wie in Iteration 4 (mit den drei neuen Secrets als Umgebungsvariablen). Erwartet: *Create* vier Key-Vault-Secrets und Container `practice-exports`; *Modify* beider Container Apps und des Migrations- und Finalize-Jobs. `entra-client-secret` bleibt im Key Vault stehen (Bicep löscht nichts).
+
+### 2. Erstes Deployment: Reihenfolge und Unterbruch
+
+Wie in Iteration 4 startet der Migrationsjob vor Bicep und kennt das Passwort von `practice_app` beim ersten Mal noch nicht. Der Workflow erkennt das (Migrationsjob ohne `PRACTICE_APP_DB_PASSWORD`) und lässt Bicep einmal mit den live laufenden Images vorlaufen. Dabei bekommt die alte Praxis-App schon die neuen Einstellungen (ohne Entra, als `practice_app`) und ist **für einige Minuten nicht erreichbar**, bis Migration und neue Revision durch sind. Das Deployment deshalb zu einer ruhigen Zeit starten.
+
+Die Migration ordnet alle bestehenden Daten der Praxis «Pain Therapy Falera» zu. Bestehende Anmeldungen und Sitzungen gelten nicht mehr; alle melden sich neu per Einladung an.
+
+**Passkeys hängen am Hostnamen** (`AUTH_URL`). Solange `DOMAIN_MODE` nicht `bind` ist, läuft die App unter `pain-therapy.ayanta.ch`; dort angelegte Passkeys funktionieren nach dem Wechsel nicht mehr (Authenticator-Codes schon). Deshalb Schritt 3 erledigen, bevor Chrissie eingeladen wird.
+
+### 3. DNS bei Swizzonic und Hostnamen
+
+Werte aus den Bicep-Ausgaben (`az deployment group show -g rg-pain-therapy -n main --query properties.outputs`):
+
+| Typ | Name | Wert |
+| --- | --- | --- |
+| A | `@` (pain-therapy.online) | Ausgabe `environmentStaticIp` |
+| TXT | `asuid` | Ausgabe `customDomainVerificationId` |
+| CNAME | `www` | Ausgabe `appFqdn` |
+| TXT | `asuid.www` | `customDomainVerificationId` |
+| CNAME | `patient` | Ausgabe `zoneFqdn` |
+| TXT | `asuid.patient` | `customDomainVerificationId` |
+
+MX, SPF, DKIM und DMARC für Infomaniak bleiben unverändert. Sobald alles auflöst: `DOMAIN_MODE` und `ZONE_DOMAIN_MODE` = `add`, Workflow starten; dann beide `bind`, Workflow erneut starten. Mit `bind`:
+
+- `AUTH_URL` wird `https://pain-therapy.online`; `pain-therapy.ayanta.ch` und `www` leiten mit 308 dorthin weiter (`src/lib/legacy-host.ts`).
+- Neue Links an Patient:innen gehen auf `patient.pain-therapy.online`. `patient.pain-therapy.ayanta.ch` bleibt gebunden und bedient alte Links, bis der letzte abgelaufen ist (höchstens 6 Monate), danach `ZONE_CUSTOM_DOMAIN_MODE` = `off`.
+
+### 4. Inbetriebnahme
+
+1. Spätestens 5 Minuten nach dem Deployment geht die Einladung an `admin@pain-therapy.online`. Annehmen, Passkey oder Authenticator einrichten.
+2. Unter `/platform` bei «Pain Therapy Falera» Chrissie (`christina.franz@pain-therapy.online`) als Praxis-Admin einladen.
+3. Zum Prüfen der Trennung eine «Test-Praxis» mit Admin `test-therapist@pain-therapy.online` anlegen.
+
+### 5. Aufräumen nach der Abnahme
+
+- Entra-App «Ayanta Schmerztherapie» und die Graph-Berechtigung `Mail.Send` der Managed Identity samt Application Access Policy entfernen ([entra.md](entra.md), gilt nur noch historisch).
+- Key-Vault-Secret `entra-client-secret` löschen: `az keyvault secret delete --vault-name <keyVaultName> -n entra-client-secret`.
+- GitHub: `ENTRA_TENANT_ID`, `ENTRA_CLIENT_ID`, `MAIL_SENDER`, `ENTRA_CLIENT_SECRET` löschen.
+- DMARC bei Swizzonic von `p=none` auf `p=reject`, sobald der Versand stabil läuft.
+
+**Rollback:** vorherige Revision aktivieren genügt nicht, weil die Migration Spalten und RLS ergänzt hat und die alte App Entra und Graph braucht. Im Notfall: Commit vor Iteration 12 erneut deployen mit den alten Variablen und Secrets; die neuen Spalten stören die alte Praxis-App nicht, und RLS greift für den Eigentümer nicht. Die alte Patienten-Zone sieht unter RLS ohne Praxis-Kontext dagegen nichts mehr; für einen Rollback der Zone müsste RLS der Zonen-Tabellen vorübergehend abgeschaltet werden.
 
 ## Nach dem Go-live
 

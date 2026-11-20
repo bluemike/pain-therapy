@@ -10,12 +10,14 @@ process.env.ZONE_URL = ZONE_URL;
 process.env.E2E_OUTBOX_DIR ??= path.resolve('data/e2e-outbox');
 // Key of the internal calls from the zone to the practice app (iteration 5, design D7)
 const INTERNAL_SECRET = 'e2e-only-zone-internal-secret';
-const zoneDatabaseUrl = () => {
-  const url = new URL(process.env.DATABASE_URL ?? 'postgresql://app:app@localhost:5432/pain_therapy');
-  url.username = 'patient_zone';
-  url.password = process.env.PATIENT_ZONE_DB_PASSWORD ?? 'patient_zone';
+const ownerDatabaseUrl = process.env.DATABASE_URL ?? 'postgresql://app:app@localhost:5432/pain_therapy';
+const roleDatabaseUrl = (role: string, password: string) => {
+  const url = new URL(ownerDatabaseUrl);
+  url.username = role;
+  url.password = password;
   return url.toString();
 };
+const zoneDatabaseUrl = () => roleDatabaseUrl('patient_zone', process.env.PATIENT_ZONE_DB_PASSWORD ?? 'patient_zone');
 
 export default defineConfig({
   testDir: 'tests/e2e',
@@ -55,6 +57,11 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
       env: {
+        // As in Azure (iteration 12, design D1): patient data as practice_app under row-level security, the owner only
+        // for users, practices and jobs across practices. As the owner, RLS would not apply and tests/e2e/isolation.spec.ts
+        // would prove nothing. Role and password: prisma/practice-app-role.mjs.
+        DATABASE_URL: roleDatabaseUrl('practice_app', process.env.PRACTICE_APP_DB_PASSWORD ?? 'practice_app'),
+        DATABASE_ADMIN_URL: ownerDatabaseUrl,
         PATIENT_ZONE_URL: ZONE_URL,
         MAIL_OUTBOX_DIR: process.env.E2E_OUTBOX_DIR,
         ZONE_INTERNAL_SECRET: INTERNAL_SECRET,

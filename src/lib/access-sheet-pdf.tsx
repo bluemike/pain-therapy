@@ -2,10 +2,11 @@ import React from 'react';
 import { Document, Image, Page, StyleSheet, Text, View, renderToBuffer } from '@react-pdf/renderer';
 import QRCode from 'qrcode';
 import type { Language } from '@prisma/client';
-import { config } from './config';
 import { formatDateZurich } from './format';
 import { translator } from './i18n-server';
 import { BORDER, GOLD, INK, MID, registerFonts } from './pdf';
+import { currentBrand, type Brand } from './brand';
+import { BrandMark } from './pdf-brand';
 
 /**
  * patient-access: Zugangsblatt (iteration 4, design D4). One page with QR code, address and a short guide. Rendered on
@@ -29,6 +30,8 @@ const s = StyleSheet.create({
 });
 
 export interface AccessSheetInput {
+  /** Practice shown in the header; the current practice when left out */
+  brand?: Brand;
   language: Language;
   patient: { firstName: string; lastName: string };
   url: string;
@@ -53,10 +56,8 @@ export function AccessSheetPage({ input, qr }: { input: AccessSheetInput; qr: st
   return (
     <Page size="A4" style={s.page}>
       <View style={s.header}>
-        <Text style={s.mark}>
-          ayanta<Text style={s.dot}>.</Text>
-        </Text>
-        <Text style={s.muted}>{config.practiceAddress}</Text>
+        <BrandMark brand={input.brand!} textStyle={s.mark} />
+        <Text style={s.muted}>{input.brand!.addressLine}</Text>
       </View>
       <Text style={s.title}>{t('title')}</Text>
       <Text>{t(sign ? 'introSign' : 'intro', { name: `${input.patient.firstName} ${input.patient.lastName}` })}</Text>
@@ -75,7 +76,7 @@ export function AccessSheetPage({ input, qr }: { input: AccessSheetInput; qr: st
         <Text>{t(sign ? 'validitySign' : 'validity', { date: formatDateZurich(input.expiresAt) })}</Text>
         <Text style={s.muted}>{t('keep')}</Text>
       </View>
-      <Text style={s.footer}>{t('footer')}</Text>
+      <Text style={s.footer}>{t('footer', { email: input.brand!.contactEmail })}</Text>
     </Page>
   );
 }
@@ -84,9 +85,10 @@ export async function renderAccessSheetPdf(input: AccessSheetInput): Promise<Buf
   registerFonts();
   const qr = await qrPng(input.url);
   const t = translator(input.language, 'accessSheet');
+  const brand = input.brand ?? (await currentBrand());
   return renderToBuffer(
-    <Document title={t('title')} author="Ayanta" language={input.language}>
-      <AccessSheetPage input={input} qr={qr} />
+    <Document title={t('title')} author={brand.name} language={input.language}>
+      <AccessSheetPage input={{ ...input, brand }} qr={qr} />
     </Document>,
   );
 }

@@ -229,14 +229,24 @@ export async function documentsOf(s: ZoneSession) {
   };
 }
 
-/** A document of the patient by its number, or null (also for a number of another patient) */
+/**
+ * A document of the patient by its number, or null (also for a number of another patient). `paths`: where the archive
+ * may hold it, newest layout first (iteration 12, design D8: under the practice; older files under the patient).
+ */
 export async function documentOf(s: ZoneSession, documentNumber: string) {
-  if (!/^[A-Z]{2}-\d{4}-\d{5,}$/.test(documentNumber)) return null;
+  // Kürzel of the practice: 2 to 4 letters (iteration 12, practice-settings)
+  if (!/^[A-Z]{2,4}-\d{4}-\d{5,}$/.test(documentNumber)) return null;
   const where = { documentNumber, patientId: s.patient.id };
   const [signed, sheet] = await Promise.all([
     db.signedDocument.findFirst({ where, select: { documentNumber: true, patientId: true } }),
     db.exerciseHandout.findFirst({ where, select: { documentNumber: true, patientId: true } }),
   ]);
   const doc = signed ?? sheet;
-  return doc ? { documentNumber: doc.documentNumber, path: `${doc.patientId}/${doc.documentNumber}.pdf` } : null;
+  if (!doc) return null;
+  const legacy = `${doc.patientId}/${doc.documentNumber}.pdf`;
+  const { practiceId } = s;
+  return {
+    documentNumber: doc.documentNumber,
+    paths: practiceId ? [`${practiceId}/${legacy}`, legacy] : [legacy],
+  };
 }

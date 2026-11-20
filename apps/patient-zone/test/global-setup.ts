@@ -3,6 +3,7 @@ import path from 'node:path';
 import { PrismaClient } from '@prisma/client';
 import type { TestProject } from 'vitest/node';
 import { applyPatientZoneRole } from '../../../prisma/patient-zone-role.mjs';
+import { TEST_PRACTICE_ID, TEST_PRACTICE_SQL } from '@pain-therapy/shared/test-practice';
 
 declare module 'vitest' {
   export interface ProvidedContext {
@@ -31,6 +32,9 @@ export default async function setup(project: TestProject) {
     env: { ...process.env, DATABASE_URL: adminUrl },
     stdio: 'pipe',
   });
+  // Iteration 12: every connection works in the test practice (tests/unit/test-practice.ts)
+  await db.$executeRawUnsafe(`ALTER DATABASE "${name}" SET app.practice_id = '${TEST_PRACTICE_ID}'`);
+  await db.$executeRawUnsafe(TEST_PRACTICE_SQL);
   let zoneUrl = adminUrl;
   try {
     const [{ allowed }] = await db.$queryRaw<{ allowed: boolean }[]>`

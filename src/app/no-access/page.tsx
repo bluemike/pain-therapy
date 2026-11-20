@@ -3,17 +3,15 @@ import { getTranslations } from 'next-intl/server';
 import { auth } from '@/auth';
 import { Logo } from '@/components/Logo';
 
-/** access-control: "Kein Zugang" for foreign accounts, users without a role and missing permissions */
-export default async function NoAccess({
-  searchParams,
-}: {
-  searchParams: Promise<{ reason?: string; error?: string }>;
-}) {
+/** access-control: "Kein Zugang" for a suspended practice, users without a membership and missing permissions */
+export default async function NoAccess({ searchParams }: { searchParams: Promise<{ reason?: string }> }) {
   const sp = await searchParams;
   const t = await getTranslations('noAccess');
   const tc = await getTranslations('common');
   const session = await auth();
-  const reason = sp.reason ?? (sp.error ? 'foreign' : 'forbidden');
+  const reason = ['suspended', 'noMembership', 'inactive', 'forbidden'].includes(sp.reason ?? '')
+    ? sp.reason!
+    : 'forbidden';
   return (
     <div className="app">
       <main className="center" id="main">
@@ -23,16 +21,7 @@ export default async function NoAccess({
             403
           </span>
           <h1>{t('title')}</h1>
-          {reason === 'noRole' ? (
-            <>
-              <p>{t('noRole')}</p>
-              <p>{t('help')}</p>
-            </>
-          ) : reason === 'forbidden' ? (
-            <p>{t('forbidden')}</p>
-          ) : (
-            <p>{t('foreign')}</p>
-          )}
+          <p>{t(reason as 'forbidden')}</p>
           {session?.user && reason === 'forbidden' ? (
             <Link className="btn btn--ghost" href="/">
               {t('backHome')}

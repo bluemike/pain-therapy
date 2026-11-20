@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { requireUser } from '@/lib/session';
@@ -20,6 +21,9 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
             {profile.name} · {profile.email}
           </div>
         </div>
+        <Link className="btn btn--ghost" href="/profile/security">
+          {t('security')}
+        </Link>
       </div>
       {sp.flash === 'saved' ? (
         <div className="banner ok" role="status">

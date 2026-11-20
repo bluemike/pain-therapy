@@ -4,6 +4,8 @@ import type { Actor } from './session';
 
 export type AuditAction =
   | 'patient.viewed'
+  // practice-settings (iteration 12): Praxisangaben, Logo, Datenschutzhinweis geändert
+  | 'practice.updated'
   | 'patient.created'
   | 'patient.updated'
   | 'patient.deactivated'
@@ -54,7 +56,19 @@ export type AuditAction =
   // adherence-overview: the practice opened the tab "Übungstagebuch"
   | 'exerciseLog.viewed'
   // user-profile (iteration 8, design D9): display name or professional title changed under "Mein Profil"
-  | 'profile.updated';
+  | 'profile.updated'
+  // Iteration 12, phase 5 (design D3, D4, D9): team of a practice and the platform
+  | 'team.invited'
+  | 'team.invitationRevoked'
+  | 'team.rolesChanged'
+  | 'team.deactivated'
+  | 'team.reactivated'
+  | 'team.signInReset'
+  | 'practice.created'
+  | 'practice.suspended'
+  | 'practice.reactivated'
+  | 'practice.exported'
+  | 'practice.deleted';
 
 type Tx = Prisma.TransactionClient | PrismaClient;
 

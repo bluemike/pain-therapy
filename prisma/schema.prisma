@@ -12,11 +12,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  THERAPIST
-  ADMIN
-}
-
 enum Language {
   de
   en
@@ -78,23 +73,135 @@ enum ProfessionalTitle {
 
 /// A signed-in Ayanta user. Created on first sign-in from the Entra ID token.
 model User {
-  id          String            @id @default(cuid())
-  entraOid    String            @unique
-  email       String
-  name        String
-  /// "Hallo <displayName>"; first name from Entra until the user changes it under "Mein Profil"
-  displayName String?
-  title       ProfessionalTitle @default(THERAPIST_F)
-  roles       Role[]
-  locale      Language          @default(de)
-  place       String?
-  createdAt   DateTime          @default(now())
-  lastLoginAt DateTime          @default(now())
-  /// Sessions issued before this time are rejected (sign-out, access-control)
-  signedOutAt DateTime?
+  id             String            @id @default(cuid())
+  /// Subject of the former Entra sign-in (until iteration 12); null for users invited afterwards
+  entraOid       String?           @unique
+  /// Sign-in address, lower case (therapist-login)
+  email          String            @unique
+  name           String
+  /// "Hallo <displayName>"; first name of the name until the user changes it under "Mein Profil"
+  displayName    String?
+  title          ProfessionalTitle @default(THERAPIST_F)
+  locale         Language          @default(de)
+  place          String?
+  createdAt      DateTime          @default(now())
+  lastLoginAt    DateTime          @default(now())
+  /// Sessions issued before this time are rejected (sign-out, access-control, reset of the sign-in)
+  signedOutAt    DateTime?
+  /// Platform administrator (design D3): manages practices, never sees patient data
+  platformAdmin  Boolean           @default(false)
+  /// Set once the invited user has set up a second factor (design D2); no sign-in before
+  activatedAt    DateTime?
+  /// TOTP secret, AES-256-GCM encrypted (src/lib/auth/crypto.ts); confirmed with a first code
+  totpSecretEnc  String?
+  /// Secret shown during the TOTP setup, until the first code confirms it
+  totpPendingEnc String?
+  totpEnabledAt  DateTime?
+
+  memberships   PracticeMembership[]
+  passkeys      Passkey[]
+  recoveryCodes RecoveryCode[]
+}
+
+/// WebAuthn credential of a user (design D2), registered with user verification
+model Passkey {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// base64url credential id
+  credentialId String    @unique
+  publicKey    Bytes
+  counter      BigInt    @default(0)
+  transports   String[]
+  /// e.g. "iPad" from the user agent, for the list under "Anmeldung"
+  label        String
+  createdAt    DateTime  @default(now())
+  lastUsedAt   DateTime?
+
+  @@index([userId])
+}
+
+/// Single-use recovery code (10 per user), stored as HMAC (design D2)
+model RecoveryCode {
+  id       String    @id @default(cuid())
+  userId   String
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash String    @unique
+  usedAt   DateTime?
+
+  @@index([userId])
+}
+
+enum LoginCodePurpose {
+  LOGIN
+  INVITATION
+}
+
+/// 6-digit code sent by email (design D2): valid 10 minutes, single use. After the code is confirmed, the ticket
+/// (httpOnly cookie) carries the first factor to the second step.
+model LoginCode {
+  id           String           @id @default(cuid())
+  email        String
+  purpose      LoginCodePurpose
+  invitationId String?
+  invitation   Invitation?      @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  codeHash     String
+  expiresAt    DateTime
+  verifiedAt   DateTime?
+  ticketHash   String?          @unique
+  /// Set when the ticket signed in (or the code was replaced by a newer one)
+  usedAt       DateTime?
+  createdAt    DateTime         @default(now())
+
+  @@index([email, createdAt])
+}
+
+/// Wrong codes per address and IP, for the 15-minute lock after 5 failures (therapist-login: Schutz vor Erraten)
+model LoginFailure {
+  id        String   @id @default(cuid())
+  email     String
+  ip        String
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
+  @@index([ip, createdAt])
+}
+
+/// WebAuthn challenge, single use, valid 5 minutes
+model WebAuthnChallenge {
+  id        String   @id @default(cuid())
+  challenge String   @unique
+  /// Registration: the user the passkey is for; null for a sign-in
+  userId    String?
+  expiresAt DateTime
+}
+
+/// Invitation to a practice or to the platform (design D4): 7 days, single use
+model Invitation {
+  id            String         @id @default(cuid())
+  email         String
+  /// null for an invitation as platform administrator
+  practiceId    String?
+  practice      Practice?      @relation(fields: [practiceId], references: [id])
+  roles         PracticeRole[]
+  platformAdmin Boolean        @default(false)
+  /// Name of the invited person, taken over by the account (phase 5)
+  name          String?
+  tokenHash     String         @unique
+  expiresAt     DateTime
+  acceptedAt    DateTime?
+  revokedAt     DateTime?
+  invitedBy     String
+  createdAt     DateTime       @default(now())
+
+  loginCodes LoginCode[]
+
+  @@index([email])
 }
 
 model Patient {
+  practiceId         String        @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice           Practice      @relation(fields: [practiceId], references: [id])
   id                 String        @id @default(cuid())
   firstName          String
   lastName           String
@@ -137,6 +244,8 @@ model Patient {
 
 /// Medical part of the intake form ("Anamnese L&B-Patienten", page 2)
 model Anamnesis {
+  practiceId        String    @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice          Practice  @relation(fields: [practiceId], references: [id])
   patientId         String    @id
   patient           Patient   @relation(fields: [patientId], references: [id])
   smoker            YesNo     @default(NO)
@@ -165,6 +274,8 @@ model Anamnesis {
 
 /// Versioned disclaimer text (liability waiver, patient information, privacy notice), one row per version and language
 model ConsentTextVersion {
+  practiceId  String   @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice    Practice @relation(fields: [practiceId], references: [id])
   id          String   @id @default(cuid())
   version     Int
   language    Language
@@ -175,10 +286,12 @@ model ConsentTextVersion {
 
   sessions SignatureSession[]
 
-  @@unique([version, language])
+  @@unique([practiceId, version, language])
 }
 
 model SignatureSession {
+  practiceId      String              @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice        Practice            @relation(fields: [practiceId], references: [id])
   id              String              @id @default(cuid())
   patientId       String
   patient         Patient             @relation(fields: [patientId], references: [id])
@@ -210,20 +323,24 @@ model SignatureSession {
 }
 
 model Consent {
-  id        String           @id @default(cuid())
-  sessionId String
-  session   SignatureSession @relation(fields: [sessionId], references: [id])
-  kind      ConsentKind
-  granted   Boolean
-  createdAt DateTime         @default(now())
+  practiceId String           @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice   Practice         @relation(fields: [practiceId], references: [id])
+  id         String           @id @default(cuid())
+  sessionId  String
+  session    SignatureSession @relation(fields: [sessionId], references: [id])
+  kind       ConsentKind
+  granted    Boolean
+  createdAt  DateTime         @default(now())
 
   @@unique([sessionId, kind])
 }
 
 /// Archived PDF. Rows are immutable (enforced by a database trigger); the file lives in immutable Blob Storage.
 model SignedDocument {
+  practiceId     String           @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice       Practice         @relation(fields: [practiceId], references: [id])
   id             String           @id @default(cuid())
-  documentNumber String           @unique
+  documentNumber String
   patientId      String
   patient        Patient          @relation(fields: [patientId], references: [id])
   sessionId      String           @unique
@@ -237,10 +354,13 @@ model SignedDocument {
 
   deliveries EmailDelivery[]
 
+  @@unique([practiceId, documentNumber])
   @@index([patientId, createdAt])
 }
 
 model EmailDelivery {
+  practiceId  String         @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice    Practice       @relation(fields: [practiceId], references: [id])
   id          String         @id @default(cuid())
   documentId  String
   document    SignedDocument @relation(fields: [documentId], references: [id])
@@ -256,25 +376,31 @@ model EmailDelivery {
 
 /// Append-only access and change log (enforced by a database trigger)
 model AuditEvent {
-  id        String   @id @default(cuid())
-  at        DateTime @default(now())
-  userId    String
-  userName  String
-  patientId String?
-  patient   Patient? @relation(fields: [patientId], references: [id])
-  action    String
-  field     String?
-  before    String?
-  after     String?
-  details   Json?
+  practiceId String?   @default(dbgenerated("NULLIF(current_setting('app.practice_id'::text, true), ''::text)"))
+  practice   Practice? @relation(fields: [practiceId], references: [id])
+  id         String    @id @default(cuid())
+  at         DateTime  @default(now())
+  userId     String
+  userName   String
+  patientId  String?
+  patient    Patient?  @relation(fields: [patientId], references: [id])
+  action     String
+  field      String?
+  before     String?
+  after      String?
+  details    Json?
 
   @@index([patientId, at])
 }
 
-/// Sequence for human-readable document numbers (PT-YYYY-NNNNN)
+/// Sequence for human-readable document numbers (<Kürzel>-YYYY-NNNNN), per practice (iteration 12, design D5)
 model DocumentCounter {
-  year Int @id
-  last Int @default(0)
+  practiceId String   @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice   Practice @relation(fields: [practiceId], references: [id])
+  year       Int
+  last       Int      @default(0)
+
+  @@id([practiceId, year])
 }
 
 // ---------- Therapy catalog (therapy-catalog, design D2) ----------
@@ -432,22 +558,24 @@ enum Side {
 
 /// One treatment per pain area; never deleted (database trigger)
 model Treatment {
-  id        String   @id @default(cuid())
-  patientId String
-  patient   Patient  @relation(fields: [patientId], references: [id])
-  startedAt DateTime
-  regionId  Int
-  region    Region   @relation(fields: [regionId], references: [id])
+  practiceId String   @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice   Practice @relation(fields: [practiceId], references: [id])
+  id         String   @id @default(cuid())
+  patientId  String
+  patient    Patient  @relation(fields: [patientId], references: [id])
+  startedAt  DateTime
+  regionId   Int
+  region     Region   @relation(fields: [regionId], references: [id])
   /// Fixed after the first session, like the pain area
-  side      Side     @default(UNSPECIFIED)
+  side       Side     @default(UNSPECIFIED)
   /// "Schmerzlokalisation und Schmerzzustand" (iteration 8 design D10)
-  diagnosis String
+  diagnosis  String
   /// Pain at the start in percent, 0 to 100 in steps of 10
-  painStart Int
-  createdAt DateTime @default(now())
-  createdBy String
-  updatedAt DateTime @updatedAt
-  updatedBy String
+  painStart  Int
+  createdAt  DateTime @default(now())
+  createdBy  String
+  updatedAt  DateTime @updatedAt
+  updatedBy  String
 
   consultations Consultation[]
   photos        ClinicalPhoto[]
@@ -457,6 +585,8 @@ model Treatment {
 
 /// One session, i.e. one paper form; never deleted (database trigger)
 model Consultation {
+  practiceId  String    @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice    Practice  @relation(fields: [practiceId], references: [id])
   id          String    @id @default(cuid())
   treatmentId String
   treatment   Treatment @relation(fields: [treatmentId], references: [id])
@@ -484,6 +614,8 @@ model Consultation {
 
 /// Only stored when at least one value is given
 model ConsultationPoint {
+  practiceId     String             @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice       Practice           @relation(fields: [practiceId], references: [id])
   consultationId String
   consultation   Consultation       @relation(fields: [consultationId], references: [id])
   pointId        String
@@ -496,6 +628,8 @@ model ConsultationPoint {
 }
 
 model ConsultationExercise {
+  practiceId     String       @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice       Practice     @relation(fields: [practiceId], references: [id])
   consultationId String
   consultation   Consultation @relation(fields: [consultationId], references: [id])
   exerciseCode   String
@@ -514,6 +648,8 @@ model ConsultationExercise {
 
 /// Photo of a treatment, optionally of one of its consultations. Removing only hides it; the file stays.
 model ClinicalPhoto {
+  practiceId     String        @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice       Practice      @relation(fields: [practiceId], references: [id])
   id             String        @id @default(cuid())
   treatmentId    String
   treatment      Treatment     @relation(fields: [treatmentId], references: [id])
@@ -574,6 +710,8 @@ model ExerciseSheet {
 
 /// Selbstausführung: one row per exercise prescribed in a session, always FRM + the chosen EPD (iteration 8 design D7)
 model HomePrescription {
+  practiceId     String       @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice       Practice     @relation(fields: [practiceId], references: [id])
   consultationId String
   consultation   Consultation @relation(fields: [consultationId], references: [id])
   exerciseCode   String
@@ -598,8 +736,10 @@ enum HandoutChannel {
 
 /// Personal exercise sheet (PDF). Rows are immutable (database trigger); the file lives in the document archive.
 model ExerciseHandout {
+  practiceId     String       @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice       Practice     @relation(fields: [practiceId], references: [id])
   id             String       @id @default(cuid())
-  documentNumber String       @unique
+  documentNumber String
   patientId      String
   patient        Patient      @relation(fields: [patientId], references: [id])
   consultationId String
@@ -618,11 +758,14 @@ model ExerciseHandout {
   deliveries HandoutDelivery[]
 
   @@unique([consultationId, version])
+  @@unique([practiceId, documentNumber])
   @@index([patientId, createdAt])
 }
 
 /// Email (with status and retries, like EmailDelivery) or printout of a handout; never deleted (database trigger)
 model HandoutDelivery {
+  practiceId  String          @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice    Practice        @relation(fields: [practiceId], references: [id])
   id          String          @id @default(cuid())
   handoutId   String
   handout     ExerciseHandout @relation(fields: [handoutId], references: [id])
@@ -644,6 +787,8 @@ model HandoutDelivery {
 
 /// Personal link to the patient zone. One valid link per patient: a new link replaces the previous one.
 model PatientAccessLink {
+  practiceId     String    @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice       Practice  @relation(fields: [practiceId], references: [id])
   id             String    @id @default(cuid())
   patientId      String
   patient        Patient   @relation(fields: [patientId], references: [id])
@@ -687,6 +832,8 @@ enum AccessLinkPurpose {
 }
 
 model AccessLinkDelivery {
+  practiceId  String            @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice    Practice          @relation(fields: [practiceId], references: [id])
   id          String            @id @default(cuid())
   linkId      String
   link        PatientAccessLink @relation(fields: [linkId], references: [id])
@@ -709,6 +856,8 @@ model AccessLinkDelivery {
 
 /// Device signed in after the confirmation with the date of birth (cookie with a random id, stored as SHA-256)
 model PatientZoneSession {
+  practiceId String            @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice   Practice          @relation(fields: [practiceId], references: [id])
   id         String            @id @default(cuid())
   idHash     String            @unique
   linkId     String
@@ -743,6 +892,8 @@ model PatientZoneAttempt {
 
 /// Übungstagebuch: one execution recorded by the patient. Deleting only sets deletedAt; the practice reads only.
 model ExerciseLogEntry {
+  practiceId     String              @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice       Practice            @relation(fields: [practiceId], references: [id])
   id             String              @id @default(cuid())
   patientId      String
   patient        Patient             @relation(fields: [patientId], references: [id])
@@ -765,4 +916,119 @@ model ExerciseLogEntry {
 
   @@index([patientId, performedAt])
   @@index([consultationId, exerciseCode])
+}
+
+// ---------- Practices (iteration 12, design D1, D3, D5) ----------
+
+enum PracticeStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum PracticeRole {
+  PRACTICE_ADMIN
+  THERAPIST
+}
+
+/// A practice (tenant). Every patient-related row belongs to exactly one practice; PostgreSQL row-level security
+/// limits each request to the practice in the setting app.practice_id (prisma/rls.sql).
+model Practice {
+  id             String         @id @default(cuid())
+  slug           String         @unique
+  name           String
+  status         PracticeStatus @default(ACTIVE)
+  /// One line as printed in PDF footers, e.g. "Pain Therapy | Via Prau da Cuort 5 | 7153 Falera"
+  addressLine    String
+  street         String?
+  zip            String?
+  city           String?
+  defaultPlace   String
+  contactEmail   String
+  phone          String?
+  /// Logo (PNG or JPEG, at most 500 KB) for app, zone and PDFs; null shows the name as text (design D5)
+  logo           Bytes?
+  logoType       String?
+  /// Own text of the zone privacy notice (paragraphs); null uses the platform template with the practice details
+  privacyNotice  String?
+  documentPrefix String         @default("PT")
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  /// Set when the platform deleted the practice's data (design D9); the row keeps the slug from being given again
+  deletedAt      DateTime?
+
+  memberships           PracticeMembership[]
+  invitations           Invitation[]
+  patients              Patient[]
+  anamneses             Anamnesis[]
+  consentTexts          ConsentTextVersion[]
+  signatureSessions     SignatureSession[]
+  consents              Consent[]
+  signedDocuments       SignedDocument[]
+  emailDeliveries       EmailDelivery[]
+  treatments            Treatment[]
+  consultations         Consultation[]
+  consultationPoints    ConsultationPoint[]
+  consultationExercises ConsultationExercise[]
+  clinicalPhotos        ClinicalPhoto[]
+  homePrescriptions     HomePrescription[]
+  exerciseHandouts      ExerciseHandout[]
+  handoutDeliveries     HandoutDelivery[]
+  accessLinks           PatientAccessLink[]
+  accessLinkDeliveries  AccessLinkDelivery[]
+  zoneSessions          PatientZoneSession[]
+  logEntries            ExerciseLogEntry[]
+  auditEvents           AuditEvent[]
+  documentCounters      DocumentCounter[]
+  exports               PracticeExport[]
+}
+
+enum ExportStatus {
+  PENDING
+  DONE
+  FAILED
+}
+
+/// Export of a practice as ZIP (design D9): PDFs, photos and the data as JSON; download for 24 hours
+model PracticeExport {
+  practiceId  String       @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice    Practice     @relation(fields: [practiceId], references: [id])
+  id          String       @id @default(cuid())
+  status      ExportStatus @default(PENDING)
+  requestedBy String
+  blobPath    String?
+  sizeBytes   Int?
+  error       String?
+  createdAt   DateTime     @default(now())
+  finishedAt  DateTime?
+  expiresAt   DateTime?
+
+  @@index([practiceId, createdAt])
+}
+
+/// Signed PDFs of a deleted practice still under WORM retention; a job removes them afterwards (design D9)
+model PendingBlobDeletion {
+  id          String    @id @default(cuid())
+  practiceId  String
+  container   String
+  path        String
+  deleteAfter DateTime
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([deleteAfter])
+}
+
+/// Membership of a user in a practice, with roles per practice (design D3)
+model PracticeMembership {
+  id         String         @id @default(cuid())
+  userId     String
+  user       User           @relation(fields: [userId], references: [id])
+  practiceId String
+  practice   Practice       @relation(fields: [practiceId], references: [id])
+  roles      PracticeRole[]
+  active     Boolean        @default(true)
+  createdAt  DateTime       @default(now())
+
+  @@unique([userId, practiceId])
+  @@index([practiceId])
 }

@@ -3,6 +3,9 @@
 # GitHub environment "production"). Runs only when the repository variable AZURE_DEPLOY_ENABLED is "true".
 # Since iteration 4 it builds two images (practice app and patient zone) with the same tag and needs the GitHub
 # secret PATIENT_ZONE_DB_PASSWORD (docs/deployment.md, "Iteration 4").
+# Iteration 12 (practices, pain-therapy.online): no Entra and no Graph any more; needs the GitHub secrets
+# PRACTICE_APP_DB_PASSWORD, AUTH_ENCRYPTION_KEY and SMTP_PASSWORD and the variables DOMAIN_MODE and ZONE_DOMAIN_MODE
+# (docs/deployment.md, "Iteration 12").
 name: Deploy to Azure
 
 on:
@@ -24,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production
-      url: https://pain-therapy.ayanta.ch
+      url: ${{ vars.DOMAIN_MODE == 'bind' && 'https://pain-therapy.online' || 'https://pain-therapy.ayanta.ch' }}
     env:
       RG: ${{ vars.AZURE_RESOURCE_GROUP }}
       IMAGE_TAG: ${{ github.sha }}
@@ -32,12 +35,27 @@ jobs:
       # Fails before anything is built or changed in Azure
       - name: Check required secrets
         env:
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          POSTGRES_ADMIN_PASSWORD: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
           PATIENT_ZONE_DB_PASSWORD: ${{ secrets.PATIENT_ZONE_DB_PASSWORD }}
+          PRACTICE_APP_DB_PASSWORD: ${{ secrets.PRACTICE_APP_DB_PASSWORD }}
+          AUTH_ENCRYPTION_KEY: ${{ secrets.AUTH_ENCRYPTION_KEY }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
         run: |
-          if [ -z "$PATIENT_ZONE_DB_PASSWORD" ]; then
-            echo "::error title=Missing secret::The GitHub secret PATIENT_ZONE_DB_PASSWORD (environment \"production\") is not set. It is the password of the database role patient_zone of the patient zone. Create it before deploying: openssl rand -base64 32 | tr -d '/+=' ; see docs/deployment.md, section \"Iteration 4\"."
-            exit 1
-          fi
+          missing=0
+          need() {
+            if [ -z "${!1}" ]; then
+              echo "::error title=Missing secret::The GitHub secret $1 (environment \"production\") is not set. $2 See docs/deployment.md."
+              missing=1
+            fi
+          }
+          need AUTH_SECRET "Signs the session cookies."
+          need POSTGRES_ADMIN_PASSWORD "Password of the database owner."
+          need PATIENT_ZONE_DB_PASSWORD "Password of the database role patient_zone (section \"Iteration 4\")."
+          need PRACTICE_APP_DB_PASSWORD "Password of the database role practice_app: openssl rand -base64 32 | tr -d '/+=' (section \"Iteration 12\")."
+          need AUTH_ENCRYPTION_KEY "Key of the authenticator secrets: openssl rand -base64 32; never change it later (section \"Iteration 12\")."
+          need SMTP_PASSWORD "Device password of noreply@pain-therapy.online at Infomaniak (section \"Iteration 12\")."
+          exit $missing
 
       - uses: actions/checkout@v4
 
@@ -67,40 +85,43 @@ jobs:
           docker build -f apps/patient-zone/Dockerfile -t "$zone" .
           docker push "$zone"
 
-      # One time only (first deployment of iteration 4): the migration job does not yet have the password of the role
-      # patient_zone. Bicep runs once with the image that is live now and without the zone image: it adds the Key Vault
-      # secrets, the identity of the zone, the password for the migration job and a placeholder zone app. The running
-      # practice app keeps its image. Later runs skip this step.
-      - name: Prepare the patient zone (first deployment only)
+      # Before the first deployment of iteration 4 or 12 only: the migration job does not yet have the password of a
+      # database role it creates (patient_zone, practice_app). Bicep runs once with the images that are live now: it adds
+      # the Key Vault secrets and the passwords for the migration job. Since iteration 12 this also switches the live app
+      # to the new settings, so the app is unavailable until the new revision below is up (a few minutes; see
+      # docs/deployment.md, "Iteration 12"). Later runs skip this step.
+      - name: Prepare new database roles (first deployment only)
         env:
-          ENTRA_TENANT_ID: ${{ vars.ENTRA_TENANT_ID }}
-          ENTRA_CLIENT_ID: ${{ vars.ENTRA_CLIENT_ID }}
-          MAIL_SENDER: ${{ vars.MAIL_SENDER }}
           CUSTOM_DOMAIN_MODE: ${{ vars.CUSTOM_DOMAIN_MODE || 'off' }}
-          ZONE_CUSTOM_DOMAIN_MODE: 'off'
-          ENTRA_CLIENT_SECRET: ${{ secrets.ENTRA_CLIENT_SECRET }}
+          ZONE_CUSTOM_DOMAIN_MODE: ${{ vars.ZONE_CUSTOM_DOMAIN_MODE || 'off' }}
+          DOMAIN_MODE: ${{ vars.DOMAIN_MODE || 'off' }}
+          ZONE_DOMAIN_MODE: ${{ vars.ZONE_DOMAIN_MODE || 'off' }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
           POSTGRES_ADMIN_PASSWORD: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
           PATIENT_ZONE_DB_PASSWORD: ${{ secrets.PATIENT_ZONE_DB_PASSWORD }}
+          PRACTICE_APP_DB_PASSWORD: ${{ secrets.PRACTICE_APP_DB_PASSWORD }}
+          AUTH_ENCRYPTION_KEY: ${{ secrets.AUTH_ENCRYPTION_KEY }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
         run: |
           job="${{ steps.names.outputs.job }}"
-          has=$(az containerapp job show -g "$RG" -n "$job" \
-            --query "length(properties.template.containers[0].env[?name=='PATIENT_ZONE_DB_PASSWORD'])" -o tsv)
-          if [ "${has:-0}" != "0" ]; then
-            echo "Migration job already has PATIENT_ZONE_DB_PASSWORD; nothing to prepare"
+          envs=$(az containerapp job show -g "$RG" -n "$job" --query "properties.template.containers[0].env[].name" -o tsv)
+          if grep -qx PATIENT_ZONE_DB_PASSWORD <<<"$envs" && grep -qx PRACTICE_APP_DB_PASSWORD <<<"$envs"; then
+            echo "Migration job already has the passwords of all database roles; nothing to prepare"
             exit 0
           fi
-          live=$(az containerapp show -g "$RG" -n "${{ steps.names.outputs.app }}" \
-            --query "properties.template.containers[0].image" -o tsv)
-          case "$live" in
-            */pain-therapy:*) export IMAGE_TAG="${live##*:}" ;;
-            *) export IMAGE_TAG="" ;;
-          esac
-          export ZONE_IMAGE_TAG=""
-          echo "Preparing the patient zone with the live image tag '$IMAGE_TAG'"
+          tag_of() {
+            img=$(az containerapp show -g "$RG" -n "$1" --query "properties.template.containers[0].image" -o tsv 2>/dev/null || true)
+            case "$img" in
+              */$2:*) echo "${img##*:}" ;;
+              *) echo "" ;;
+            esac
+          }
+          export IMAGE_TAG=$(tag_of "${{ steps.names.outputs.app }}" pain-therapy)
+          export ZONE_IMAGE_TAG=$(tag_of "$(az deployment group show -g "$RG" -n main --query properties.outputs.zoneAppName.value -o tsv)" pain-therapy-zone)
+          echo "Preparing with the live image tags '$IMAGE_TAG' and '$ZONE_IMAGE_TAG'"
           az deployment group create -g "$RG" -n main -f infra/main.bicep -p infra/main.bicepparam -o none
 
-      # prisma/migrate.sh: `prisma migrate deploy`, the role patient_zone with its grants, then the therapy catalog.
+      # prisma/migrate.sh: `prisma migrate deploy`, the roles patient_zone and practice_app with their grants, then the catalog.
       # Runs once per deployment, with the practice image; the patient zone never runs migrations.
       - name: Run database migrations and catalog sync
         run: |
@@ -120,16 +141,17 @@ jobs:
 
       - name: Deploy infrastructure and new revision
         env:
-          ENTRA_TENANT_ID: ${{ vars.ENTRA_TENANT_ID }}
-          ENTRA_CLIENT_ID: ${{ vars.ENTRA_CLIENT_ID }}
-          MAIL_SENDER: ${{ vars.MAIL_SENDER }}
           CUSTOM_DOMAIN_MODE: ${{ vars.CUSTOM_DOMAIN_MODE || 'off' }}
           ZONE_CUSTOM_DOMAIN_MODE: ${{ vars.ZONE_CUSTOM_DOMAIN_MODE || 'off' }}
+          DOMAIN_MODE: ${{ vars.DOMAIN_MODE || 'off' }}
+          ZONE_DOMAIN_MODE: ${{ vars.ZONE_DOMAIN_MODE || 'off' }}
           ZONE_IMAGE_TAG: ${{ github.sha }}
-          ENTRA_CLIENT_SECRET: ${{ secrets.ENTRA_CLIENT_SECRET }}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
           POSTGRES_ADMIN_PASSWORD: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
           PATIENT_ZONE_DB_PASSWORD: ${{ secrets.PATIENT_ZONE_DB_PASSWORD }}
+          PRACTICE_APP_DB_PASSWORD: ${{ secrets.PRACTICE_APP_DB_PASSWORD }}
+          AUTH_ENCRYPTION_KEY: ${{ secrets.AUTH_ENCRYPTION_KEY }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
         run: |
           az deployment group create -g "$RG" -n main -f infra/main.bicep -p infra/main.bicepparam -o none
 
@@ -145,5 +167,4 @@ jobs:
             return 1
           }
           check "practice app" "$(jq -r .appFqdn.value <<<"$out")"
-          # The zone scales to zero; the first request also covers its cold start
-          check "patient zone" "$(jq -r .zoneFqdn.value <<<"$out")"
+                    check "patient zone" "$(jq -r .zoneFqdn.value <<<"$out")"

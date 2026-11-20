@@ -7,6 +7,8 @@ import type { ProfessionalTitle } from '@prisma/client';
 const PRESETS: Record<string, { displayName: string; title: ProfessionalTitle }> = {
   'christina.franz@ayanta.ch': { displayName: 'Chrissie', title: 'THERAPIST_F' },
   'mike.franz@ayanta.ch': { displayName: 'Mike', title: 'THERAPIST_M' },
+  // Iteration 12: the new addresses under pain-therapy.online
+  'christina.franz@pain-therapy.online': { displayName: 'Chrissie', title: 'THERAPIST_F' },
 };
 
 export const presetFor = (email: string) => PRESETS[email.trim().toLowerCase()];

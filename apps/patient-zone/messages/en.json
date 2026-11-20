@@ -8,7 +8,9 @@
     "privacyShort": "Only your therapist and the practice see your entries. They support your home programme and are kept with your record.",
     "privacyMore": "More about privacy",
     "footerNote": "If you are in pain or have questions, please contact the practice.",
-    "contact": "{name} · {email}"
+    "contact": "{name} · {email}",
+    "footerPractice": "Questions: {name} · {email}",
+    "platform": "Pain Therapy"
   },
   "confirm": {
     "title": "Welcome",
@@ -110,7 +112,7 @@
   "privacy": {
     "title": "Privacy",
     "who": "Who sees your entries?",
-    "whoText": "Only your therapist and the practice {name}. Nothing is passed on to third parties and no third-party services are used; the data is stored in Switzerland.",
+    "whoText": "Only your therapist and the practice{name}. Nothing is passed on to third parties and no third-party services are used; the data is stored in Switzerland.",
     "what": "What is stored?",
     "whatText": "Your entries (done or not, rating, date and time, note) and a log of the accesses. Your IP address is only stored as an encrypted check value to limit repeated failed attempts, and deleted after 30 days. For the liability waiver the patient zone shows your personal details for checking and stores your signature, your consents and your remark.",
     "why": "What for?",
@@ -119,7 +121,9 @@
     "howLongText": "The entries are kept with your record. After the confirmation the device stays signed in for 30 days; only a technically necessary cookie is set for this.",
     "contact": "Contact",
     "contactText": "Questions, information or correction: {name}, {address}, {email}.",
-    "back": "Back"
+    "back": "Back",
+    "yourPractice": " you attend",
+    "contactGeneric": "Questions, access or correction: please contact your practice."
   },
   "notFound": {
     "title": "Page not found",
