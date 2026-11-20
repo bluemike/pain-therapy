@@ -137,15 +137,15 @@ export default async function TeamPage({
             <label className="l" htmlFor="i_name">
               {t('name')}
             </label>
-            <input id="i_name" name="name" required maxLength={100} autoComplete="off" />
+            <input className="inp" id="i_name" name="name" required maxLength={100} autoComplete="off" />
           </div>
           <div className="f">
             <label className="l" htmlFor="i_email">
               {t('email')}
             </label>
-            <input id="i_email" name="email" type="email" required maxLength={200} autoComplete="off" />
+            <input className="inp" id="i_email" name="email" type="email" required maxLength={200} autoComplete="off" />
           </div>
-          <fieldset className="f">
+          <fieldset className="full">
             <legend className="l" id="i_roles">
               {t('roles')}
             </legend>
