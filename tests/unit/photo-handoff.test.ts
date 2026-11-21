@@ -149,6 +149,10 @@ describe('photos with the smartphone (iteration 15, design D5)', () => {
     });
     expect(await deleteStaleHandoffPhotos()).toBe(1);
     expect(await db.photoHandoffUpload.count({ where: { handoffId: h.id } })).toBe(0);
-    expect(await photoStore().get(up.blobPath).catch(() => null)).toBeNull();
+    expect(
+      await photoStore()
+        .get(up.blobPath)
+        .catch(() => null),
+    ).toBeNull();
   });
 });

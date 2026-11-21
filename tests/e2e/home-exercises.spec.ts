@@ -150,6 +150,29 @@ test.describe('home exercises and exercise sheet', () => {
     await expect(page.locator('table.hist')).toContainText('Sitzung Nr. 1: Übungsblatt ausgedruckt');
   });
 
+  test('only the fascia rolling is prescribed and the sheet can be viewed (iteration 15, design D4, D6)', async ({
+    page,
+  }) => {
+    await openSession(page, false);
+    await page.getByLabel('Übung 2A verordnet').check();
+    await expect(row(page, '2A')).toContainText('4 min pro Ausführung');
+    // «Blatt ansehen» opens the whole exercise sheet
+    await row(page, '2A').getByRole('button', { name: 'Übungsblatt 2A ansehen' }).click();
+    const sheet = page.getByRole('dialog', { name: /2A/ });
+    await expect(sheet.getByRole('img', { name: 'Übungsblatt 2A' })).toBeVisible();
+    await sheet.getByRole('button', { name: 'Schliessen' }).click();
+
+    // Nur FRM: no EPD and no "Übung fällt", the tools of the FRM instead; only the rolling counts
+    await page.getByLabel('Verordnete Teile von 2A').selectOption('FRM');
+    await expect(page.getByTestId('tools-2A')).toContainText('Werkzeug');
+    await expect(page.getByLabel('Übung 2A: EPD')).toHaveCount(0);
+    await expect(group(page, 'Übung 2A: Übung fällt')).toHaveCount(0);
+    await expect(row(page, '2A')).toContainText('nur FRM');
+    await expect(row(page, '2A')).toContainText('2 min pro Ausführung');
+    await page.getByRole('button', { name: 'Sitzung speichern' }).click();
+    await expect(page.getByText('Sitzung Nr. 1 gespeichert.')).toBeVisible();
+  });
+
   test('without consent to unencrypted email only printing is offered', async ({ page }) => {
     await openSession(page, false);
     await page.getByLabel('Übung 2D verordnet').check();

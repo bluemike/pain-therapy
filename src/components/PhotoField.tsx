@@ -284,7 +284,7 @@ function HandoffPanel({
       </div>
     );
   return (
-    <div className="handoff open" role="region" aria-label={t('panel')} data-testid="handoff">
+    <div className="handoff open" role="region" aria-label={t('panel')} data-testid="handoff" data-url={h!.url}>
       {/* eslint-disable-next-line @next/next/no-img-element -- QR code as data URL */}
       <img className="qr" src={h!.qr} alt={t('qrAlt')} width={180} height={180} />
       <div className="info">

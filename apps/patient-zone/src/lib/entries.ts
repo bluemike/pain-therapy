@@ -366,8 +366,8 @@ export async function mainImageOf(s: ProgramSession, code: string, band?: Band) 
 export async function setAudioLanguage(s: ZoneSession, lang: 'de' | 'gsw') {
   if (s.patient.preferredLanguage === 'en' || s.patient.audioLanguage === lang) return;
   await db.$transaction(async (tx) => {
-    // updateMany: no RETURNING, which would need SELECT on every column
-    await tx.patient.updateMany({ where: { id: s.patient.id }, data: { audioLanguage: lang } });
+    // Raw: Prisma would also set updatedAt, which the role may not change (only this column, no RETURNING)
+    await tx.$executeRaw`UPDATE "Patient" SET "audioLanguage" = ${lang}::"AudioLanguage" WHERE "id" = ${s.patient.id}`;
     await zoneAudit(
       'zone.audioLanguageChanged',
       { patientId: s.patient.id, linkId: s.session.linkId, before: s.patient.audioLanguage, after: lang },

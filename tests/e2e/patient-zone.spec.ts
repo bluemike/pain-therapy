@@ -149,6 +149,13 @@ test.describe('patient zone', () => {
     await expect(patient.getByRole('button', { name: '2A erledigt' })).toBeDisabled();
     await expect(patient.getByText('Heute 2 von 2 Ausführungen erfasst.')).toBeVisible();
 
+    // Hörsprache (iteration 15, design D3): Mundart instead of Hochdeutsch, stored for the patient
+    const audio = patient.getByRole('group', { name: 'Audio' });
+    await expect(audio.getByRole('button', { name: 'Hochdeutsch' })).toHaveAttribute('aria-pressed', 'true');
+    await audio.getByRole('button', { name: 'Mundart' }).click();
+    await expect(patient.getByText('Audiosprache gespeichert.')).toBeVisible();
+    await expect(audio.getByRole('button', { name: 'Mundart' })).toHaveAttribute('aria-pressed', 'true');
+
     // Korrektur innerhalb von 24 Stunden: 7/10 becomes 5/10
     const rated = entries.filter({ hasText: '7/10' });
     await rated.locator('summary').click();

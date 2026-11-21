@@ -27,7 +27,7 @@
   - Englisch: Die Texte der Übungsblätter (FRM, Standardübung, Varianten) werden einmal maschinell übersetzt und von Mike gegengelesen.
   - Mundart: Die Texte werden in Zürichdeutsch umgeschrieben, nicht wörtlich übersetzt, und von Chrissie gegengelesen.
   - Beide liegen nur in `exercise-media`: `segments-content.en.json` und `segments-content.gsw.json`.
-- **Aufnahmen Englisch:** Azure AI Speech F0 mit einer neuronalen Stimme (Vorschlag en-GB-SoniaNeural). Erzeugt über `npm run media:audio -- --lang en`. Rund 50'000 Zeichen liegen im freien Kontingent.
+- **Aufnahmen Englisch:** Azure AI Speech F0 mit einer neuronalen Stimme (Vorschlag en-GB-SoniaNeural). Erzeugt über `npm run media:audio-parts -- segments-content.en.json --lang en`. Rund 50'000 Zeichen liegen im freien Kontingent.
 - **Aufnahmen Mundart:** Azure hat keine Mundart-Stimme, de-CH spricht Hochdeutsch. Mike hat am 21.11.2026 Weg A gewählt:
   - **A (gewählt):** KI-Stimme mit Schweizerdeutsch-Unterstützung (Google Gemini TTS). Gesendet werden nur die L&B-Texte, keine Patientendaten. Das kostet einmalig wenige Franken. Die Qualität schwankt je nach Dialekt, Chrissie hört alle Dateien ab.
   - **B (verworfen, bleibt Ausweg bei schlechter Qualität):** Chrissie spricht die 146 Aufnahmen selbst ein, etwa 1 bis 2 Stunden. Sie lädt sie über ein Skript hoch. Das ergibt die beste Qualität, und die Stimme ist bekannt.
@@ -49,7 +49,7 @@ Im Block «Heimprogramm» der Sitzung bekommt jede Zeile den Knopf «Blatt anseh
 
 - **Ablauf:**
   1. Im Fotofeld (Behandlung oder Sitzung) tippt die Therapeutin «Mit Smartphone aufnehmen».
-  2. Der Server legt ein `PhotoHandoff` an: Praxis, Patient, optional Behandlung, ersteller, `tokenHash` (SHA-256 eines 32-Byte-Tokens), `expiresAt` = jetzt + 15 Minuten, `maxPhotos` = 10.
+  2. Der Server legt ein `PhotoHandoff` an (umgesetzt: Fotos vom Smartphone liegen bis zum Speichern in `PhotoHandoffUpload`, weil `ClinicalPhoto` eine Behandlung braucht und eine neue Behandlung beim Aufnehmen noch keine Id hat; beim Speichern wird daraus ein `ClinicalPhoto` mit derselben Id und denselben Dateien): Praxis, Patient, optional Behandlung, ersteller, `tokenHash` (SHA-256 eines 32-Byte-Tokens), `expiresAt` = jetzt + 15 Minuten, `maxPhotos` = 10.
   3. Das iPad zeigt einen QR-Code mit `https://pain-therapy.online/foto/<token>`, dazu einen vierstelligen Prüfcode und die Restzeit.
   4. Die Seite auf dem Smartphone zeigt nur den Praxisnamen und den Prüfcode, keinen Patientennamen. Mit dem Knopf «Foto aufnehmen» (`capture="environment"`) verkleinert sie die Bilder wie heute im Browser (`processPhoto`) und lädt sie einzeln hoch.
   5. Das Formular auf dem iPad fragt alle 3 Sekunden nach neuen Fotos und zeigt sie mit «vom Smartphone». Beim Speichern übernimmt es sie in die Behandlung oder Sitzung. Verworfene oder nie gespeicherte Fotos löscht der Aufräum-Job nach 24 Stunden endgültig.

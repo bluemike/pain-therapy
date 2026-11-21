@@ -228,6 +228,52 @@ test.describe('treatments and sessions', () => {
     expect((await page.request.get(photoUrl!)).status()).toBe(404);
   });
 
+  test('photos with the smartphone: QR link on the iPad, upload on the phone, taken over on save', async ({
+    page,
+    browser,
+  }) => {
+    await login(page);
+    await createSignedPatient(page, { first: 'Anna', last: `Handy${unique()}`, dob: '05.03.1980' });
+    await page.locator('.rechead').getByRole('link', { name: 'Neue Behandlung' }).click();
+    await page.locator('#f_regionId').selectOption('6');
+    await page.locator('#f_diagnosis').fill('Lumbalgie');
+    await setPain(page, 'f_painStart', 60);
+    await page.getByRole('button', { name: 'Mit Smartphone aufnehmen' }).click();
+    const panel = page.getByTestId('handoff');
+    await expect(panel.getByRole('img', { name: /QR-Code/ })).toBeVisible();
+    await expect(panel).toContainText(/Gültig noch 1[45]:\d\d min/);
+    const code = (await page.getByTestId('check-code').textContent())!;
+    // The link of the QR code, as the phone camera would read it
+    const handoffUrl = await page.locator('[data-testid="handoff"]').getAttribute('data-url');
+
+    // The phone: no sign-in, only the practice and the check code, never the patient
+    const phone = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+    await phone.goto(handoffUrl!);
+    await expect(phone.getByRole('heading', { name: 'Fotos aufnehmen' })).toBeVisible();
+    await expect(phone.locator('.checkcode')).toHaveText(code);
+    await expect(phone.locator('body')).not.toContainText('Handy');
+    await phone.locator('#handoff-input').setInputFiles([photoFile('p1.jpg'), photoFile('p2.jpg')]);
+    await expect(phone.getByRole('status')).toContainText('2 Fotos gesendet');
+
+    // The iPad shows them within a few seconds
+    await expect(page.getByTestId('phone-photo')).toHaveCount(2);
+    await expect(panel).toContainText('2 Fotos erhalten');
+    await page
+      .getByTestId('phone-photo')
+      .last()
+      .getByRole('button', { name: /verwerfen/ })
+      .click();
+    await panel.getByRole('button', { name: 'Beenden' }).click();
+    await expect(page.getByText(/Der Smartphone-Link ist beendet/)).toBeVisible();
+    // After «Beenden» the phone can send nothing more
+    await phone.reload();
+    await expect(phone.locator('.banner.err')).toContainText('abgelaufen oder beendet');
+
+    await page.getByRole('button', { name: 'Behandlung eröffnen' }).click();
+    await expect(page.getByText('Behandlung eröffnet.')).toBeVisible();
+    await expect(page.locator('section.treat').first()).toContainText('1 Foto');
+  });
+
   test('without a signed disclaimer no treatment is opened; the invitation is offered', async ({ page }) => {
     await login(page);
     await page.goto('/patients/new');
