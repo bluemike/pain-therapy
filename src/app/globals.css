@@ -3403,3 +3403,45 @@ input.inp[type='datetime-local']::-webkit-date-and-time-value {
   display: block;
   flex: none;
 }
+
+/* iPad landscape (Mike 21.11.2026): nav labels on one line, header stays one row */
+.nav {
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.nav a {
+  white-space: nowrap;
+  flex: none;
+}
+@media (max-width: 1180px) {
+  .logo {
+    min-width: 0;
+    max-width: 22vw;
+  }
+  .logo .mark {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .logo .app,
+  .hdr .uname {
+    display: none;
+  }
+  .hdr {
+    gap: 12px;
+  }
+  .nav a {
+    padding: 0 8px;
+    font-size: 14.5px;
+  }
+}
+/* Sticky save bar: above the form content; while typing on a touch device it moves to the end of the form, since
+   iPad Safari pins it mid-screen with the keyboard open and the form shows through below it */
+.formbar {
+  z-index: 10;
+}
+@media (pointer: coarse) {
+  form:has(input:not([type='checkbox'], [type='radio'], [type='range']):focus, textarea:focus, select:focus) .formbar {
+    position: static;
+  }
+}
