@@ -28,9 +28,9 @@
   - Mundart: Die Texte werden in Zürichdeutsch umgeschrieben, nicht wörtlich übersetzt, und von Chrissie gegengelesen.
   - Beide liegen nur in `exercise-media`: `segments-content.en.json` und `segments-content.gsw.json`.
 - **Aufnahmen Englisch:** Azure AI Speech F0 mit einer neuronalen Stimme (Vorschlag en-GB-SoniaNeural). Erzeugt über `npm run media:audio -- --lang en`. Rund 50'000 Zeichen liegen im freien Kontingent.
-- **Aufnahmen Mundart:** Azure hat keine Mundart-Stimme, de-CH spricht Hochdeutsch. Zwei Wege:
-  - **A (Vorschlag):** KI-Stimme mit Schweizerdeutsch-Unterstützung (Google Gemini TTS). Gesendet werden nur die L&B-Texte, keine Patientendaten. Das kostet einmalig wenige Franken. Die Qualität schwankt je nach Dialekt, Chrissie hört alle Dateien ab.
-  - **B:** Chrissie spricht die 146 Aufnahmen selbst ein, etwa 1 bis 2 Stunden. Sie lädt sie über ein Skript hoch. Das ergibt die beste Qualität, und die Stimme ist bekannt.
+- **Aufnahmen Mundart:** Azure hat keine Mundart-Stimme, de-CH spricht Hochdeutsch. Mike hat am 21.11.2026 Weg A gewählt:
+  - **A (gewählt):** KI-Stimme mit Schweizerdeutsch-Unterstützung (Google Gemini TTS). Gesendet werden nur die L&B-Texte, keine Patientendaten. Das kostet einmalig wenige Franken. Die Qualität schwankt je nach Dialekt, Chrissie hört alle Dateien ab.
+  - **B (verworfen, bleibt Ausweg bei schlechter Qualität):** Chrissie spricht die 146 Aufnahmen selbst ein, etwa 1 bis 2 Stunden. Sie lädt sie über ein Skript hoch. Das ergibt die beste Qualität, und die Stimme ist bekannt.
   - Fehlt eine Mundart-Datei, spielt die App Hochdeutsch und zeigt «Mundart folgt».
 - **Dateinamen:** `<name>.mp3` bleibt Hochdeutsch. Neu kommen `<name>.gsw.mp3` und `<name>.en.mp3` dazu, zum Beispiel `2A-frm.gsw.mp3`.
 - **Wahl der Sprache:**

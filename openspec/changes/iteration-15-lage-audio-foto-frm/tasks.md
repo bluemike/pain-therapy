@@ -14,7 +14,7 @@
 
 - [ ] 3.1 Texte Englisch (übersetzt, Mike liest gegen) und Mundart (umgeschrieben, Chrissie liest gegen) in `exercise-media`
 - [ ] 3.2 Englische Aufnahmen mit Azure AI Speech F0 (`npm run media:audio -- --lang en`)
-- [ ] 3.3 Mundart-Aufnahmen nach Entscheid D3 (A: KI-Stimme, B: Chrissie spricht ein)
+- [ ] 3.3 Mundart-Aufnahmen mit Google Gemini TTS erzeugen (Entscheid D3: A); Chrissie hört alle Dateien ab
 - [ ] 3.4 `User.audioLanguage`, `Patient.audioLanguage`; Wahl in «Mein Profil», im Dossier und in der Zone
 - [ ] 3.5 Routen mit `lang`, Rückfall auf Hochdeutsch mit Hinweis
 

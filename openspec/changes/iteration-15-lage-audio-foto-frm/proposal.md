@@ -56,4 +56,4 @@ Mike Franz hat am 21.11.2026 nach den Tests am iPad sechs Wünsche formuliert. E
 - **Infrastruktur:** Die öffentliche Route `/foto/*` der Praxis-App ist von der Anmeldung ausgenommen und pro IP begrenzt. Ein Aufräum-Job löscht nicht gespeicherte Smartphone-Fotos nach 24 Stunden.
 - **Externe Dienste:**
   - Die englischen Aufnahmen entstehen mit Azure AI Speech (F0, vorhanden).
-  - Für Mundart gibt es bei Azure keine Stimme. Vorschlag siehe design.md D3, Entscheid durch Mike.
+  - Für Mundart gibt es bei Azure keine Stimme. Mike hat KI-Stimme (Google Gemini TTS) gewählt, siehe design.md D3.
