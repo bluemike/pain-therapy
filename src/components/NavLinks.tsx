@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { Menu } from 'lucide-react';
 
 type Item = { href: string; label: string };
 
@@ -50,7 +51,7 @@ export function MobileMenu({
         aria-controls="drawer"
         onClick={() => setOpen(!open)}
       >
-        ☰
+        <Menu size={20} aria-hidden="true" />
       </button>
       <div id="drawer" className="drawer" data-open={open}>
         {items.map((i) => (

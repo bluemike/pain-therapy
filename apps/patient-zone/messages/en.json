@@ -131,7 +131,7 @@
   },
   "signTask": {
     "greeting": "Hello {name}",
-    "title": "✍️ Sign the liability waiver",
+    "title": "Sign the liability waiver",
     "text": "Before we treat you, we need your signature on the patient information, the liability waiver and the privacy notice. Please allow about 5 minutes.",
     "open": "Open form",
     "exercisesLater": "Your exercises will appear here once the practice prescribes them."

@@ -4,6 +4,7 @@ import { getTranslations } from 'next-intl/server';
 import { touchSession } from '@/lib/access';
 import { zoneAudit } from '@/lib/audit';
 import { getZoneSession } from '@/lib/session';
+import { PenLine } from 'lucide-react';
 
 /**
  * zone-consent-signing: Unterschrift vor den Übungen (mockup view 3). While a signature is pending this task is all
@@ -19,7 +20,9 @@ export default async function SignatureTask() {
     <>
       <h1>{t('greeting', { name: s.patient.firstName })}</h1>
       <section className="card task" aria-labelledby="h_task">
-        <h2 id="h_task">{t('title')}</h2>
+        <h2 id="h_task" className="ico-title">
+          <PenLine size={22} aria-hidden="true" /> {t('title')}
+        </h2>
         <p>{t('text')}</p>
         <Link className="btn btn--gold btn--block" href="/unterschrift/formular">
           {t('open')}

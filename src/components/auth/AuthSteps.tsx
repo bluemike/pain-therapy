@@ -1,3 +1,5 @@
+import { Check } from 'lucide-react';
+
 /**
  * Steps of sign-in and invitation (iteration 13): numbered chips in a row, done steps ticked, the current one
  * highlighted.
@@ -26,7 +28,7 @@ export function AuthSteps({
           {i < at && onBack[s.key] ? (
             <button type="button" className="back" onClick={onBack[s.key]!.go} title={onBack[s.key]!.label}>
               <span className="n" aria-hidden="true">
-                ✓
+                <Check size={14} strokeWidth={3} />
               </span>
               <span className="t">{s.label}</span>
               <span className="sr-only">{` (${onBack[s.key]!.label})`}</span>
@@ -34,7 +36,7 @@ export function AuthSteps({
           ) : (
             <>
               <span className="n" aria-hidden="true">
-                {i < at ? '✓' : i + 1}
+                {i < at ? <Check size={14} strokeWidth={3} /> : i + 1}
               </span>
               <span className="t">{s.label}</span>
             </>

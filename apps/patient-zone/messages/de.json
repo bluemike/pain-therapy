@@ -131,7 +131,7 @@
   },
   "signTask": {
     "greeting": "Guten Tag {name}",
-    "title": "✍️ Haftungsausschluss unterschreiben",
+    "title": "Haftungsausschluss unterschreiben",
     "text": "Bevor wir Sie behandeln, brauchen wir Ihre Unterschrift unter die Patienteninformation, den Haftungsausschluss und den Datenschutzhinweis. Bitte nehmen Sie sich etwa 5 Minuten Zeit.",
     "open": "Formular öffnen",
     "exercisesLater": "Ihre Übungen erscheinen hier, sobald die Praxis sie Ihnen verordnet hat."

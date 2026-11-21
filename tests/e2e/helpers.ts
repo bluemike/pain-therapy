@@ -154,7 +154,7 @@ export async function createSignedPatient(
   await confirmInZone(patient, link, p.dob);
   await patient.getByRole('link', { name: 'Formular öffnen' }).click();
   await patient.getByText('Ende des Textes.').scrollIntoViewIfNeeded();
-  await expect(patient.getByText('✓ Text gelesen')).toBeVisible();
+  await expect(patient.getByText('Text gelesen')).toBeVisible();
   await patient.getByTestId('consent-liability').check();
   await patient.getByTestId('consent-dataProcessing').check();
   if (p.emailConsent) await patient.getByTestId('consent-unencryptedEmail').check();

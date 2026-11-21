@@ -80,8 +80,14 @@ export async function saveTreatment(_prev: TreatmentFormState, fd: FormData): Pr
   const schema = hasInkAfter(stored?.diagnosisInk, ink.diagnosis)
     ? treatmentSchema.extend({ diagnosis: optionalNote })
     : treatmentSchema;
-  const parsed = schema.safeParse(pickFields(fd, TREATMENT_FIELDS));
-  if (!parsed.success) return { errors: fieldErrors(parsed.error) };
+  const fields = pickFields(fd, TREATMENT_FIELDS);
+  const parsed = schema.safeParse(fields);
+  if (!parsed.success) {
+    // iPad test 21.11.2026: every field came back as missing although the form showed values; log what arrived
+    if (!fields.startedAt && !fields.regionId && !fields.painStart)
+      console.error('saveTreatment: form fields missing', { keys: [...new Set(fd.keys())], patientId, id });
+    return { errors: fieldErrors(parsed.error) };
+  }
   const input = { ...parsed.data, diagnosisInk: ink.diagnosis };
   let saved: { id: string; patientId: string };
   try {
