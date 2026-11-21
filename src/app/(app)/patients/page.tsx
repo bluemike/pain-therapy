@@ -6,6 +6,7 @@ import { formatDate } from '@/lib/format';
 import { ConsentPill, StatusPill } from '@/components/Pills';
 import { SearchBox } from '@/components/SearchBox';
 import { PlusIcon } from '@/components/Icons';
+import { ClickRow } from '@/components/ClickRow';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,7 +66,11 @@ export default async function PatientsPage({
                 </thead>
                 <tbody>
                   {rows.map((p) => (
-                    <tr key={p.id} className={`click ${p.status === 'INACTIVE' ? 'inactive' : ''}`}>
+                    <ClickRow
+                      key={p.id}
+                      href={`/patients/${p.id}`}
+                      className={p.status === 'INACTIVE' ? 'inactive' : undefined}
+                    >
                       <td>
                         <Link href={`/patients/${p.id}`}>
                           <b>{p.lastName}</b>, {p.firstName}
@@ -79,7 +84,7 @@ export default async function PatientsPage({
                       <td>
                         <StatusPill active={p.status === 'ACTIVE'} />
                       </td>
-                    </tr>
+                    </ClickRow>
                   ))}
                 </tbody>
               </table>
