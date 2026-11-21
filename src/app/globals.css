@@ -2323,6 +2323,9 @@ ol.steps li {
   .rx .dur {
     grid-column: 2;
     text-align: left;
+    /* Audio and «Blatt ansehen» wrap instead of widening the page on a phone (iteration 15) */
+    white-space: normal;
+    min-width: 0;
   }
   .rx .opts {
     grid-column: 1 / -1;
