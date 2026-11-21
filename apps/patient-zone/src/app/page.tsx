@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { getFormatter, getTranslations } from 'next-intl/server';
-import { scheduleParts } from '@pain-therapy/shared/home-program';
+import { BookOpen, Check, ChevronLeft, ChevronRight, Clock, PenLine } from 'lucide-react';
+import { progress } from '@pain-therapy/shared/adherence';
+import { scheduleParts, scheduledOn, weekdayIndex } from '@pain-therapy/shared/home-program';
 import { chosenDay, dayReference } from '@pain-therapy/shared/log-entry';
 import { PROGRAM_ACTIVE_WEEKS } from '@pain-therapy/shared/program';
 import { addDays, dayKey, fromZurichInputs, zurichInputs } from '@pain-therapy/shared/time';
@@ -10,7 +12,8 @@ import { zoneAudit } from '@/lib/audit';
 import { recentEntries, today } from '@/lib/entries';
 import { getZoneSession } from '@/lib/session';
 import { EntryForm } from '@/components/EntryForm';
-import { quickEntryAction, deleteEntryAction } from './actions';
+import { ZoneAudio } from '@/components/ZoneAudio';
+import { quickEntryAction, deleteEntryAction, tickAction } from './actions';
 
 /**
  * exercise-log: the exercises of a day and the entries of the program (mockup view 2; iteration 6 mockup view 1 with
@@ -23,7 +26,7 @@ import { quickEntryAction, deleteEntryAction } from './actions';
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ ok?: string; n?: string; err?: string; out?: string; tag?: string; b?: string }>;
+  searchParams: Promise<{ ok?: string; n?: string; c?: string; err?: string; out?: string; tag?: string; b?: string }>;
 }) {
   const sp = await searchParams;
   const zone = await getZoneSession();
@@ -50,7 +53,7 @@ export default async function Home({
   await zoneAudit('zone.viewed', { patientId: s.patient.id, linkId: s.session.linkId });
   const day = chosenDay(sp.tag, s.program.consultationAt, now);
   const ref = dayReference(day.day, s.program.consultationAt, now);
-  const [t, td, format, { items, open }, recent] = await Promise.all([
+  const [t, td, format, { items, entries, open }, recent] = await Promise.all([
     getTranslations('home'),
     getTranslations('day'),
     getFormatter(),
@@ -83,13 +86,15 @@ export default async function Home({
         ? t('corrected')
         : sp.ok === 'deleted'
           ? t('deleted')
-          : sp.ok === 'quick'
-            ? !Number(sp.n)
-              ? t('quickNothing')
-              : day.today
-                ? t('quickDone', { count: Number(sp.n) })
-                : td('quickDone', { count: Number(sp.n), date: long(day.day) })
-            : null;
+          : sp.ok === 'tick' && sp.c
+            ? t('tickDone', { code: sp.c.slice(0, 3) })
+            : sp.ok === 'quick'
+              ? !Number(sp.n)
+                ? t('quickNothing')
+                : day.today
+                  ? t('quickDone', { count: Number(sp.n) })
+                  : td('quickDone', { count: Number(sp.n), date: long(day.day) })
+              : null;
   /** "2× pro Tag · Mo Di Mi Do Fr" */
   const rep = (sch: (typeof items)[number]['schedule']) => {
     const p = scheduleParts(sch);
@@ -98,6 +103,131 @@ export default async function Home({
   };
   const epd = (v: number | null) => (v ? t('epdVariant', { n: v }) : t('epdStandard'));
   const todayKey = dayKey(now);
+  // Iteration 14 (mockup «Heute dran»): the exercises of the day as cards, the free ones in a compact list below
+  const due = items.filter((i) => i.progress.target > 0);
+  const free = items.filter((i) => i.progress.target === 0);
+  /** Next selected weekday after the chosen day, e.g. "Montag" */
+  const nextTime = (sch: (typeof items)[number]['schedule']) => {
+    for (let i = 1; i <= 7; i++) {
+      const k = addDays(day.day, i);
+      if (scheduledOn(sch, k)) return format.dateTime(dateOf(k), { weekday: 'long' });
+    }
+    return null;
+  };
+  /** The week of the chosen day, Monday to Sunday, with the state of each day (done, partly, open, free) */
+  const monday = addDays(day.day, -weekdayIndex(day.day));
+  const week = Array.from({ length: 7 }, (_, i) => {
+    const key = addDays(monday, i);
+    const inRange = key >= day.first && key <= day.last;
+    const at = dayReference(key, s.program.consultationAt, now);
+    let target = 0;
+    let done = 0;
+    if (inRange)
+      for (const p of s.program.prescriptions) {
+        const pr = progress(p, entries, at);
+        target += pr.target;
+        done += Math.min(pr.target, pr.done);
+      }
+    const state = !inRange || !target ? 'free' : done >= target ? 'full' : done > 0 ? 'part' : 'none';
+    const d = dateOf(key);
+    return {
+      key,
+      inRange,
+      state,
+      wd: format.dateTime(d, { weekday: 'short' }).replace('.', ''),
+      n: format.dateTime(d, { day: 'numeric' }).replace('.', ''),
+      label: `${long(key)}: ${target ? t('ofDone', { done, total: target }) : t('noExercise')}`,
+    };
+  });
+  const image = (it: (typeof items)[number]) =>
+    it.hasImage ? (
+      // eslint-disable-next-line @next/next/no-img-element -- private image, only with a session
+      <img src={`/media/${it.code}`} alt={t('imageOf', { code: it.code })} />
+    ) : (
+      <span className="ph">{t('noImage')}</span>
+    );
+  const guide = (it: (typeof items)[number]) =>
+    it.guide ? (
+      <details className="guide">
+        <summary className="tool">
+          <BookOpen size={17} aria-hidden="true" />
+          {t('guide')}
+          <span className="sr"> {it.code}</span>
+        </summary>
+        <h3>
+          {t('frm')}
+          {it.guide.tools.length ? ` · ${it.guide.tools.join(', ')}` : ''}
+        </h3>
+        {/* eslint-disable-next-line @next/next/no-img-element -- private image, only with a session */}
+        <img
+          className="band"
+          src={`/media/${it.code}?teil=frm`}
+          alt={t('bandOf', { code: it.code, part: t('frm') })}
+          loading="lazy"
+        />
+        {it.guide.segments?.frm.items.map((x, i) => (
+          <p key={i}>
+            {x.n.length ? <b>({x.n.join('/')}) </b> : null}
+            {x.text}
+          </p>
+        ))}
+        <h3>
+          {t('epd')} · {epd(it.variant)}
+          {it.guide.aids.length ? ` · ${it.guide.aids.join(', ')}` : ''}
+        </h3>
+        {/* eslint-disable-next-line @next/next/no-img-element -- private image, only with a session */}
+        <img
+          className="band"
+          src={`/media/${it.code}?teil=${it.variant ? 'var' : 'std'}`}
+          alt={t('bandOf', { code: it.code, part: t('epd') })}
+          loading="lazy"
+        />
+        {it.guide.segments && !it.variant ? (
+          <>
+            {it.guide.segments.standard.intro ? <p>{it.guide.segments.standard.intro}</p> : null}
+            {it.guide.segments.standard.steps.map((st, i) => (
+              <p key={i}>
+                {st.label ? <b>{st.label}: </b> : null}
+                {st.text}
+              </p>
+            ))}
+          </>
+        ) : null}
+        {it.guide.segments && it.variant ? (
+          <>
+            {it.guide.segments.variants.intro ? <p>{it.guide.segments.variants.intro}</p> : null}
+            {it.guide.segments.variants.items
+              .filter((v) => v.number === it.variant)
+              .map((v) => (
+                <p key={v.number} className="chosen">
+                  <b>{t('epdVariant', { n: v.number })}: </b>
+                  {v.text}
+                </p>
+              ))}
+          </>
+        ) : null}
+        {!it.guide.segments ? <p className="muted">{t('guideMissing')}</p> : null}
+      </details>
+    ) : null;
+  // Keyed by the day (on the list item), so the forms start again with the date of a newly chosen day
+  const record = (it: (typeof items)[number], label: string) => (
+    <details className="rec">
+      <summary className="btn">
+        <PenLine size={16} aria-hidden="true" />
+        {label}
+        <span className="sr"> {it.code}</span>
+      </summary>
+      <EntryForm
+        mode="create"
+        code={it.code}
+        defaults={{ done: true, rating: null, date: inputs.date, time: inputs.time, note: '' }}
+        minDate={day.first}
+        maxDate={day.last}
+        tag={tagField}
+        program={programField}
+      />
+    </details>
+  );
   const days = new Map<string, typeof recent>();
   for (const e of recent) {
     const k = dayKey(e.performedAt);
@@ -137,158 +267,189 @@ export default async function Home({
           until: format.dateTime(until, { day: 'numeric', month: 'numeric', year: 'numeric' }),
         })}
       </p>
-      <nav className="daynav" aria-label={td('choose')}>
-        {day.previous ? (
-          <Link className="btn" href={home(day.previous)} aria-label={td('previous')}>
-            ‹
-          </Link>
-        ) : (
-          <span aria-hidden="true" />
-        )}
-        <form method="get" action="/" className="day">
-          <b data-testid="day">{dayTitle}</b>
-          <label className="sr" htmlFor="tag">
-            {td('choose')}
-          </label>
-          <input id="tag" type="date" name="tag" defaultValue={day.day} min={day.first} max={day.last} />
-          {programField ? <input type="hidden" name="b" value={programField} /> : null}
-          <button className="linkbtn">{td('show')}</button>
-        </form>
-        {day.next ? (
-          <Link className="btn" href={home(day.next === day.last ? undefined : day.next)} aria-label={td('next')}>
-            ›
-          </Link>
-        ) : (
-          <span aria-hidden="true" />
-        )}
-      </nav>
-      <p className="sub">
-        {dailyTotal
-          ? day.today
-            ? t('todaySummary', { done: dailyDone, total: dailyTotal })
-            : td('summary', { done: dailyDone, total: dailyTotal })
-          : day.today
-            ? t('freeDay')
-            : td('freeDay')}
-      </p>
-      {open.length ? (
-        <form action={quickEntryAction}>
-          {tagField ? <input type="hidden" name="tag" value={tagField} /> : null}
-          {programField ? <input type="hidden" name="b" value={programField} /> : null}
-          <button className="btn btn--gold btn--block">{day.today ? t('quick') : td('quick')}</button>
-        </form>
-      ) : null}
 
-      <section className="card" aria-labelledby="h_ex">
-        <h2 id="h_ex">{t('exercises')}</h2>
-        <ul className="exlist">
-          {items.map((it) => (
-            // Keyed by the day, so the forms start again with the date of a newly chosen day
-            <li className="ex" key={`${it.code}-${day.day}`} data-code={it.code}>
-              <div className="head">
-                {it.hasImage ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- private image, only with a session
-                  <img src={`/media/${it.code}`} alt={t('imageOf', { code: it.code })} width={64} height={52} />
-                ) : (
-                  <span className="ph">{t('noImage')}</span>
-                )}
-                <div>
-                  <b>{it.code}</b> {it.name}
-                  <small>
-                    {rep(it.schedule)} · {t('parts', { epd: epd(it.variant) })} ·{' '}
-                    {t('perExecution', { min: format.number(Math.round(it.seconds / 60)) })}
-                  </small>
-                </div>
-              </div>
-              <div className="prog">
-                <span className={`pill ${it.progress.complete ? 'ok' : ''}`} data-testid="progress">
-                  {!it.progress.scheduledToday
-                    ? t('notScheduled', { done: it.progress.done })
-                    : day.today
-                      ? t('progressToday', { done: it.progress.done, target: it.progress.target })
-                      : td('progressDay', { done: it.progress.done, target: it.progress.target })}
-                </span>
-              </div>
-              {it.guide ? (
-                <details className="guide">
-                  <summary className="linkbtn">
-                    {t('guide')}
-                    <span className="sr"> {it.code}</span>
-                  </summary>
-                  <h3>
-                    {t('frm')}
-                    {it.guide.tools.length ? ` · ${it.guide.tools.join(', ')}` : ''}
-                  </h3>
-                  {/* eslint-disable-next-line @next/next/no-img-element -- private image, only with a session */}
-                  <img
-                    className="band"
-                    src={`/media/${it.code}?teil=frm`}
-                    alt={t('bandOf', { code: it.code, part: t('frm') })}
-                    loading="lazy"
-                  />
-                  {it.guide.segments?.frm.items.map((x, i) => (
-                    <p key={i}>
-                      {x.n.length ? <b>({x.n.join('/')}) </b> : null}
-                      {x.text}
-                    </p>
-                  ))}
-                  <h3>
-                    {t('epd')} · {epd(it.variant)}
-                    {it.guide.aids.length ? ` · ${it.guide.aids.join(', ')}` : ''}
-                  </h3>
-                  {/* eslint-disable-next-line @next/next/no-img-element -- private image, only with a session */}
-                  <img
-                    className="band"
-                    src={`/media/${it.code}?teil=${it.variant ? 'var' : 'std'}`}
-                    alt={t('bandOf', { code: it.code, part: t('epd') })}
-                    loading="lazy"
-                  />
-                  {it.guide.segments && !it.variant ? (
-                    <>
-                      {it.guide.segments.standard.intro ? <p>{it.guide.segments.standard.intro}</p> : null}
-                      {it.guide.segments.standard.steps.map((st, i) => (
-                        <p key={i}>
-                          {st.label ? <b>{st.label}: </b> : null}
-                          {st.text}
-                        </p>
+      <div className="zgrid">
+        <div className="zside">
+          <nav className="week" aria-label={td('choose')}>
+            {day.previous ? (
+              <Link className="wkarrow" href={home(day.previous)} aria-label={td('previous')}>
+                <ChevronLeft size={20} aria-hidden="true" />
+              </Link>
+            ) : (
+              <span className="wkarrow" aria-hidden="true" />
+            )}
+            <ol className="wkdays">
+              {week.map((w) => (
+                <li key={w.key}>
+                  {w.inRange ? (
+                    <Link
+                      href={home(w.key === day.last ? undefined : w.key)}
+                      className={`wkday ${w.state}${w.key === day.day ? ' on' : ''}`}
+                      aria-current={w.key === day.day ? 'date' : undefined}
+                      aria-label={w.label}
+                    >
+                      <span className="wd">{w.wd}</span>
+                      <span className="n">{w.n}</span>
+                      <span className="dot" aria-hidden="true" />
+                    </Link>
+                  ) : (
+                    <span className="wkday off" aria-hidden="true">
+                      <span className="wd">{w.wd}</span>
+                      <span className="n">{w.n}</span>
+                      <span className="dot" />
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ol>
+            {day.next ? (
+              <Link
+                className="wkarrow"
+                href={home(day.next === day.last ? undefined : day.next)}
+                aria-label={td('next')}
+              >
+                <ChevronRight size={20} aria-hidden="true" />
+              </Link>
+            ) : (
+              <span className="wkarrow" aria-hidden="true" />
+            )}
+          </nav>
+
+          <section className="card dayprog" aria-labelledby="h_dayprog">
+            <div className="row">
+              <h2 id="h_dayprog" data-testid="day">
+                {dayTitle}
+              </h2>
+              <span className="num">{t('ofDone', { done: dailyDone, total: dailyTotal })}</span>
+            </div>
+            <div
+              className="bar"
+              role="progressbar"
+              aria-label={t('progressLabel')}
+              aria-valuemin={0}
+              aria-valuemax={dailyTotal || 1}
+              aria-valuenow={dailyDone}
+            >
+              <span style={{ width: `${dailyTotal ? Math.round((100 * dailyDone) / dailyTotal) : 0}%` }} />
+            </div>
+            <p className="sub">
+              {dailyTotal
+                ? day.today
+                  ? t('todaySummary', { done: dailyDone, total: dailyTotal })
+                  : td('summary', { done: dailyDone, total: dailyTotal })
+                : day.today
+                  ? t('freeDay')
+                  : td('freeDay')}
+            </p>
+            {open.length > 1 ? (
+              <form action={quickEntryAction}>
+                {tagField ? <input type="hidden" name="tag" value={tagField} /> : null}
+                {programField ? <input type="hidden" name="b" value={programField} /> : null}
+                <button className="btn btn--block">{day.today ? t('quick') : td('quick')}</button>
+              </form>
+            ) : null}
+          </section>
+          <p className="lbl wkhint">{t('weekHint')}</p>
+        </div>
+
+        <div className="zmain">
+          {due.length ? (
+            <section aria-labelledby="h_due">
+              <h2 id="h_due" className="sect">
+                {day.today ? t('due') : td('due')}
+              </h2>
+              <ul className="exlist cards">
+                {due.map((it) => (
+                  <li
+                    className={`ex excard${it.progress.complete ? ' complete' : ''}`}
+                    key={`${it.code}-${day.day}`}
+                    data-code={it.code}
+                  >
+                    <div className="head">
+                      {image(it)}
+                      <div className="what">
+                        <b className="name">
+                          {it.code} {it.name}
+                        </b>
+                        <small>{t('parts', { epd: epd(it.variant) })}</small>
+                        <small className="when">
+                          <Clock size={14} aria-hidden="true" /> {rep(it.schedule)} ·{' '}
+                          {t('perExecution', { min: format.number(Math.round(it.seconds / 60)) })}
+                        </small>
+                      </div>
+                    </div>
+                    <div className="slots">
+                      {Array.from({ length: it.progress.target }, (_, i) => (
+                        <span key={i} className={`slot${i < it.progress.done ? ' done' : ''}`} aria-hidden="true">
+                          {i < it.progress.done ? <Check size={15} strokeWidth={3} /> : null}
+                        </span>
                       ))}
-                    </>
-                  ) : null}
-                  {it.guide.segments && it.variant ? (
-                    <>
-                      {it.guide.segments.variants.intro ? <p>{it.guide.segments.variants.intro}</p> : null}
-                      {it.guide.segments.variants.items
-                        .filter((v) => v.number === it.variant)
-                        .map((v) => (
-                          <p key={v.number} className="chosen">
-                            <b>{t('epdVariant', { n: v.number })}: </b>
-                            {v.text}
-                          </p>
-                        ))}
-                    </>
-                  ) : null}
-                  {!it.guide.segments ? <p className="muted">{t('guideMissing')}</p> : null}
-                </details>
-              ) : null}
-              <details className="rec">
-                <summary className="btn">
-                  {t('record')}
-                  <span className="sr"> {it.code}</span>
-                </summary>
-                <EntryForm
-                  mode="create"
-                  code={it.code}
-                  defaults={{ done: true, rating: null, date: inputs.date, time: inputs.time, note: '' }}
-                  minDate={day.first}
-                  maxDate={day.last}
-                  tag={tagField}
-                  program={programField}
-                />
-              </details>
-            </li>
-          ))}
-        </ul>
-      </section>
+                      <span className={`pill ${it.progress.complete ? 'ok' : ''}`} data-testid="progress">
+                        {it.progress.complete
+                          ? day.today
+                            ? t('completeToday', { done: it.progress.done })
+                            : td('progressDay', { done: it.progress.done, target: it.progress.target })
+                          : day.today
+                            ? t('progressToday', { done: it.progress.done, target: it.progress.target })
+                            : td('progressDay', { done: it.progress.done, target: it.progress.target })}
+                      </span>
+                    </div>
+                    <div className="acts">
+                      <form action={tickAction} className="tick">
+                        <input type="hidden" name="code" value={it.code} />
+                        {tagField ? <input type="hidden" name="tag" value={tagField} /> : null}
+                        {programField ? <input type="hidden" name="b" value={programField} /> : null}
+                        <button
+                          className={`btn ${it.progress.complete ? 'btn--done' : 'btn--gold'}`}
+                          disabled={it.progress.complete}
+                          aria-label={t(it.progress.complete ? 'tickedOf' : 'tickOf', { code: it.code })}
+                        >
+                          <Check size={18} strokeWidth={2.5} aria-hidden="true" />
+                          <span aria-hidden="true">{t(it.progress.complete ? 'ticked' : 'tick')}</span>
+                        </button>
+                      </form>
+                      <ZoneAudio code={it.code} program={programField} />
+                    </div>
+                    {guide(it)}
+                    {record(it, t('recordRated'))}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {free.length ? (
+            <section aria-labelledby="h_free">
+              <h2 id="h_free" className="sect">
+                {day.today ? t('free') : td('free')}
+              </h2>
+              <ul className="exlist frees">
+                {free.map((it) => (
+                  <li className="ex exfree" key={`${it.code}-${day.day}`} data-code={it.code}>
+                    <div className="head">
+                      {image(it)}
+                      <div className="what">
+                        <b className="name">
+                          {it.code} {it.name}
+                        </b>
+                        <small>{t('parts', { epd: epd(it.variant) })}</small>
+                        <small>
+                          {nextTime(it.schedule) ? `${t('nextTime', { day: nextTime(it.schedule)! })} · ` : ''}
+                          <span className="pill" data-testid="progress">
+                            {t('notScheduled', { done: it.progress.done })}
+                          </span>
+                        </small>
+                      </div>
+                    </div>
+                    {guide(it)}
+                    {record(it, t('recordAnyway'))}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+        </div>
+      </div>
 
       <section className="card" aria-labelledby="h_recent">
         <h2 id="h_recent">

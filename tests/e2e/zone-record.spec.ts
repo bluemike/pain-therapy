@@ -110,10 +110,11 @@ test('record in the patient zone: tabs, treatment, document, recording yesterday
   await expect(patient.locator('li.ex[data-code="2A"]').getByTestId('progress')).toHaveText('1 von 1 an diesem Tag');
   await expectNoHorizontalScroll(patient, 'day view');
   await expectNoA11yViolations(patient, 'day view');
-  // Two days ago with "Alle Übungen dieses Tages erledigt"
+  // Two days ago with "Gemacht" on the card (iteration 14)
   await patient.getByRole('link', { name: 'Vorheriger Tag' }).click();
-  await patient.getByRole('button', { name: 'Alle Übungen dieses Tages erledigt' }).click();
-  await expect(patient.getByText(/1 Ausführung für .* als gemacht erfasst/)).toBeVisible();
+  await patient.getByRole('button', { name: '2A als gemacht erfassen' }).click();
+  await expect(patient.getByText('2A als gemacht erfasst.', { exact: false })).toBeVisible();
+  await expect(patient.locator('li.ex[data-code="2A"]').getByTestId('progress')).toHaveText('1 von 1 an diesem Tag');
   await expect(patient.getByTestId('entry')).toHaveCount(2);
   // The consultation day is the first day
   await patient.getByRole('link', { name: 'Vorheriger Tag' }).click();

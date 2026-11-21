@@ -81,7 +81,27 @@
     "frm": "Faszien-Rollmassage",
     "epd": "Engpassdehnung",
     "bandOf": "{code} {part}: Bilder",
-    "guideMissing": "Die Anleitung steht in Ihrem Übungsblatt."
+    "guideMissing": "Die Anleitung steht in Ihrem Übungsblatt.",
+    "ofDone": "{done} von {total} erledigt",
+    "progressLabel": "Fortschritt des Tages",
+    "weekHint": "Tag antippen, um nachzutragen.",
+    "due": "Heute dran",
+    "free": "Heute frei",
+    "completeToday": "Für heute erledigt",
+    "tick": "Gemacht",
+    "ticked": "Erledigt",
+    "tickOf": "{code} als gemacht erfassen",
+    "tickedOf": "{code} erledigt",
+    "tickDone": "{code} als gemacht erfasst. Die Bewertung können Sie 24 Stunden lang ergänzen.",
+    "recordRated": "Mit Bewertung erfassen",
+    "recordAnyway": "Trotzdem erfassen",
+    "nextTime": "Nächstes Mal: {day}",
+    "noExercise": "kein Übungstag",
+    "listen": "Anhören",
+    "stop": "Stopp",
+    "playAudio": "Übung {code} anhören",
+    "stopAudio": "Übung {code} stoppen",
+    "audioMissing": "Audio nicht verfügbar"
   },
   "entry": {
     "legend": "Eintrag {code}",
@@ -204,7 +224,9 @@
     "progressDay": "{done} von {target} an diesem Tag",
     "entries": "Einträge seit {date}",
     "backfillHint": "Vergessen einzutragen? Wählen Sie den Tag und erfassen Sie die Übung nachträglich.",
-    "freeDay": "An diesem Tag war kein Übungstag."
+    "freeDay": "An diesem Tag war kein Übungstag.",
+    "due": "An diesem Tag dran",
+    "free": "An diesem Tag frei"
   },
   "treatments": {
     "title": "Meine Behandlungen",

@@ -81,7 +81,27 @@
     "frm": "Fascia rolling massage",
     "epd": "Stretch",
     "bandOf": "{code} {part}: images",
-    "guideMissing": "The instructions are in your exercise sheet."
+    "guideMissing": "The instructions are in your exercise sheet.",
+    "ofDone": "{done} of {total} done",
+    "progressLabel": "Progress of the day",
+    "weekHint": "Tap a day to catch up.",
+    "due": "Due today",
+    "free": "Free today",
+    "completeToday": "Done for today",
+    "tick": "Done",
+    "ticked": "Completed",
+    "tickOf": "Record {code} as done",
+    "tickedOf": "{code} completed",
+    "tickDone": "{code} recorded as done. You can add a rating within 24 hours.",
+    "recordRated": "Record with rating",
+    "recordAnyway": "Record anyway",
+    "nextTime": "Next time: {day}",
+    "noExercise": "no exercise day",
+    "listen": "Listen",
+    "stop": "Stop",
+    "playAudio": "Listen to exercise {code}",
+    "stopAudio": "Stop exercise {code}",
+    "audioMissing": "Audio not available"
   },
   "entry": {
     "legend": "Entry {code}",
@@ -204,7 +224,9 @@
     "progressDay": "{done} of {target} on this day",
     "entries": "Entries since {date}",
     "backfillHint": "Forgot to record? Choose the day and record the exercise afterwards.",
-    "freeDay": "This day was not an exercise day."
+    "freeDay": "This day was not an exercise day.",
+    "due": "Due on this day",
+    "free": "Free on this day"
   },
   "treatments": {
     "title": "My treatments",

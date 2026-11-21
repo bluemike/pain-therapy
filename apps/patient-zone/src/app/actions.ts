@@ -121,3 +121,12 @@ export async function quickEntryAction(fd: FormData) {
   const n = await quickEntry(s, new Date(), day);
   redirect(homeWith(s, fd, `ok=quick&n=${n}`));
 }
+
+/** "Gemacht" on the card of one exercise (iteration 14): one open execution of it, for the day in "tag" */
+export async function tickAction(fd: FormData) {
+  const s = await requireSession(fd);
+  const code = String(fd.get('code') ?? '');
+  const { day } = chosenDay(String(fd.get('tag') ?? ''), s.program.consultationAt);
+  const n = await quickEntry(s, new Date(), day, code);
+  redirect(homeWith(s, fd, n ? `ok=tick&c=${encodeURIComponent(code)}` : 'ok=quick&n=0'));
+}

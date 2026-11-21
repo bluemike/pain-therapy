@@ -967,3 +967,355 @@ a.tcard h2 {
 .readok svg {
   vertical-align: -3px;
 }
+
+/* Iteration 14: Übungen nach dem neuen Mockup (Mike 21.11.2026): Wochenleiste, Tagesfortschritt, Karten «Heute dran»
+   mit Gemacht / Anhören / Anleitung, «Heute frei» kompakt; auf dem iPad zwei Spalten */
+.zgrid {
+  display: grid;
+  gap: 18px;
+}
+.zside,
+.zmain {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  min-width: 0;
+}
+.zmain > section {
+  display: grid;
+  gap: 12px;
+}
+.sect {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--mid);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.week {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) 32px;
+  gap: 4px;
+  align-items: center;
+}
+.wkarrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  color: var(--ink);
+  border-radius: var(--radius);
+}
+.wkdays {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+.wkday {
+  min-height: 62px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.wkday .wd {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.wkday .n {
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.wkday .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: transparent;
+}
+.wkday.full .dot {
+  background: #3f7d4e;
+}
+.wkday.part .dot {
+  background: var(--gold);
+}
+.wkday.none .dot {
+  border: 1.5px solid var(--gold);
+}
+.wkday.on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+.wkday.off {
+  background: transparent;
+  border-style: dashed;
+  color: var(--muted);
+}
+.wkhint {
+  margin: -6px 0 0;
+  text-align: center;
+  font-weight: 400;
+}
+.dayprog {
+  margin: 0;
+  border-radius: 14px;
+  display: grid;
+  gap: 10px;
+}
+.dayprog .row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.dayprog h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.dayprog .row .num {
+  font-weight: 600;
+}
+.dayprog .sub {
+  margin: 0;
+  font-size: 14px;
+}
+.dayprog .bar {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+.dayprog .bar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--gold);
+}
+.exlist.cards,
+.exlist.frees {
+  display: grid;
+  gap: 12px;
+}
+.excard,
+.exfree {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  padding: 14px;
+}
+.ex.excard:first-child,
+.ex.exfree:first-child {
+  border-top: 1px solid var(--border);
+}
+.excard.complete {
+  border-color: #bcd9c3;
+}
+.excard {
+  display: grid;
+  gap: 12px;
+}
+.excard .head {
+  grid-template-columns: 84px minmax(0, 1fr);
+  align-items: start;
+}
+.excard .head img,
+.excard .head .ph {
+  width: 84px;
+  height: 84px;
+  border-radius: 10px;
+}
+.ex .what {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.ex .name {
+  font-size: 17px;
+}
+.ex .when {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ex .when svg {
+  flex: none;
+}
+.slots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.slot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid #d9cfb8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+.slot.done {
+  background: #3f7d4e;
+  border-color: #3f7d4e;
+}
+.excard .acts {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 8px;
+}
+.excard .tick .btn {
+  width: 100%;
+  min-height: 48px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 10px;
+}
+.btn--done,
+.btn--done:disabled {
+  background: var(--ok-bg);
+  border-color: #bcd9c3;
+  color: var(--ok);
+  opacity: 1;
+  cursor: default;
+}
+.btn svg {
+  display: block;
+  flex: none;
+}
+.btn.audio {
+  min-height: 48px;
+  border-radius: 10px;
+}
+.btn.audio.on {
+  background: var(--gold-pale);
+  border-color: var(--gold);
+}
+.audio.missing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+.excard .guide,
+.exfree .guide {
+  margin-top: 0;
+}
+.guide summary.tool {
+  gap: 8px;
+  list-style: none;
+}
+.guide summary.tool::-webkit-details-marker {
+  display: none;
+}
+.excard details.rec,
+.exfree details.rec {
+  margin-top: 0;
+}
+.excard details.rec > summary.btn,
+.exfree details.rec > summary.btn {
+  width: 100%;
+  min-height: 44px;
+  border-style: dashed;
+  font-size: 15px;
+}
+.exfree .head {
+  grid-template-columns: 48px minmax(0, 1fr);
+}
+.exfree .head img,
+.exfree .head .ph {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+}
+.exfree .name {
+  font-size: 15px;
+}
+.exfree details.guide,
+.exfree details.rec {
+  margin-top: 8px;
+}
+@media (min-width: 800px) {
+  main:has(.zgrid) {
+    max-width: 1080px;
+  }
+  .zgrid {
+    grid-template-columns: 250px minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+  .zside {
+    position: sticky;
+    top: 12px;
+  }
+  .week {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: 'prev next' 'days days';
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 8px;
+  }
+  .week > span.wkarrow {
+    display: none;
+  }
+  .week > .wkarrow:first-child {
+    grid-area: prev;
+    justify-content: flex-start;
+    padding-left: 6px;
+  }
+  .week > .wkarrow:last-child {
+    grid-area: next;
+    justify-content: flex-end;
+    padding-right: 6px;
+  }
+  .wkdays {
+    grid-area: days;
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+  .wkday {
+    min-height: 40px;
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 0 10px;
+    border-color: transparent;
+    background: transparent;
+  }
+  .wkday .n {
+    font-size: 15px;
+    flex: 1;
+  }
+  .wkday .wd {
+    width: 28px;
+  }
+  .wkday.on {
+    background: var(--gold-pale);
+    border-color: var(--gold-pale);
+    color: var(--ink);
+  }
+  .wkday.off {
+    border-color: transparent;
+  }
+  .exlist.cards {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
