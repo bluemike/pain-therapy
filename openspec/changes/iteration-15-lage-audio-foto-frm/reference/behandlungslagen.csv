@@ -1,0 +1,12 @@
+code,nameDe
+SL,Seitenlage
+RL,Rückenlage
+BL,Bauchlage
+S,Sitzen
+BL/HSL,Bauchlage/Halbseitenlage
+HSL/RL,Halbseitenlage/Rückenlage
+HSL/SL,Halbseitenlage/Seitenlage
+BL/RL,Bauchlage/Rückenlage
+S/BL,Sitzen/Bauchlage
+HSL,Halbseitenlage
+SSL,Stabile Seitenlage
