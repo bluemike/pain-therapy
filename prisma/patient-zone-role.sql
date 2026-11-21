@@ -29,8 +29,11 @@ BEGIN
   -- Patient: first name for the greeting, language, date of birth for the confirmation, status; for the consent form
   -- the personal details the patient checks (iteration 5, design D8), but not the emergency contact, GP or occupation
   GRANT SELECT ("id", "firstName", "preferredLanguage", "dateOfBirth", "status",
-                "lastName", "street", "zip", "city", "phone", "mobile", "email", "insurer", "insuranceNumber")
+                "lastName", "street", "zip", "city", "phone", "mobile", "email", "insurer", "insuranceNumber",
+                "audioLanguage")
     ON "Patient" TO patient_zone;
+  -- exercise-audio (iteration 15, design D3): the patient switches between Hochdeutsch and Mundart
+  GRANT UPDATE ("audioLanguage") ON "Patient" TO patient_zone;
   -- The current home program (design D2) and, read only, the treatments and consultations of the record (iteration 6,
   -- design D5), without createdBy and updatedBy
   GRANT SELECT ("id", "patientId", "startedAt", "regionId", "side", "diagnosis", "diagnosisInk", "painStart")

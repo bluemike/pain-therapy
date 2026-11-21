@@ -17,3 +17,8 @@ ALTER TABLE "OsteopressurePoint" ADD COLUMN "position" TEXT;
 CREATE TYPE "ExerciseParts" AS ENUM ('FRM_EPD', 'EPD', 'FRM');
 ALTER TABLE "ConsultationExercise" ADD COLUMN "parts" "ExerciseParts" NOT NULL DEFAULT 'FRM_EPD';
 ALTER TABLE "HomePrescription" ADD COLUMN "parts" "ExerciseParts" NOT NULL DEFAULT 'FRM_EPD';
+
+-- Iteration 15 (design D3): Hörsprache Hochdeutsch or Mundart per user and patient
+CREATE TYPE "AudioLanguage" AS ENUM ('de', 'gsw');
+ALTER TABLE "User" ADD COLUMN "audioLanguage" "AudioLanguage" NOT NULL DEFAULT 'de';
+ALTER TABLE "Patient" ADD COLUMN "audioLanguage" "AudioLanguage" NOT NULL DEFAULT 'de';

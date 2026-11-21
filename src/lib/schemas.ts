@@ -65,6 +65,8 @@ export const patientSchema = z
         return d;
       }),
     preferredLanguage: z.enum(['de', 'en'], { message: 'required' }),
+    // exercise-audio (iteration 15, design D3): Hochdeutsch or Mundart while the language is German
+    audioLanguage: z.enum(['de', 'gsw']).catch('de'),
     occupation: text(),
     gp: text(),
     street: text(),
@@ -124,6 +126,7 @@ export const PATIENT_FIELDS = [
   'gender',
   'dateOfBirth',
   'preferredLanguage',
+  'audioLanguage',
   'occupation',
   'gp',
   'street',
@@ -209,6 +212,7 @@ export const EMPTY_PATIENT: PatientFormValues = {
   gender: '',
   dateOfBirth: '',
   preferredLanguage: 'de',
+  audioLanguage: 'de',
   occupation: '',
   gp: '',
   street: '',

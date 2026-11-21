@@ -6,6 +6,8 @@ import { requireUser } from '@/lib/session';
 import { fieldErrors, profileSchema } from '@/lib/schemas';
 import { updateProfile } from '@/lib/users';
 import { setInputMode } from '@/lib/handwriting';
+import { setAudioLanguage } from '@/lib/users';
+import { GERMAN_AUDIO, type GermanAudio } from '@pain-therapy/shared/audio-language';
 import { INPUT_MODES, type InputMode } from '@pain-therapy/shared/ink';
 
 export type ProfileFormState = { errors?: Record<string, string> };
@@ -19,6 +21,9 @@ export async function saveProfile(_prev: ProfileFormState, fd: FormData): Promis
   // note-input (iteration 10, design D3): Eingabe bei Bemerkungen
   const mode = String(fd.get('noteInputMode') ?? '') as InputMode;
   if (INPUT_MODES.includes(mode)) await setInputMode(actor, mode);
+  // exercise-audio (iteration 15, design D3): only sent while the interface is German
+  const audio = String(fd.get('audioLanguage') ?? '') as GermanAudio;
+  if (GERMAN_AUDIO.includes(audio)) await setAudioLanguage(actor, audio);
   revalidatePath('/', 'layout');
   redirect('/profile?flash=saved');
 }

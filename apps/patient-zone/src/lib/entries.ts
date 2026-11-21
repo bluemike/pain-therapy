@@ -9,9 +9,10 @@ import {
   type LogEntryInput,
 } from '@pain-therapy/shared/log-entry';
 import { zurichInputs } from '@pain-therapy/shared/time';
+import { audioFileIn, type AudioLanguage } from '@pain-therapy/shared/audio-language';
 import { db } from './db';
 import { zoneAudit } from './audit';
-import type { ProgramSession } from './access';
+import type { ProgramSession, ZoneSession } from './access';
 
 /**
  * exercise-log: Heimprogramm, Ausführung erfassen, Schnelleintrag und Korrektur (iteration 4, design D7, D8), with the
@@ -319,7 +320,19 @@ export type AudioPart = (typeof AUDIO_PARTS)[number];
  * Recording of FRM or of the prescribed EPD (Standardübung or the chosen variant) of an exercise of the active
  * programs (iteration 14, "Anhören" in the zone): file names as in the practice app (exercise-sheets.ts).
  */
-export function audioOf(s: ProgramSession, code: string, part: AudioPart, treatmentId?: string | null) {
+export function audioOf(
+  s: ProgramSession,
+  code: string,
+  part: AudioPart,
+  treatmentId?: string | null,
+  lang: AudioLanguage = 'de',
+) {
+  const name = audioNameOf(s, code, part, treatmentId);
+  // Iteration 15 (design D3): Mundart and English carry the language in the name; the player falls back itself
+  return name ? audioFileIn(name, lang) : null;
+}
+
+function audioNameOf(s: ProgramSession, code: string, part: AudioPart, treatmentId?: string | null) {
   const programs = treatmentId ? s.programs.filter((x) => x.treatmentId === treatmentId) : s.programs;
   const p = programs.flatMap((x) => x.prescriptions).find((x) => x.exerciseCode === code);
   if (!p) return null;
@@ -344,4 +357,21 @@ export async function mainImageOf(s: ProgramSession, code: string, band?: Band) 
   const sheet = await db.exerciseSheet.findUnique({ where: { exerciseCode: code }, select: { mainImage: true } });
   if (!sheet) return null;
   return band ? `${code}-${band}.png` : sheet.mainImage;
+}
+
+/**
+ * exercise-audio (iteration 15, design D3): the patient switches the recordings between Hochdeutsch and Mundart next
+ * to «Anhören»; stored on the patient and logged. English patients always hear English.
+ */
+export async function setAudioLanguage(s: ZoneSession, lang: 'de' | 'gsw') {
+  if (s.patient.preferredLanguage === 'en' || s.patient.audioLanguage === lang) return;
+  await db.$transaction(async (tx) => {
+    // updateMany: no RETURNING, which would need SELECT on every column
+    await tx.patient.updateMany({ where: { id: s.patient.id }, data: { audioLanguage: lang } });
+    await zoneAudit(
+      'zone.audioLanguageChanged',
+      { patientId: s.patient.id, linkId: s.session.linkId, before: s.patient.audioLanguage, after: lang },
+      tx,
+    );
+  });
 }

@@ -1,7 +1,8 @@
 'use client';
 
 import { useActionState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { GERMAN_AUDIO, type GermanAudio } from '@pain-therapy/shared/audio-language';
 import { saveProfile, type ProfileFormState } from '@/app/(app)/profile/actions';
 import { TITLES } from '@/lib/schemas';
 import { INPUT_MODES, type InputMode } from '@pain-therapy/shared/ink';
@@ -10,8 +11,14 @@ import { INPUT_MODES, type InputMode } from '@pain-therapy/shared/ink';
 export function ProfileForm({
   initial,
 }: {
-  initial: { displayName: string; title: (typeof TITLES)[number]; noteInputMode: InputMode };
+  initial: {
+    displayName: string;
+    title: (typeof TITLES)[number];
+    noteInputMode: InputMode;
+    audioLanguage: GermanAudio;
+  };
 }) {
+  const locale = useLocale();
   const tn = useTranslations('notes');
   const t = useTranslations('profile');
   const te = useTranslations('errors');
@@ -82,6 +89,29 @@ export function ProfileForm({
               {tn('profileHint')}
             </span>
           </div>
+          {locale === 'de' ? (
+            <div className="f">
+              <label className="l" htmlFor="f_audioLanguage">
+                {t('audioLanguage')}
+              </label>
+              <select
+                id="f_audioLanguage"
+                name="audioLanguage"
+                className="inp"
+                defaultValue={initial.audioLanguage}
+                aria-describedby="f_audioLanguage_h"
+              >
+                {GERMAN_AUDIO.map((m) => (
+                  <option key={m} value={m}>
+                    {t(`audio_${m}`)}
+                  </option>
+                ))}
+              </select>
+              <span className="hint" id="f_audioLanguage_h">
+                {t('audioLanguageHint')}
+              </span>
+            </div>
+          ) : null}
         </div>
       </fieldset>
       <div className="formbar">

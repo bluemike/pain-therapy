@@ -1,6 +1,7 @@
 import { auth } from '@/auth';
 import { can } from './access';
 import { isMediaKind, loadExerciseMedia } from './exercise-sheets';
+import { isAudioLanguage } from '@pain-therapy/shared/audio-language';
 
 /** A single "bytes=a-b" range of a file of `size` bytes, or null if absent or not satisfiable */
 export function byteRange(header: string | null, size: number): { start: number; end: number } | 'invalid' | null {
@@ -30,7 +31,8 @@ export async function exerciseMediaResponse(req: Request, code: string, kind: st
     return new Response('Forbidden', { status: 403, headers });
   }
   if (!isMediaKind(kind)) return new Response('Not found', { status: 404, headers });
-  const media = await loadExerciseMedia(code, kind);
+  const lang = new URL(req.url).searchParams.get('lang');
+  const media = await loadExerciseMedia(code, kind, isAudioLanguage(lang) ? lang : 'de');
   if (!media) return new Response('Not found', { status: 404, headers });
   const size = media.data.length;
   const common = {

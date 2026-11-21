@@ -188,7 +188,11 @@
     "treatingDoctor": "Bei wem?",
     "noneReported": "keine angegeben",
     "years": "{n} Jahre",
-    "packs": "{n} Päckchen/Tag"
+    "packs": "{n} Päckchen/Tag",
+    "audioLanguage": "Audiosprache",
+    "audio_de": "Hochdeutsch",
+    "audio_gsw": "Mundart",
+    "audioLanguageHint": "Für die Übungen in der Patienten-Zone, solange die Sprache Deutsch ist; die Patientin kann sie dort umstellen."
   },
   "errors": {
     "required": "Bitte ausfüllen.",
@@ -360,7 +364,8 @@
     "side_UNSPECIFIED": "beidseitig",
     "side_LEFT": "links",
     "side_RIGHT": "rechts",
-    "variantN": "Variante {n}"
+    "variantN": "Variante {n}",
+    "zoneAudioLanguage": "Patienten-Zone: Audiosprache umgestellt"
   },
   "deactivate": {
     "title": "{name} deaktivieren?",
@@ -669,7 +674,9 @@
     "variantN": "Variante {n}",
     "noVariants": "Diese Übung hat keine Varianten.",
     "openSheet": "Blatt ansehen",
-    "openSheetOf": "Übungsblatt {code} ansehen"
+    "openSheetOf": "Übungsblatt {code} ansehen",
+    "audioGswFollows": "Mundart folgt, Hochdeutsch wird gespielt",
+    "audioEnFollows": "Englisch folgt, Hochdeutsch wird gespielt"
   },
   "handout": {
     "layout": "Inhalt des Übungsblatts",
@@ -885,7 +892,11 @@
     "title_THERAPIST_F": "Therapeutin",
     "title_THERAPIST_M": "Therapeut",
     "savedFlash": "Profil gespeichert.",
-    "security": "Anmeldung verwalten"
+    "security": "Anmeldung verwalten",
+    "audioLanguage": "Audiosprache der Übungen",
+    "audioLanguageHint": "Gilt, solange die Oberfläche Deutsch ist. Bei Englisch hören Sie die englischen Aufnahmen.",
+    "audio_de": "Hochdeutsch",
+    "audio_gsw": "Mundart"
   },
   "pdfView": {
     "title": "Dokument",

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Play, Square } from 'lucide-react';
+import { useAudioLanguage } from './AudioLanguage';
 
 type State = 'idle' | 'loading' | 'playing' | 'missing';
 
@@ -30,7 +31,10 @@ export function ExerciseAudio({
   label?: string;
 }) {
   const t = useTranslations('exercise');
+  const lang = useAudioLanguage();
   const [state, setState] = useState<State>('idle');
+  // Iteration 15 (design D3): a recording missing in Mundart or English plays in Hochdeutsch, with a note
+  const [fallback, setFallback] = useState(false);
   const ref = useRef<HTMLAudioElement | null>(null);
 
   useEffect(
@@ -40,19 +44,25 @@ export function ExerciseAudio({
     [],
   );
 
-  function play(kinds: Kind[]) {
-    const a = new Audio(`/api/exercise-media/${encodeURIComponent(code)}/${kinds[0]}`);
+  function play(kinds: Kind[], inLang = fallback ? 'de' : lang) {
+    const q = inLang === 'de' ? '' : `?lang=${inLang}`;
+    const a = new Audio(`/api/exercise-media/${encodeURIComponent(code)}/${kinds[0]}${q}`);
     a.preload = 'none';
     a.addEventListener('playing', () => setState('playing'));
     a.addEventListener('pause', () => setState((s) => (s === 'missing' || a.ended ? s : 'idle')));
-    a.addEventListener('ended', () => (kinds.length > 1 ? play(kinds.slice(1)) : setState('idle')));
-    a.addEventListener('error', () => setState('missing'));
+    a.addEventListener('ended', () => (kinds.length > 1 ? play(kinds.slice(1), inLang) : setState('idle')));
+    a.addEventListener('error', () => {
+      if (inLang === 'de') return setState('missing');
+      setFallback(true);
+      play(kinds, 'de');
+    });
     ref.current = a;
     if (current && current !== a) current.pause();
     current = a;
     setState('loading');
     a.play().catch((e: DOMException) => {
-      if (e.name !== 'AbortError') setState(a.error ? 'missing' : 'idle');
+      // A missing file also fires "error", which falls back to Hochdeutsch or shows the note
+      if (e.name !== 'AbortError' && !a.error) setState('idle');
     });
   }
 
@@ -73,7 +83,7 @@ export function ExerciseAudio({
       </span>
     );
   const on = state !== 'idle';
-  return (
+  const button = (
     <button
       type="button"
       className={`btn btn--ghost exaudio${on ? ' on' : ''}`}
@@ -84,5 +94,13 @@ export function ExerciseAudio({
       {on ? <Square size={14} aria-hidden="true" /> : <Play size={14} aria-hidden="true" />}{' '}
       {on ? t('stop') : t('listen')}
     </button>
+  );
+  return fallback ? (
+    <span className="exaudio-wrap">
+      {button}
+      <small className="muted">{t(lang === 'gsw' ? 'audioGswFollows' : 'audioEnFollows')}</small>
+    </span>
+  ) : (
+    button
   );
 }

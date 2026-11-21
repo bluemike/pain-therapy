@@ -17,6 +17,12 @@ enum Language {
   en
 }
 
+/// Hörsprache bei deutscher Oberfläche (iteration 15, design D3): Hochdeutsch or Mundart; English follows the language
+enum AudioLanguage {
+  de
+  gsw
+}
+
 enum Gender {
   m
   w
@@ -106,6 +112,8 @@ model User {
   totpEnabledAt  DateTime?
   /// Eingabe bei Bemerkungen (iteration 10, design D3): last choice, default for every remark field
   noteInputMode  NoteInputMode     @default(KEYBOARD)
+  /// Audiosprache (iteration 15, design D3), used while the interface is German
+  audioLanguage  AudioLanguage     @default(de)
 
   memberships   PracticeMembership[]
   passkeys      Passkey[]
@@ -217,6 +225,8 @@ model Patient {
   gender             Gender?
   dateOfBirth        DateTime      @db.Date
   preferredLanguage  Language      @default(de)
+  /// Audiosprache in der Patienten-Zone (iteration 15, design D3) while preferredLanguage is de
+  audioLanguage      AudioLanguage @default(de)
   occupation         String?
   gp                 String?
   street             String?

@@ -59,6 +59,7 @@ const COLUMNS: Record<string, string[]> = {
   'HomePrescription.SELECT': ['consultationId', 'exerciseCode', 'parts', 'timesPerDay', 'variant', 'weekdays'],
   'OsteopressurePoint.SELECT': ['attachmentDe', 'group', 'id', 'muscleAttachmentLatin', 'sort'],
   'Patient.SELECT': [
+    'audioLanguage',
     'city',
     'dateOfBirth',
     'email',
@@ -74,6 +75,7 @@ const COLUMNS: Record<string, string[]> = {
     'street',
     'zip',
   ],
+  'Patient.UPDATE': ['audioLanguage'],
   'PatientAccessLink.UPDATE': ['blockedAt', 'failedAttempts', 'lastUsedAt', 'lockedUntil'],
   // Iteration 12, design D6: header, footer and privacy notice of the patient's practice
   'Practice.SELECT': [

@@ -188,7 +188,11 @@
     "treatingDoctor": "With whom?",
     "noneReported": "none reported",
     "years": "{n} years",
-    "packs": "{n} packs/day"
+    "packs": "{n} packs/day",
+    "audioLanguage": "Audio language",
+    "audio_de": "Standard German",
+    "audio_gsw": "Swiss German",
+    "audioLanguageHint": "For the exercises in the patient zone while the language is German; the patient can switch it there."
   },
   "errors": {
     "required": "Please fill in.",
@@ -360,7 +364,8 @@
     "side_UNSPECIFIED": "both sides",
     "side_LEFT": "left",
     "side_RIGHT": "right",
-    "variantN": "Variant {n}"
+    "variantN": "Variant {n}",
+    "zoneAudioLanguage": "Patient zone: audio language switched"
   },
   "deactivate": {
     "title": "Deactivate {name}?",
@@ -669,7 +674,9 @@
     "variantN": "Variant {n}",
     "noVariants": "This exercise has no variants.",
     "openSheet": "View sheet",
-    "openSheetOf": "View exercise sheet {code}"
+    "openSheetOf": "View exercise sheet {code}",
+    "audioGswFollows": "Swiss German follows, playing standard German",
+    "audioEnFollows": "English recording follows, playing German"
   },
   "handout": {
     "layout": "Content of the exercise sheet",
@@ -885,7 +892,11 @@
     "title_THERAPIST_F": "Therapist",
     "title_THERAPIST_M": "Therapist",
     "savedFlash": "Profile saved.",
-    "security": "Manage sign-in"
+    "security": "Manage sign-in",
+    "audioLanguage": "Audio language of the exercises",
+    "audioLanguageHint": "Applies while the interface is German. In English you hear the English recordings.",
+    "audio_de": "Standard German",
+    "audio_gsw": "Swiss German"
   },
   "pdfView": {
     "title": "Document",

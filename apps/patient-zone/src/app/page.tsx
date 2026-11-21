@@ -20,7 +20,8 @@ import { recentEntries, today } from '@/lib/entries';
 import { getZoneSession } from '@/lib/session';
 import { EntryForm } from '@/components/EntryForm';
 import { ZoneAudio } from '@/components/ZoneAudio';
-import { quickEntryAction, deleteEntryAction, tickAction } from './actions';
+import { quickEntryAction, deleteEntryAction, tickAction, audioLanguageAction } from './actions';
+import { audioLanguageOf } from '@pain-therapy/shared/audio-language';
 
 /**
  * exercise-log: the exercises of a day and the entries of the program (mockup view 2; iteration 6 mockup view 1 with
@@ -93,15 +94,17 @@ export default async function Home({
         ? t('corrected')
         : sp.ok === 'deleted'
           ? t('deleted')
-          : sp.ok === 'tick' && sp.c
-            ? t('tickDone', { code: sp.c.slice(0, 3) })
-            : sp.ok === 'quick'
-              ? !Number(sp.n)
-                ? t('quickNothing')
-                : day.today
-                  ? t('quickDone', { count: Number(sp.n) })
-                  : td('quickDone', { count: Number(sp.n), date: long(day.day) })
-              : null;
+          : sp.ok === 'audio'
+            ? t('audioLanguageSaved')
+            : sp.ok === 'tick' && sp.c
+              ? t('tickDone', { code: sp.c.slice(0, 3) })
+              : sp.ok === 'quick'
+                ? !Number(sp.n)
+                  ? t('quickNothing')
+                  : day.today
+                    ? t('quickDone', { count: Number(sp.n) })
+                    : td('quickDone', { count: Number(sp.n), date: long(day.day) })
+                : null;
   /** "2× pro Tag · Mo Di Mi Do Fr" */
   const rep = (sch: (typeof items)[number]['schedule']) => {
     const p = scheduleParts(sch);
@@ -109,6 +112,7 @@ export default async function Home({
     return `${t('timesPerDay', { n: p.timesPerDay })} · ${days}`;
   };
   const epd = (v: number | null) => (v ? t('epdVariant', { n: v }) : t('epdStandard'));
+  const audioLang = audioLanguageOf(s.patient.preferredLanguage, s.patient.audioLanguage);
   // Verordnete Teile (iteration 15, design D6)
   const partsText = (it: { variant: number | null; parts: Parts }) =>
     it.parts === 'FRM'
@@ -372,6 +376,23 @@ export default async function Home({
             ) : null}
           </section>
           <p className="lbl wkhint">{t('weekHint')}</p>
+          {s.patient.preferredLanguage === 'de' ? (
+            // exercise-audio (iteration 15, design D3): Hochdeutsch or Mundart for «Anhören»
+            <form action={audioLanguageAction} className="audiolang">
+              {tagField ? <input type="hidden" name="tag" value={tagField} /> : null}
+              {programField ? <input type="hidden" name="b" value={programField} /> : null}
+              <span className="lbl" id="audiolang-l">
+                {t('audioLanguage')}
+              </span>
+              <span className="seg" role="group" aria-labelledby="audiolang-l">
+                {(['de', 'gsw'] as const).map((l) => (
+                  <button key={l} name="lang" value={l} aria-pressed={audioLang === l}>
+                    {t(`audio_${l}`)}
+                  </button>
+                ))}
+              </span>
+            </form>
+          ) : null}
         </div>
 
         <div className="zmain">
@@ -430,7 +451,7 @@ export default async function Home({
                           <span aria-hidden="true">{t(it.progress.complete ? 'ticked' : 'tick')}</span>
                         </button>
                       </form>
-                      <ZoneAudio code={it.code} program={programField} parts={it.parts} />
+                      <ZoneAudio code={it.code} program={programField} parts={it.parts} lang={audioLang} />
                     </div>
                     {guide(it)}
                     {record(it, t('recordRated'))}
