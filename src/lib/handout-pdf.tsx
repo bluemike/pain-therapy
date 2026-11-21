@@ -99,6 +99,8 @@ export type HandoutItem = {
   name: string;
   /** EPD: null = Standardübung, otherwise the variant */
   variant: number | null;
+  /** Verordnete Teile (iteration 15, design D6); missing = FRM + EPD */
+  parts?: 'FRM_EPD' | 'EPD' | 'FRM';
   timesPerDay: number;
   weekdays: number;
   note: string | null;
@@ -224,7 +226,13 @@ export function HandoutPdf({ input }: { input: HandoutPdfInput }) {
                   <Text>
                     <Text style={{ fontWeight: 700 }}>{it.code}</Text> {it.name}
                   </Text>
-                  <Text style={s.muted}>{t('parts', { epd: epd(it.variant) })}</Text>
+                  <Text style={s.muted}>
+                    {it.parts === 'FRM'
+                      ? t('partsFrm')
+                      : it.parts === 'EPD'
+                        ? t('partsEpd', { epd: epd(it.variant) })
+                        : t('parts', { epd: epd(it.variant) })}
+                  </Text>
                   {it.note ? <Text style={s.muted}>{it.note}</Text> : null}
                 </View>
                 <Text style={s.cRep}>{th('timesPerDayN', { n: it.timesPerDay })}</Text>
@@ -253,6 +261,9 @@ export function HandoutPdf({ input }: { input: HandoutPdfInput }) {
         const seg = it.segments;
         // iteration 11: the whole sheet unless only the prescribed parts are wanted (or the sheet is not uploaded)
         const parts = (input.layout === 'PARTS' || !sheet) && !!(frm || band || seg);
+        // Iteration 15 (design D6): only the prescribed parts
+        const withFrm = it.parts !== 'EPD';
+        const withEpd = it.parts !== 'FRM';
         return (
           <Page size="A4" style={s.page} key={it.code}>
             {header}
@@ -264,7 +275,7 @@ export function HandoutPdf({ input }: { input: HandoutPdfInput }) {
                 [
                   [t('fieldPerDay'), th('timesPerDayN', { n: it.timesPerDay })],
                   [t('fieldWeekdays'), days(it)],
-                  [t('fieldEpd'), epd(it.variant)],
+                  [t('fieldEpd'), withEpd ? epd(it.variant) : '–'],
                 ] as [string, string][]
               ).map(([k, v]) => (
                 <View style={s.field} key={k}>
@@ -276,45 +287,53 @@ export function HandoutPdf({ input }: { input: HandoutPdfInput }) {
             {it.note ? <Text style={[s.muted, { marginBottom: 6 }]}>{it.note}</Text> : null}
             {parts ? (
               <View>
-                <Text style={s.h}>
-                  {t('rolling')}
-                  {it.tools.length ? ` · ${it.tools.join(', ')}` : ''}
-                </Text>
-                {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf image, no alt attribute */}
-                {frm ? <Image style={s.band} src={frm} /> : null}
-                {seg?.frm.items.map((x, i) => (
-                  <Text key={i} style={s.item}>
-                    {x.n.length ? <Text style={{ fontWeight: 600 }}>({x.n.join('/')}) </Text> : null}
-                    {x.text}
-                  </Text>
-                ))}
-                <Text style={s.h} break={!!frm && !!band}>
-                  {t('stretch')} · {epd(it.variant)}
-                  {it.aids.length ? ` · ${it.aids.join(', ')}` : ''}
-                </Text>
-                {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf image, no alt attribute */}
-                {band ? <Image style={s.band} src={band} /> : null}
-                {seg && !it.variant ? (
+                {withFrm ? (
                   <>
-                    {seg.standard.intro ? <Text style={s.item}>{seg.standard.intro}</Text> : null}
-                    {seg.standard.steps.map((st, i) => (
+                    <Text style={s.h}>
+                      {t('rolling')}
+                      {it.tools.length ? ` · ${it.tools.join(', ')}` : ''}
+                    </Text>
+                    {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf image, no alt attribute */}
+                    {frm ? <Image style={s.band} src={frm} /> : null}
+                    {seg?.frm.items.map((x, i) => (
                       <Text key={i} style={s.item}>
-                        {st.label ? <Text style={{ fontWeight: 600 }}>{st.label}: </Text> : null}
-                        {st.text}
+                        {x.n.length ? <Text style={{ fontWeight: 600 }}>({x.n.join('/')}) </Text> : null}
+                        {x.text}
                       </Text>
                     ))}
-                    {seg.standard.note ? <Text style={s.muted}>{seg.standard.note}</Text> : null}
                   </>
                 ) : null}
-                {seg && it.variant ? (
+                {withEpd ? (
                   <>
-                    {seg.variants.intro ? <Text style={s.item}>{seg.variants.intro}</Text> : null}
-                    {seg.variants.items.map((v) => (
-                      <Text key={v.number} style={v.number === it.variant ? [s.item, s.chosen] : [s.item, s.muted]}>
-                        <Text style={{ fontWeight: 600 }}>{t('epdVariant', { n: v.number })}: </Text>
-                        {v.text}
-                      </Text>
-                    ))}
+                    <Text style={s.h} break={withFrm && !!frm && !!band}>
+                      {t('stretch')} · {epd(it.variant)}
+                      {it.aids.length ? ` · ${it.aids.join(', ')}` : ''}
+                    </Text>
+                    {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf image, no alt attribute */}
+                    {band ? <Image style={s.band} src={band} /> : null}
+                    {seg && !it.variant ? (
+                      <>
+                        {seg.standard.intro ? <Text style={s.item}>{seg.standard.intro}</Text> : null}
+                        {seg.standard.steps.map((st, i) => (
+                          <Text key={i} style={s.item}>
+                            {st.label ? <Text style={{ fontWeight: 600 }}>{st.label}: </Text> : null}
+                            {st.text}
+                          </Text>
+                        ))}
+                        {seg.standard.note ? <Text style={s.muted}>{seg.standard.note}</Text> : null}
+                      </>
+                    ) : null}
+                    {seg && it.variant ? (
+                      <>
+                        {seg.variants.intro ? <Text style={s.item}>{seg.variants.intro}</Text> : null}
+                        {seg.variants.items.map((v) => (
+                          <Text key={v.number} style={v.number === it.variant ? [s.item, s.chosen] : [s.item, s.muted]}>
+                            <Text style={{ fontWeight: 600 }}>{t('epdVariant', { n: v.number })}: </Text>
+                            {v.text}
+                          </Text>
+                        ))}
+                      </>
+                    ) : null}
                   </>
                 ) : null}
               </View>

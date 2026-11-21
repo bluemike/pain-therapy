@@ -70,6 +70,8 @@ export async function exerciseChoices(includeCodes: string[] = []) {
     areaEn: x.bodyArea.nameEn,
     retired: !!x.retiredAt,
     timing: timingOf(x.sheet?.retiredAt ? null : x.sheet) as Timing | null,
+    /** Werkzeuge der FRM, shown when only the FRM is prescribed (iteration 15, design D6) */
+    tools: x.sheet && !x.sheet.retiredAt ? x.sheet.rollingTools : [],
     variants: x.epdVariants.map((v) => ({ number: v.number, images: v.images, aids: v.aids, seconds: v.seconds })),
   }));
 }

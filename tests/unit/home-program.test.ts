@@ -8,6 +8,7 @@ import {
   scheduleText,
   validSchedule,
   weekdaysOf,
+  withParts,
   withVariant,
   type Timing,
 } from '@/lib/home-program';
@@ -41,6 +42,15 @@ describe('time needed', () => {
     expect(executionTime(withVariant(twoSides, null)).seconds).toBe(360);
     expect(executionTime(withVariant(twoSides, 90)).seconds).toBe(210);
     expect(executionTime(withVariant(notSet, 60))).toMatchObject({ seconds: 180, stretchMissing: false });
+  });
+
+  it('counts only the prescribed parts (iteration 15, design D6)', () => {
+    expect(executionTime(withParts(twoSides, 'FRM_EPD')).seconds).toBe(360);
+    expect(executionTime(withParts(twoSides, 'EPD')).seconds).toBe(240);
+    expect(executionTime(withParts(twoSides, 'FRM')).seconds).toBe(120);
+    // A stretch not yet set is no gap when only the FRM is prescribed
+    expect(executionTime(withParts(notSet, 'FRM'))).toMatchObject({ seconds: 120, stretchMissing: false });
+    expect(executionTime(withParts(withVariant(twoSides, 90), 'EPD')).seconds).toBe(90);
   });
 
   it('1D with 6 min, 1× on 5 days: 30 min per week, about 4 min per day (Zeit)', () => {

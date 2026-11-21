@@ -101,7 +101,9 @@
     "stop": "Stopp",
     "playAudio": "Übung {code} anhören",
     "stopAudio": "Übung {code} stoppen",
-    "audioMissing": "Audio nicht verfügbar"
+    "audioMissing": "Audio nicht verfügbar",
+    "partsFrm": "nur FRM",
+    "partsEpd": "nur EPD {epd}"
   },
   "entry": {
     "legend": "Eintrag {code}",

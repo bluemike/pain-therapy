@@ -244,12 +244,14 @@ function sheetRows(sheet: Sheet) {
         prescribed: x.prescribed,
         difficulty: x.difficulty,
         variant: x.variant,
+        parts: x.parts,
       })),
     },
     home: {
       create: sheet.home.map((h) => ({
         exerciseCode: h.code,
         variant: h.variant,
+        parts: h.parts,
         timesPerDay: h.timesPerDay,
         weekdays: h.weekdays,
         note: h.note,
@@ -341,6 +343,7 @@ export function sheetOf(c: Pick<Stored, 'points' | 'exercises' | 'home'>): Sheet
       prescribed: x.prescribed,
       difficulty: x.difficulty,
       variant: x.variant,
+      parts: x.parts,
     })),
     // In the order of the exercise rows, like the form
     home: c.exercises
@@ -349,6 +352,7 @@ export function sheetOf(c: Pick<Stored, 'points' | 'exercises' | 'home'>): Sheet
       .map((h) => ({
         code: h.exerciseCode,
         variant: h.variant,
+        parts: h.parts,
         timesPerDay: h.timesPerDay,
         weekdays: h.weekdays,
         note: h.note,
@@ -396,6 +400,7 @@ export function consultationChanges(
     cmp(`exercise:${code}:prescribed`, a?.prescribed ?? false, b?.prescribed ?? false);
     cmp(`exercise:${code}:difficulty`, a?.difficulty, b?.difficulty);
     cmp(`exercise:${code}:variant`, a?.variant, b?.variant);
+    cmp(`exercise:${code}:parts`, a?.parts ?? 'FRM_EPD', b?.parts ?? 'FRM_EPD');
   }
   // home-program: Änderungshistorie der Verordnungen (task 2.4)
   const homeCodes = [...new Set([...old.home, ...next.home].map((h) => h.code))];

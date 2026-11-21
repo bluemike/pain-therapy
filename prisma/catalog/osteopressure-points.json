@@ -3,432 +3,504 @@
     "id": "1.1.1",
     "group": 1,
     "muscleAttachmentLatin": "Trapezius-SpinaScapulae",
-    "attachmentDe": "Schulterblattgräte"
+    "attachmentDe": "Schulterblattgräte",
+    "position": "S"
   },
   {
     "id": "1.1.2",
     "group": 1,
     "muscleAttachmentLatin": "Trapezius-Clavicula",
-    "attachmentDe": "Schlüsselbein"
+    "attachmentDe": "Schlüsselbein",
+    "position": "S"
   },
   {
     "id": "1.1.3",
     "group": 1,
     "muscleAttachmentLatin": "Trapezius-OsOccipitale",
-    "attachmentDe": "Schädel"
+    "attachmentDe": "Schädel",
+    "position": "S"
   },
   {
     "id": "1.2.1",
     "group": 1,
     "muscleAttachmentLatin": "Sternocleidomastoideus-Sternum",
-    "attachmentDe": "Brustbein"
+    "attachmentDe": "Brustbein",
+    "position": "S"
   },
   {
     "id": "1.2.2",
     "group": 1,
     "muscleAttachmentLatin": "Sternocleidomastoideus-Clavicula",
-    "attachmentDe": "Schlüsselbein"
+    "attachmentDe": "Schlüsselbein",
+    "position": "S"
   },
   {
     "id": "1.2.3",
     "group": 1,
     "muscleAttachmentLatin": "Sternocleidomastoideus-ProcessusMastoideus",
-    "attachmentDe": "Schädel"
+    "attachmentDe": "Schädel",
+    "position": "S"
   },
   {
     "id": "1.3",
     "group": 1,
     "muscleAttachmentLatin": "Temporalis-Mandibula / Temporalis-Cranium",
-    "attachmentDe": "Unterkiefer / Schädel"
+    "attachmentDe": "Unterkiefer / Schädel",
+    "position": "S"
   },
   {
     "id": "1.4",
     "group": 1,
     "muscleAttachmentLatin": "Masseter-Mandibula",
-    "attachmentDe": "Unterkiefer"
+    "attachmentDe": "Unterkiefer",
+    "position": "S"
   },
   {
     "id": "1.5",
     "group": 1,
     "muscleAttachmentLatin": "Splenius-OsOccipitale",
-    "attachmentDe": "Schädel"
+    "attachmentDe": "Schädel",
+    "position": "S"
   },
   {
     "id": "1.6",
     "group": 1,
     "muscleAttachmentLatin": "Semispinalis-OsOccipitale",
-    "attachmentDe": "Schädel"
+    "attachmentDe": "Schädel",
+    "position": "S"
   },
   {
     "id": "1.7",
     "group": 1,
     "muscleAttachmentLatin": "LevatorScapulae-Scapula",
-    "attachmentDe": "Schulterblatt"
+    "attachmentDe": "Schulterblatt",
+    "position": "S"
   },
   {
     "id": "1.8.1",
     "group": 1,
     "muscleAttachmentLatin": "ScalenusAnterior-Costa prima",
-    "attachmentDe": "1. Rippe"
+    "attachmentDe": "1. Rippe",
+    "position": "S"
   },
   {
     "id": "1.8.2",
     "group": 1,
     "muscleAttachmentLatin": "ScalenusMedius-Costa prima",
-    "attachmentDe": "1. Rippe"
+    "attachmentDe": "1. Rippe",
+    "position": "S"
   },
   {
     "id": "1.9.1",
     "group": 1,
     "muscleAttachmentLatin": "RectusSuperior-BulbusOculi",
-    "attachmentDe": "Augapfel"
+    "attachmentDe": "Augapfel",
+    "position": "S"
   },
   {
     "id": "1.9.2",
     "group": 1,
     "muscleAttachmentLatin": "RectusInferior-BulbusOculi",
-    "attachmentDe": "Augapfel"
+    "attachmentDe": "Augapfel",
+    "position": "S"
   },
   {
     "id": "1.9.3",
     "group": 1,
     "muscleAttachmentLatin": "RectusMedialis-BulbusOculi",
-    "attachmentDe": "Augapfel"
+    "attachmentDe": "Augapfel",
+    "position": "S"
   },
   {
     "id": "1.9.4",
     "group": 1,
     "muscleAttachmentLatin": "RectusLateralis-BulbusOculi",
-    "attachmentDe": "Augapfel"
+    "attachmentDe": "Augapfel",
+    "position": "S"
   },
   {
     "id": "1.10",
     "group": 1,
     "muscleAttachmentLatin": "VertebraeCervicales",
-    "attachmentDe": "Halswirbelsäule"
+    "attachmentDe": "Halswirbelsäule",
+    "position": "BL"
   },
   {
     "id": "2.1.1",
     "group": 2,
     "muscleAttachmentLatin": "Gluteus maximus-OsSacrum",
-    "attachmentDe": "Kreuzbein"
+    "attachmentDe": "Kreuzbein",
+    "position": "BL"
   },
   {
     "id": "2.1.2",
     "group": 2,
     "muscleAttachmentLatin": "Gluteus maximus-OsIlium",
-    "attachmentDe": "Darmbein"
+    "attachmentDe": "Darmbein",
+    "position": "BL/HSL"
   },
   {
     "id": "2.2.1",
     "group": 2,
     "muscleAttachmentLatin": "Iliocostalis-OsSacrum",
-    "attachmentDe": "Kreuzbein"
+    "attachmentDe": "Kreuzbein",
+    "position": "BL"
   },
   {
     "id": "2.2.2",
     "group": 2,
     "muscleAttachmentLatin": "Iliocostalis-OsIlium",
-    "attachmentDe": "Darmbein"
+    "attachmentDe": "Darmbein",
+    "position": "BL/HSL"
   },
   {
     "id": "2.3",
     "group": 2,
     "muscleAttachmentLatin": "Multifidus-OsSacrum",
-    "attachmentDe": "Kreuzbein"
+    "attachmentDe": "Kreuzbein",
+    "position": "BL"
   },
   {
     "id": "2.4",
     "group": 2,
     "muscleAttachmentLatin": "VertebraeLumbales",
-    "attachmentDe": "Lendenwirbelsäule"
+    "attachmentDe": "Lendenwirbelsäule",
+    "position": "BL/HSL"
   },
   {
     "id": "2.5",
     "group": 2,
     "muscleAttachmentLatin": "VertebraeThoracicae",
-    "attachmentDe": "Brustwirbelsäule"
+    "attachmentDe": "Brustwirbelsäule",
+    "position": "BL"
   },
   {
     "id": "2.6",
     "group": 2,
     "muscleAttachmentLatin": "PectoralisMajor-Sternum",
-    "attachmentDe": "Brustbein"
+    "attachmentDe": "Brustbein",
+    "position": "RL"
   },
   {
     "id": "2.7",
     "group": 2,
     "muscleAttachmentLatin": "Diaphragma-ProcessusXiphoideus",
-    "attachmentDe": "Schwertfortsatz"
+    "attachmentDe": "Schwertfortsatz",
+    "position": "RL"
   },
   {
     "id": "2.8.1",
     "group": 2,
     "muscleAttachmentLatin": "RectusAbdominis-OsPubis",
-    "attachmentDe": "Schambein"
+    "attachmentDe": "Schambein",
+    "position": "RL"
   },
   {
     "id": "2.8.2",
     "group": 2,
     "muscleAttachmentLatin": "RectusAbdominis-Costa 5",
-    "attachmentDe": "5. Rippe"
+    "attachmentDe": "5. Rippe",
+    "position": "RL"
   },
   {
     "id": "2.9",
     "group": 2,
     "muscleAttachmentLatin": "ObliquusExternusAbdominis-CristaIliaca",
-    "attachmentDe": "Beckenkamm"
+    "attachmentDe": "Beckenkamm",
+    "position": "RL"
   },
   {
     "id": "2.10",
     "group": 2,
     "muscleAttachmentLatin": "ObliquusInternusAbdominis-ArcusCostalis",
-    "attachmentDe": "Rippenbogen"
+    "attachmentDe": "Rippenbogen",
+    "position": "RL"
   },
   {
     "id": "2.11.1",
     "group": 2,
     "muscleAttachmentLatin": "QuadratusLumborum-CristaIliaca",
-    "attachmentDe": "Beckenkamm"
+    "attachmentDe": "Beckenkamm",
+    "position": "BL/HSL"
   },
   {
     "id": "2.11.2",
     "group": 2,
     "muscleAttachmentLatin": "QuadratusLumborum-Costa 12",
-    "attachmentDe": "12. Rippe"
+    "attachmentDe": "12. Rippe",
+    "position": "BL"
   },
   {
     "id": "2.12",
     "group": 2,
     "muscleAttachmentLatin": "Iliopsoas-TrochanterMinor",
-    "attachmentDe": "kleiner Rollhügel"
+    "attachmentDe": "kleiner Rollhügel",
+    "position": "RL"
   },
   {
     "id": "2.13",
     "group": 2,
     "muscleAttachmentLatin": "RectusFemoris-SpinaIliacaAnteriorInferior",
-    "attachmentDe": "vorderer unterer Darmbeinstachel"
+    "attachmentDe": "vorderer unterer Darmbeinstachel",
+    "position": "RL"
   },
   {
     "id": "3.1",
     "group": 3,
     "muscleAttachmentLatin": "PectoralisMinor-ProcessusCoracoideus",
-    "attachmentDe": "Rabenschnabelfortsatz"
+    "attachmentDe": "Rabenschnabelfortsatz",
+    "position": "S"
   },
   {
     "id": "3.2",
     "group": 3,
     "muscleAttachmentLatin": "Biceps-ProcessusCoracoideus",
-    "attachmentDe": "Rabenschnabelfortsatz"
+    "attachmentDe": "Rabenschnabelfortsatz",
+    "position": "S"
   },
   {
     "id": "3.3",
     "group": 3,
     "muscleAttachmentLatin": "PectoralisMajor-Clavicula",
-    "attachmentDe": "Schlüsselbein"
+    "attachmentDe": "Schlüsselbein",
+    "position": "S"
   },
   {
     "id": "3.4.1",
     "group": 3,
     "muscleAttachmentLatin": "Deltoideus-Clavicula",
-    "attachmentDe": "Schlüsselbein"
+    "attachmentDe": "Schlüsselbein",
+    "position": "S"
   },
   {
     "id": "3.4.2",
     "group": 3,
     "muscleAttachmentLatin": "Deltoideus-Acromion",
-    "attachmentDe": "Schulterblatthöhe"
+    "attachmentDe": "Schulterblatthöhe",
+    "position": "S"
   },
   {
     "id": "3.4.3",
     "group": 3,
     "muscleAttachmentLatin": "Deltoideus-SpinaScapulae",
-    "attachmentDe": "Schulterblattgräte"
+    "attachmentDe": "Schulterblattgräte",
+    "position": "S"
   },
   {
     "id": "3.5",
     "group": 3,
     "muscleAttachmentLatin": "Infraspinatus-Scapula",
-    "attachmentDe": "Schulterblatt"
+    "attachmentDe": "Schulterblatt",
+    "position": "BL"
   },
   {
     "id": "3.6",
     "group": 3,
     "muscleAttachmentLatin": "TeresMajor-Scapula",
-    "attachmentDe": "Schulterblatt"
+    "attachmentDe": "Schulterblatt",
+    "position": "BL"
   },
   {
     "id": "3.7",
     "group": 3,
     "muscleAttachmentLatin": "Triceps-Scapula",
-    "attachmentDe": "Schulterblatt"
+    "attachmentDe": "Schulterblatt",
+    "position": "SSL"
   },
   {
     "id": "3.8",
     "group": 3,
     "muscleAttachmentLatin": "Supraspinatus-Scapula",
-    "attachmentDe": "Schulterblatt"
+    "attachmentDe": "Schulterblatt",
+    "position": "S/BL"
   },
   {
     "id": "3.9",
     "group": 3,
     "muscleAttachmentLatin": "Flexoren-EpicondylusMedialis",
-    "attachmentDe": "Ellenbogen innen"
+    "attachmentDe": "Ellenbogen innen",
+    "position": "S"
   },
   {
     "id": "3.10",
     "group": 3,
     "muscleAttachmentLatin": "Extensoren-EpicondylusLateralis",
-    "attachmentDe": "Ellenbogen außen"
+    "attachmentDe": "Ellenbogen außen",
+    "position": "S"
   },
   {
     "id": "3.11",
     "group": 3,
     "muscleAttachmentLatin": "Brachioradialis-Humerus",
-    "attachmentDe": "Oberarmknochen"
+    "attachmentDe": "Oberarmknochen",
+    "position": "S"
   },
   {
     "id": "3.12",
     "group": 3,
     "muscleAttachmentLatin": "PronatorTeres-Radius",
-    "attachmentDe": "Speiche"
+    "attachmentDe": "Speiche",
+    "position": "S"
   },
   {
     "id": "3.13",
     "group": 3,
     "muscleAttachmentLatin": "FlexorDigitorumSuperficialis-Radius",
-    "attachmentDe": "Speiche"
+    "attachmentDe": "Speiche",
+    "position": "S"
   },
   {
     "id": "3.14",
     "group": 3,
     "muscleAttachmentLatin": "FlexorPollicisBrevis-OsTrapezium",
-    "attachmentDe": "großes Vieleckbein"
+    "attachmentDe": "großes Vieleckbein",
+    "position": "S"
   },
   {
     "id": "4.1.1",
     "group": 4,
     "muscleAttachmentLatin": "GluteusMedius-OsIlium",
-    "attachmentDe": "Darmbein"
+    "attachmentDe": "Darmbein",
+    "position": "BL/HSL"
   },
   {
     "id": "4.1.2",
     "group": 4,
     "muscleAttachmentLatin": "GluteusMinimus-OsIlium",
-    "attachmentDe": "Darmbein"
+    "attachmentDe": "Darmbein",
+    "position": "BL/HSL"
   },
   {
     "id": "4.2",
     "group": 4,
     "muscleAttachmentLatin": "GluteusMedius/GluteusMinimus/Piriformis-TrochanterMajor",
-    "attachmentDe": "großer Rollhügel"
+    "attachmentDe": "großer Rollhügel",
+    "position": "SL"
   },
   {
     "id": "4.3",
     "group": 4,
     "muscleAttachmentLatin": "BicepsFemoris/Semitendinosus/Semimembranosus-TuberIschiadicum",
-    "attachmentDe": "Sitzbeinhöcker"
+    "attachmentDe": "Sitzbeinhöcker",
+    "position": "HSL/RL"
   },
   {
     "id": "4.4",
     "group": 4,
     "muscleAttachmentLatin": "TensorFasciaeLatae-OsIlium",
-    "attachmentDe": "Darmbein"
+    "attachmentDe": "Darmbein",
+    "position": "SL"
   },
   {
     "id": "4.5",
     "group": 4,
     "muscleAttachmentLatin": "Iliacus-OsIlium",
-    "attachmentDe": "Darmbein"
+    "attachmentDe": "Darmbein",
+    "position": "RL"
   },
   {
     "id": "4.6",
     "group": 4,
     "muscleAttachmentLatin": "Adduktoren-OsIschii",
-    "attachmentDe": "Sitzbein"
+    "attachmentDe": "Sitzbein",
+    "position": "RL"
   },
   {
     "id": "4.7",
     "group": 4,
     "muscleAttachmentLatin": "Sartorius-SpinaIliacaAnteriorSuperior",
-    "attachmentDe": "vorderer oberer Darmbeinstachel"
+    "attachmentDe": "vorderer oberer Darmbeinstachel",
+    "position": "RL"
   },
   {
     "id": "4.8.1",
     "group": 4,
     "muscleAttachmentLatin": "VastusIntermedius-OsFemoris",
-    "attachmentDe": "Oberschenkelknochen"
+    "attachmentDe": "Oberschenkelknochen",
+    "position": "RL"
   },
   {
     "id": "4.8.2",
     "group": 4,
     "muscleAttachmentLatin": "VastusLateralis-OsFemoris",
-    "attachmentDe": "Oberschenkelknochen"
+    "attachmentDe": "Oberschenkelknochen",
+    "position": "HSL/SL"
   },
   {
     "id": "4.8.3",
     "group": 4,
     "muscleAttachmentLatin": "VastusMedialis-OsFemoris",
-    "attachmentDe": "Oberschenkelknochen"
+    "attachmentDe": "Oberschenkelknochen",
+    "position": "RL"
   },
   {
     "id": "4.9.1",
     "group": 4,
     "muscleAttachmentLatin": "Gastrocnemius-EpicondylusMedialis",
-    "attachmentDe": "Innen-Epikondyle"
+    "attachmentDe": "Innen-Epikondyle",
+    "position": "BL"
   },
   {
     "id": "4.9.2",
     "group": 4,
     "muscleAttachmentLatin": "Gastrocnemius-EpicondylusLateralis",
-    "attachmentDe": "Außen-Epikondyle"
+    "attachmentDe": "Außen-Epikondyle",
+    "position": "BL"
   },
   {
     "id": "4.10",
     "group": 4,
     "muscleAttachmentLatin": "Gracilis/Sartorius/Semitendinosus-Tibia",
-    "attachmentDe": "Schienbein"
+    "attachmentDe": "Schienbein",
+    "position": "RL"
   },
   {
     "id": "4.11",
     "group": 4,
     "muscleAttachmentLatin": "Popliteus-CondylusLateralisFemoris",
-    "attachmentDe": "Außenkondyle"
+    "attachmentDe": "Außenkondyle",
+    "position": "BL/RL"
   },
   {
     "id": "4.12",
     "group": 4,
     "muscleAttachmentLatin": "Soleus-CaputFibulae",
-    "attachmentDe": "Wadenbeinköpfchen"
+    "attachmentDe": "Wadenbeinköpfchen",
+    "position": "BL"
   },
   {
     "id": "4.13",
     "group": 4,
     "muscleAttachmentLatin": "TibialisAnterior-CondylusLateralisTibiae",
-    "attachmentDe": "Außenkondyle"
+    "attachmentDe": "Außenkondyle",
+    "position": "RL"
   },
   {
     "id": "4.14",
     "group": 4,
     "muscleAttachmentLatin": "ExtensorCalcaneus",
-    "attachmentDe": "Fersenbein"
+    "attachmentDe": "Fersenbein",
+    "position": "RL"
   },
   {
     "id": "4.15.1",
     "group": 4,
     "muscleAttachmentLatin": "Flexoren-DigitiPedis",
-    "attachmentDe": "Fußsohle-Zehengrundgelenke"
+    "attachmentDe": "Fußsohle-Zehengrundgelenke",
+    "position": "BL"
   },
   {
     "id": "4.15.2",
     "group": 4,
     "muscleAttachmentLatin": "Flexoren-OssaMetatarsalia",
-    "attachmentDe": "Fußsohle-Mittelfuß"
+    "attachmentDe": "Fußsohle-Mittelfuß",
+    "position": "BL"
   },
   {
     "id": "4.15.3",
     "group": 4,
     "muscleAttachmentLatin": "Flexoren-Calcaneus",
-    "attachmentDe": "Fußsohle-Fersenbein"
+    "attachmentDe": "Fußsohle-Fersenbein",
+    "position": "SL"
   }
 ]

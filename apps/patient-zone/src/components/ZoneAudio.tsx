@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Play, Square } from 'lucide-react';
+import type { Parts } from '@pain-therapy/shared/home-program';
 
 type State = 'idle' | 'loading' | 'playing' | 'missing';
 
@@ -13,7 +14,7 @@ let current: HTMLAudioElement | null = null;
  * "Anhören" in the zone (iteration 14): plays the recording of FRM, then of the prescribed EPD, from
  * /media/{code}?teil=…; a second tap stops it. Shows "Audio nicht verfügbar" while a recording is missing.
  */
-export function ZoneAudio({ code, program }: { code: string; program?: string }) {
+export function ZoneAudio({ code, program, parts = 'FRM_EPD' }: { code: string; program?: string; parts?: Parts }) {
   const t = useTranslations('home');
   const [state, setState] = useState<State>('idle');
   const ref = useRef<HTMLAudioElement | null>(null);
@@ -56,7 +57,7 @@ export function ZoneAudio({ code, program }: { code: string; program?: string })
           ref.current?.pause();
           if (ref.current) ref.current.currentTime = 0;
           setState('idle');
-        } else play(['frm-audio', 'epd-audio']);
+        } else play(parts === 'FRM' ? ['frm-audio'] : parts === 'EPD' ? ['epd-audio'] : ['frm-audio', 'epd-audio']);
       }}
     >
       {on ? <Square size={16} aria-hidden="true" /> : <Play size={16} aria-hidden="true" />}

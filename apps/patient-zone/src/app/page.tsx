@@ -2,7 +2,14 @@ import Link from 'next/link';
 import { getFormatter, getTranslations } from 'next-intl/server';
 import { BookOpen, Check, ChevronLeft, ChevronRight, Clock, PenLine } from 'lucide-react';
 import { progress } from '@pain-therapy/shared/adherence';
-import { scheduleParts, scheduledOn, weekdayIndex } from '@pain-therapy/shared/home-program';
+import {
+  hasEpd,
+  hasFrm,
+  scheduleParts,
+  scheduledOn,
+  weekdayIndex,
+  type Parts,
+} from '@pain-therapy/shared/home-program';
 import { chosenDay, dayReference } from '@pain-therapy/shared/log-entry';
 import { PROGRAM_ACTIVE_WEEKS } from '@pain-therapy/shared/program';
 import { addDays, dayKey, fromZurichInputs, zurichInputs } from '@pain-therapy/shared/time';
@@ -102,6 +109,13 @@ export default async function Home({
     return `${t('timesPerDay', { n: p.timesPerDay })} · ${days}`;
   };
   const epd = (v: number | null) => (v ? t('epdVariant', { n: v }) : t('epdStandard'));
+  // Verordnete Teile (iteration 15, design D6)
+  const partsText = (it: { variant: number | null; parts: Parts }) =>
+    it.parts === 'FRM'
+      ? t('partsFrm')
+      : it.parts === 'EPD'
+        ? t('partsEpd', { epd: epd(it.variant) })
+        : t('parts', { epd: epd(it.variant) });
   const todayKey = dayKey(now);
   // Iteration 14 (mockup «Heute dran»): the exercises of the day as cards, the free ones in a compact list below
   const due = items.filter((i) => i.progress.target > 0);
@@ -154,56 +168,64 @@ export default async function Home({
           {t('guide')}
           <span className="sr"> {it.code}</span>
         </summary>
-        <h3>
-          {t('frm')}
-          {it.guide.tools.length ? ` · ${it.guide.tools.join(', ')}` : ''}
-        </h3>
-        {/* eslint-disable-next-line @next/next/no-img-element -- private image, only with a session */}
-        <img
-          className="band"
-          src={`/media/${it.code}?teil=frm`}
-          alt={t('bandOf', { code: it.code, part: t('frm') })}
-          loading="lazy"
-        />
-        {it.guide.segments?.frm.items.map((x, i) => (
-          <p key={i}>
-            {x.n.length ? <b>({x.n.join('/')}) </b> : null}
-            {x.text}
-          </p>
-        ))}
-        <h3>
-          {t('epd')} · {epd(it.variant)}
-          {it.guide.aids.length ? ` · ${it.guide.aids.join(', ')}` : ''}
-        </h3>
-        {/* eslint-disable-next-line @next/next/no-img-element -- private image, only with a session */}
-        <img
-          className="band"
-          src={`/media/${it.code}?teil=${it.variant ? 'var' : 'std'}`}
-          alt={t('bandOf', { code: it.code, part: t('epd') })}
-          loading="lazy"
-        />
-        {it.guide.segments && !it.variant ? (
+        {hasFrm(it.parts) ? (
           <>
-            {it.guide.segments.standard.intro ? <p>{it.guide.segments.standard.intro}</p> : null}
-            {it.guide.segments.standard.steps.map((st, i) => (
+            <h3>
+              {t('frm')}
+              {it.guide.tools.length ? ` · ${it.guide.tools.join(', ')}` : ''}
+            </h3>
+            {/* eslint-disable-next-line @next/next/no-img-element -- private image, only with a session */}
+            <img
+              className="band"
+              src={`/media/${it.code}?teil=frm`}
+              alt={t('bandOf', { code: it.code, part: t('frm') })}
+              loading="lazy"
+            />
+            {it.guide.segments?.frm.items.map((x, i) => (
               <p key={i}>
-                {st.label ? <b>{st.label}: </b> : null}
-                {st.text}
+                {x.n.length ? <b>({x.n.join('/')}) </b> : null}
+                {x.text}
               </p>
             ))}
           </>
         ) : null}
-        {it.guide.segments && it.variant ? (
+        {hasEpd(it.parts) ? (
           <>
-            {it.guide.segments.variants.intro ? <p>{it.guide.segments.variants.intro}</p> : null}
-            {it.guide.segments.variants.items
-              .filter((v) => v.number === it.variant)
-              .map((v) => (
-                <p key={v.number} className="chosen">
-                  <b>{t('epdVariant', { n: v.number })}: </b>
-                  {v.text}
-                </p>
-              ))}
+            <h3>
+              {t('epd')} · {epd(it.variant)}
+              {it.guide.aids.length ? ` · ${it.guide.aids.join(', ')}` : ''}
+            </h3>
+            {/* eslint-disable-next-line @next/next/no-img-element -- private image, only with a session */}
+            <img
+              className="band"
+              src={`/media/${it.code}?teil=${it.variant ? 'var' : 'std'}`}
+              alt={t('bandOf', { code: it.code, part: t('epd') })}
+              loading="lazy"
+            />
+            {it.guide.segments && !it.variant ? (
+              <>
+                {it.guide.segments.standard.intro ? <p>{it.guide.segments.standard.intro}</p> : null}
+                {it.guide.segments.standard.steps.map((st, i) => (
+                  <p key={i}>
+                    {st.label ? <b>{st.label}: </b> : null}
+                    {st.text}
+                  </p>
+                ))}
+              </>
+            ) : null}
+            {it.guide.segments && it.variant ? (
+              <>
+                {it.guide.segments.variants.intro ? <p>{it.guide.segments.variants.intro}</p> : null}
+                {it.guide.segments.variants.items
+                  .filter((v) => v.number === it.variant)
+                  .map((v) => (
+                    <p key={v.number} className="chosen">
+                      <b>{t('epdVariant', { n: v.number })}: </b>
+                      {v.text}
+                    </p>
+                  ))}
+              </>
+            ) : null}
           </>
         ) : null}
         {!it.guide.segments ? <p className="muted">{t('guideMissing')}</p> : null}
@@ -371,7 +393,7 @@ export default async function Home({
                         <b className="name">
                           {it.code} {it.name}
                         </b>
-                        <small>{t('parts', { epd: epd(it.variant) })}</small>
+                        <small>{partsText(it)}</small>
                         <small className="when">
                           <Clock size={14} aria-hidden="true" /> {rep(it.schedule)} ·{' '}
                           {t('perExecution', { min: format.number(Math.round(it.seconds / 60)) })}
@@ -408,7 +430,7 @@ export default async function Home({
                           <span aria-hidden="true">{t(it.progress.complete ? 'ticked' : 'tick')}</span>
                         </button>
                       </form>
-                      <ZoneAudio code={it.code} program={programField} />
+                      <ZoneAudio code={it.code} program={programField} parts={it.parts} />
                     </div>
                     {guide(it)}
                     {record(it, t('recordRated'))}
@@ -432,7 +454,7 @@ export default async function Home({
                         <b className="name">
                           {it.code} {it.name}
                         </b>
-                        <small>{t('parts', { epd: epd(it.variant) })}</small>
+                        <small>{partsText(it)}</small>
                         <small>
                           {nextTime(it.schedule) ? `${t('nextTime', { day: nextTime(it.schedule)! })} · ` : ''}
                           <span className="pill" data-testid="progress">

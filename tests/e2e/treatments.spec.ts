@@ -82,14 +82,18 @@ test.describe('treatments and sessions', () => {
     ]);
     const rows = page.locator('section[aria-labelledby="h_osteo"] tbody tr');
     await expect(rows).toHaveCount(15);
-    // Session 1 shows the main points (dark red) first; "Alle" shows every point of the sheet
+    // Iteration 15 (design D2): a session opens with all points; «Sitzung 1» still shows only the dark red ones
     const filter = page.getByTestId('point-filter');
-    await expect(filter).toHaveValue('main');
+    await expect(filter).toHaveValue('all');
+    await expect(rows.locator('visible=true')).toHaveCount(15);
+    await filter.selectOption('main');
     const mainCount = await rows.locator('visible=true').count();
     expect(mainCount).toBeGreaterThan(0);
     expect(mainCount).toBeLessThan(15);
     await filter.selectOption('all');
-    await expect(rows.locator('visible=true')).toHaveCount(15);
+    // Column «Lage» (design D1): code with the full name
+    await expect(rows.first().locator('td.lagecol abbr')).toHaveText('BL');
+    await expect(rows.first().locator('td.lagecol abbr')).toHaveAttribute('title', 'Bauchlage');
     await expect(rows.first().locator('th')).toHaveText('2.1.1');
     await expect(rows.last().locator('th')).toHaveText('4.5');
     // Exercises of the sheet first, then the rest of the Bereich Rumpf
@@ -165,10 +169,10 @@ test.describe('treatments and sessions', () => {
     await expect(list.first()).toContainText('2 Punkte · 1 Übung · 1 Foto');
     await expect(list.first().getByRole('link', { name: 'Ändern: Sitzung Nr. 1' })).toBeVisible();
 
-    // Second session with only the pain before; it starts with the relevant (red) points
+    // Second session with only the pain before; it also starts with all points
     await page.locator('section.treat').first().getByRole('link', { name: 'Sitzung', exact: true }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Sitzung Nr. 2' })).toBeVisible();
-    await expect(page.getByTestId('point-filter')).toHaveValue('relevant');
+    await expect(page.getByTestId('point-filter')).toHaveValue('all');
     await page.locator('#f_comparison').fill('Besser als in Sitzung 1');
     await setPain(page, 'f_painBefore', 50);
     await page.getByRole('button', { name: 'Sitzung speichern' }).click();

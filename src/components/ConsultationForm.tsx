@@ -6,25 +6,27 @@ import { useLocale, useTranslations } from 'next-intl';
 import { saveConsultation, type TreatmentFormState } from '@/app/(app)/treatment-actions';
 import { DIFFICULTIES, SENSITIVITIES, SIDES, type Sheet } from '@/lib/schemas';
 import type { SheetExercise, SheetPoint } from '@/lib/catalog';
-import { DEFAULT_SCHEDULE, withVariant, type Timing } from '@/lib/home-program';
+import { DEFAULT_SCHEDULE, PARTS, withParts, withVariant, type Parts, type Timing } from '@/lib/home-program';
 import { PhotoField, usePhotos, type SavedPhoto } from './PhotoField';
 import { Seg } from './Seg';
 import { PainSlider } from './PainSlider';
 import { HomeProgramBlock, type HomeEntry } from './HomeProgramBlock';
 import { ExercisePreview } from './ExercisePreview';
 import { NoteInput } from './NoteInput';
+import { PositionCell } from './PositionCell';
+import { positionLabel, type PositionName } from '@/lib/positions';
 import type { Ink, InputMode } from '@pain-therapy/shared/ink';
 
 type Sensitivity = (typeof SENSITIVITIES)[number];
 type Difficulty = (typeof DIFFICULTIES)[number];
 type PointEntry = { left: boolean; right: boolean; sensitivity: Sensitivity | null };
-type ExerciseEntry = { prescribed: boolean; difficulty: Difficulty | null; variant: number | null };
+type ExerciseEntry = { prescribed: boolean; difficulty: Difficulty | null; variant: number | null; parts: Parts };
 type Side = (typeof SIDES)[number];
 /** Punkte pro Sitzung (iteration 8, design D5): Sitzung 1 = dark red, 2 = red, 3 = black points */
 type PointFilter = 'all' | 'main' | 'relevant' | 'standard';
 const FILTERS: PointFilter[] = ['all', 'main', 'relevant', 'standard'];
-export const defaultPointFilter = (sessionNumber: number): PointFilter =>
-  sessionNumber >= 1 && sessionNumber <= 3 ? FILTERS[sessionNumber] : 'all';
+/** Iteration 15 (design D2): a session always opens with all points; the session filters stay selectable */
+export const defaultPointFilter = (): PointFilter => 'all';
 
 export type ExerciseOption = {
   code: string;
@@ -34,6 +36,8 @@ export type ExerciseOption = {
   areaEn: string;
   retired: boolean;
   timing: Timing | null;
+  /** Werkzeuge der FRM (iteration 15, design D6) */
+  tools?: string[];
   variants: { number: number; images: number[]; aids: string[]; seconds: number | null }[];
 };
 
@@ -63,6 +67,7 @@ export function ConsultationForm({
   points: sheetPoints,
   exercises: sheetExercises,
   catalogPoints,
+  positions = [],
   catalogExercises,
   saved,
   cancelHref,
@@ -72,7 +77,7 @@ export function ConsultationForm({
   patientId: string;
   treatmentId: string;
   id?: string;
-  /** Number of the session: presets the point filter */
+  /** Number of the session */
   number: number;
   /** Körperseite of the treatment */
   side: Side;
@@ -83,7 +88,9 @@ export function ConsultationForm({
   initial: ConsultationValues;
   points: SheetPoint[];
   exercises: SheetExercise[];
-  catalogPoints: { id: string; latin: string; de: string; group: number }[];
+  catalogPoints: { id: string; latin: string; de: string; position: string | null; group: number }[];
+  /** Behandlungslagen (iteration 15, design D1) for the column «Lage» */
+  positions?: PositionName[];
   /** All exercises with their Bereich, timing and variants ("Übung aus anderem Bereich", time totals) */
   catalogExercises: ExerciseOption[];
   saved?: SavedPhoto[];
@@ -113,7 +120,7 @@ export function ConsultationForm({
     Object.fromEntries(initial.sheet.points.map((p) => [p.pointId, { ...p }])),
   );
   const [extra, setExtra] = useState<SheetPoint[]>([]);
-  const [filter, setFilter] = useState<PointFilter>(() => defaultPointFilter(number));
+  const [filter, setFilter] = useState<PointFilter>(defaultPointFilter);
   const [adding, setAdding] = useState(false);
   const [toAdd, setToAdd] = useState('');
   const [exToAdd, setExToAdd] = useState('');
@@ -121,7 +128,7 @@ export function ConsultationForm({
     Object.fromEntries(
       initial.sheet.exercises.map((x) => [
         x.code,
-        { prescribed: x.prescribed, difficulty: x.difficulty, variant: x.variant },
+        { prescribed: x.prescribed, difficulty: x.difficulty, variant: x.variant, parts: x.parts ?? 'FRM_EPD' },
       ]),
     ),
   );
@@ -155,7 +162,8 @@ export function ConsultationForm({
       // beidseitig (iteration 9, design D6): both sides, either can be unticked
       ...(sensitivity && side === 'UNSPECIFIED' ? { left: true, right: true } : {}),
     });
-  const exercise = (code: string): ExerciseEntry => exs[code] ?? { prescribed: false, difficulty: null, variant: null };
+  const exercise = (code: string): ExerciseEntry =>
+    exs[code] ?? { prescribed: false, difficulty: null, variant: null, parts: 'FRM_EPD' };
   const setExercise = (code: string, patch: Partial<ExerciseEntry>) =>
     setExs((prev) => ({ ...prev, [code]: { ...exercise(code), ...patch } }));
 
@@ -182,7 +190,13 @@ export function ConsultationForm({
       points: allPoints.map((p) => ({ pointId: p.id, ...point(p.id) })),
       exercises: exercises.map((x) => {
         const v = exercise(x.code);
-        return { code: x.code, ...v, variant: v.prescribed || v.difficulty ? v.variant : null };
+        const frmOnly = v.parts === 'FRM';
+        return {
+          code: x.code,
+          ...v,
+          variant: !frmOnly && (v.prescribed || v.difficulty) ? v.variant : null,
+          difficulty: frmOnly && v.prescribed ? null : v.difficulty,
+        };
       }),
       home: prescribed.map((x) => ({ code: x.code, ...homeEntry(x.code) })),
     };
@@ -351,6 +365,9 @@ export function ConsultationForm({
               <thead>
                 <tr>
                   <th scope="col">{t('colPoint')}</th>
+                  <th scope="col" className="lagecol">
+                    {t('colPosition')}
+                  </th>
                   <th scope="col">{t('colMuscle')}</th>
                   <th scope="col">{t('colTreated')}</th>
                   <th scope="col">{t('colSensitivity')}</th>
@@ -373,6 +390,9 @@ export function ConsultationForm({
                       <th scope="row" className="pid num">
                         {p.id}
                       </th>
+                      <td className="lagecol">
+                        <PositionCell code={p.position} label={positionLabel(p.position, positions, locale)} />
+                      </td>
                       <td className="pname">
                         {p.latin}
                         {p.emphasis === 'main' ? <span className="sr-only"> ({t('legendMain')})</span> : null}
@@ -480,6 +500,7 @@ export function ConsultationForm({
                     <th scope="col">{t('colExercise')}</th>
                     <th scope="col">{tx('imageCol')}</th>
                     <th scope="col">{t('prescribed')}</th>
+                    <th scope="col">{t('colParts')}</th>
                     <th scope="col">{t('epd')}</th>
                     <th scope="col">{t('difficulty')}</th>
                   </tr>
@@ -489,6 +510,8 @@ export function ConsultationForm({
                     const v = exercise(x.code);
                     const o = option(x.code);
                     const bad = errors[`exercises:${x.code}`];
+                    // Only FRM (iteration 15, design D6): no stretch, so no EPD and no "Übung fällt"
+                    const frmOnly = v.prescribed && v.parts === 'FRM';
                     return (
                       <tr key={x.code} data-code={x.code} className={bad ? 'bad' : undefined}>
                         <th scope="row">
@@ -513,29 +536,53 @@ export function ConsultationForm({
                         <td>
                           <select
                             className="inp"
-                            aria-label={t('epdOf', { code: x.code })}
-                            disabled={!v.prescribed && !v.difficulty}
-                            value={v.variant ?? ''}
-                            onChange={(e) =>
-                              setExercise(x.code, { variant: e.target.value ? Number(e.target.value) : null })
-                            }
+                            aria-label={t('partsOf', { code: x.code })}
+                            data-testid={`parts-${x.code}`}
+                            disabled={!v.prescribed}
+                            value={v.parts}
+                            onChange={(e) => setExercise(x.code, { parts: e.target.value as Parts })}
                           >
-                            <option value="">{t('epdStandard')}</option>
-                            {(o?.variants ?? []).map((w) => (
-                              <option key={w.number} value={w.number}>
-                                {t('variantOption', { n: w.number, images: w.images.join('+') })}
-                                {w.aids.length ? ` · ${w.aids.join(', ')}` : ''}
+                            {PARTS.map((p) => (
+                              <option key={p} value={p}>
+                                {t(`parts_${p}`)}
                               </option>
                             ))}
                           </select>
                         </td>
                         <td>
-                          <Seg
-                            label={t('difficultyOf', { code: x.code })}
-                            options={diffOptions}
-                            value={v.difficulty}
-                            onChange={(d) => setExercise(x.code, { difficulty: d })}
-                          />
+                          {frmOnly ? (
+                            <small className="muted" data-testid={`tools-${x.code}`}>
+                              {o?.tools?.length ? t('frmTools', { tools: o.tools.join(', ') }) : t('frmNoTools')}
+                            </small>
+                          ) : (
+                            <select
+                              className="inp"
+                              aria-label={t('epdOf', { code: x.code })}
+                              disabled={!v.prescribed && !v.difficulty}
+                              value={v.variant ?? ''}
+                              onChange={(e) =>
+                                setExercise(x.code, { variant: e.target.value ? Number(e.target.value) : null })
+                              }
+                            >
+                              <option value="">{t('epdStandard')}</option>
+                              {(o?.variants ?? []).map((w) => (
+                                <option key={w.number} value={w.number}>
+                                  {t('variantOption', { n: w.number, images: w.images.join('+') })}
+                                  {w.aids.length ? ` · ${w.aids.join(', ')}` : ''}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </td>
+                        <td>
+                          {frmOnly ? null : (
+                            <Seg
+                              label={t('difficultyOf', { code: x.code })}
+                              options={diffOptions}
+                              value={v.difficulty}
+                              onChange={(d) => setExercise(x.code, { difficulty: d })}
+                            />
+                          )}
                           {bad ? (
                             <span className="msg" role="alert">
                               {te(bad as 'difficultyRequired')}
@@ -582,14 +629,15 @@ export function ConsultationForm({
 
       <HomeProgramBlock
         rows={prescribed.map((x) => {
-          const v = exercise(x.code).variant;
+          const { variant: v, parts } = exercise(x.code);
           const o = option(x.code);
           return {
             code: x.code,
             name: exName(x),
             epd: epdLabel(v),
             variant: v,
-            timing: withVariant(o?.timing ?? null, o?.variants.find((w) => w.number === v)?.seconds),
+            parts,
+            timing: withParts(withVariant(o?.timing ?? null, o?.variants.find((w) => w.number === v)?.seconds), parts),
           };
         })}
         entry={homeEntry}

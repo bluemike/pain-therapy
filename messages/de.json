@@ -473,6 +473,7 @@
     "legendRelevant": "wichtig",
     "legendStandard": "weitere",
     "colPoint": "Punkt",
+    "colPosition": "Lage",
     "colMuscle": "Osteopressurpunkt",
     "colTreated": "behandelt",
     "colSensitivity": "Empfindlichkeit",
@@ -514,7 +515,14 @@
     "sideValue": "Körperseite {side}",
     "side_UNSPECIFIED": "beidseitig",
     "side_LEFT": "links",
-    "side_RIGHT": "rechts"
+    "side_RIGHT": "rechts",
+    "colParts": "Teile",
+    "partsOf": "Verordnete Teile von {code}",
+    "parts_FRM_EPD": "FRM + EPD",
+    "parts_EPD": "nur EPD",
+    "parts_FRM": "nur FRM",
+    "frmTools": "Werkzeug: {tools}",
+    "frmNoTools": "ohne Werkzeug"
   },
   "scales": {
     "painUnset": "nicht erfasst",
@@ -559,6 +567,7 @@
     "allRegions": "alle Schmerzbereiche",
     "show": "Anzeigen",
     "colPoint": "Punkt",
+    "colPosition": "Lage",
     "colMuscle": "Osteopressurpunkt",
     "colGroup": "Bereich",
     "colRegions": "Schmerzbereiche",
@@ -613,7 +622,9 @@
     "day_sa": "Samstag",
     "day_su": "Sonntag",
     "parts": "FRM + EPD {epd}",
-    "rowPerWeek": "{duration} pro Woche"
+    "rowPerWeek": "{duration} pro Woche",
+    "partsFrm": "nur FRM",
+    "partsEpd": "nur EPD {epd}"
   },
   "exercise": {
     "imageMissing": "Bild nicht verfügbar",
@@ -656,7 +667,9 @@
     "colText": "Text",
     "colTime": "Zeit",
     "variantN": "Variante {n}",
-    "noVariants": "Diese Übung hat keine Varianten."
+    "noVariants": "Diese Übung hat keine Varianten.",
+    "openSheet": "Blatt ansehen",
+    "openSheetOf": "Übungsblatt {code} ansehen"
   },
   "handout": {
     "layout": "Inhalt des Übungsblatts",
@@ -725,7 +738,9 @@
     "fieldEpd": "EPD",
     "epdStandard": "Standardübung",
     "epdVariant": "Variante {n}",
-    "parts": "Faszien-Rollmassage + Engpassdehnung {epd}"
+    "parts": "Faszien-Rollmassage + Engpassdehnung {epd}",
+    "partsFrm": "Nur Faszien-Rollmassage",
+    "partsEpd": "Nur Engpassdehnung {epd}"
   },
   "accessLinkEmail": {
     "subject": "Ihr Zugang zur Patienten-Zone",

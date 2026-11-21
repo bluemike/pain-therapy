@@ -4,7 +4,7 @@ import { audit, SYSTEM_ACTOR } from './audit';
 import { localName } from './catalog';
 import { mediaFileOf, timingOf, type SheetContent, type SheetSegments } from './exercise-sheets';
 import { renderHandoutPdf, type HandoutItem, type HandoutPdfInput } from './handout-pdf';
-import { executionTime, programTime, withVariant } from './home-program';
+import { executionTime, programTime, withParts, withVariant } from './home-program';
 import { therapistLine } from './users';
 import { sendWithRetry } from './mail';
 import { nextDocumentNumber } from './signing';
@@ -68,9 +68,12 @@ export function programTotal(ctx: Pick<Context, 'prescriptions'>) {
     ctx.prescriptions.map((p) => ({
       code: p.exerciseCode,
       schedule: { timesPerDay: p.timesPerDay, weekdays: p.weekdays },
-      timing: withVariant(
-        timingOf(p.exercise.sheet && !p.exercise.sheet.retiredAt ? p.exercise.sheet : null),
-        p.exercise.epdVariants.find((v) => v.number === p.variant)?.seconds,
+      timing: withParts(
+        withVariant(
+          timingOf(p.exercise.sheet && !p.exercise.sheet.retiredAt ? p.exercise.sheet : null),
+          p.exercise.epdVariants.find((v) => v.number === p.variant)?.seconds,
+        ),
+        p.parts,
       ),
     })),
   );
@@ -83,7 +86,7 @@ async function handoutItems(ctx: Context, language: Language): Promise<HandoutIt
     ctx.prescriptions.map(async (p) => {
       const sheet = p.exercise.sheet && !p.exercise.sheet.retiredAt ? p.exercise.sheet : null;
       const variant = p.variant ? (p.exercise.epdVariants.find((v) => v.number === p.variant) ?? null) : null;
-      const e = executionTime(withVariant(timingOf(sheet), variant?.seconds));
+      const e = executionTime(withParts(withVariant(timingOf(sheet), variant?.seconds), p.parts));
       const code = p.exerciseCode;
       // home-schedule (iteration 8, design D7): FRM band and the band of the chosen EPD; the main image for the
       // overview and the whole sheet while the bands are not uploaded
@@ -99,6 +102,7 @@ async function handoutItems(ctx: Context, language: Language): Promise<HandoutIt
         code,
         name: localName(p.exercise, language),
         variant: p.variant,
+        parts: p.parts,
         timesPerDay: p.timesPerDay,
         weekdays: p.weekdays,
         note: p.note,
@@ -155,16 +159,19 @@ export async function buildHandout(
       : undefined,
   };
   const pdf = await renderHandoutPdf(input);
-  const snapshot = items.map(({ code, name, variant, timesPerDay, weekdays, note, seconds, stretchMissing }) => ({
-    code,
-    name,
-    variant,
-    timesPerDay,
-    weekdays,
-    note,
-    seconds,
-    stretchMissing,
-  }));
+  const snapshot = items.map(
+    ({ code, name, variant, parts, timesPerDay, weekdays, note, seconds, stretchMissing }) => ({
+      code,
+      name,
+      variant,
+      parts,
+      timesPerDay,
+      weekdays,
+      note,
+      seconds,
+      stretchMissing,
+    }),
+  );
   return { pdf, language, snapshot: { items: snapshot, total, layout } };
 }
 

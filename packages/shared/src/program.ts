@@ -1,6 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 import { DAY_MS } from './time';
-import type { Schedule } from './home-program';
+import type { Parts, Schedule } from './home-program';
 
 /**
  * patient-access and exercise-log: das aktuelle Heimprogramm (iteration 4, design D2), since iteration 9 one per
@@ -18,7 +18,8 @@ export type CurrentProgram = {
   /** The treatment of the consultation and its pain area, the title in the patient zone (iteration 9, design D8) */
   treatmentId: string;
   region: { code: string; nameDe: string; nameEn: string };
-  prescriptions: { exerciseCode: string; schedule: Schedule; variant: number | null }[];
+  /** `parts`: verordnete Teile (iteration 15, design D6) */
+  prescriptions: { exerciseCode: string; schedule: Schedule; variant: number | null; parts: Parts }[];
   active: boolean;
 };
 
@@ -44,7 +45,7 @@ export async function currentPrograms(
       treatment: { select: { region: { select: { code: true, nameDe: true, nameEn: true } } } },
       // In the order of the catalog (1A to 4G), like the paper form; the database order alone is not stable
       home: {
-        select: { exerciseCode: true, timesPerDay: true, weekdays: true, variant: true },
+        select: { exerciseCode: true, timesPerDay: true, weekdays: true, variant: true, parts: true },
         orderBy: { exercise: { sort: 'asc' } },
       },
     },
@@ -58,6 +59,7 @@ export async function currentPrograms(
       exerciseCode: h.exerciseCode,
       schedule: { timesPerDay: h.timesPerDay, weekdays: h.weekdays },
       variant: h.variant,
+      parts: h.parts,
     })),
     active: programActive(c.at, now),
   }));

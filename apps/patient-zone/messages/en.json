@@ -101,7 +101,9 @@
     "stop": "Stop",
     "playAudio": "Listen to exercise {code}",
     "stopAudio": "Stop exercise {code}",
-    "audioMissing": "Audio not available"
+    "audioMissing": "Audio not available",
+    "partsFrm": "Rolling only",
+    "partsEpd": "Stretch only {epd}"
   },
   "entry": {
     "legend": "Entry {code}",

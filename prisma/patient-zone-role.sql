@@ -39,7 +39,7 @@ BEGIN
                 "comparison", "comparisonInk")
     ON "Consultation" TO patient_zone;
   GRANT SELECT ("consultationId", "pointId", "left", "right", "sensitivity") ON "ConsultationPoint" TO patient_zone;
-  GRANT SELECT ("consultationId", "exerciseCode", "prescribed", "difficulty", "variant")
+  GRANT SELECT ("consultationId", "exerciseCode", "prescribed", "difficulty", "variant", "parts")
     ON "ConsultationExercise" TO patient_zone;
   GRANT SELECT ("id", "code", "nameDe", "nameEn") ON "Region" TO patient_zone;
   GRANT SELECT ("id", "group", "muscleAttachmentLatin", "attachmentDe", "sort") ON "OsteopressurePoint" TO patient_zone;
@@ -51,8 +51,8 @@ BEGIN
   GRANT SELECT ("id", "documentNumber", "patientId", "consultationId", "version", "language", "createdAt")
     ON "ExerciseHandout" TO patient_zone;
   -- Without the note of the therapist (design D7: Bemerkungen der Therapeutin nicht sichtbar); since iteration 8
-  -- (design D7) the EPD and the schedule per day and weekday
-  GRANT SELECT ("consultationId", "exerciseCode", "variant", "timesPerDay", "weekdays")
+  -- (design D7) the EPD and the schedule per day and weekday; since iteration 15 (design D6) the prescribed parts
+  GRANT SELECT ("consultationId", "exerciseCode", "variant", "parts", "timesPerDay", "weekdays")
     ON "HomePrescription" TO patient_zone;
   GRANT SELECT ("code", "nameDe", "nameEn", "sort") ON "Exercise" TO patient_zone;
   -- FRM and EPD of the own exercises (iteration 8, design D2): texts, tools, aids and the variants

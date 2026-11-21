@@ -41,7 +41,7 @@ const COLUMNS: Record<string, string[]> = {
     'painBefore',
     'treatmentId',
   ],
-  'ConsultationExercise.SELECT': ['consultationId', 'difficulty', 'exerciseCode', 'prescribed', 'variant'],
+  'ConsultationExercise.SELECT': ['consultationId', 'difficulty', 'exerciseCode', 'parts', 'prescribed', 'variant'],
   'ConsultationPoint.SELECT': ['consultationId', 'left', 'pointId', 'right', 'sensitivity'],
   'Exercise.SELECT': ['code', 'nameDe', 'nameEn', 'sort'],
   'ExerciseHandout.SELECT': ['consultationId', 'createdAt', 'documentNumber', 'id', 'language', 'patientId', 'version'],
@@ -56,7 +56,7 @@ const COLUMNS: Record<string, string[]> = {
     'stretchSecondsPerSide',
   ],
   'ExerciseVariant.SELECT': ['aids', 'exerciseCode', 'images', 'number', 'retiredAt', 'seconds'],
-  'HomePrescription.SELECT': ['consultationId', 'exerciseCode', 'timesPerDay', 'variant', 'weekdays'],
+  'HomePrescription.SELECT': ['consultationId', 'exerciseCode', 'parts', 'timesPerDay', 'variant', 'weekdays'],
   'OsteopressurePoint.SELECT': ['attachmentDe', 'group', 'id', 'muscleAttachmentLatin', 'sort'],
   'Patient.SELECT': [
     'city',

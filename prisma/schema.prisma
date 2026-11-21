@@ -462,6 +462,8 @@ model OsteopressurePoint {
   bodyArea              BodyArea  @relation(fields: [group], references: [id])
   muscleAttachmentLatin String
   attachmentDe          String
+  /// Behandlungslage (iteration 15, design D1): code of a TreatmentPosition or a combination such as "BL/HSL"
+  position              String?
   /// Order of the reference file (numeric by ID)
   sort                  Int
   retiredAt             DateTime?
@@ -535,6 +537,15 @@ model RegionExercise {
 }
 
 /// Fascia rolling tool (MiKu, MeKu, MiRo, MeRo)
+/// Behandlungslage of an Osteopressur point (iteration 15, design D1), e.g. SL Seitenlage
+model TreatmentPosition {
+  code      String    @id
+  nameDe    String
+  nameEn    String
+  sort      Int
+  retiredAt DateTime?
+}
+
 model RollingTool {
   code      String    @id
   nameDe    String
@@ -656,6 +667,8 @@ model ConsultationExercise {
   difficulty     Difficulty?
   /// EPD: null = Standardübung, otherwise the number of the ExerciseVariant
   variant        Int?
+  /// Verordnete Teile (iteration 15, design D6)
+  parts          ExerciseParts @default(FRM_EPD)
 
   @@id([consultationId, exerciseCode])
 }
@@ -724,7 +737,15 @@ model ExerciseSheet {
 
 // ---------- Home program and exercise handout (home-program, exercise-handout, design D4 to D6) ----------
 
-/// Selbstausführung: one row per exercise prescribed in a session, always FRM + the chosen EPD (iteration 8 design D7)
+/// Teile einer Verordnung (iteration 15, design D6): FRM + EPD, only the stretch or only the Faszien-Rollmassage
+enum ExerciseParts {
+  FRM_EPD
+  EPD
+  FRM
+}
+
+/// Selbstausführung: one row per exercise prescribed in a session, FRM and/or the chosen EPD (iteration 8 design D7,
+/// iteration 15 design D6)
 model HomePrescription {
   practiceId     String       @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
   practice       Practice     @relation(fields: [practiceId], references: [id])
@@ -734,6 +755,8 @@ model HomePrescription {
   exercise       Exercise     @relation(fields: [exerciseCode], references: [code])
   /// Copy of ConsultationExercise.variant: null = EPD Standard
   variant        Int?
+  /// Copy of ConsultationExercise.parts (iteration 15, design D6)
+  parts          ExerciseParts @default(FRM_EPD)
   /// 1 to 3 executions per day
   timesPerDay    Int          @default(1)
   /// Bit mask Mo = 1, Di = 2 … So = 64; 127 = every day, at least one day

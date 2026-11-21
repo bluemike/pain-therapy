@@ -1,6 +1,6 @@
 import type { Language } from '@prisma/client';
 import { openToday, progress } from '@pain-therapy/shared/adherence';
-import { executionTime, withVariant } from '@pain-therapy/shared/home-program';
+import { executionTime, hasEpd, hasFrm, withParts, withVariant } from '@pain-therapy/shared/home-program';
 import {
   dayReference,
   editable,
@@ -81,8 +81,9 @@ export async function today(s: ProgramSession, ref = new Date()) {
       name: x ? nameIn(x, s.patient.preferredLanguage) : p.exerciseCode,
       schedule: p.schedule,
       variant: p.variant,
+      parts: p.parts,
       hasImage: !!x?.sheet?.mainImage,
-      seconds: executionTime(withVariant(x?.sheet ?? null, variant?.seconds)).seconds,
+      seconds: executionTime(withParts(withVariant(x?.sheet ?? null, variant?.seconds), p.parts)).seconds,
       progress: progress(p, entries, ref),
       guide: x?.sheet
         ? {
@@ -322,7 +323,9 @@ export function audioOf(s: ProgramSession, code: string, part: AudioPart, treatm
   const programs = treatmentId ? s.programs.filter((x) => x.treatmentId === treatmentId) : s.programs;
   const p = programs.flatMap((x) => x.prescriptions).find((x) => x.exerciseCode === code);
   if (!p) return null;
-  if (part === 'frm-audio') return `${code}-frm.mp3`;
+  // Only the prescribed parts (iteration 15, design D6)
+  if (part === 'frm-audio') return hasFrm(p.parts) ? `${code}-frm.mp3` : null;
+  if (!hasEpd(p.parts)) return null;
   return p.variant ? `${code}-V${p.variant}.mp3` : `${code}-std.mp3`;
 }
 export type Band = (typeof BANDS)[number];
@@ -335,8 +338,9 @@ export type Band = (typeof BANDS)[number];
 export async function mainImageOf(s: ProgramSession, code: string, band?: Band) {
   const ps = s.programs.flatMap((x) => x.prescriptions).filter((x) => x.exerciseCode === code);
   if (!ps.length) return null;
-  if (band === 'std' && ps.every((p) => p.variant)) return null;
-  if (band === 'var' && ps.every((p) => !p.variant)) return null;
+  if (band === 'frm' && ps.every((p) => !hasFrm(p.parts))) return null;
+  if (band === 'std' && ps.every((p) => p.variant || !hasEpd(p.parts))) return null;
+  if (band === 'var' && ps.every((p) => !p.variant || !hasEpd(p.parts))) return null;
   const sheet = await db.exerciseSheet.findUnique({ where: { exerciseCode: code }, select: { mainImage: true } });
   if (!sheet) return null;
   return band ? `${code}-${band}.png` : sheet.mainImage;

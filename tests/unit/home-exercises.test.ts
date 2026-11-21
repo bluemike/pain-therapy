@@ -293,10 +293,10 @@ describe('home program', () => {
     const { p, c } = await consultationWithProgram('Programm', { emailConsent: true });
     const stored = (await getConsultation(c.id))!;
     expect(sheetOf(stored).home).toEqual([
-      { code: '2A', variant: null, timesPerDay: 2, weekdays: 127, note: null },
-      { code: '2D', variant: null, timesPerDay: 1, weekdays: MO_FR, note: 'abends' },
+      { code: '2A', variant: null, parts: 'FRM_EPD', timesPerDay: 2, weekdays: 127, note: null },
+      { code: '2D', variant: null, parts: 'FRM_EPD', timesPerDay: 1, weekdays: MO_FR, note: 'abends' },
       // Added from the catalog, prescribed with the default
-      { code: '4B', variant: null, timesPerDay: 1, weekdays: 127, note: null },
+      { code: '4B', variant: null, parts: 'FRM_EPD', timesPerDay: 1, weekdays: 127, note: null },
     ]);
 
     // Changing days and removing 4B from the prescription

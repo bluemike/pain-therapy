@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { SheetSegments } from '@/lib/exercise-sheets';
 import { ExerciseImage } from './ExerciseImage';
+import { hasEpd, hasFrm, type Parts } from '@/lib/home-program';
 
 type Texts = {
   segments: SheetSegments | null;
@@ -21,6 +22,7 @@ export function TailoredSheet({
   name,
   variant,
   epd,
+  parts = 'FRM_EPD',
 }: {
   code: string;
   name: string;
@@ -28,6 +30,8 @@ export function TailoredSheet({
   variant: number | null;
   /** Label of the EPD, e.g. "Standard" or "Variante 2" */
   epd: string;
+  /** Verordnete Teile (iteration 15, design D6): only the chosen bands */
+  parts?: Parts;
 }) {
   const t = useTranslations('exercise');
   const ref = useRef<HTMLDialogElement>(null);
@@ -65,53 +69,61 @@ export function TailoredSheet({
       >
         <header>
           <h2 id={hId}>
-            {code} {name} · {epd}
+            {code} {name} · {hasEpd(parts) ? epd : 'FRM'}
           </h2>
           <button type="button" className="btn btn--ghost" onClick={() => ref.current?.close()}>
             {t('close')}
           </button>
         </header>
         <div className="body">
-          <h3>
-            {t('sectionRolling')}
-            {texts && texts !== 'error' && texts.tools.length ? ` · ${texts.tools.join(', ')}` : ''}
-          </h3>
-          <ExerciseImage className="lbimg" code={code} kind="frm" alt={t('bandOf', { code, part: 'FRM' })} />
-          {seg?.frm.items.map((x, i) => (
-            <p key={i}>
-              {x.n.length ? <b>({x.n.join('/')}) </b> : null}
-              {x.text}
-            </p>
-          ))}
-          <h3>
-            {t('sectionStretch')} · {epd}
-            {aids.length ? ` · ${aids.join(', ')}` : ''}
-          </h3>
-          <ExerciseImage
-            className="lbimg"
-            code={code}
-            kind={variant ? 'var' : 'std'}
-            alt={t('bandOf', { code, part: epd })}
-          />
-          {seg && !variant ? (
+          {hasFrm(parts) ? (
             <>
-              {seg.standard.intro ? <p>{seg.standard.intro}</p> : null}
-              {seg.standard.steps.map((st, i) => (
+              <h3>
+                {t('sectionRolling')}
+                {texts && texts !== 'error' && texts.tools.length ? ` · ${texts.tools.join(', ')}` : ''}
+              </h3>
+              <ExerciseImage className="lbimg" code={code} kind="frm" alt={t('bandOf', { code, part: 'FRM' })} />
+              {seg?.frm.items.map((x, i) => (
                 <p key={i}>
-                  {st.label ? <b>{st.label}: </b> : null}
-                  {st.text}
+                  {x.n.length ? <b>({x.n.join('/')}) </b> : null}
+                  {x.text}
                 </p>
               ))}
-              {seg.standard.note ? <p className="muted">{seg.standard.note}</p> : null}
             </>
           ) : null}
-          {chosen ? (
+          {hasEpd(parts) ? (
             <>
-              {seg?.variants.intro ? <p>{seg.variants.intro}</p> : null}
-              <p>
-                <b>{t('variantN', { n: chosen.number })}: </b>
-                {chosen.text}
-              </p>
+              <h3>
+                {t('sectionStretch')} · {epd}
+                {aids.length ? ` · ${aids.join(', ')}` : ''}
+              </h3>
+              <ExerciseImage
+                className="lbimg"
+                code={code}
+                kind={variant ? 'var' : 'std'}
+                alt={t('bandOf', { code, part: epd })}
+              />
+              {seg && !variant ? (
+                <>
+                  {seg.standard.intro ? <p>{seg.standard.intro}</p> : null}
+                  {seg.standard.steps.map((st, i) => (
+                    <p key={i}>
+                      {st.label ? <b>{st.label}: </b> : null}
+                      {st.text}
+                    </p>
+                  ))}
+                  {seg.standard.note ? <p className="muted">{seg.standard.note}</p> : null}
+                </>
+              ) : null}
+              {chosen ? (
+                <>
+                  {seg?.variants.intro ? <p>{seg.variants.intro}</p> : null}
+                  <p>
+                    <b>{t('variantN', { n: chosen.number })}: </b>
+                    {chosen.text}
+                  </p>
+                </>
+              ) : null}
             </>
           ) : null}
           {texts === 'error' ? <p className="muted">{t('notCaptured')}</p> : null}

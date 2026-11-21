@@ -473,6 +473,7 @@
     "legendRelevant": "important",
     "legendStandard": "other",
     "colPoint": "Point",
+    "colPosition": "Position",
     "colMuscle": "Osteopressure point",
     "colTreated": "treated",
     "colSensitivity": "Sensitivity",
@@ -514,7 +515,14 @@
     "sideValue": "Body side {side}",
     "side_UNSPECIFIED": "both sides",
     "side_LEFT": "left",
-    "side_RIGHT": "right"
+    "side_RIGHT": "right",
+    "colParts": "Parts",
+    "partsOf": "Prescribed parts of {code}",
+    "parts_FRM_EPD": "FRM + EPD",
+    "parts_EPD": "EPD only",
+    "parts_FRM": "FRM only",
+    "frmTools": "Tool: {tools}",
+    "frmNoTools": "no tool"
   },
   "scales": {
     "painUnset": "not recorded",
@@ -559,6 +567,7 @@
     "allRegions": "all pain areas",
     "show": "Show",
     "colPoint": "Point",
+    "colPosition": "Position",
     "colMuscle": "Osteopressure point",
     "colGroup": "Area",
     "colRegions": "Pain areas",
@@ -613,7 +622,9 @@
     "day_sa": "Saturday",
     "day_su": "Sunday",
     "parts": "Rolling + stretch {epd}",
-    "rowPerWeek": "{duration} per week"
+    "rowPerWeek": "{duration} per week",
+    "partsFrm": "FRM only",
+    "partsEpd": "EPD only {epd}"
   },
   "exercise": {
     "imageMissing": "Image not available",
@@ -656,7 +667,9 @@
     "colText": "Text",
     "colTime": "Time",
     "variantN": "Variant {n}",
-    "noVariants": "This exercise has no variants."
+    "noVariants": "This exercise has no variants.",
+    "openSheet": "View sheet",
+    "openSheetOf": "View exercise sheet {code}"
   },
   "handout": {
     "layout": "Content of the exercise sheet",
@@ -725,7 +738,9 @@
     "fieldEpd": "Stretch",
     "epdStandard": "Standard exercise",
     "epdVariant": "Variant {n}",
-    "parts": "Fascia rolling + stretch {epd}"
+    "parts": "Fascia rolling + stretch {epd}",
+    "partsFrm": "Fascia rolling only",
+    "partsEpd": "Stretch only {epd}"
   },
   "accessLinkEmail": {
     "subject": "Your access to the patient zone",

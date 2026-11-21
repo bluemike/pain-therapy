@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { getLocale, getTranslations } from 'next-intl/server';
 import type { BodyArea, Patient, Region, Treatment } from '@prisma/client';
-import { allPoints, localName, regionLabel, regionSheet } from '@/lib/catalog';
+import { allPoints, localName, regionLabel, regionSheet, treatmentPositions } from '@/lib/catalog';
 import { exerciseChoices } from '@/lib/exercise-sheets';
 import { formatDateZurich, formatPercent } from '@/lib/format';
 import { ConsultationForm, type ConsultationValues } from '@/components/ConsultationForm';
@@ -45,12 +45,13 @@ export async function ConsultationPage({
     pointIds: initial.sheet.points.map((x) => x.pointId),
     exerciseCodes: initial.sheet.exercises.map((x) => x.code),
   };
-  const [sheet, points, choices] = blocked
-    ? [null, [], []]
+  const [sheet, points, choices, positions] = blocked
+    ? [null, [], [], []]
     : await Promise.all([
         regionSheet(treatment.regionId, recorded),
         allPoints(),
         exerciseChoices(recorded.exerciseCodes),
+        treatmentPositions(),
       ]);
   const area = treatment.region.bodyArea;
   return (
@@ -96,8 +97,10 @@ export async function ConsultationPage({
               id: x.id,
               latin: x.muscleAttachmentLatin,
               de: x.attachmentDe,
+              position: x.position,
               group: x.group,
             }))}
+            positions={positions}
             catalogExercises={choices}
             saved={saved}
             cancelHref={`${base}#t-${treatment.id}`}
