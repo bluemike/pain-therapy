@@ -1,4 +1,4 @@
-import type { Language, ProfessionalTitle } from '@prisma/client';
+import type { AudioLanguage, Language, ProfessionalTitle } from '@prisma/client';
 import { db } from './db';
 import { audit } from './audit';
 import { translator } from './i18n-server';
@@ -49,4 +49,19 @@ export async function therapistLine(name: string, language: Language) {
   const u = await db.user.findFirst({ where: { name }, orderBy: { lastLoginAt: 'desc' }, select: { title: true } });
   if (!u) return name;
   return `${translator(language, 'profile')(`title_${u.title}`)}: ${name}`;
+}
+
+/** exercise-audio (iteration 15, design D3): Audiosprache in «Mein Profil», only the own; logged */
+export async function setAudioLanguage(actor: Actor, audioLanguage: AudioLanguage) {
+  const before = await db.user.findUnique({ where: { id: actor.id }, select: { audioLanguage: true } });
+  if (!before || before.audioLanguage === audioLanguage) return;
+  await db.$transaction(async (tx) => {
+    await tx.user.update({ where: { id: actor.id }, data: { audioLanguage } });
+    await audit(
+      actor,
+      'profile.updated',
+      { field: 'audioLanguage', before: before.audioLanguage, after: audioLanguage },
+      tx,
+    );
+  });
 }

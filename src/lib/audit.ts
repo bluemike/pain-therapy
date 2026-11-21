@@ -53,6 +53,12 @@ export type AuditAction =
   | 'exerciseLog.created'
   | 'exerciseLog.corrected'
   | 'exerciseLog.deleted'
+  // Iteration 15 (design D5): Fotos mit dem Smartphone
+  | 'photoHandoff.started'
+  | 'photoHandoff.ended'
+  | 'photoHandoff.uploaded'
+  // exercise-audio (iteration 15, design D3): the patient switched between Hochdeutsch and Mundart
+  | 'zone.audioLanguageChanged'
   // adherence-overview: the practice opened the tab "Übungstagebuch"
   | 'exerciseLog.viewed'
   // user-profile (iteration 8, design D9): display name or professional title changed under "Mein Profil"

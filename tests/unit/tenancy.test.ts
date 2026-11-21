@@ -159,7 +159,8 @@ describe.skipIf(!allowed)('row-level security per practice (Daten gehören genau
       SELECT bool_and(has_table_privilege('practice_app', t, 'SELECT')) AS read,
              bool_or(has_table_privilege('practice_app', t, 'INSERT,UPDATE,DELETE')) AS write
       FROM unnest(ARRAY['"BodyArea"', '"Region"', '"RegionPoint"', '"RegionExercise"', '"OsteopressurePoint"',
-                        '"Exercise"', '"ExerciseSheet"', '"ExerciseVariant"', '"RollingTool"']) AS t`;
+                        '"Exercise"', '"ExerciseSheet"', '"ExerciseVariant"', '"RollingTool"',
+                        '"TreatmentPosition"']) AS t`;
     expect(grants).toEqual({ read: true, write: false });
   });
 

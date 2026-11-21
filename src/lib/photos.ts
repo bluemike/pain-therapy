@@ -59,11 +59,16 @@ function takenAtOf(v: string | null | undefined, now: Date): Date {
  * Checks type and size, removes metadata (location) and computes the checksum. Throws PhotoError. `folder`: see
  * blobFolder() in practice.ts.
  */
-export function preparePhotos(folder: string, uploads: PhotoUpload[], now = new Date()): PreparedPhoto[] {
+export function preparePhotos(
+  folder: string,
+  uploads: PhotoUpload[],
+  now = new Date(),
+  maxBytes = config.photos.maxBytes,
+): PreparedPhoto[] {
   if (uploads.length > config.photos.maxPerSave) throw new PhotoError('photoCount');
   return uploads.map((u) => {
     if (!isJpeg(u.data)) throw new PhotoError('photoType');
-    if (u.data.length > config.photos.maxBytes) throw new PhotoError('photoSize');
+    if (u.data.length > maxBytes) throw new PhotoError('photoSize');
     let data: Buffer;
     let thumb: Buffer | null = null;
     try {

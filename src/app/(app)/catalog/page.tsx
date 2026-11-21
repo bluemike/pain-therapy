@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { requireUser } from '@/lib/session';
 import { catalogView, localName } from '@/lib/catalog';
+import { positionLabel } from '@/lib/positions';
 import { timingOf } from '@/lib/exercise-sheets';
 import { executionTime, formatMinutes } from '@/lib/home-program';
 import { ExercisePreview } from '@/components/ExercisePreview';
@@ -168,6 +169,7 @@ export default async function CatalogPage({
                 <tr>
                   <th scope="col">{t('colPoint')}</th>
                   <th scope="col">{t('colMuscle')}</th>
+                  <th scope="col">{t('colPosition')}</th>
                   <th scope="col">{t('colGroup')}</th>
                   <th scope="col">{t('colRegions')}</th>
                 </tr>
@@ -182,6 +184,7 @@ export default async function CatalogPage({
                       {p.emphasis === 'relevant' ? <span className="sr-only"> ({tc('legendRelevant')})</span> : null}
                       <small>{p.attachmentDe}</small>
                     </td>
+                    <td>{p.position ? `${positionLabel(p.position, c.positions, locale)} (${p.position})` : '–'}</td>
                     <td>{areaName(p.group)}</td>
                     <td className="num">{regionsOfPoint(p.id)}</td>
                   </tr>

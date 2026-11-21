@@ -324,8 +324,8 @@ describe('consultations', () => {
     expect(stored).toMatchObject({ painBefore: 60, painAfter: 30, comparison: 'Morgens besser' });
     expect(sheetOf(stored)).toEqual({
       points: [{ pointId: '2.11.1', left: false, right: true, sensitivity: 'STRONG' }],
-      exercises: [{ code: '2D', prescribed: true, difficulty: 'HARD', variant: 1 }],
-      home: [{ code: '2D', variant: 1, timesPerDay: 1, weekdays: 127, note: null }],
+      exercises: [{ code: '2D', prescribed: true, difficulty: 'HARD', variant: 1, parts: 'FRM_EPD' }],
+      home: [{ code: '2D', variant: 1, parts: 'FRM_EPD', timesPerDay: 1, weekdays: 127, note: null }],
     });
     // Unknown catalog entries are refused
     await expect(

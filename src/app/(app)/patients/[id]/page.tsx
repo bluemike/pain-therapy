@@ -837,6 +837,8 @@ async function History({
         return t('logCorrected', { code: detail(e).exerciseCode ?? '' });
       case 'exerciseLog.deleted':
         return t('logDeleted', { code: detail(e).exerciseCode ?? '' });
+      case 'zone.audioLanguageChanged':
+        return t('zoneAudioLanguage');
       case 'email.resend':
         return t('emailResend');
       default:

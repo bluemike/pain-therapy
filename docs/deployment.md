@@ -387,6 +387,31 @@ MX, SPF, DKIM und DMARC für Infomaniak bleiben unverändert. Sobald alles aufl�
 
 **Rollback:** vorherige Revision aktivieren genügt nicht, weil die Migration Spalten und RLS ergänzt hat und die alte App Entra und Graph braucht. Im Notfall: Commit vor Iteration 12 erneut deployen mit den alten Variablen und Secrets; die neuen Spalten stören die alte Praxis-App nicht, und RLS greift für den Eigentümer nicht. Die alte Patienten-Zone sieht unter RLS ohne Praxis-Kontext dagegen nichts mehr; für einen Rollback der Zone müsste RLS der Zonen-Tabellen vorübergehend abgeschaltet werden.
 
+## Iteration 15 (Behandlungslage, Audio in drei Sprachen, Fotos per Smartphone, FRM verordnen)
+
+Zwei Migrationen (`20261122090000_iteration_15`, `20261122090100_photo_handoff`) und `catalog:sync` (Behandlungslagen) laufen im Migrationsjob wie immer. Kein neues Secret in Azure, keine Bicep-Änderung. Die Seite `/foto/<token>` ist ohne Anmeldung erreichbar, nimmt aber nur Fotos an (15 Minuten, 10 Fotos, 30 Versuche pro IP und Stunde). Nicht gespeicherte Fotos löscht der bestehende Job `caj-pain-therapy-finalize` nach 24 Stunden.
+
+### Aufnahmen Englisch und Mundart
+
+Bis die Dateien hochgeladen sind, spielt die App Hochdeutsch und zeigt «Mundart folgt» bzw. «Englisch folgt». Auf dem Mac im Repository, mit den Texten im Ordner `analyse-v2` (`segments-content.en.json`, `segments-content.gsw.json`, gleicher Aufbau wie `segments.json`):
+
+```bash
+# Englisch: Azure AI Speech F0, en-GB-SoniaNeural
+AZURE_SPEECH_KEY=$(az cognitiveservices account keys list -n spch-pain-therapy -g rg-pain-therapy --query key1 -o tsv) \
+  npm run media:audio-parts -- "<OneDrive>/pain-therapy/exercises/analyse-v2/segments-content.en.json" --lang en
+# Mundart: Google Gemini TTS (Schlüssel aus Google AI Studio, nur im Schlüsselbund), braucht ffmpeg (brew install ffmpeg)
+GEMINI_API_KEY=… npm run media:audio-parts -- "<OneDrive>/pain-therapy/exercises/analyse-v2/segments-content.gsw.json" --lang gsw
+```
+
+Die Dateien heissen `<name>.en.mp3` und `<name>.gsw.mp3` (zum Beispiel `2A-frm.gsw.mp3`) und kommen in denselben Container:
+
+```bash
+az storage blob upload-batch --account-name <storageAccountName> --auth-mode login \
+  -d exercise-media -s "<OneDrive>/pain-therapy/exercises/analyse-v2" --pattern "*.??*.mp3" --overwrite
+```
+
+An die Sprachdienste gehen nur die L&B-Texte, nie Patientendaten. Chrissie hört die Mundart-Dateien ab; einzelne lassen sich mit `--only 2A --force` neu erzeugen.
+
 ## Nach dem Go-live
 
 - **Aufbewahrung sperren:** Die Retention-Policy des Containers `signed-documents` ist zunächst entsperrt, damit sie korrigiert werden kann. Nach der Abnahme sperren (nicht umkehrbar):

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { parseLocalInput, parseSwissDate } from './format';
-import { ALL_WEEKDAYS, DEFAULT_SCHEDULE, TIMES_PER_DAY } from './home-program';
+import { ALL_WEEKDAYS, DEFAULT_SCHEDULE, PARTS, TIMES_PER_DAY } from './home-program';
 
 /**
  * Patient form schema, shared by client and server (design D1).
@@ -65,6 +65,8 @@ export const patientSchema = z
         return d;
       }),
     preferredLanguage: z.enum(['de', 'en'], { message: 'required' }),
+    // exercise-audio (iteration 15, design D3): Hochdeutsch or Mundart while the language is German
+    audioLanguage: z.enum(['de', 'gsw']).catch('de'),
     occupation: text(),
     gp: text(),
     street: text(),
@@ -124,6 +126,7 @@ export const PATIENT_FIELDS = [
   'gender',
   'dateOfBirth',
   'preferredLanguage',
+  'audioLanguage',
   'occupation',
   'gp',
   'street',
@@ -209,6 +212,7 @@ export const EMPTY_PATIENT: PatientFormValues = {
   gender: '',
   dateOfBirth: '',
   preferredLanguage: 'de',
+  audioLanguage: 'de',
   occupation: '',
   gp: '',
   street: '',
@@ -368,6 +372,8 @@ export const sheetSchema = z
           difficulty: z.enum(DIFFICULTIES).nullable(),
           // EPD: null = Standardübung, otherwise the number of the variant (design D6)
           variant: z.number().int().min(1).max(50).nullable(),
+          // Iteration 15 (design D6): FRM + EPD, only EPD or only FRM
+          parts: z.enum(PARTS).default('FRM_EPD'),
         }),
       )
       .max(100),
@@ -375,12 +381,15 @@ export const sheetSchema = z
   })
   .refine((s) => new Set(s.home.map((h) => h.code)).size === s.home.length, { message: 'sheet' })
   .transform((s) => {
-    const exercises = s.exercises.filter((x) => x.prescribed || x.difficulty);
+    // Only FRM: no stretch, so neither a variant nor "Übung fällt" (iteration 15, design D6)
+    const exercises = s.exercises
+      .filter((x) => x.prescribed || x.difficulty)
+      .map((x) => (x.parts === 'FRM' ? { ...x, variant: null, difficulty: x.prescribed ? null : x.difficulty } : x));
     const home = exercises
       .filter((x) => x.prescribed)
       .map((x) => {
         const h = s.home.find((r) => r.code === x.code) ?? { code: x.code, ...DEFAULT_SCHEDULE, note: null };
-        return { ...h, variant: x.variant };
+        return { ...h, variant: x.variant, parts: x.parts };
       });
     return {
       points: s.points.filter((p) => p.left || p.right || p.sensitivity),
@@ -401,7 +410,7 @@ export const sheetSchema = z
     }
     // session-form: "Übung fällt" is required for every prescribed exercise
     for (const x of s.exercises)
-      if (x.prescribed && !x.difficulty)
+      if (x.prescribed && !x.difficulty && x.parts !== 'FRM')
         ctx.addIssue({ code: 'custom', path: ['exercises', x.code], message: 'difficultyRequired' });
     // home-schedule: at least one weekday
     for (const h of s.home)

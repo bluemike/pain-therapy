@@ -29,8 +29,11 @@ BEGIN
   -- Patient: first name for the greeting, language, date of birth for the confirmation, status; for the consent form
   -- the personal details the patient checks (iteration 5, design D8), but not the emergency contact, GP or occupation
   GRANT SELECT ("id", "firstName", "preferredLanguage", "dateOfBirth", "status",
-                "lastName", "street", "zip", "city", "phone", "mobile", "email", "insurer", "insuranceNumber")
+                "lastName", "street", "zip", "city", "phone", "mobile", "email", "insurer", "insuranceNumber",
+                "audioLanguage")
     ON "Patient" TO patient_zone;
+  -- exercise-audio (iteration 15, design D3): the patient switches between Hochdeutsch and Mundart
+  GRANT UPDATE ("audioLanguage") ON "Patient" TO patient_zone;
   -- The current home program (design D2) and, read only, the treatments and consultations of the record (iteration 6,
   -- design D5), without createdBy and updatedBy
   GRANT SELECT ("id", "patientId", "startedAt", "regionId", "side", "diagnosis", "diagnosisInk", "painStart")
@@ -39,7 +42,7 @@ BEGIN
                 "comparison", "comparisonInk")
     ON "Consultation" TO patient_zone;
   GRANT SELECT ("consultationId", "pointId", "left", "right", "sensitivity") ON "ConsultationPoint" TO patient_zone;
-  GRANT SELECT ("consultationId", "exerciseCode", "prescribed", "difficulty", "variant")
+  GRANT SELECT ("consultationId", "exerciseCode", "prescribed", "difficulty", "variant", "parts")
     ON "ConsultationExercise" TO patient_zone;
   GRANT SELECT ("id", "code", "nameDe", "nameEn") ON "Region" TO patient_zone;
   GRANT SELECT ("id", "group", "muscleAttachmentLatin", "attachmentDe", "sort") ON "OsteopressurePoint" TO patient_zone;
@@ -51,8 +54,8 @@ BEGIN
   GRANT SELECT ("id", "documentNumber", "patientId", "consultationId", "version", "language", "createdAt")
     ON "ExerciseHandout" TO patient_zone;
   -- Without the note of the therapist (design D7: Bemerkungen der Therapeutin nicht sichtbar); since iteration 8
-  -- (design D7) the EPD and the schedule per day and weekday
-  GRANT SELECT ("consultationId", "exerciseCode", "variant", "timesPerDay", "weekdays")
+  -- (design D7) the EPD and the schedule per day and weekday; since iteration 15 (design D6) the prescribed parts
+  GRANT SELECT ("consultationId", "exerciseCode", "variant", "parts", "timesPerDay", "weekdays")
     ON "HomePrescription" TO patient_zone;
   GRANT SELECT ("code", "nameDe", "nameEn", "sort") ON "Exercise" TO patient_zone;
   -- FRM and EPD of the own exercises (iteration 8, design D2): texts, tools, aids and the variants

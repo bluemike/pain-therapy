@@ -180,6 +180,15 @@ export function PatientForm({
             ],
             hint: t('preferredLanguageHint'),
           })}
+          {Field({
+            name: 'audioLanguage',
+            label: t('audioLanguage'),
+            select: [
+              ['de', t('audio_de')],
+              ['gsw', t('audio_gsw')],
+            ],
+            hint: t('audioLanguageHint'),
+          })}
           {Field({ name: 'occupation', label: t('occupation'), w: 'w3' })}
           {Field({ name: 'gp', label: t('gp'), w: 'w3' })}
         </div>

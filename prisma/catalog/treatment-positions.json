@@ -1,0 +1,32 @@
+[
+  {
+    "code": "SL",
+    "nameDe": "Seitenlage",
+    "nameEn": "Side-lying"
+  },
+  {
+    "code": "RL",
+    "nameDe": "Rückenlage",
+    "nameEn": "Supine"
+  },
+  {
+    "code": "BL",
+    "nameDe": "Bauchlage",
+    "nameEn": "Prone"
+  },
+  {
+    "code": "S",
+    "nameDe": "Sitzen",
+    "nameEn": "Sitting"
+  },
+  {
+    "code": "HSL",
+    "nameDe": "Halbseitenlage",
+    "nameEn": "Semi-side-lying"
+  },
+  {
+    "code": "SSL",
+    "nameDe": "Stabile Seitenlage",
+    "nameEn": "Recovery position"
+  }
+]

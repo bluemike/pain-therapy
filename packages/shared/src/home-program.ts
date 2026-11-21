@@ -78,6 +78,23 @@ export function withVariant(t: Timing | null | undefined, variantSeconds: number
 }
 
 /**
+ * Teile einer Verordnung (iteration 15, design D6): FRM + EPD (default, as before), only the stretch (EPD) or only the
+ * Faszien-Rollmassage (FRM).
+ */
+export const PARTS = ['FRM_EPD', 'EPD', 'FRM'] as const;
+export type Parts = (typeof PARTS)[number];
+export const hasFrm = (p: Parts | null | undefined) => p !== 'EPD';
+export const hasEpd = (p: Parts | null | undefined) => p !== 'FRM';
+
+/** The timing of the chosen parts: a part left out counts 0 seconds and is never reported as missing */
+export function withParts(t: Timing | null | undefined, parts: Parts | null | undefined): Timing | null {
+  if (!t) return null;
+  if (parts === 'EPD') return { ...t, rollingSeconds: 0 };
+  if (parts === 'FRM') return { ...t, epdSeconds: 0 };
+  return t;
+}
+
+/**
  * Duration of one execution: rolling + stretch per side × sides. Values not yet set count as 0 and are reported, so
  * the form can show "Dehnung noch nicht festgelegt" (exercise-library: Wert fehlt).
  */

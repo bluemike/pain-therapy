@@ -101,7 +101,15 @@
     "stop": "Stopp",
     "playAudio": "Übung {code} anhören",
     "stopAudio": "Übung {code} stoppen",
-    "audioMissing": "Audio nicht verfügbar"
+    "audioMissing": "Audio nicht verfügbar",
+    "partsFrm": "nur FRM",
+    "partsEpd": "nur EPD {epd}",
+    "audioLanguage": "Audio",
+    "audio_de": "Hochdeutsch",
+    "audio_gsw": "Mundart",
+    "audioLanguageSaved": "Audiosprache gespeichert.",
+    "audioGswFollows": "Mundart folgt, Hochdeutsch wird gespielt",
+    "audioEnFollows": "Englisch folgt, Hochdeutsch wird gespielt"
   },
   "entry": {
     "legend": "Eintrag {code}",

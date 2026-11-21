@@ -6,7 +6,15 @@ import { SESSION_COOKIE, SESSION_DAYS } from '@pain-therapy/shared/access';
 import { chosenDay } from '@pain-therapy/shared/log-entry';
 import { DAY_MS } from '@pain-therapy/shared/time';
 import { confirmLink, endSession, programSession, type ConfirmResult, type ProgramSession } from '@/lib/access';
-import { correctEntry, createEntry, deleteEntry, parseEntryForm, quickEntry, type EntryError } from '@/lib/entries';
+import {
+  correctEntry,
+  createEntry,
+  deleteEntry,
+  parseEntryForm,
+  quickEntry,
+  setAudioLanguage,
+  type EntryError,
+} from '@/lib/entries';
 import { getZoneSession } from '@/lib/session';
 import { landingOf } from '@/lib/landing';
 
@@ -129,4 +137,12 @@ export async function tickAction(fd: FormData) {
   const { day } = chosenDay(String(fd.get('tag') ?? ''), s.program.consultationAt);
   const n = await quickEntry(s, new Date(), day, code);
   redirect(homeWith(s, fd, n ? `ok=tick&c=${encodeURIComponent(code)}` : 'ok=quick&n=0'));
+}
+
+/** Hörsprache Hochdeutsch or Mundart next to «Anhören» (iteration 15, design D3) */
+export async function audioLanguageAction(fd: FormData) {
+  const s = await requireSession(fd);
+  const lang = fd.get('lang');
+  if (lang === 'de' || lang === 'gsw') await setAudioLanguage(s, lang);
+  redirect(homeWith(s, fd, 'ok=audio'));
 }

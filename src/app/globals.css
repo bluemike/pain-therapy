@@ -3525,3 +3525,88 @@ input.inp[type='datetime-local']::-webkit-date-and-time-value {
     position: static;
   }
 }
+
+/* Iteration 15 (design D1): column «Lage» with code and popover */
+.sheettab .lagecol {
+  width: 1%;
+  white-space: nowrap;
+}
+.lage {
+  position: relative;
+  display: inline-block;
+}
+.lage-btn {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: inherit;
+  cursor: help;
+  min-height: 28px;
+}
+.lage-btn abbr {
+  text-decoration: none;
+}
+.lage-pop {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 4px);
+  z-index: 20;
+  background: var(--ink);
+  color: #fff;
+  font-size: 13px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+/* Iteration 15 (design D5): photos with the smartphone */
+.handoff {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 10px;
+}
+.handoff.open {
+  align-items: flex-start;
+  gap: 16px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--gold-bg);
+}
+.handoff .qr {
+  width: 180px;
+  height: 180px;
+  background: #fff;
+  border-radius: 6px;
+}
+.handoff .info p {
+  margin: 0 0 6px;
+}
+.checkcode {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.25em;
+  letter-spacing: 0.15em;
+}
+.handoff-phone .handoff-up {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+.handoff-phone .btn--block {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+}
+.handoff-phone .btn.off {
+  opacity: 0.6;
+  pointer-events: none;
+}

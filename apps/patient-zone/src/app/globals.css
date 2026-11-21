@@ -1319,3 +1319,40 @@ a.tcard h2 {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
 }
+
+/* Iteration 15 (design D3): Hörsprache next to «Anhören» */
+.audiolang {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+.audiolang .seg {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  align-self: flex-start;
+}
+.audiolang .seg button {
+  border: 0;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 12px;
+  min-height: 40px;
+  cursor: pointer;
+}
+.audiolang .seg button + button {
+  border-left: 1px solid var(--border);
+}
+.audiolang .seg button[aria-pressed='true'] {
+  background: var(--gold-pale);
+  font-weight: 600;
+}
+.audiowrap {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+}

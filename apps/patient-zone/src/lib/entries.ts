@@ -1,6 +1,6 @@
 import type { Language } from '@prisma/client';
 import { openToday, progress } from '@pain-therapy/shared/adherence';
-import { executionTime, withVariant } from '@pain-therapy/shared/home-program';
+import { executionTime, hasEpd, hasFrm, withParts, withVariant } from '@pain-therapy/shared/home-program';
 import {
   dayReference,
   editable,
@@ -9,9 +9,10 @@ import {
   type LogEntryInput,
 } from '@pain-therapy/shared/log-entry';
 import { zurichInputs } from '@pain-therapy/shared/time';
+import { audioFileIn, type AudioLanguage } from '@pain-therapy/shared/audio-language';
 import { db } from './db';
 import { zoneAudit } from './audit';
-import type { ProgramSession } from './access';
+import type { ProgramSession, ZoneSession } from './access';
 
 /**
  * exercise-log: Heimprogramm, Ausführung erfassen, Schnelleintrag und Korrektur (iteration 4, design D7, D8), with the
@@ -81,8 +82,9 @@ export async function today(s: ProgramSession, ref = new Date()) {
       name: x ? nameIn(x, s.patient.preferredLanguage) : p.exerciseCode,
       schedule: p.schedule,
       variant: p.variant,
+      parts: p.parts,
       hasImage: !!x?.sheet?.mainImage,
-      seconds: executionTime(withVariant(x?.sheet ?? null, variant?.seconds)).seconds,
+      seconds: executionTime(withParts(withVariant(x?.sheet ?? null, variant?.seconds), p.parts)).seconds,
       progress: progress(p, entries, ref),
       guide: x?.sheet
         ? {
@@ -318,11 +320,25 @@ export type AudioPart = (typeof AUDIO_PARTS)[number];
  * Recording of FRM or of the prescribed EPD (Standardübung or the chosen variant) of an exercise of the active
  * programs (iteration 14, "Anhören" in the zone): file names as in the practice app (exercise-sheets.ts).
  */
-export function audioOf(s: ProgramSession, code: string, part: AudioPart, treatmentId?: string | null) {
+export function audioOf(
+  s: ProgramSession,
+  code: string,
+  part: AudioPart,
+  treatmentId?: string | null,
+  lang: AudioLanguage = 'de',
+) {
+  const name = audioNameOf(s, code, part, treatmentId);
+  // Iteration 15 (design D3): Mundart and English carry the language in the name; the player falls back itself
+  return name ? audioFileIn(name, lang) : null;
+}
+
+function audioNameOf(s: ProgramSession, code: string, part: AudioPart, treatmentId?: string | null) {
   const programs = treatmentId ? s.programs.filter((x) => x.treatmentId === treatmentId) : s.programs;
   const p = programs.flatMap((x) => x.prescriptions).find((x) => x.exerciseCode === code);
   if (!p) return null;
-  if (part === 'frm-audio') return `${code}-frm.mp3`;
+  // Only the prescribed parts (iteration 15, design D6)
+  if (part === 'frm-audio') return hasFrm(p.parts) ? `${code}-frm.mp3` : null;
+  if (!hasEpd(p.parts)) return null;
   return p.variant ? `${code}-V${p.variant}.mp3` : `${code}-std.mp3`;
 }
 export type Band = (typeof BANDS)[number];
@@ -335,9 +351,27 @@ export type Band = (typeof BANDS)[number];
 export async function mainImageOf(s: ProgramSession, code: string, band?: Band) {
   const ps = s.programs.flatMap((x) => x.prescriptions).filter((x) => x.exerciseCode === code);
   if (!ps.length) return null;
-  if (band === 'std' && ps.every((p) => p.variant)) return null;
-  if (band === 'var' && ps.every((p) => !p.variant)) return null;
+  if (band === 'frm' && ps.every((p) => !hasFrm(p.parts))) return null;
+  if (band === 'std' && ps.every((p) => p.variant || !hasEpd(p.parts))) return null;
+  if (band === 'var' && ps.every((p) => !p.variant || !hasEpd(p.parts))) return null;
   const sheet = await db.exerciseSheet.findUnique({ where: { exerciseCode: code }, select: { mainImage: true } });
   if (!sheet) return null;
   return band ? `${code}-${band}.png` : sheet.mainImage;
+}
+
+/**
+ * exercise-audio (iteration 15, design D3): the patient switches the recordings between Hochdeutsch and Mundart next
+ * to «Anhören»; stored on the patient and logged. English patients always hear English.
+ */
+export async function setAudioLanguage(s: ZoneSession, lang: 'de' | 'gsw') {
+  if (s.patient.preferredLanguage === 'en' || s.patient.audioLanguage === lang) return;
+  await db.$transaction(async (tx) => {
+    // Raw: Prisma would also set updatedAt, which the role may not change (only this column, no RETURNING)
+    await tx.$executeRaw`UPDATE "Patient" SET "audioLanguage" = ${lang}::"AudioLanguage" WHERE "id" = ${s.patient.id}`;
+    await zoneAudit(
+      'zone.audioLanguageChanged',
+      { patientId: s.patient.id, linkId: s.session.linkId, before: s.patient.audioLanguage, after: lang },
+      tx,
+    );
+  });
 }

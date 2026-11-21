@@ -101,7 +101,15 @@
     "stop": "Stop",
     "playAudio": "Listen to exercise {code}",
     "stopAudio": "Stop exercise {code}",
-    "audioMissing": "Audio not available"
+    "audioMissing": "Audio not available",
+    "partsFrm": "Rolling only",
+    "partsEpd": "Stretch only {epd}",
+    "audioLanguage": "Audio",
+    "audio_de": "Standard German",
+    "audio_gsw": "Swiss German",
+    "audioLanguageSaved": "Audio language saved.",
+    "audioGswFollows": "Swiss German follows, playing standard German",
+    "audioEnFollows": "English recording follows, playing German"
   },
   "entry": {
     "legend": "Entry {code}",

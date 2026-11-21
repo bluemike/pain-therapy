@@ -1,5 +1,7 @@
 import { PLATFORM_NAME } from '@pain-therapy/shared/brand';
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
+import { audioLanguageOf } from '@pain-therapy/shared/audio-language';
+import { AudioLanguageProvider } from '@/components/AudioLanguage';
 import Link from 'next/link';
 import { auth, signOut } from '@/auth';
 import { requireUser } from '@/lib/session';
@@ -36,11 +38,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .join('')
     .toUpperCase();
   // user-profile (iteration 8, design D9): the professional title instead of "Therapeut:in"
-  const [profile, session, tp, practice] = await Promise.all([
+  const [profile, session, tp, practice, locale] = await Promise.all([
     profileOf(user.id),
     auth(),
     getTranslations('profile'),
     currentPractice(),
+    getLocale(),
   ]);
   const title = tp(`title_${profile?.title ?? 'THERAPIST_F'}`);
   const role = user.roles.includes('ADMIN') ? `${title} · ${t('roleAdmin')}` : title;
@@ -95,7 +98,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </header>
       <main className="page" id="main">
-        {children}
+        <AudioLanguageProvider value={audioLanguageOf(locale, profile?.audioLanguage)}>
+          {children}
+        </AudioLanguageProvider>
       </main>
       <PlatformFooter />
       {session?.user?.authTime ? <GreetedMark authTime={session.user.authTime} /> : null}

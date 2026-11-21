@@ -3,6 +3,7 @@ import { db } from './db';
 import { exerciseMediaStore } from './storage';
 import type { Timing } from './home-program';
 import { audioFileOf } from './exercise-audio';
+import { audioFileIn, type AudioLanguage } from '@pain-therapy/shared/audio-language';
 
 /** exercise-library: digitised sheets, their timing and media (design D1 to D3). */
 
@@ -70,6 +71,8 @@ export async function exerciseChoices(includeCodes: string[] = []) {
     areaEn: x.bodyArea.nameEn,
     retired: !!x.retiredAt,
     timing: timingOf(x.sheet?.retiredAt ? null : x.sheet) as Timing | null,
+    /** Werkzeuge der FRM, shown when only the FRM is prescribed (iteration 15, design D6) */
+    tools: x.sheet && !x.sheet.retiredAt ? x.sheet.rollingTools : [],
     variants: x.epdVariants.map((v) => ({ number: v.number, images: v.images, aids: v.aids, seconds: v.seconds })),
   }));
 }
@@ -110,7 +113,7 @@ const CONTENT_TYPES: Record<string, string> = {
 };
 
 /** Reads an image or recording of an exercise; null if the sheet, the variant or the file is missing. */
-export async function loadExerciseMedia(code: string, kind: MediaKind) {
+export async function loadExerciseMedia(code: string, kind: MediaKind, lang: AudioLanguage = 'de') {
   const sheet = await db.exerciseSheet.findUnique({ where: { exerciseCode: code } });
   if (!sheet || sheet.retiredAt) return null;
   const variant = /^v(\d+)-audio$/.exec(kind);
@@ -121,7 +124,11 @@ export async function loadExerciseMedia(code: string, kind: MediaKind) {
     }))
   )
     return null;
-  const name = mediaFileOf(code, kind, sheet);
+  // Iteration 15 (design D3): recordings in another language carry it in the name; no fallback here, so the player
+  // knows to fall back to Hochdeutsch and say so
+  const name = kind.endsWith('audio')
+    ? audioFileIn(mediaFileOf(code, kind, sheet), lang)
+    : mediaFileOf(code, kind, sheet);
   const contentType = CONTENT_TYPES[name.split('.').pop()?.toLowerCase() ?? ''];
   if (!contentType) return null;
   const data = await exerciseMediaStore().get(name);

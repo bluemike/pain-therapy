@@ -53,6 +53,8 @@ export type SheetPoint = {
   group: number;
   latin: string;
   de: string;
+  /** Behandlungslage (iteration 15, design D1), e.g. "BL/HSL" */
+  position: string | null;
   emphasis: PointEmphasis;
   /** Not on this area's form: added from the catalog by the therapist */
   extra: boolean;
@@ -96,6 +98,7 @@ export async function regionSheet(regionId: number, recorded: { pointIds?: strin
     group: r.point.group,
     latin: r.point.muscleAttachmentLatin,
     de: r.point.attachmentDe,
+    position: r.point.position,
     emphasis: r.emphasis,
     extra: false,
     retired: false,
@@ -107,6 +110,7 @@ export async function regionSheet(regionId: number, recorded: { pointIds?: strin
         group: p.group,
         latin: p.muscleAttachmentLatin,
         de: p.attachmentDe,
+        position: p.position,
         emphasis: 'standard',
         extra: true,
         retired: !!p.retiredAt,
@@ -131,9 +135,18 @@ export async function allPoints() {
   return db.osteopressurePoint.findMany({ where: { retiredAt: null }, orderBy: { sort: 'asc' } });
 }
 
+/** The Behandlungslagen (iteration 15, design D1) */
+export async function treatmentPositions() {
+  return db.treatmentPosition.findMany({
+    where: { retiredAt: null },
+    orderBy: { sort: 'asc' },
+    select: { code: true, nameDe: true, nameEn: true },
+  });
+}
+
 /** Data of the read-only view "L&B Basisdaten"; retired entries are left out. */
 export async function catalogView() {
-  const [areas, regions, points, regionPoints, exercises, regionExercises, tools] = await Promise.all([
+  const [areas, regions, points, regionPoints, exercises, regionExercises, tools, positions] = await Promise.all([
     db.bodyArea.findMany({ where: { retiredAt: null }, orderBy: { id: 'asc' } }),
     db.region.findMany({ where: { retiredAt: null }, orderBy: { id: 'asc' } }),
     db.osteopressurePoint.findMany({ where: { retiredAt: null }, orderBy: { sort: 'asc' } }),
@@ -151,6 +164,7 @@ export async function catalogView() {
       orderBy: [{ regionId: 'asc' }, { sort: 'asc' }],
     }),
     db.rollingTool.findMany({ where: { retiredAt: null }, orderBy: { sort: 'asc' } }),
+    treatmentPositions(),
   ]);
-  return { areas, regions, points, regionPoints, exercises, regionExercises, tools };
+  return { areas, regions, points, regionPoints, exercises, regionExercises, tools, positions };
 }

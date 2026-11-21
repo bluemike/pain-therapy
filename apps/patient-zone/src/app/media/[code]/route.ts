@@ -2,6 +2,7 @@ import { programSession } from '@/lib/access';
 import { AUDIO_PARTS, BANDS, audioOf, mainImageOf, type AudioPart, type Band } from '@/lib/entries';
 import { contentTypeOf, mediaStore } from '@/lib/media';
 import { getZoneSession } from '@/lib/session';
+import { isAudioLanguage } from '@pain-therapy/shared/audio-language';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,7 +32,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ code: st
   const teil = url.searchParams.get('teil');
   if (teil && !BANDS.includes(teil as Band) && !AUDIO_PARTS.includes(teil as AudioPart)) return notFound();
   if (teil && AUDIO_PARTS.includes(teil as AudioPart)) {
-    const name = audioOf(s, code, teil as AudioPart, url.searchParams.get('b'));
+    const lang = url.searchParams.get('lang');
+    const name = audioOf(s, code, teil as AudioPart, url.searchParams.get('b'), isAudioLanguage(lang) ? lang : 'de');
     const data = name ? await mediaStore().get(name) : null;
     if (!name || !data) return notFound();
     const size = data.length;

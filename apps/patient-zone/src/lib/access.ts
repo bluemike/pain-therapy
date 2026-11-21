@@ -22,7 +22,14 @@ import { config } from './config';
  * cookie and the redirect.
  */
 
-const PATIENT = { id: true, firstName: true, preferredLanguage: true, dateOfBirth: true, status: true } as const;
+const PATIENT = {
+  id: true,
+  firstName: true,
+  preferredLanguage: true,
+  audioLanguage: true,
+  dateOfBirth: true,
+  status: true,
+} as const;
 
 /**
  * Runs fn in the practice of a link token or device session (iteration 12, design D6). Unknown tokens run without a

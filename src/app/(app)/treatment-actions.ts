@@ -62,10 +62,12 @@ function knownError(e: unknown): TreatmentFormState | null {
   return null;
 }
 
-async function readPhotos(fd: FormData): Promise<{ add: PhotoUpload[]; remove: string[] }> {
+async function readPhotos(fd: FormData): Promise<{ add: PhotoUpload[]; remove: string[]; handoff: string[] }> {
   return {
     add: await photosFromForm(fd),
     remove: fd.getAll('removePhoto').map(String),
+    // Fotos mit dem Smartphone (iteration 15, design D5): ids of the photos the form keeps
+    handoff: fd.getAll('handoffPhoto').map(String),
   };
 }
 
@@ -94,7 +96,7 @@ export async function saveTreatment(_prev: TreatmentFormState, fd: FormData): Pr
     const photos = await readPhotos(fd);
     saved = id
       ? await updateTreatment(actor, id, input, photos)
-      : await createTreatment(actor, patientId, input, photos.add);
+      : await createTreatment(actor, patientId, input, photos.add, photos.handoff);
   } catch (e) {
     const known = knownError(e);
     if (known) return known;
@@ -131,7 +133,7 @@ export async function saveConsultation(_prev: TreatmentFormState, fd: FormData):
     const input = { ...parsed.data, diagnosisInk: ink.diagnosis, comparisonInk: ink.comparison };
     saved = id
       ? await updateConsultation(actor, id, input, photos)
-      : await createConsultation(actor, treatmentId, input, photos.add);
+      : await createConsultation(actor, treatmentId, input, photos.add, photos.handoff);
   } catch (e) {
     const known = knownError(e);
     if (known) return known;

@@ -287,6 +287,7 @@ export function toFormValues(p: Patient & { anamnesis: Anamnesis | null }): Reco
     gender: s(p.gender),
     dateOfBirth: formatDate(p.dateOfBirth),
     preferredLanguage: p.preferredLanguage,
+    audioLanguage: p.audioLanguage,
     occupation: s(p.occupation),
     gp: s(p.gp),
     street: s(p.street),

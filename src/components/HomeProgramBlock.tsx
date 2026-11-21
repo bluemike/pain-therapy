@@ -9,12 +9,16 @@ import {
   TIMES_PER_DAY,
   WEEKDAYS,
   weekdayBit,
+  hasEpd,
+  hasFrm,
+  type Parts,
   type Timing,
 } from '@/lib/home-program';
 import { ExerciseImage } from './ExerciseImage';
 import { ExerciseAudio } from './ExerciseAudio';
 import { Seg } from './Seg';
 import { TailoredSheet } from './TailoredSheet';
+import { ExercisePreview } from './ExercisePreview';
 import { X } from 'lucide-react';
 
 export type HomeEntry = { timesPerDay: number; weekdays: number; note: string };
@@ -24,6 +28,8 @@ export type HomeRowInfo = {
   epd: string;
   /** Prescribed variant, null = Standardübung */
   variant: number | null;
+  /** Verordnete Teile (iteration 15, design D6); the timing already counts only these */
+  parts?: Parts;
   timing: Timing | null;
 };
 
@@ -31,6 +37,8 @@ export type HomeRowInfo = {
  * home-schedule (iteration 8, design D7): Block "Selbstausführung". One row per prescribed exercise with FRM and its
  * EPD, executions per day (1× to 3×), weekdays Mo to So (all preselected, at least one) and a note; the duration of
  * one execution, the time per week of the row and the total time.
+ *
+ * Iteration 15: «Blatt ansehen» opens the whole sheet (design D4); FRM and EPD follow the prescribed parts (D6).
  *
  * Iteration 9: the name opens the sheet tailored to the prescription, and «Anhören» plays the FRM and then the
  * prescribed EPD (only here, no longer in the exercise list of the session).
@@ -70,12 +78,20 @@ export function HomeProgramBlock({
               const v = entry(r.code);
               const e = executionTime(r.timing);
               const bad = errors[`home:${r.code}`];
+              const parts = r.parts ?? 'FRM_EPD';
+              const epdAudio = r.variant ? (`v${r.variant}-audio` as const) : ('std-audio' as const);
               return (
                 <li className={`rx${bad ? ' bad' : ''}`} key={r.code} data-code={r.code}>
                   <ExerciseImage className="rximg" code={r.code} kind="main" alt={t('imageOf', { code: r.code })} />
                   <div className="nm">
-                    <TailoredSheet code={r.code} name={r.name} variant={r.variant} epd={r.epd} />
-                    <small>{t('parts', { epd: r.epd })}</small>
+                    <TailoredSheet code={r.code} name={r.name} variant={r.variant} epd={r.epd} parts={parts} />
+                    <small>
+                      {parts === 'FRM'
+                        ? t('partsFrm')
+                        : parts === 'EPD'
+                          ? t('partsEpd', { epd: r.epd })
+                          : t('parts', { epd: r.epd })}
+                    </small>
                     <small>
                       {r.timing ? (r.timing.sides === 2 ? t('bothSides') : t('oneSide')) : t('timingNotSet')}
                     </small>
@@ -85,10 +101,11 @@ export function HomeProgramBlock({
                     {r.timing && e.stretchMissing ? <small>{t('stretchNotSet')}</small> : null}
                     <ExerciseAudio
                       code={r.code}
-                      kind="frm-audio"
-                      then={r.variant ? `v${r.variant}-audio` : 'std-audio'}
-                      label={`${r.code} ${r.epd}`}
+                      kind={hasFrm(parts) ? 'frm-audio' : epdAudio}
+                      then={hasFrm(parts) && hasEpd(parts) ? epdAudio : undefined}
+                      label={hasEpd(parts) ? `${r.code} ${r.epd}` : `${r.code} FRM`}
                     />
+                    <ExercisePreview code={r.code} name={r.name} sheet />
                     {r.timing ? (
                       <small data-testid={`week-${r.code}`}>
                         {t('rowPerWeek', { duration: min((e.seconds * perWeek(schedule(r.code))) / 60) })}

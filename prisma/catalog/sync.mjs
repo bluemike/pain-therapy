@@ -1,7 +1,7 @@
 /**
  * therapy-catalog: Erstbefüllung und Änderungen (design D2).
  * Loads the reference files in this folder into Region, OsteopressurePoint, RegionPoint, Exercise, RegionExercise
- * and RollingTool. Idempotent: unchanged rows are not written. Nothing is deleted; entries missing from the files
+ * RollingTool and TreatmentPosition. Idempotent: unchanged rows are not written. Nothing is deleted; entries missing from the files
  * get `retiredAt` and come back to life when they reappear.
  *
  * exercise-library (iteration 3, design D2): ExerciseSheet takes file names and timing from exercise-sheets.json
@@ -147,8 +147,8 @@ export function contentByCode(content) {
  * `content`: parsed exercises-content.json, or null when it is not available (texts are then left unchanged).
  */
 export async function readCatalog(dir = HERE, content = null, segments = null) {
-  const [areas, regions, points, exercises, tools, regionPoints, regionExercises, sheets, variants] = await Promise.all(
-    [
+  const [areas, regions, points, exercises, tools, regionPoints, regionExercises, sheets, variants, positions] =
+    await Promise.all([
       json(dir, 'body-areas.json'),
       json(dir, 'regions.json'),
       json(dir, 'osteopressure-points.json'),
@@ -158,8 +158,8 @@ export async function readCatalog(dir = HERE, content = null, segments = null) {
       csv(dir, 'region-exercises.csv'),
       json(dir, 'exercise-sheets.json'),
       json(dir, 'exercise-variants.json'),
-    ],
-  );
+      json(dir, 'treatment-positions.json'),
+    ]);
   const texts = contentByCode(content);
   const segmentTexts = contentByCode(segments);
   const rows = {
@@ -177,8 +177,10 @@ export async function readCatalog(dir = HERE, content = null, segments = null) {
       group: p.group,
       muscleAttachmentLatin: p.muscleAttachmentLatin,
       attachmentDe: p.attachmentDe,
+      position: p.position ?? null,
       sort: i + 1,
     })),
+    treatmentPosition: positions.map((t, i) => ({ code: t.code, nameDe: t.nameDe, nameEn: t.nameEn, sort: i + 1 })),
     exercise: exercises.map((x, i) => ({
       code: x.code,
       group: x.group,
@@ -235,6 +237,11 @@ export async function readCatalog(dir = HERE, content = null, segments = null) {
       throw new Error(`regions.json: Bereich or code of ${r.id}`);
   for (const x of [...rows.osteopressurePoint, ...rows.exercise])
     if (!areaIds.has(x.group)) throw new Error(`Unknown Bereich ${x.group} of ${x.id ?? x.code}`);
+  // Behandlungslage (iteration 15, design D1): every part of a combination such as "BL/HSL" is a known base position
+  const positionCodes = new Set(rows.treatmentPosition.map((t) => t.code));
+  for (const p of rows.osteopressurePoint)
+    if (p.position !== null && !p.position.split('/').every((c) => positionCodes.has(c)))
+      throw new Error(`osteopressure-points.json: unknown position ${p.position} of ${p.id}`);
   const regionIds = new Set(rows.region.map((r) => r.id));
   const pointIds = new Set(rows.osteopressurePoint.map((p) => p.id));
   const codes = new Set(rows.exercise.map((x) => x.code));
@@ -283,6 +290,7 @@ const TABLES = [
   // Parents before children (foreign keys)
   { model: 'bodyArea', key: (r) => String(r.id), where: (r) => ({ id: r.id }) },
   { model: 'region', key: (r) => String(r.id), where: (r) => ({ id: r.id }) },
+  { model: 'treatmentPosition', key: (r) => r.code, where: (r) => ({ code: r.code }) },
   { model: 'osteopressurePoint', key: (r) => r.id, where: (r) => ({ id: r.id }) },
   { model: 'exercise', key: (r) => r.code, where: (r) => ({ code: r.code }) },
   { model: 'rollingTool', key: (r) => r.code, where: (r) => ({ code: r.code }) },

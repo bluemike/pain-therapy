@@ -158,13 +158,17 @@ describe('consultation schema', () => {
     expect(r.painBefore).toBeNull();
     expect(r.painAfter).toBeNull();
     expect(r.sheet.points).toEqual([{ pointId: '2.11.1', left: false, right: true, sensitivity: 'STRONG' }]);
-    expect(r.sheet.exercises).toEqual([{ code: '2D', prescribed: true, difficulty: 'HARD', variant: 2 }]);
+    expect(r.sheet.exercises).toEqual([
+      { code: '2D', prescribed: true, difficulty: 'HARD', variant: 2, parts: 'FRM_EPD' },
+    ]);
     expect(consultationSchema.parse({ ...base, sheet: '' }).sheet).toEqual(EMPTY_SHEET);
   });
 
   it('keeps one home row per prescribed exercise, 1× per day on all weekdays when none was sent (home-schedule)', () => {
     const r = consultationSchema.parse({ ...base, sheet: JSON.stringify(sheet) });
-    expect(r.sheet.home).toEqual([{ code: '2D', timesPerDay: 1, weekdays: 127, note: null, variant: 2 }]);
+    expect(r.sheet.home).toEqual([
+      { code: '2D', timesPerDay: 1, weekdays: 127, note: null, variant: 2, parts: 'FRM_EPD' },
+    ]);
     const withHome = {
       ...sheet,
       exercises: [...sheet.exercises.slice(0, 1), { code: '2A', prescribed: false, difficulty: 'EASY', variant: null }],
@@ -175,8 +179,30 @@ describe('consultation schema', () => {
       ],
     };
     expect(parse(withHome).data!.sheet.home).toEqual([
-      { code: '2D', timesPerDay: 2, weekdays: 31, note: 'abends', variant: 2 },
+      { code: '2D', timesPerDay: 2, weekdays: 31, note: 'abends', variant: 2, parts: 'FRM_EPD' },
     ]);
+  });
+
+  it('prescribes only the FRM without EPD and "Übung fällt" (iteration 15, design D6)', () => {
+    const r = parse({
+      ...sheet,
+      exercises: [{ code: '2D', prescribed: true, difficulty: null, variant: 2, parts: 'FRM' }],
+    });
+    expect(r.success).toBe(true);
+    expect(r.data!.sheet.exercises).toEqual([
+      { code: '2D', prescribed: true, difficulty: null, variant: null, parts: 'FRM' },
+    ]);
+    expect(r.data!.sheet.home[0]).toMatchObject({ code: '2D', variant: null, parts: 'FRM' });
+    // Only the EPD still needs "Übung fällt"
+    const epd = parse({
+      ...sheet,
+      exercises: [{ code: '2D', prescribed: true, difficulty: null, variant: null, parts: 'EPD' }],
+    });
+    expect(sheetErrors(epd.error!)).toEqual({ 'exercises:2D': 'difficultyRequired' });
+    expect(
+      parse({ ...sheet, exercises: [{ code: '2D', prescribed: true, difficulty: null, variant: null, parts: 'X' }] })
+        .success,
+    ).toBe(false);
   });
 
   it('requires "Übung fällt" for every prescribed exercise (session-form)', () => {

@@ -82,14 +82,18 @@ test.describe('treatments and sessions', () => {
     ]);
     const rows = page.locator('section[aria-labelledby="h_osteo"] tbody tr');
     await expect(rows).toHaveCount(15);
-    // Session 1 shows the main points (dark red) first; "Alle" shows every point of the sheet
+    // Iteration 15 (design D2): a session opens with all points; «Sitzung 1» still shows only the dark red ones
     const filter = page.getByTestId('point-filter');
-    await expect(filter).toHaveValue('main');
+    await expect(filter).toHaveValue('all');
+    await expect(rows.locator('visible=true')).toHaveCount(15);
+    await filter.selectOption('main');
     const mainCount = await rows.locator('visible=true').count();
     expect(mainCount).toBeGreaterThan(0);
     expect(mainCount).toBeLessThan(15);
     await filter.selectOption('all');
-    await expect(rows.locator('visible=true')).toHaveCount(15);
+    // Column «Lage» (design D1): code with the full name
+    await expect(rows.first().locator('td.lagecol abbr')).toHaveText('BL');
+    await expect(rows.first().locator('td.lagecol abbr')).toHaveAttribute('title', 'Bauchlage');
     await expect(rows.first().locator('th')).toHaveText('2.1.1');
     await expect(rows.last().locator('th')).toHaveText('4.5');
     // Exercises of the sheet first, then the rest of the Bereich Rumpf
@@ -165,10 +169,10 @@ test.describe('treatments and sessions', () => {
     await expect(list.first()).toContainText('2 Punkte · 1 Übung · 1 Foto');
     await expect(list.first().getByRole('link', { name: 'Ändern: Sitzung Nr. 1' })).toBeVisible();
 
-    // Second session with only the pain before; it starts with the relevant (red) points
+    // Second session with only the pain before; it also starts with all points
     await page.locator('section.treat').first().getByRole('link', { name: 'Sitzung', exact: true }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Sitzung Nr. 2' })).toBeVisible();
-    await expect(page.getByTestId('point-filter')).toHaveValue('relevant');
+    await expect(page.getByTestId('point-filter')).toHaveValue('all');
     await page.locator('#f_comparison').fill('Besser als in Sitzung 1');
     await setPain(page, 'f_painBefore', 50);
     await page.getByRole('button', { name: 'Sitzung speichern' }).click();
@@ -222,6 +226,52 @@ test.describe('treatments and sessions', () => {
     await expect(diag.locator('ins')).toHaveText('Lumbalgie rechts');
     await expect(page.locator('table.hist')).toContainText('Foto entfernt');
     expect((await page.request.get(photoUrl!)).status()).toBe(404);
+  });
+
+  test('photos with the smartphone: QR link on the iPad, upload on the phone, taken over on save', async ({
+    page,
+    browser,
+  }) => {
+    await login(page);
+    await createSignedPatient(page, { first: 'Anna', last: `Handy${unique()}`, dob: '05.03.1980' });
+    await page.locator('.rechead').getByRole('link', { name: 'Neue Behandlung' }).click();
+    await page.locator('#f_regionId').selectOption('6');
+    await page.locator('#f_diagnosis').fill('Lumbalgie');
+    await setPain(page, 'f_painStart', 60);
+    await page.getByRole('button', { name: 'Mit Smartphone aufnehmen' }).click();
+    const panel = page.getByTestId('handoff');
+    await expect(panel.getByRole('img', { name: /QR-Code/ })).toBeVisible();
+    await expect(panel).toContainText(/Gültig noch 1[45]:\d\d min/);
+    const code = (await page.getByTestId('check-code').textContent())!;
+    // The link of the QR code, as the phone camera would read it
+    const handoffUrl = await page.locator('[data-testid="handoff"]').getAttribute('data-url');
+
+    // The phone: no sign-in, only the practice and the check code, never the patient
+    const phone = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+    await phone.goto(handoffUrl!);
+    await expect(phone.getByRole('heading', { name: 'Fotos aufnehmen' })).toBeVisible();
+    await expect(phone.locator('.checkcode')).toHaveText(code);
+    await expect(phone.locator('body')).not.toContainText('Handy');
+    await phone.locator('#handoff-input').setInputFiles([photoFile('p1.jpg'), photoFile('p2.jpg')]);
+    await expect(phone.getByRole('status')).toContainText('2 Fotos gesendet');
+
+    // The iPad shows them within a few seconds
+    await expect(page.getByTestId('phone-photo')).toHaveCount(2);
+    await expect(panel).toContainText('2 Fotos erhalten');
+    await page
+      .getByTestId('phone-photo')
+      .last()
+      .getByRole('button', { name: /verwerfen/ })
+      .click();
+    await panel.getByRole('button', { name: 'Beenden' }).click();
+    await expect(page.getByText(/Der Smartphone-Link ist beendet/)).toBeVisible();
+    // After «Beenden» the phone can send nothing more
+    await phone.reload();
+    await expect(phone.locator('.banner.err')).toContainText('abgelaufen oder beendet');
+
+    await page.getByRole('button', { name: 'Behandlung eröffnen' }).click();
+    await expect(page.getByText('Behandlung eröffnet.')).toBeVisible();
+    await expect(page.locator('section.treat').first()).toContainText('1 Foto');
   });
 
   test('without a signed disclaimer no treatment is opened; the invitation is offered', async ({ page }) => {

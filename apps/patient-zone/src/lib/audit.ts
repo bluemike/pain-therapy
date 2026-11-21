@@ -14,7 +14,8 @@ export type ZoneAuditAction =
   | 'document.viewedInZone'
   | 'exerciseLog.created'
   | 'exerciseLog.corrected'
-  | 'exerciseLog.deleted';
+  | 'exerciseLog.deleted'
+  | 'zone.audioLanguageChanged';
 
 type Tx = Pick<Prisma.TransactionClient, 'auditEvent'>;
 
