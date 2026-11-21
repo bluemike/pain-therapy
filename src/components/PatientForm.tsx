@@ -6,10 +6,26 @@ import { useTranslations } from 'next-intl';
 import { savePatient, type PatientFormState } from '@/app/(app)/actions';
 
 import type { PatientFormValues as Values } from '@/lib/schemas';
+import type { Ink, InputMode } from '@pain-therapy/shared/ink';
+import { NoteInput } from './NoteInput';
 
 export { EMPTY_PATIENT } from '@/lib/schemas';
 
-export function PatientForm({ id, initial, cancelHref }: { id?: string; initial: Values; cancelHref: string }) {
+export function PatientForm({
+  id,
+  initial,
+  cancelHref,
+  furtherDiagnosesInk = null,
+  inputMode = 'KEYBOARD',
+}: {
+  id?: string;
+  initial: Values;
+  cancelHref: string;
+  /** «Weitere Diagnosen» als Handschrift (iteration 10) */
+  furtherDiagnosesInk?: Ink | null;
+  /** Eingabe bei Bemerkungen of the user (iteration 10, design D3) */
+  inputMode?: InputMode;
+}) {
   const t = useTranslations('form');
   const te = useTranslations('errors');
   const tc = useTranslations('common');
@@ -78,6 +94,17 @@ export function PatientForm({ id, initial, cancelHref }: { id?: string; initial:
               </option>
             ))}
           </select>
+        ) : area && name === 'furtherDiagnoses' ? (
+          <NoteInput
+            field="anamnesis.furtherDiagnoses"
+            name={name}
+            value={String(v[name] ?? '')}
+            onChange={(value) => setV((prev) => ({ ...prev, [name]: value }))}
+            ink={furtherDiagnosesInk}
+            defaultMode={inputMode}
+            label={label}
+            textProps={common}
+          />
         ) : area ? (
           <textarea {...common} />
         ) : (

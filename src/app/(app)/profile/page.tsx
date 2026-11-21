@@ -30,7 +30,13 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           <p>{t('savedFlash')}</p>
         </div>
       ) : null}
-      <ProfileForm initial={{ displayName: profile.displayName ?? firstName(profile.name), title: profile.title }} />
+      <ProfileForm
+        initial={{
+          displayName: profile.displayName ?? firstName(profile.name),
+          title: profile.title,
+          noteInputMode: profile.noteInputMode,
+        }}
+      />
     </>
   );
 }

@@ -57,6 +57,8 @@ export type AuditAction =
   | 'exerciseLog.viewed'
   // user-profile (iteration 8, design D9): display name or professional title changed under "Mein Profil"
   | 'profile.updated'
+  // iteration 10, design D4: Handschrift erkannt (field and number of characters, never the content)
+  | 'note.recognized'
   // Iteration 12, phase 5 (design D3, D4, D9): team of a practice and the platform
   | 'team.invited'
   | 'team.invitationRevoked'

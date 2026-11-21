@@ -6,6 +6,9 @@ import { exerciseChoices } from '@/lib/exercise-sheets';
 import { formatDateZurich, formatPercent } from '@/lib/format';
 import { ConsultationForm, type ConsultationValues } from '@/components/ConsultationForm';
 import type { SavedPhoto } from '@/components/PhotoField';
+import { asInk } from '@pain-therapy/shared/ink';
+import { requireUser } from '@/lib/session';
+import { inputModeOf } from '@/lib/handwriting';
 
 /** Page frame of a new or existing session: the treatment form of the Schmerzbereich built from the reference data */
 export async function ConsultationPage({
@@ -16,6 +19,7 @@ export async function ConsultationPage({
   saved,
   blocked,
   handoutHref,
+  ink,
 }: {
   treatment: Treatment & { region: Region & { bodyArea: BodyArea }; patient: Patient };
   number: number;
@@ -25,8 +29,15 @@ export async function ConsultationPage({
   blocked?: React.ReactNode;
   /** exercise-handout: shown once the saved consultation has home exercises */
   handoutHref?: string;
+  /** Stored handwriting (iteration 10); a new session gets the treatment's diagnosis as proposal */
+  ink: { diagnosis: unknown; comparison: unknown };
 }) {
-  const [t, locale] = await Promise.all([getTranslations('consultation'), getLocale()]);
+  const user = await requireUser();
+  const [t, locale, inputMode] = await Promise.all([
+    getTranslations('consultation'),
+    getLocale(),
+    inputModeOf(user.id),
+  ]);
   const p = treatment.patient;
   const base = `/patients/${p.id}`;
   const label = regionLabel(treatment.region, locale);
@@ -90,6 +101,8 @@ export async function ConsultationPage({
             catalogExercises={choices}
             saved={saved}
             cancelHref={`${base}#t-${treatment.id}`}
+            ink={{ diagnosis: asInk(ink.diagnosis), comparison: asInk(ink.comparison) }}
+            inputMode={inputMode}
           />
         ) : null)}
     </>

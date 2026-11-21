@@ -313,6 +313,15 @@ Prüfen: *L&B Basisdaten* zeigt die 4 Bereiche; *Übungen → 2A* zeigt FRM, Sta
 
 **Rollback:** nur mit leerer Datenbank sinnvoll (die Migration ist nicht umkehrbar); vorherige Revision aktivieren und Datenbank aus dem Point-in-time-Backup vor der Migration wiederherstellen.
 
+## Iteration 10 (Handschrift in Bemerkungen)
+
+Neu ist die Ressource `di-pain-therapy` (Azure AI Document Intelligence, Stufe F0, Switzerland North, ohne Schlüssel) mit der Rollenzuweisung *Cognitive Services User* für die Identität der Praxis-App. Die App erhält `AZURE_DOCINTEL_ENDPOINT`.
+
+- **Vor dem ersten Deployment:** Die Deploy-Identität muss die Rolle *Cognitive Services User* (`a97b65f3-24c7-4388-baec-2e87135dc908`) zuweisen dürfen. Dafür wird sie in die Bedingung ihrer Rollenzuweisung (Role Based Access Control Administrator, erlaubte Rollen) aufgenommen. Mike Franz hat das am 21.11.2026 freigegeben.
+- Ohne diese Freigabe kann man mit `handwritingRecognition=false` deployen. Die Erkennung meldet dann «Erkennung gerade nicht verfügbar», «Handschrift als Bild» funktioniert trotzdem.
+- **Kontingent:** F0 bietet 500 Seiten pro Monat und 20 Aufrufe pro Minute. Bei mehr Bedarf setzt man `handwritingSku=S0` (etwa USD 1.50 pro 1000 Seiten).
+- Die Migration `20261121090000_handwriting` ergänzt nur Spalten. Der Migrations-Job setzt die Spaltenrechte der Zone neu (`prisma/patient-zone-role.sql`).
+
 ## Iteration 12 (Praxen, pain-therapy.online)
 
 Die App wird mandantenfähig (design.md der Änderung `iteration-12-mandanten`). Was sich im Betrieb ändert:

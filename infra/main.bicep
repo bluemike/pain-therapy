@@ -56,6 +56,15 @@ param smtpPassword string
 @description('Sender of all mails; the display name is the practice.')
 param mailFrom string = 'noreply@pain-therapy.online'
 
+@description('''Handschrift → Text (iteration 10, design D8): Azure AI Document Intelligence in Switzerland North, called by
+the practice app with its managed identity. Needs the deploy identity to be allowed to assign "Cognitive Services User".
+false leaves the resource out; the app then answers "Erkennung gerade nicht verfügbar".''')
+param handwritingRecognition bool = true
+
+@description('Tier of Document Intelligence: F0 (500 pages per month free) or S0 (paid per page).')
+@allowed(['F0', 'S0'])
+param handwritingSku string = 'F0'
+
 @description('Platform account invited by the 5-minute job while none exists (task 5.0).')
 param platformAdminEmail string = 'admin@pain-therapy.online'
 
@@ -114,6 +123,7 @@ var roles = {
   keyVaultSecretsUser: '4633458b-17de-408a-b874-0445c86b69e6'
   storageBlobDataContributor: 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
   storageBlobDataReader: '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1'
+  cognitiveServicesUser: 'a97b65f3-24c7-4388-baec-2e87135dc908'
 }
 
 // ---------- Monitoring and identity ----------
@@ -169,6 +179,32 @@ resource zoneAcrPull 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
     principalId: zoneIdentity.properties.principalId
     principalType: 'ServicePrincipal'
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.acrPull)
+  }
+}
+
+// ---------- Handschrift-Erkennung (iteration 10, design D8) ----------
+
+// Only the practice app calls it, with its identity (no keys); images are not stored by the service beyond the call
+resource docIntel 'Microsoft.CognitiveServices/accounts@2024-10-01' = if (handwritingRecognition) {
+  name: 'di-${name}'
+  location: location
+  tags: tags
+  kind: 'FormRecognizer'
+  sku: { name: handwritingSku }
+  properties: {
+    customSubDomainName: 'di-${name}-${suffix}'
+    disableLocalAuth: true
+    publicNetworkAccess: 'Enabled'
+  }
+}
+
+resource docIntelUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (handwritingRecognition) {
+  name: guid(resourceGroup().id, 'di-${name}', identity.id, roles.cognitiveServicesUser)
+  scope: docIntel
+  properties: {
+    principalId: identity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.cognitiveServicesUser)
   }
 }
 
@@ -565,6 +601,8 @@ var appEnv = [
   { name: 'AZURE_STORAGE_EXERCISE_CONTAINER', value: exerciseMedia.name }
   { name: 'AZURE_STORAGE_EXPORT_CONTAINER', value: practiceExports.name }
   { name: 'DOCUMENT_RETENTION_DAYS', value: string(documentRetentionDays) }
+  // Iteration 10 (design D8): empty without the resource; the app then reports recognition as unavailable
+  { name: 'AZURE_DOCINTEL_ENDPOINT', value: handwritingRecognition ? 'https://di-${name}-${suffix}.cognitiveservices.azure.com' : '' }
   // Iteration 12 (design D7): links only, over SMTP at Infomaniak
   { name: 'MAIL_DRIVER', value: 'smtp' }
   { name: 'MAIL_FROM', value: mailFrom }

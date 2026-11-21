@@ -217,7 +217,8 @@
     "consultations": "Sitzungen",
     "consultationsValue": "{count}, zuletzt {date}",
     "none": "noch keine",
-    "pain": "{n} %"
+    "pain": "{n} %",
+    "inkAlt": "Handschriftliche Notiz der Praxis"
   },
   "treatment": {
     "back": "Meine Behandlungen",
@@ -250,7 +251,8 @@
     "short_su": "So",
     "variant": "Variante {n}",
     "side_LEFT": "links",
-    "side_RIGHT": "rechts"
+    "side_RIGHT": "rechts",
+    "inkAlt": "Handschriftliche Notiz der Praxis"
   },
   "documents": {
     "title": "Meine Dokumente",

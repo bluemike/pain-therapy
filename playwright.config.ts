@@ -65,6 +65,8 @@ export default defineConfig({
         PATIENT_ZONE_URL: ZONE_URL,
         MAIL_OUTBOX_DIR: process.env.E2E_OUTBOX_DIR,
         ZONE_INTERNAL_SECRET: INTERNAL_SECRET,
+        // Handschrift → Text (iteration 10): fixed text instead of Azure Document Intelligence
+        DOCINTEL_STUB: '1',
       },
     },
     {

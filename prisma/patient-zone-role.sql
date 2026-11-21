@@ -33,8 +33,10 @@ BEGIN
     ON "Patient" TO patient_zone;
   -- The current home program (design D2) and, read only, the treatments and consultations of the record (iteration 6,
   -- design D5), without createdBy and updatedBy
-  GRANT SELECT ("id", "patientId", "startedAt", "regionId", "side", "diagnosis", "painStart") ON "Treatment" TO patient_zone;
-  GRANT SELECT ("id", "treatmentId", "number", "at", "diagnosis", "painBefore", "painAfter", "comparison")
+  GRANT SELECT ("id", "patientId", "startedAt", "regionId", "side", "diagnosis", "diagnosisInk", "painStart")
+    ON "Treatment" TO patient_zone;
+  GRANT SELECT ("id", "treatmentId", "number", "at", "diagnosis", "diagnosisInk", "painBefore", "painAfter",
+                "comparison", "comparisonInk")
     ON "Consultation" TO patient_zone;
   GRANT SELECT ("consultationId", "pointId", "left", "right", "sensitivity") ON "ConsultationPoint" TO patient_zone;
   GRANT SELECT ("consultationId", "exerciseCode", "prescribed", "difficulty", "variant")

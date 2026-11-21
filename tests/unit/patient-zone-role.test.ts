@@ -29,7 +29,18 @@ const TABLES: Record<string, string[]> = {
 };
 const COLUMNS: Record<string, string[]> = {
   'ConsentTextVersion.SELECT': ['body', 'id', 'language', 'title', 'version'],
-  'Consultation.SELECT': ['at', 'comparison', 'diagnosis', 'id', 'number', 'painAfter', 'painBefore', 'treatmentId'],
+  'Consultation.SELECT': [
+    'at',
+    'comparison',
+    'comparisonInk',
+    'diagnosis',
+    'diagnosisInk',
+    'id',
+    'number',
+    'painAfter',
+    'painBefore',
+    'treatmentId',
+  ],
   'ConsultationExercise.SELECT': ['consultationId', 'difficulty', 'exerciseCode', 'prescribed', 'variant'],
   'ConsultationPoint.SELECT': ['consultationId', 'left', 'pointId', 'right', 'sensitivity'],
   'Exercise.SELECT': ['code', 'nameDe', 'nameEn', 'sort'],
@@ -101,7 +112,7 @@ const COLUMNS: Record<string, string[]> = {
     'status',
   ],
   'SignedDocument.SELECT': ['createdAt', 'documentNumber', 'id', 'language', 'patientId', 'sessionId', 'textVersion'],
-  'Treatment.SELECT': ['diagnosis', 'id', 'painStart', 'patientId', 'regionId', 'side', 'startedAt'],
+  'Treatment.SELECT': ['diagnosis', 'diagnosisInk', 'id', 'painStart', 'patientId', 'regionId', 'side', 'startedAt'],
 };
 
 // Creating a role needs CREATEROLE (the CI and docker compose users are superusers; Azure's admin has CREATEROLE)
