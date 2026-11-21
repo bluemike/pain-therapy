@@ -62,6 +62,8 @@ class SmtpMailer implements Mailer {
         secure: port === 465,
         requireTLS: port !== 465,
         auth: { user, pass: password },
+        // EHLO with the sender domain instead of the container's random host name, which spam filters count against us
+        name: config.mail.from.split('@')[1] || undefined,
       }),
     );
     return this.transport;
@@ -76,6 +78,8 @@ class SmtpMailer implements Mailer {
       subject: mail.subject,
       text: mail.text,
       html: mailHtml(mail.text, mail.bold),
+      // Transactional mail: tells mail servers not to send auto-replies back to noreply@
+      headers: { 'Auto-Submitted': 'auto-generated' },
     });
   }
 }

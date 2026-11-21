@@ -15,6 +15,7 @@ import { ExerciseImage } from './ExerciseImage';
 import { ExerciseAudio } from './ExerciseAudio';
 import { Seg } from './Seg';
 import { TailoredSheet } from './TailoredSheet';
+import { X } from 'lucide-react';
 
 export type HomeEntry = { timesPerDay: number; weekdays: number; note: string };
 export type HomeRowInfo = {
@@ -146,7 +147,7 @@ export function HomeProgramBlock({
                       title={t('remove', { code: r.code })}
                       onClick={() => onRemove(r.code)}
                     >
-                      ✕
+                      <X size={18} aria-hidden="true" />
                     </button>
                   </div>
                 </li>

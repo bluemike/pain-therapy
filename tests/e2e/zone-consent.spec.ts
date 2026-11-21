@@ -78,7 +78,7 @@ test.describe('signature in the patient zone', () => {
 
     // Leeres Feld: nothing is saved without a signature
     await patient.getByText('Ende des Textes.').scrollIntoViewIfNeeded();
-    await expect(patient.getByText('✓ Text gelesen')).toBeVisible();
+    await expect(patient.getByText('Text gelesen')).toBeVisible();
     await patient.getByTestId('consent-liability').check();
     await patient.getByTestId('consent-dataProcessing').check();
     await patient.getByRole('button', { name: 'Unterschreiben', exact: true }).click();

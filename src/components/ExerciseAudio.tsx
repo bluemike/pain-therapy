@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { Play, Square } from 'lucide-react';
 
 type State = 'idle' | 'loading' | 'playing' | 'missing';
 
@@ -80,7 +81,8 @@ export function ExerciseAudio({
       aria-label={on ? t('stopAudio', { code: label ?? code }) : t('playAudio', { code: label ?? code })}
       onClick={toggle}
     >
-      <span aria-hidden="true">{on ? '■' : '▶'}</span> {on ? t('stop') : t('listen')}
+      {on ? <Square size={14} aria-hidden="true" /> : <Play size={14} aria-hidden="true" />}{' '}
+      {on ? t('stop') : t('listen')}
     </button>
   );
 }
