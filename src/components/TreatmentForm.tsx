@@ -202,6 +202,8 @@ export function TreatmentForm({
               saved={saved}
               id="f_photos"
               error={errors.photos ? te(errors.photos as 'photoType') : null}
+              patientId={patientId}
+              treatmentId={id ?? null}
             />
           </div>
         </div>

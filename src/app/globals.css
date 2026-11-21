@@ -3563,3 +3563,50 @@ input.inp[type='datetime-local']::-webkit-date-and-time-value {
   white-space: nowrap;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
 }
+
+/* Iteration 15 (design D5): photos with the smartphone */
+.handoff {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 10px;
+}
+.handoff.open {
+  align-items: flex-start;
+  gap: 16px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--gold-bg);
+}
+.handoff .qr {
+  width: 180px;
+  height: 180px;
+  background: #fff;
+  border-radius: 6px;
+}
+.handoff .info p {
+  margin: 0 0 6px;
+}
+.checkcode {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.25em;
+  letter-spacing: 0.15em;
+}
+.handoff-phone .handoff-up {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+.handoff-phone .btn--block {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+}
+.handoff-phone .btn.off {
+  opacity: 0.6;
+  pointer-events: none;
+}

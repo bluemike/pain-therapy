@@ -3,7 +3,17 @@ import { auth } from '@/auth';
 import { legacyTarget } from '@/lib/legacy-host';
 
 // /api/internal: calls of the patient zone and the finalize job, signed with ZONE_INTERNAL_SECRET (iteration 5, D7)
-const PUBLIC = ['/login', '/einladung', '/impressum', '/no-access', '/api/auth', '/api/health', '/api/internal'];
+// /foto: upload page of a photo handoff, protected by its token (iteration 15, design D5)
+const PUBLIC = [
+  '/login',
+  '/einladung',
+  '/impressum',
+  '/no-access',
+  '/api/auth',
+  '/api/health',
+  '/api/internal',
+  '/foto',
+];
 const SESSION_COOKIES = ['authjs.session-token', '__Secure-authjs.session-token'];
 export default auth((req) => {
   const { pathname, search } = req.nextUrl;

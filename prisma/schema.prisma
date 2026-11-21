@@ -256,6 +256,7 @@ model Patient {
   accessLinks       PatientAccessLink[]
   zoneSessions      PatientZoneSession[]
   exerciseLog       ExerciseLogEntry[]
+  photoHandoffs     PhotoHandoff[]
 
   @@index([lastName, dateOfBirth])
   @@index([status, lastName])
@@ -665,14 +666,14 @@ model ConsultationPoint {
 }
 
 model ConsultationExercise {
-  practiceId     String       @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
-  practice       Practice     @relation(fields: [practiceId], references: [id])
+  practiceId     String        @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice       Practice      @relation(fields: [practiceId], references: [id])
   consultationId String
-  consultation   Consultation @relation(fields: [consultationId], references: [id])
+  consultation   Consultation  @relation(fields: [consultationId], references: [id])
   exerciseCode   String
-  exercise       Exercise     @relation(fields: [exerciseCode], references: [code])
+  exercise       Exercise      @relation(fields: [exerciseCode], references: [code])
   /// Prescribed = performed in the session and part of the home program (iteration 8 design D6)
-  prescribed     Boolean      @default(false)
+  prescribed     Boolean       @default(false)
   /// Required when prescribed
   difficulty     Difficulty?
   /// EPD: null = Standardübung, otherwise the number of the ExerciseVariant
@@ -709,6 +710,60 @@ model ClinicalPhoto {
 
   @@index([treatmentId, takenAt])
   @@index([consultationId])
+}
+
+/// Fotos mit dem Smartphone (iteration 15, design D5): a QR link that can only upload, 15 minutes, at most 10 photos
+model PhotoHandoff {
+  practiceId  String    @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice    Practice  @relation(fields: [practiceId], references: [id])
+  id          String    @id @default(cuid())
+  /// SHA-256 of the 32-byte token in the link; the token itself is never stored
+  tokenHash   String    @unique
+  /// Four characters shown on the iPad and the phone, so the therapist sees the right phone is connected
+  checkCode   String
+  patientId   String
+  patient     Patient   @relation(fields: [patientId], references: [id])
+  /// The treatment of the form, if it exists already (null while a new treatment is being opened)
+  treatmentId String?
+  createdById String
+  createdBy   String
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime
+  /// «Beenden»: the link no longer accepts photos
+  endedAt     DateTime?
+  maxPhotos   Int       @default(10)
+
+  uploads PhotoHandoffUpload[]
+}
+
+/// A photo sent from the phone; taken over into a ClinicalPhoto when the form is saved, otherwise deleted after 24 h
+model PhotoHandoffUpload {
+  practiceId String       @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice   Practice     @relation(fields: [practiceId], references: [id])
+  id         String       @id
+  handoffId  String
+  handoff    PhotoHandoff @relation(fields: [handoffId], references: [id])
+  blobPath   String
+  thumbPath  String
+  sha256     String
+  width      Int
+  height     Int
+  sizeBytes  Int
+  takenAt    DateTime
+  uploadedAt DateTime     @default(now())
+  /// Set when the form was saved and the photo became a ClinicalPhoto with the same id and files
+  claimedAt  DateTime?
+
+  @@index([handoffId])
+}
+
+/// Upload attempts per IP (HMAC) for the limit of 30 per hour; no practice data
+model PhotoHandoffAttempt {
+  id     String   @id @default(cuid())
+  ipHash String
+  at     DateTime @default(now())
+
+  @@index([ipHash, at])
 }
 
 // ---------- Exercise sheets (exercise-library, iteration 3 design D1 to D3) ----------
@@ -757,20 +812,20 @@ enum ExerciseParts {
 /// Selbstausführung: one row per exercise prescribed in a session, FRM and/or the chosen EPD (iteration 8 design D7,
 /// iteration 15 design D6)
 model HomePrescription {
-  practiceId     String       @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
-  practice       Practice     @relation(fields: [practiceId], references: [id])
+  practiceId     String        @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice       Practice      @relation(fields: [practiceId], references: [id])
   consultationId String
-  consultation   Consultation @relation(fields: [consultationId], references: [id])
+  consultation   Consultation  @relation(fields: [consultationId], references: [id])
   exerciseCode   String
-  exercise       Exercise     @relation(fields: [exerciseCode], references: [code])
+  exercise       Exercise      @relation(fields: [exerciseCode], references: [code])
   /// Copy of ConsultationExercise.variant: null = EPD Standard
   variant        Int?
   /// Copy of ConsultationExercise.parts (iteration 15, design D6)
   parts          ExerciseParts @default(FRM_EPD)
   /// 1 to 3 executions per day
-  timesPerDay    Int          @default(1)
+  timesPerDay    Int           @default(1)
   /// Bit mask Mo = 1, Di = 2 … So = 64; 127 = every day, at least one day
-  weekdays       Int          @default(127)
+  weekdays       Int           @default(127)
   note           String?
 
   logEntries ExerciseLogEntry[]
@@ -1029,6 +1084,8 @@ model Practice {
   auditEvents           AuditEvent[]
   documentCounters      DocumentCounter[]
   exports               PracticeExport[]
+  photoHandoffs         PhotoHandoff[]
+  photoHandoffUploads   PhotoHandoffUpload[]
 }
 
 enum ExportStatus {

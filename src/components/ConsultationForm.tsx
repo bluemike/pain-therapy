@@ -669,6 +669,8 @@ export function ConsultationForm({
             saved={saved}
             id="f_photos"
             error={errors.photos ? te(errors.photos as 'photoType') : null}
+            patientId={patientId}
+            treatmentId={treatmentId}
           />
         </div>
       </section>

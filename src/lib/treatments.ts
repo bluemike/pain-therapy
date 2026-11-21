@@ -6,6 +6,7 @@ import { consentStatusOf } from './patients';
 import { currentVersionNumber } from './consent-texts';
 import { blobFolder } from './practice';
 import { addPhotoRows, preparePhotos, removePhotoRows, writePhotos, type PhotoUpload } from './photos';
+import { claimHandoffPhotos } from './photo-handoff';
 import type { ConsultationInput, Sheet, TreatmentInput } from './schemas';
 import type { Actor } from './session';
 import { inkColumn, noteForHistory, resolveInk, type InkChange } from './handwriting';
@@ -109,6 +110,7 @@ export async function createTreatment(
   patientId: string,
   input: TreatmentInput & TreatmentInk,
   uploads: PhotoUpload[] = [],
+  handoff: string[] = [],
 ) {
   const { diagnosisInk = KEEP, ...values } = input;
   const ink = resolveInk(null, diagnosisInk, values.diagnosis);
@@ -127,6 +129,8 @@ export async function createTreatment(
       tx,
     );
     await addPhotoRows(tx, actor, photos, { patientId, treatmentId: t.id, details: ctxOf(t) });
+    // Fotos mit dem Smartphone (iteration 15, design D5)
+    await claimHandoffPhotos(tx, actor, handoff, { patientId, treatmentId: t.id, details: ctxOf(t) });
     return t;
   });
 }
@@ -168,7 +172,7 @@ export async function updateTreatment(
   actor: Actor,
   id: string,
   inputWithInk: TreatmentInput & TreatmentInk,
-  photoChanges: { add?: PhotoUpload[]; remove?: string[] } = {},
+  photoChanges: { add?: PhotoUpload[]; remove?: string[]; handoff?: string[] } = {},
 ) {
   const { diagnosisInk = KEEP, ...input } = inputWithInk;
   const existing = await db.treatment.findUnique({ where: { id } });
@@ -199,6 +203,7 @@ export async function updateTreatment(
     for (const c of changes) await audit(actor, 'treatment.updated', { patientId: t.patientId, ...c, details }, tx);
     const ctx = { patientId: t.patientId, treatmentId: id, details: ctxOf(t) };
     await addPhotoRows(tx, actor, photos, ctx);
+    await claimHandoffPhotos(tx, actor, photoChanges.handoff ?? [], ctx);
     await removePhotoRows(tx, actor, photoChanges.remove ?? [], ctx);
     return t;
   });
@@ -274,6 +279,7 @@ export async function createConsultation(
   treatmentId: string,
   inputWithInk: ConsultationInput & ConsultationInk,
   uploads: PhotoUpload[] = [],
+  handoff: string[] = [],
 ) {
   const { diagnosisInk = KEEP, comparisonInk = KEEP, ...input } = inputWithInk;
   const t = await db.treatment.findUnique({ where: { id: treatmentId } });
@@ -310,12 +316,9 @@ export async function createConsultation(
       { patientId: t.patientId, details: ctxOf(t, c) as Prisma.InputJsonValue },
       tx,
     );
-    await addPhotoRows(tx, actor, photos, {
-      patientId: t.patientId,
-      treatmentId,
-      consultationId: c.id,
-      details: ctxOf(t, c),
-    });
+    const ctx = { patientId: t.patientId, treatmentId, consultationId: c.id, details: ctxOf(t, c) };
+    await addPhotoRows(tx, actor, photos, ctx);
+    await claimHandoffPhotos(tx, actor, handoff, ctx);
     return c;
   });
 }
@@ -419,7 +422,7 @@ export async function updateConsultation(
   actor: Actor,
   id: string,
   inputWithInk: ConsultationInput & ConsultationInk,
-  photoChanges: { add?: PhotoUpload[]; remove?: string[] } = {},
+  photoChanges: { add?: PhotoUpload[]; remove?: string[]; handoff?: string[] } = {},
 ) {
   const { diagnosisInk = KEEP, comparisonInk = KEEP, ...input } = inputWithInk;
   const existing = await getConsultation(id);
@@ -482,6 +485,7 @@ export async function updateConsultation(
       );
     const ctx = { patientId: t.patientId, treatmentId: t.id, consultationId: id, details };
     await addPhotoRows(tx, actor, photos, ctx);
+    await claimHandoffPhotos(tx, actor, photoChanges.handoff ?? [], ctx);
     await removePhotoRows(tx, actor, photoChanges.remove ?? [], ctx);
     return existing;
   });

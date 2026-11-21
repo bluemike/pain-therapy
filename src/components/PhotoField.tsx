@@ -4,7 +4,13 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { formatDateTime } from '@/lib/format';
 import { processPhoto, type ProcessedPhoto } from '@/lib/photo-client';
-import { Camera, RotateCcw, X } from 'lucide-react';
+import { Camera, RotateCcw, Smartphone, X } from 'lucide-react';
+import { endHandoffAction, startHandoffAction } from '@/app/(app)/photo-handoff-actions';
+
+/** Fotos mit dem Smartphone (iteration 15, design D5): the open link and the photos it brought */
+type Handoff = { id: string; url: string; checkCode: string; expiresAt: string; qr: string; open: boolean };
+type PhonePhoto = { id: string; takenAt: string };
+const POLL_MS = 3000;
 
 /** A photo already saved with the treatment or consultation */
 export type SavedPhoto = { id: string; takenAt: string };
@@ -19,6 +25,47 @@ export function usePhotos() {
   const [failed, setFailed] = useState<'read' | 'count' | null>(null);
   const urls = useRef<string[]>([]);
   useEffect(() => () => urls.current.forEach((u) => URL.revokeObjectURL(u)), []);
+  const [handoff, setHandoff] = useState<Handoff | null>(null);
+  const [handoffError, setHandoffError] = useState(false);
+  const [phone, setPhone] = useState<PhonePhoto[]>([]);
+  const [dropped, setDropped] = useState<string[]>([]);
+
+  // The form asks for new photos from the phone every 3 seconds while a link is open, and once more after it ended
+  useEffect(() => {
+    if (!handoff) return;
+    let stop = false;
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/photo-handoffs/${handoff.id}`, { cache: 'no-store' });
+        if (!res.ok || stop) return;
+        const s = (await res.json()) as { open: boolean; photos: PhonePhoto[] };
+        setPhone(s.photos);
+        if (!s.open) setHandoff((h) => (h && h.open ? { ...h, open: false } : h));
+      } catch {
+        // offline for a moment: the next poll tries again
+      }
+    };
+    void poll();
+    if (!handoff.open) return;
+    const timer = setInterval(poll, POLL_MS);
+    return () => {
+      stop = true;
+      clearInterval(timer);
+    };
+  }, [handoff?.id, handoff?.open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function startHandoff(patientId: string, treatmentId: string | null) {
+    setHandoffError(false);
+    const r = await startHandoffAction(patientId, treatmentId);
+    if (!r.ok) return setHandoffError(true);
+    setHandoff({ id: r.id, url: r.url, checkCode: r.checkCode, expiresAt: r.expiresAt, qr: r.qr, open: true });
+  }
+
+  async function endHandoff() {
+    if (!handoff) return;
+    await endHandoffAction(handoff.id);
+    setHandoff({ ...handoff, open: false });
+  }
 
   async function add(files: File[]) {
     setFailed(null);
@@ -45,6 +92,12 @@ export function usePhotos() {
     progress,
     failed,
     add,
+    handoff,
+    handoffError,
+    phone: phone.filter((p) => !dropped.includes(p.id)),
+    startHandoff,
+    endHandoff,
+    dropPhone: (id: string) => setDropped((prev) => [...prev, id]),
     discard: (key: string) => setItems((prev) => prev.filter((p) => p.key !== key)),
     toggleRemove: (id: string) =>
       setRemoved((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])),
@@ -56,6 +109,7 @@ export function usePhotos() {
         fd.append('photoTakenAt', p.takenAt);
       }
       for (const id of removed) fd.append('removePhoto', id);
+      for (const p of phone) if (!dropped.includes(p.id)) fd.append('handoffPhoto', p.id);
     },
   };
 }
@@ -67,15 +121,22 @@ export function PhotoField({
   saved = [],
   id,
   error,
+  patientId,
+  treatmentId = null,
 }: {
   state: PhotoState;
   saved?: SavedPhoto[];
   id: string;
   error?: string | null;
+  /** With a patient the field offers «Mit Smartphone aufnehmen» (iteration 15, design D5) */
+  patientId?: string;
+  treatmentId?: string | null;
 }) {
   const t = useTranslations('photos');
+  const th = useTranslations('handoff');
   const te = useTranslations('errors');
   const full = state.items.length >= MAX_PER_SAVE;
+  const h = state.handoff;
   return (
     <div className="photofield">
       <ul className="photos" aria-label={t('take')}>
@@ -121,6 +182,28 @@ export function PhotoField({
             </li>
           );
         })}
+        {state.phone.map((p) => {
+          const at = formatDateTime(new Date(p.takenAt));
+          return (
+            <li key={p.id} className="ph new" data-testid="phone-photo">
+              {h ? (
+                // eslint-disable-next-line @next/next/no-img-element -- private, uncached photo; no image optimisation
+                <img src={`/api/photo-handoffs/${h.id}/${p.id}?v=thumb`} alt={t('alt', { at })} />
+              ) : null}
+              <button
+                type="button"
+                className="x"
+                aria-label={t('discard', { at })}
+                onClick={() => state.dropPhone(p.id)}
+              >
+                ×
+              </button>
+              <small className="num">
+                {at} · {th('fromPhone')}
+              </small>
+            </li>
+          );
+        })}
         <li>
           <label className={`addph${full ? ' off' : ''}`} htmlFor={id}>
             <Camera size={22} aria-hidden="true" />
@@ -156,6 +239,72 @@ export function PhotoField({
       <span className="hint" id={`${id}_hint`}>
         {t('hint')}
       </span>
+      {patientId ? <HandoffPanel state={state} patientId={patientId} treatmentId={treatmentId} /> : null}
+    </div>
+  );
+}
+
+/** «Mit Smartphone aufnehmen»: QR code, check code and remaining time of the link; «Beenden» */
+function HandoffPanel({
+  state,
+  patientId,
+  treatmentId,
+}: {
+  state: PhotoState;
+  patientId: string;
+  treatmentId: string | null;
+}) {
+  const t = useTranslations('handoff');
+  const h = state.handoff;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!h?.open) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [h?.open]);
+  const left = h ? Math.max(0, new Date(h.expiresAt).getTime() - now) : 0;
+  const open = !!h?.open && left > 0;
+  const mmss = `${Math.floor(left / 60000)}:${String(Math.floor((left % 60000) / 1000)).padStart(2, '0')}`;
+  if (!open)
+    return (
+      <div className="handoff">
+        <button
+          type="button"
+          className="btn btn--ghost"
+          onClick={() => void state.startHandoff(patientId, treatmentId)}
+        >
+          <Smartphone size={18} aria-hidden="true" /> {t(h ? 'again' : 'start')}
+        </button>
+        {h ? <span className="hint">{t('ended')}</span> : null}
+        {state.handoffError ? (
+          <span className="msg" role="alert">
+            {t('startFailed')}
+          </span>
+        ) : null}
+      </div>
+    );
+  return (
+    <div className="handoff open" role="region" aria-label={t('panel')} data-testid="handoff">
+      {/* eslint-disable-next-line @next/next/no-img-element -- QR code as data URL */}
+      <img className="qr" src={h!.qr} alt={t('qrAlt')} width={180} height={180} />
+      <div className="info">
+        <p>{t('scan')}</p>
+        <p>
+          {t('check')}{' '}
+          <b className="checkcode" data-testid="check-code">
+            {h!.checkCode}
+          </b>
+        </p>
+        <p className="muted" aria-live="off">
+          {t('validFor', { time: mmss })}
+        </p>
+        <p className="muted" role="status" aria-live="polite">
+          {t('received', { n: state.phone.length })}
+        </p>
+        <button type="button" className="btn btn--ghost" onClick={() => void state.endHandoff()}>
+          {t('end')}
+        </button>
+      </div>
     </div>
   );
 }

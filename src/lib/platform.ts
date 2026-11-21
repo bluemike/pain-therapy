@@ -296,11 +296,17 @@ export async function deletePractice(actor: Actor, practiceId: string, confirmSl
   });
   if (!recent) throw new PlatformError('noExport');
 
-  const [documents, sheets, photos] = await Promise.all([
+  const [documents, sheets, saved, pending] = await Promise.all([
     rawDb.signedDocument.findMany({ where: { practiceId: p.id }, select: { blobPath: true, createdAt: true } }),
     rawDb.exerciseHandout.findMany({ where: { practiceId: p.id }, select: { blobPath: true, createdAt: true } }),
     rawDb.clinicalPhoto.findMany({ where: { practiceId: p.id }, select: { blobPath: true, thumbPath: true } }),
+    // Photos from the phone not yet saved with a form (iteration 15, design D5)
+    rawDb.photoHandoffUpload.findMany({
+      where: { practiceId: p.id, claimedAt: null },
+      select: { blobPath: true, thumbPath: true },
+    }),
   ]);
+  const photos = [...saved, ...pending];
   const retentionMs = config.storage.documentRetentionDays * 24 * 3600_000;
   await rawDb.pendingBlobDeletion.createMany({
     data: [...documents, ...sheets].map((d) => ({
