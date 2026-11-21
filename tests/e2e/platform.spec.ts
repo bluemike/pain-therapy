@@ -6,6 +6,14 @@ import { expectNoA11yViolations, login, unique } from './helpers';
  * practice admin invites people on «Team» (design D4).
  */
 test.describe('platform and team', () => {
+  test('a therapist signing in on a platform link lands on the start page', async ({ page }) => {
+    // The platform account signed out on /platform, a therapist signs in on the same device
+    await login(page, { role: 'Therapist', name: 'Thea Test', email: `thea.${unique()}@example.test` });
+    await page.goto('/platform');
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByText('Kein Zugang')).toHaveCount(0);
+  });
+
   test('the platform account manages a practice from creation to deletion', async ({ page }) => {
     test.setTimeout(120_000);
     const id = unique();
