@@ -1,5 +1,7 @@
 import type { Anamnesis, Patient, PatientStatus, Prisma } from '@prisma/client';
 import { db } from './db';
+import { asInk } from '@pain-therapy/shared/ink';
+import { inkColumn, noteForHistory, resolveInk, type InkChange } from './handwriting';
 import { audit } from './audit';
 import { formatDate, parseSwissDate } from './format';
 import { ANAMNESIS_FIELDS, PATIENT_FIELDS, type PatientInput } from './schemas';
@@ -179,11 +181,17 @@ function splitInput(input: PatientInput) {
   };
 }
 
-export async function createPatient(actor: Actor, input: PatientInput) {
+export async function createPatient(actor: Actor, input: PatientInput, ink: InkChange = { kind: 'keep' }) {
   const { patient, anamnesis } = splitInput(input);
+  const furtherDiagnosesInk = inkColumn(resolveInk(null, ink, input.furtherDiagnoses));
   return db.$transaction(async (tx) => {
     const created = await tx.patient.create({
-      data: { ...patient, createdBy: actor.name, updatedBy: actor.name, anamnesis: { create: anamnesis } },
+      data: {
+        ...patient,
+        createdBy: actor.name,
+        updatedBy: actor.name,
+        anamnesis: { create: { ...anamnesis, furtherDiagnosesInk } },
+      },
     });
     await audit(actor, 'patient.created', { patientId: created.id }, tx);
     return created;
@@ -220,11 +228,20 @@ export function diff(
 }
 
 /** patient-records: Patient ändern, keeping each change with old value, new value, user and time */
-export async function updatePatient(actor: Actor, id: string, input: PatientInput) {
+export async function updatePatient(actor: Actor, id: string, input: PatientInput, ink: InkChange = { kind: 'keep' }) {
   const existing = await db.patient.findUniqueOrThrow({ where: { id }, include: { anamnesis: true } });
-  const changes = diff(existing, input);
+  const storedInk = existing.anamnesis?.furtherDiagnosesInk ?? null;
+  const nextInk = resolveInk(storedInk, ink, input.furtherDiagnoses);
+  const changes = diff(existing, input).filter((c) => c.field !== 'furtherDiagnoses');
+  // Weitere Diagnosen: text or handwriting (iteration 10, design D5)
+  const a = noteForHistory(existing.anamnesis?.furtherDiagnoses, storedInk);
+  const b = noteForHistory(input.furtherDiagnoses, nextInk);
+  if (a !== b) changes.push({ field: 'furtherDiagnoses', before: a, after: b });
+  else if (JSON.stringify(asInk(storedInk)?.svg ?? null) !== JSON.stringify(nextInk?.svg ?? null))
+    changes.push({ field: 'furtherDiagnoses', before: a, after: '[Handschrift, neu]' });
   if (!changes.length) return existing;
-  const { patient, anamnesis } = splitInput(input);
+  const { patient, anamnesis: values } = splitInput(input);
+  const anamnesis = { ...values, furtherDiagnosesInk: inkColumn(nextInk) };
   return db.$transaction(async (tx) => {
     const updated = await tx.patient.update({
       where: { id },

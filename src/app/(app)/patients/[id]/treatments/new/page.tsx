@@ -8,21 +8,23 @@ import { listRegions, regionGroups } from '@/lib/catalog';
 import { toLocalInput } from '@/lib/format';
 import { TreatmentForm } from '@/components/TreatmentForm';
 import { OpeningBlocked } from '@/components/OpeningBlocked';
+import { inputModeOf } from '@/lib/handwriting';
 
 export const dynamic = 'force-dynamic';
 
 /** treatments: Behandlung eröffnen */
 export default async function NewTreatmentPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireUser();
+  const user = await requireUser();
   const { id } = await params;
   const patient = await getPatient(id);
   if (!patient) notFound();
-  const [t, tf, locale, blocker, regions] = await Promise.all([
+  const [t, tf, locale, blocker, regions, inputMode] = await Promise.all([
     getTranslations('treatments'),
     getTranslations('form'),
     getLocale(),
     openingBlocker(id),
     listRegions(),
+    inputModeOf(user.id),
   ]);
   const name = `${patient.firstName} ${patient.lastName}`;
   return (
@@ -52,6 +54,7 @@ export default async function NewTreatmentPage({ params }: { params: Promise<{ i
           }}
           regions={regionGroups(regions, locale)}
           cancelHref={`/patients/${id}`}
+          inputMode={inputMode}
         />
       )}
     </>

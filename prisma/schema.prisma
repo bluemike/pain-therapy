@@ -66,6 +66,13 @@ enum EmailStatus {
 }
 
 /// Berufsbezeichnung (user-profile, iteration 8 design D9): "Therapeutin" or "Therapeut"
+/// Iteration 10, design D3
+enum NoteInputMode {
+  KEYBOARD
+  HANDWRITING_TEXT
+  HANDWRITING_IMAGE
+}
+
 enum ProfessionalTitle {
   THERAPIST_F
   THERAPIST_M
@@ -97,6 +104,8 @@ model User {
   /// Secret shown during the TOTP setup, until the first code confirms it
   totpPendingEnc String?
   totpEnabledAt  DateTime?
+  /// Eingabe bei Bemerkungen (iteration 10, design D3): last choice, default for every remark field
+  noteInputMode  NoteInputMode     @default(KEYBOARD)
 
   memberships   PracticeMembership[]
   passkeys      Passkey[]
@@ -244,32 +253,34 @@ model Patient {
 
 /// Medical part of the intake form ("Anamnese L&B-Patienten", page 2)
 model Anamnesis {
-  practiceId        String    @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
-  practice          Practice  @relation(fields: [practiceId], references: [id])
-  patientId         String    @id
-  patient           Patient   @relation(fields: [patientId], references: [id])
-  smoker            YesNo     @default(NO)
-  smokingYears      Int?
-  packsPerDay       Decimal?  @db.Decimal(4, 1)
-  highBloodPressure Boolean   @default(false)
-  highBloodLipids   Boolean   @default(false)
-  dizziness         Boolean   @default(false)
-  osteoporosis      Boolean   @default(false)
-  arthrosis         Boolean   @default(false)
-  rheumatism        Boolean   @default(false)
-  orthoOther        Boolean   @default(false)
-  orthoOtherText    String?
-  cardiovascular    Boolean   @default(false)
-  diabetes          Boolean   @default(false)
-  asthma            Boolean   @default(false)
-  allergies         Boolean   @default(false)
-  internalOther     Boolean   @default(false)
-  internalOtherText String?
-  furtherDiagnoses  String?
-  medication        String?
-  pregnancy         Pregnancy @default(NOT_APPLICABLE)
-  inTreatment       YesNo     @default(NO)
-  treatingDoctor    String?
+  practiceId          String    @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice            Practice  @relation(fields: [practiceId], references: [id])
+  patientId           String    @id
+  patient             Patient   @relation(fields: [patientId], references: [id])
+  smoker              YesNo     @default(NO)
+  smokingYears        Int?
+  packsPerDay         Decimal?  @db.Decimal(4, 1)
+  highBloodPressure   Boolean   @default(false)
+  highBloodLipids     Boolean   @default(false)
+  dizziness           Boolean   @default(false)
+  osteoporosis        Boolean   @default(false)
+  arthrosis           Boolean   @default(false)
+  rheumatism          Boolean   @default(false)
+  orthoOther          Boolean   @default(false)
+  orthoOtherText      String?
+  cardiovascular      Boolean   @default(false)
+  diabetes            Boolean   @default(false)
+  asthma              Boolean   @default(false)
+  allergies           Boolean   @default(false)
+  internalOther       Boolean   @default(false)
+  internalOtherText   String?
+  furtherDiagnoses    String?
+  /// Handschrift-Bild statt Text (iteration 10, design D5)
+  furtherDiagnosesInk Json?
+  medication          String?
+  pregnancy           Pregnancy @default(NOT_APPLICABLE)
+  inTreatment         YesNo     @default(NO)
+  treatingDoctor      String?
 }
 
 /// Versioned disclaimer text (liability waiver, patient information, privacy notice), one row per version and language
@@ -558,24 +569,26 @@ enum Side {
 
 /// One treatment per pain area; never deleted (database trigger)
 model Treatment {
-  practiceId String   @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
-  practice   Practice @relation(fields: [practiceId], references: [id])
-  id         String   @id @default(cuid())
-  patientId  String
-  patient    Patient  @relation(fields: [patientId], references: [id])
-  startedAt  DateTime
-  regionId   Int
-  region     Region   @relation(fields: [regionId], references: [id])
+  practiceId   String   @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice     Practice @relation(fields: [practiceId], references: [id])
+  id           String   @id @default(cuid())
+  patientId    String
+  patient      Patient  @relation(fields: [patientId], references: [id])
+  startedAt    DateTime
+  regionId     Int
+  region       Region   @relation(fields: [regionId], references: [id])
   /// Fixed after the first session, like the pain area
-  side       Side     @default(UNSPECIFIED)
+  side         Side     @default(UNSPECIFIED)
   /// "Schmerzlokalisation und Schmerzzustand" (iteration 8 design D10)
-  diagnosis  String
+  diagnosis    String
+  /// Diagnose als Handschrift (iteration 10, design D5): { v, w, h, strokes, svg }; diagnosis is then ''
+  diagnosisInk Json?
   /// Pain at the start in percent, 0 to 100 in steps of 10
-  painStart  Int
-  createdAt  DateTime @default(now())
-  createdBy  String
-  updatedAt  DateTime @updatedAt
-  updatedBy  String
+  painStart    Int
+  createdAt    DateTime @default(now())
+  createdBy    String
+  updatedAt    DateTime @updatedAt
+  updatedBy    String
 
   consultations Consultation[]
   photos        ClinicalPhoto[]
@@ -585,23 +598,26 @@ model Treatment {
 
 /// One session, i.e. one paper form; never deleted (database trigger)
 model Consultation {
-  practiceId  String    @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
-  practice    Practice  @relation(fields: [practiceId], references: [id])
-  id          String    @id @default(cuid())
-  treatmentId String
-  treatment   Treatment @relation(fields: [treatmentId], references: [id])
+  practiceId    String    @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice      Practice  @relation(fields: [practiceId], references: [id])
+  id            String    @id @default(cuid())
+  treatmentId   String
+  treatment     Treatment @relation(fields: [treatmentId], references: [id])
   /// "Behandlung Nr." on the paper form: 1, 2, 3 … within the treatment, fixed when created
-  number      Int
-  at          DateTime
-  diagnosis   String
-  painBefore  Int?
+  number        Int
+  at            DateTime
+  diagnosis     String
+  painBefore    Int?
   /// Residual pain after the consultation
-  painAfter   Int?
-  comparison  String?
-  createdAt   DateTime  @default(now())
-  createdBy   String
-  updatedAt   DateTime  @updatedAt
-  updatedBy   String
+  painAfter     Int?
+  comparison    String?
+  /// Handschrift-Bild statt Text (iteration 10, design D5)
+  diagnosisInk  Json?
+  comparisonInk Json?
+  createdAt     DateTime  @default(now())
+  createdBy     String
+  updatedAt     DateTime  @updatedAt
+  updatedBy     String
 
   points    ConsultationPoint[]
   exercises ConsultationExercise[]

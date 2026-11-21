@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { InkNote } from '@/components/InkNote';
 import { notFound } from 'next/navigation';
 import { getLocale, getTranslations } from 'next-intl/server';
 import type { AuditEvent, EmailDelivery } from '@prisma/client';
@@ -241,7 +242,9 @@ export default async function PatientRecord({
         <Treatments patientId={p.id} list={treatments} active={active} canOpen={active && p.consent === 'signed'} />
       ) : null}
       {tab === 'personal' ? <Personal p={p} tf={tf} tc={tc} /> : null}
-      {tab === 'anamnesis' ? <AnamnesisView a={p.anamnesis} tf={tf} tc={tc} /> : null}
+      {tab === 'anamnesis' ? (
+        <AnamnesisView a={p.anamnesis} tf={tf} tc={tc} inkAlt={(await getTranslations('notes'))('alt')} />
+      ) : null}
       {tab === 'documents' ? (
         <>
           <Documents p={p} invite={inviteButton('gold')} />
@@ -356,7 +359,7 @@ function Personal({ p, tf, tc }: { p: Rec; tf: T; tc: T }) {
   );
 }
 
-function AnamnesisView({ a, tf, tc }: { a: Rec['anamnesis']; tf: T; tc: T }) {
+function AnamnesisView({ a, tf, tc, inkAlt }: { a: Rec['anamnesis']; tf: T; tc: T; inkAlt: string }) {
   const tags = (keys: string[], other?: [boolean, string | null]) => {
     const items = keys.filter((k) => a?.[k as keyof typeof a]).map((k) => tf(k as never));
     if (other?.[0]) items.push(`${tf('other')}: ${other[1] ?? ''}`);
@@ -402,7 +405,10 @@ function AnamnesisView({ a, tf, tc }: { a: Rec['anamnesis']; tf: T; tc: T }) {
               [!!a?.internalOther, a?.internalOtherText ?? null],
             ),
           ],
-          [tf('furtherDiagnoses'), a?.furtherDiagnoses],
+          [
+            tf('furtherDiagnoses'),
+            a?.furtherDiagnosesInk ? <InkNote ink={a.furtherDiagnosesInk} alt={inkAlt} /> : a?.furtherDiagnoses,
+          ],
           [tf('medication'), a?.medication],
           [tf('pregnancy'), yn(a?.pregnancy)],
           [
@@ -431,6 +437,7 @@ async function Treatments({
 }) {
   const t = await getTranslations('treatments');
   const tp = await getTranslations('photos');
+  const tn = await getTranslations('notes');
   const locale = await getLocale();
   if (!list.length)
     return (
@@ -471,7 +478,14 @@ async function Treatments({
                   {t('painStart', { pain: formatPercent(tr.painStart) })} ·{' '}
                   {t('sideLine', { side: t(`side_${tr.side}`) })} · {t('photoCount', { count: tr.photos.length })}
                 </div>
-                <div className="diag">{t('diagnosisLine', { text: tr.diagnosis })}</div>
+                {tr.diagnosisInk ? (
+                  <div className="diag">
+                    {t('diagnosisLabel')}
+                    <InkNote ink={tr.diagnosisInk} alt={tn('alt')} />
+                  </div>
+                ) : (
+                  <div className="diag">{t('diagnosisLine', { text: tr.diagnosis })}</div>
+                )}
               </div>
               <div className="actions">
                 <Link className="btn btn--ghost" href={`${base}/edit`} aria-label={`${t('edit')}: ${label}`}>

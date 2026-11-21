@@ -1,3 +1,4 @@
+import { asInk } from '@pain-therapy/shared/ink';
 import type { Language } from '@prisma/client';
 import type { Schedule } from '@pain-therapy/shared/home-program';
 import { db } from './db';
@@ -17,6 +18,8 @@ const region = { select: { id: true, code: true, nameDe: true, nameEn: true } } 
 const regionName = (r: { code: string; nameDe: string; nameEn: string }, lang: Language) =>
   `${r.code} ${nameIn(r, lang)}`;
 
+const svgOf = (ink: unknown) => asInk(ink)?.svg ?? null;
+
 /** "Behandlungen": newest first, with the number and date of the last consultation */
 export async function treatmentsOf(s: ZoneSession) {
   const rows = await db.treatment.findMany({
@@ -27,6 +30,7 @@ export async function treatmentsOf(s: ZoneSession) {
       startedAt: true,
       side: true,
       diagnosis: true,
+      diagnosisInk: true,
       painStart: true,
       region,
       consultations: { select: { at: true }, orderBy: { at: 'desc' } },
@@ -39,6 +43,7 @@ export async function treatmentsOf(s: ZoneSession) {
     region: regionName(t.region, lang),
     side: t.side,
     diagnosis: t.diagnosis,
+    diagnosisInk: svgOf(t.diagnosisInk),
     painStart: t.painStart,
     consultations: t.consultations.length,
     lastAt: t.consultations[0]?.at ?? null,
@@ -50,9 +55,12 @@ export type ZoneConsultation = {
   number: number;
   at: Date;
   diagnosis: string;
+  /** Handschrift-Bild statt Text (iteration 10, design D6): the SVG built by the practice app */
+  diagnosisInk: string | null;
   painBefore: number | null;
   painAfter: number | null;
   comparison: string | null;
+  comparisonInk: string | null;
   points: { id: string; name: string; left: boolean; right: boolean }[];
   /** EPD: null = Standardübung, otherwise the variant (iteration 8, design D6) */
   exercises: { code: string; name: string; variant: number | null }[];
@@ -70,6 +78,7 @@ export async function treatmentOf(s: ZoneSession, id: string) {
       startedAt: true,
       side: true,
       diagnosis: true,
+      diagnosisInk: true,
       painStart: true,
       region,
       consultations: {
@@ -79,9 +88,11 @@ export async function treatmentOf(s: ZoneSession, id: string) {
           number: true,
           at: true,
           diagnosis: true,
+          diagnosisInk: true,
           painBefore: true,
           painAfter: true,
           comparison: true,
+          comparisonInk: true,
           points: {
             select: {
               left: true,
@@ -113,9 +124,11 @@ export async function treatmentOf(s: ZoneSession, id: string) {
     number: c.number,
     at: c.at,
     diagnosis: c.diagnosis,
+    diagnosisInk: svgOf(c.diagnosisInk),
     painBefore: c.painBefore,
     painAfter: c.painAfter,
     comparison: c.comparison,
+    comparisonInk: svgOf(c.comparisonInk),
     points: c.points
       .sort((a, b) => a.point.sort - b.point.sort)
       .map((p) => ({ id: p.point.id, name: pointName(p.point, lang), left: p.left, right: p.right })),
@@ -135,6 +148,7 @@ export async function treatmentOf(s: ZoneSession, id: string) {
     region: regionName(t.region, lang),
     side: t.side,
     diagnosis: t.diagnosis,
+    diagnosisInk: svgOf(t.diagnosisInk),
     painStart: t.painStart,
     consultations,
   };

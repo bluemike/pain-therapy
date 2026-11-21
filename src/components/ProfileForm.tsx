@@ -4,9 +4,15 @@ import { useActionState } from 'react';
 import { useTranslations } from 'next-intl';
 import { saveProfile, type ProfileFormState } from '@/app/(app)/profile/actions';
 import { TITLES } from '@/lib/schemas';
+import { INPUT_MODES, type InputMode } from '@pain-therapy/shared/ink';
 
 /** user-profile: Formular "Mein Profil" */
-export function ProfileForm({ initial }: { initial: { displayName: string; title: (typeof TITLES)[number] } }) {
+export function ProfileForm({
+  initial,
+}: {
+  initial: { displayName: string; title: (typeof TITLES)[number]; noteInputMode: InputMode };
+}) {
+  const tn = useTranslations('notes');
   const t = useTranslations('profile');
   const te = useTranslations('errors');
   const tc = useTranslations('common');
@@ -54,6 +60,27 @@ export function ProfileForm({ initial }: { initial: { displayName: string; title
               ))}
             </select>
             <span className="hint">{t('titleHint')}</span>
+          </div>
+          <div className="f">
+            <label className="l" htmlFor="f_noteInputMode">
+              {tn('profileLabel')}
+            </label>
+            <select
+              id="f_noteInputMode"
+              name="noteInputMode"
+              className="inp"
+              defaultValue={initial.noteInputMode}
+              aria-describedby="f_noteInputMode_h"
+            >
+              {INPUT_MODES.map((m) => (
+                <option key={m} value={m}>
+                  {tn(`mode_${m}`)}
+                </option>
+              ))}
+            </select>
+            <span className="hint" id="f_noteInputMode_h">
+              {tn('profileHint')}
+            </span>
           </div>
         </div>
       </fieldset>

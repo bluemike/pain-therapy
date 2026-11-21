@@ -12,6 +12,8 @@ import { Seg } from './Seg';
 import { PainSlider } from './PainSlider';
 import { HomeProgramBlock, type HomeEntry } from './HomeProgramBlock';
 import { ExercisePreview } from './ExercisePreview';
+import { NoteInput } from './NoteInput';
+import type { Ink, InputMode } from '@pain-therapy/shared/ink';
 
 type Sensitivity = (typeof SENSITIVITIES)[number];
 type Difficulty = (typeof DIFFICULTIES)[number];
@@ -64,6 +66,8 @@ export function ConsultationForm({
   catalogExercises,
   saved,
   cancelHref,
+  ink = { diagnosis: null, comparison: null },
+  inputMode = 'KEYBOARD',
 }: {
   patientId: string;
   treatmentId: string;
@@ -84,6 +88,10 @@ export function ConsultationForm({
   catalogExercises: ExerciseOption[];
   saved?: SavedPhoto[];
   cancelHref: string;
+  /** Handschrift of the remark fields (iteration 10); for a new session the treatment's as proposal */
+  ink?: { diagnosis: Ink | null; comparison: Ink | null };
+  /** Eingabe bei Bemerkungen of the user (iteration 10, design D3) */
+  inputMode?: InputMode;
 }) {
   const t = useTranslations('consultation');
   const tc = useTranslations('common');
@@ -249,14 +257,20 @@ export function ConsultationForm({
               {t('diagnosis')}
               <span className="req"> *</span>
             </label>
-            <textarea
-              id="f_diagnosis"
+            <NoteInput
+              field="consultation.diagnosis"
               name="diagnosis"
-              className="inp"
-              aria-required
               value={head.diagnosis}
-              onChange={(e) => setHead({ ...head, diagnosis: e.target.value })}
-              {...(errors.diagnosis ? aria('diagnosis') : { 'aria-describedby': 'f_diagnosis_h' })}
+              onChange={(diagnosis) => setHead((h) => ({ ...h, diagnosis }))}
+              ink={ink.diagnosis}
+              defaultMode={inputMode}
+              label={t('diagnosis')}
+              textProps={{
+                id: 'f_diagnosis',
+                className: 'inp',
+                'aria-required': true,
+                ...(errors.diagnosis ? aria('diagnosis') : { 'aria-describedby': 'f_diagnosis_h' }),
+              }}
             />
             {err('diagnosis') ?? (
               <span className="hint" id="f_diagnosis_h">
@@ -270,14 +284,20 @@ export function ConsultationForm({
               <label className="l" htmlFor="f_comparison">
                 {t('comparison')}
               </label>
-              <textarea
-                id="f_comparison"
+              <NoteInput
+                field="consultation.comparison"
                 name="comparison"
-                className="inp"
-                placeholder={t('comparisonPlaceholder')}
                 value={head.comparison}
-                onChange={(e) => setHead({ ...head, comparison: e.target.value })}
-                {...aria('comparison')}
+                onChange={(comparison) => setHead((h) => ({ ...h, comparison }))}
+                ink={ink.comparison}
+                defaultMode={inputMode}
+                label={t('comparison')}
+                textProps={{
+                  id: 'f_comparison',
+                  className: 'inp',
+                  placeholder: t('comparisonPlaceholder'),
+                  ...aria('comparison'),
+                }}
               />
               {err('comparison')}
             </div>

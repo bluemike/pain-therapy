@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { getFormatter, getTranslations } from 'next-intl/server';
+import { InkNote } from '@/components/InkNote';
 import { treatmentsOf } from '@/lib/record';
 import { recordSession } from '@/lib/record-session';
 
@@ -23,7 +24,7 @@ export default async function Treatments() {
               </div>
               <div>
                 <dt>{t('diagnosis')}</dt>
-                <dd>{tr.diagnosis}</dd>
+                <dd>{tr.diagnosisInk ? <InkNote svg={tr.diagnosisInk} alt={t('inkAlt')} /> : tr.diagnosis}</dd>
               </div>
               <div>
                 <dt>{t('painStart')}</dt>

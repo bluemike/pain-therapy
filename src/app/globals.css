@@ -3381,6 +3381,94 @@ ol.auth-steps button.back:focus-visible {
   outline: 2px solid var(--gold);
 }
 
+/* Handschrift in Bemerkungsfeldern (iteration 10, note-input). The paper of the pad and of stored images stays light
+   in dark mode, like a sheet of paper, so the dark ink always reads. */
+.noteinput {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.noteinput-modes {
+  display: flex;
+  justify-content: flex-end;
+}
+.noteinput-modes .seg button {
+  font-size: 13px;
+}
+.noteinput-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.noteinput-tools .btn {
+  min-height: 36px;
+  padding: 6px 12px;
+  font-size: 14px;
+}
+.noteinput textarea.recog {
+  border-color: var(--gold);
+  background: var(--gold-bg);
+}
+.noteinput .tag.warn {
+  justify-self: start;
+  background: var(--warn-bg);
+  color: var(--warn);
+  border-color: transparent;
+}
+.noteinput-old {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  border-left: 3px solid var(--line);
+  padding-left: 10px;
+}
+.inkpad {
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  color: #1b2a5c;
+  --rule: #dfe6f2;
+  overflow: hidden;
+}
+.inkpad canvas {
+  display: block;
+  max-width: 100%;
+  touch-action: none;
+  cursor: crosshair;
+}
+.inkpad .ph {
+  position: absolute;
+  left: 12px;
+  top: 8px;
+  color: #6b7280;
+  font-size: 13px;
+  pointer-events: none;
+}
+.ink {
+  margin: 0;
+  display: grid;
+  gap: 4px;
+}
+.ink img {
+  display: block;
+  width: 100%;
+  max-width: 640px;
+  height: auto;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.ink--muted img {
+  opacity: 0.55;
+}
+.ink figcaption {
+  font-size: 13px;
+  color: var(--muted);
+}
 /* iOS Safari gives date inputs an intrinsic width that overflows their grid column (iteration 13, iPad test) */
 input.inp[type='datetime-local'],
 input.inp[type='date'],

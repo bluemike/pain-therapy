@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
 import { requireUser } from '@/lib/session';
+import { inputModeOf } from '@/lib/handwriting';
 import { EMPTY_PATIENT, PatientForm } from '@/components/PatientForm';
 
 export default async function NewPatientPage() {
-  await requireUser();
+  const user = await requireUser();
   const t = await getTranslations('form');
   const tp = await getTranslations('patients');
   return (
@@ -20,7 +21,7 @@ export default async function NewPatientPage() {
           </div>
         </div>
       </div>
-      <PatientForm initial={EMPTY_PATIENT} cancelHref="/patients" />
+      <PatientForm initial={EMPTY_PATIENT} cancelHref="/patients" inputMode={await inputModeOf(user.id)} />
     </>
   );
 }

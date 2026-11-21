@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getFormatter, getTranslations } from 'next-intl/server';
+import { InkNote } from '@/components/InkNote';
 import { scheduleParts } from '@pain-therapy/shared/home-program';
 import { pdfViewHref } from '@pain-therapy/shared/pdf-view';
 import { treatmentOf } from '@/lib/record';
@@ -43,7 +44,7 @@ export default async function Treatment({ params }: { params: Promise<{ id: stri
         {t('since', { date: date(tr.startedAt), pain: tr.painStart })}
         {tr.side !== 'UNSPECIFIED' ? ` · ${t(`side_${tr.side}`)}` : ''}
       </p>
-      <p>{tr.diagnosis}</p>
+      {tr.diagnosisInk ? <InkNote svg={tr.diagnosisInk} alt={t('inkAlt')} /> : <p>{tr.diagnosis}</p>}
       {course.length ? (
         <section className="card" aria-labelledby="h_course">
           <h2 id="h_course">{t('course')}</h2>
@@ -80,11 +81,19 @@ export default async function Treatment({ params }: { params: Promise<{ id: stri
           <dl className="kv">
             <div>
               <dt>{t('diagnosis')}</dt>
-              <dd>{c.diagnosis || t('notRecorded')}</dd>
+              <dd>
+                {c.diagnosisInk ? <InkNote svg={c.diagnosisInk} alt={t('inkAlt')} /> : c.diagnosis || t('notRecorded')}
+              </dd>
             </div>
             <div>
               <dt>{t('comparison')}</dt>
-              <dd>{c.comparison || t('notRecorded')}</dd>
+              <dd>
+                {c.comparisonInk ? (
+                  <InkNote svg={c.comparisonInk} alt={t('inkAlt')} />
+                ) : (
+                  c.comparison || t('notRecorded')
+                )}
+              </dd>
             </div>
           </dl>
           {c.points.length ? (
