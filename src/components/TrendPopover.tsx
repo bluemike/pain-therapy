@@ -1,5 +1,6 @@
 'use client';
 import { useRef, type ReactNode } from 'react';
+import { TrendingUp } from 'lucide-react';
 
 /**
  * adherence-overview: trend popup next to the average rating. Native popover (light dismiss, Esc), placed at the
@@ -55,7 +56,7 @@ export function TrendPopover({
   return (
     <>
       <button ref={btn} type="button" className="trendbtn" popoverTarget={id} aria-label={openLabel} title={openLabel}>
-        ↗
+        <TrendingUp size={16} aria-hidden="true" />
       </button>
       <div ref={pop} id={id} popover="auto" className="trendpop" onToggle={(e) => place(e.nativeEvent as ToggleEvent)}>
         <div className="trendpop-head">

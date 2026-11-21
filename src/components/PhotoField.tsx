@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { formatDateTime } from '@/lib/format';
 import { processPhoto, type ProcessedPhoto } from '@/lib/photo-client';
+import { Camera, RotateCcw, X } from 'lucide-react';
 
 /** A photo already saved with the treatment or consultation */
 export type SavedPhoto = { id: string; takenAt: string };
@@ -94,7 +95,7 @@ export function PhotoField({
                 aria-label={gone ? `${t('undoRemove')}: ${at}` : t('remove', { at })}
                 onClick={() => state.toggleRemove(p.id)}
               >
-                {gone ? '↺' : '×'}
+                {gone ? <RotateCcw size={16} aria-hidden="true" /> : <X size={16} aria-hidden="true" />}
               </button>
               <small className="num">{gone ? t('willRemove') : at}</small>
             </li>
@@ -122,7 +123,7 @@ export function PhotoField({
         })}
         <li>
           <label className={`addph${full ? ' off' : ''}`} htmlFor={id}>
-            <span aria-hidden="true">📷</span>
+            <Camera size={22} aria-hidden="true" />
             <span>{t('take')}</span>
             <input
               id={id}

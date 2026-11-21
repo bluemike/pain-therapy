@@ -40,6 +40,7 @@ export function PainSlider({
         max={100}
         step={10}
         value={value ?? 50}
+        style={{ '--pct': `${unset ? 0 : value}%` } as React.CSSProperties}
         aria-label={label}
         aria-valuetext={unset ? t('painUnset') : `${value} %`}
         aria-describedby={describedBy}

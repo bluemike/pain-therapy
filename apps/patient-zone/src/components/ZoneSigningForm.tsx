@@ -6,6 +6,7 @@ import { getStroke } from 'perfect-freehand';
 import type { Block } from '@pain-therapy/shared/consent-blocks';
 import { strokeOptions, type Stroke } from '@pain-therapy/shared/signature';
 import { signAction, type SignState } from '@/app/unterschrift/actions';
+import { Check } from 'lucide-react';
 
 type Consents = { liability: boolean; dataProcessing: boolean; unencryptedEmail: boolean };
 
@@ -175,7 +176,13 @@ export function ZoneSigningForm(props: {
       <section className="card" aria-labelledby="h_consents">
         <h2 id="h_consents">{t('stepConsents')}</h2>
         <p className={read ? 'readok' : 'muted'} aria-live="polite">
-          {read ? `✓ ${t('readDone')}` : t('readHint')}
+          {read ? (
+            <>
+              <Check size={16} aria-hidden="true" /> {t('readDone')}
+            </>
+          ) : (
+            t('readHint')
+          )}
         </p>
         {consentRow('liability', t('consentLiability'), true)}
         {consentRow('dataProcessing', t('consentData'), true)}

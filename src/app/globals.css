@@ -1938,21 +1938,77 @@ table.list tr.click:has(a:focus-visible) td {
 }
 /* pain-input (iteration 11): slider 0 to 100 % in steps of 10, 44 px touch height */
 .painslider {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 12px;
-  flex: 1 1 320px;
-  max-width: 560px;
+  gap: 16px;
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 760px;
 }
+/* iteration 13: own track and a light gold thumb, wide enough to see at once on the iPad */
 .painslider input[type='range'] {
+  --pct: 50%;
   flex: 1 1 auto;
   min-width: 160px;
   height: 44px;
+  min-height: 44px;
   padding: 0;
   border: 0;
   background: transparent;
-  accent-color: var(--gold);
   cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.painslider input[type='range']:focus {
+  outline: none;
+}
+.painslider input[type='range']::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--gold) 0 var(--pct), var(--line) var(--pct) 100%);
+}
+.painslider input[type='range']::-moz-range-track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--line);
+}
+.painslider input[type='range']::-moz-range-progress {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--gold);
+}
+.painslider input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 30px;
+  height: 30px;
+  margin-top: -10px;
+  border-radius: 50%;
+  background: var(--gold-pale);
+  border: 2px solid var(--gold);
+  box-shadow: 0 1px 4px rgba(28, 26, 20, 0.25);
+}
+.painslider input[type='range']::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--gold-pale);
+  border: 2px solid var(--gold);
+  box-shadow: 0 1px 4px rgba(28, 26, 20, 0.25);
+}
+.painslider input[type='range']:focus-visible::-webkit-slider-thumb {
+  outline: 3px solid var(--gold-lt);
+  outline-offset: 2px;
+}
+.painslider input[type='range']:focus-visible::-moz-range-thumb {
+  outline: 3px solid var(--gold-lt);
+  outline-offset: 2px;
+}
+.f.bad .painslider input[type='range'] {
+  background: transparent;
+}
+.f.bad .painslider input[type='range']::-webkit-slider-runnable-track {
+  box-shadow: 0 0 0 2px var(--err);
 }
 .painslider.unset input[type='range'] {
   opacity: 0.45;
@@ -1968,7 +2024,7 @@ table.list tr.click:has(a:focus-visible) td {
 }
 /* The slider sits where the old label column was: no fixed width, wraps on phones instead of overflowing */
 .painrow > .painslider:first-child {
-  width: auto;
+  width: 100%;
   flex-wrap: wrap;
   min-width: 0;
   font-weight: 400;
@@ -1976,7 +2032,6 @@ table.list tr.click:has(a:focus-visible) td {
 }
 @media (max-width: 760px) {
   .painslider {
-    flex: 1 1 100%;
     flex-wrap: wrap;
   }
   .painslider input[type='range'] {
@@ -3324,4 +3379,27 @@ ol.auth-steps button.back:hover .t {
 }
 ol.auth-steps button.back:focus-visible {
   outline: 2px solid var(--gold);
+}
+
+/* iOS Safari gives date inputs an intrinsic width that overflows their grid column (iteration 13, iPad test) */
+input.inp[type='datetime-local'],
+input.inp[type='date'],
+input.inp[type='time'] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+  max-width: 100%;
+  display: block;
+}
+input.inp[type='datetime-local']::-webkit-date-and-time-value {
+  text-align: left;
+}
+/* iteration 13: one icon set (Lucide), in the text colour */
+.addph svg,
+.photos .x svg,
+.trendbtn svg,
+.burger svg,
+.exaudio svg {
+  display: block;
+  flex: none;
 }

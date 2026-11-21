@@ -944,3 +944,13 @@ a.tcard h2 {
   color: var(--muted);
   font-weight: 400;
 }
+
+/* iteration 13: one icon set (Lucide), in the text colour */
+.ico-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.readok svg {
+  vertical-align: -3px;
+}
