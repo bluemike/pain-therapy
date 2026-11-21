@@ -217,7 +217,8 @@
     "consultations": "Sessions",
     "consultationsValue": "{count}, last on {date}",
     "none": "none yet",
-    "pain": "{n} %"
+    "pain": "{n} %",
+    "inkAlt": "Handwritten note by the practice"
   },
   "treatment": {
     "back": "My treatments",
@@ -250,7 +251,8 @@
     "short_su": "Su",
     "variant": "variant {n}",
     "side_LEFT": "left",
-    "side_RIGHT": "right"
+    "side_RIGHT": "right",
+    "inkAlt": "Handwritten note by the practice"
   },
   "documents": {
     "title": "My documents",

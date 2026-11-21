@@ -7,21 +7,24 @@ import { photosOf } from '@/lib/photos';
 import { listRegions, regionGroups, regionLabel } from '@/lib/catalog';
 import { toLocalInput } from '@/lib/format';
 import { TreatmentForm } from '@/components/TreatmentForm';
+import { inputModeOf } from '@/lib/handwriting';
+import { asInk } from '@pain-therapy/shared/ink';
 
 export const dynamic = 'force-dynamic';
 
 /** treatments: Behandlung ändern (no delete) */
 export default async function EditTreatmentPage({ params }: { params: Promise<{ id: string; tid: string }> }) {
-  await requireUser();
+  const user = await requireUser();
   const { id, tid } = await params;
   const tr = await getTreatment(tid);
   if (!tr || tr.patientId !== id) notFound();
-  const [t, tf, locale, regions, photos] = await Promise.all([
+  const [t, tf, locale, regions, photos, inputMode] = await Promise.all([
     getTranslations('treatments'),
     getTranslations('form'),
     getLocale(),
     listRegions(tr.regionId),
     photosOf({ treatmentId: tid, consultationId: null }),
+    inputModeOf(user.id),
   ]);
   const name = `${tr.patient.firstName} ${tr.patient.lastName}`;
   return (
@@ -51,6 +54,8 @@ export default async function EditTreatmentPage({ params }: { params: Promise<{ 
         saved={photos.map((p) => ({ id: p.id, takenAt: p.takenAt.toISOString() }))}
         cancelHref={`/patients/${id}#t-${tid}`}
         regionLocked={tr._count.consultations > 0}
+        diagnosisInk={asInk(tr.diagnosisInk)}
+        inputMode={inputMode}
       />
     </>
   );

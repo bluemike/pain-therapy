@@ -36,7 +36,7 @@ Mockup: https://claude.ai/artifact/Urx2rtseobvZZyy2odHeFN
 
 - Praxis-App: Formulare Behandlung, Sitzung und Patient; Detailansichten; «Mein Profil».
 - Patienten-Zone: Anzeige der Diagnose als Bild im Tab «Behandlungen».
-- `@pain-therapy/shared`: Schreibfläche und SVG-Erzeugung aus der Unterschrift werden gemeinsam genutzt.
-- Datenmodell: neues Feld `User.noteInputMode`, neue Tabelle `HandwrittenNote`. Das Lösch-Skript der Patientendaten nimmt die Tabelle mit.
+- `@pain-therapy/shared`: neues Modul `ink` (Prüfung der Striche, SVG), nutzt die Strichlogik der Unterschrift.
+- Datenmodell: neues Feld `User.noteInputMode` und Json-Spalten für die Handschrift neben den Textfeldern. Export und Löschen einer Praxis nehmen sie mit der Zeile mit.
 - Azure: neue Ressource Document Intelligence (F0) und eine neue Rollenzuweisung «Cognitive Services User» für die Identität der Praxis-App. Diese Rolle muss die Deploy-Identität zuweisen dürfen, was Mike Franz freigeben muss.
 - Kosten: F0 enthält 500 Seiten pro Monat gratis. Darüber wechselt man auf S0 mit etwa USD 1.50 pro 1000 Erkennungen.

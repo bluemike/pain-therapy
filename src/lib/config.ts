@@ -43,6 +43,23 @@ export const config = {
     exerciseLocalDir: process.env.STORAGE_EXERCISE_LOCAL_DIR ?? './data/exercise-media',
     exerciseContainer: process.env.AZURE_STORAGE_EXERCISE_CONTAINER ?? 'exercise-media',
   },
+  /**
+   * Handschrift → Text (iteration 10, design D4, D8): Azure AI Document Intelligence in Switzerland North, called with
+   * the managed identity of the app. Without an endpoint, recognition returns a fixed text outside production
+   * (development, end-to-end tests) and is unavailable in production.
+   */
+  handwriting: {
+    endpoint: (process.env.AZURE_DOCINTEL_ENDPOINT ?? '').replace(/\/$/, ''),
+    // Never inside Azure Container Apps (CONTAINER_APP_NAME is always set there), like devLogin
+    stub:
+      !process.env.CONTAINER_APP_NAME &&
+      (process.env.DOCINTEL_STUB === '1' ||
+        (!process.env.AZURE_DOCINTEL_ENDPOINT && process.env.NODE_ENV !== 'production')),
+    apiVersion: '2024-11-30',
+    maxImageBytes: 4 * 1024 * 1024,
+    timeoutMs: 15000,
+    perUserPerHour: 60,
+  },
   photos: {
     /** Per photo after resizing in the browser (design D5) */
     maxBytes: 5 * 1024 * 1024,

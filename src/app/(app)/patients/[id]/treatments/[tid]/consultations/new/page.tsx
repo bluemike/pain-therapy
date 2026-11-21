@@ -28,6 +28,7 @@ export default async function NewConsultationPage({ params }: { params: Promise<
         painAfter: null,
         sheet: EMPTY_SHEET,
       }}
+      ink={{ diagnosis: defaults.diagnosisInk, comparison: null }}
     />
   );
 }

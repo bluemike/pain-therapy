@@ -8,6 +8,13 @@ import { blobFolder } from './practice';
 import { addPhotoRows, preparePhotos, removePhotoRows, writePhotos, type PhotoUpload } from './photos';
 import type { ConsultationInput, Sheet, TreatmentInput } from './schemas';
 import type { Actor } from './session';
+import { inkColumn, noteForHistory, resolveInk, type InkChange } from './handwriting';
+
+/** Handschrift (iteration 10, design D5): what the form sent for the image next to the text of a remark field */
+type TreatmentInk = { diagnosisInk?: InkChange };
+type ConsultationInk = { diagnosisInk?: InkChange; comparisonInk?: InkChange };
+const KEEP: InkChange = { kind: 'keep' };
+const svgOf = (ink: unknown) => (ink && typeof ink === 'object' ? ((ink as { svg?: string }).svg ?? null) : null);
 
 /** treatments and consultations: every write goes through here and into the audit log (design D1). */
 
@@ -100,21 +107,23 @@ export async function getTreatment(id: string) {
 export async function createTreatment(
   actor: Actor,
   patientId: string,
-  input: TreatmentInput,
+  input: TreatmentInput & TreatmentInk,
   uploads: PhotoUpload[] = [],
 ) {
+  const { diagnosisInk = KEEP, ...values } = input;
+  const ink = resolveInk(null, diagnosisInk, values.diagnosis);
   await assertOpenable(patientId);
   await assertRegion(input.regionId);
   const photos = preparePhotos(await blobFolder(patientId), uploads);
   await writePhotos(photos);
   return db.$transaction(async (tx) => {
     const t = await tx.treatment.create({
-      data: { ...input, patientId, createdBy: actor.name, updatedBy: actor.name },
+      data: { ...values, diagnosisInk: inkColumn(ink), patientId, createdBy: actor.name, updatedBy: actor.name },
     });
     await audit(
       actor,
       'treatment.created',
-      { patientId, after: input.diagnosis, details: ctxOf(t) as Prisma.InputJsonValue },
+      { patientId, after: noteForHistory(values.diagnosis, ink), details: ctxOf(t) as Prisma.InputJsonValue },
       tx,
     );
     await addPhotoRows(tx, actor, photos, { patientId, treatmentId: t.id, details: ctxOf(t) });
@@ -124,9 +133,24 @@ export async function createTreatment(
 
 type Change = { field: string; before: string | null; after: string | null };
 
+/** A remark field is text or a handwriting image; a new image counts as a change even when both are images. */
+function noteChange(
+  changes: Change[],
+  field: string,
+  text: string | null,
+  ink: unknown,
+  nextText: string | null,
+  nextInk: unknown,
+) {
+  const a = str(noteForHistory(text, ink));
+  const b = str(noteForHistory(nextText, nextInk));
+  if (a !== b) changes.push({ field, before: a, after: b });
+  else if (svgOf(ink) !== svgOf(nextInk)) changes.push({ field, before: a, after: '[Handschrift, neu]' });
+}
+
 const str = (v: unknown) => (v === null || v === undefined || v === '' ? null : String(v));
 
-function treatmentChanges(before: Treatment, input: TreatmentInput): Change[] {
+function treatmentChanges(before: Treatment, input: TreatmentInput, ink: unknown): Change[] {
   const changes: Change[] = [];
   const cmp = (field: string, a: string | null, b: string | null) => {
     if (a !== b) changes.push({ field, before: a, after: b });
@@ -134,7 +158,7 @@ function treatmentChanges(before: Treatment, input: TreatmentInput): Change[] {
   cmp('startedAt', formatDateTime(before.startedAt), formatDateTime(input.startedAt));
   cmp('regionId', str(before.regionId), str(input.regionId));
   cmp('side', before.side, input.side);
-  cmp('diagnosis', before.diagnosis, input.diagnosis);
+  noteChange(changes, 'diagnosis', before.diagnosis, before.diagnosisInk, input.diagnosis, ink);
   cmp('painStart', str(before.painStart), str(input.painStart));
   return changes;
 }
@@ -143,11 +167,13 @@ function treatmentChanges(before: Treatment, input: TreatmentInput): Change[] {
 export async function updateTreatment(
   actor: Actor,
   id: string,
-  input: TreatmentInput,
+  inputWithInk: TreatmentInput & TreatmentInk,
   photoChanges: { add?: PhotoUpload[]; remove?: string[] } = {},
 ) {
+  const { diagnosisInk = KEEP, ...input } = inputWithInk;
   const existing = await db.treatment.findUnique({ where: { id } });
   if (!existing) throw new TreatmentError('notFound');
+  const ink = resolveInk(existing.diagnosisInk, diagnosisInk, input.diagnosis);
   // Behandlung nach der ersten Sitzung: the sheets hang off the area and the side (iteration 8, design D4), and no
   // session may predate the start
   const first = await db.consultation.findFirst({
@@ -161,10 +187,13 @@ export async function updateTreatment(
   if (input.regionId !== existing.regionId) await assertRegion(input.regionId, existing.regionId);
   const photos = preparePhotos(await blobFolder(existing.patientId), photoChanges.add ?? []);
   await writePhotos(photos);
-  const changes = treatmentChanges(existing, input);
+  const changes = treatmentChanges(existing, input, ink);
   return db.$transaction(async (tx) => {
     const t = changes.length
-      ? await tx.treatment.update({ where: { id }, data: { ...input, updatedBy: actor.name } })
+      ? await tx.treatment.update({
+          where: { id },
+          data: { ...input, diagnosisInk: inkColumn(ink), updatedBy: actor.name },
+        })
       : existing;
     const details = ctxOf(t) as Prisma.InputJsonValue;
     for (const c of changes) await audit(actor, 'treatment.updated', { patientId: t.patientId, ...c, details }, tx);
@@ -234,16 +263,17 @@ export async function newConsultationDefaults(treatmentId: string) {
   const t = await db.treatment.findUnique({ where: { id: treatmentId } });
   if (!t) throw new TreatmentError('notFound');
   const last = await db.consultation.findFirst({ where: { treatmentId }, orderBy: { number: 'desc' } });
-  return { diagnosis: t.diagnosis, nextNumber: (last?.number ?? 0) + 1 };
+  return { diagnosis: t.diagnosis, diagnosisInk: t.diagnosisInk, nextNumber: (last?.number ?? 0) + 1 };
 }
 
 /** consultations: Konsultation eröffnen. The number is assigned in the same transaction and never changes (D4). */
 export async function createConsultation(
   actor: Actor,
   treatmentId: string,
-  input: ConsultationInput,
+  inputWithInk: ConsultationInput & ConsultationInk,
   uploads: PhotoUpload[] = [],
 ) {
+  const { diagnosisInk = KEEP, comparisonInk = KEEP, ...input } = inputWithInk;
   const t = await db.treatment.findUnique({ where: { id: treatmentId } });
   if (!t) throw new TreatmentError('notFound');
   await assertOpenable(t.patientId);
@@ -261,9 +291,12 @@ export async function createConsultation(
         number: (last._max.number ?? 0) + 1,
         at: input.at,
         diagnosis: input.diagnosis,
+        // The new session takes the treatment's handwriting as a proposal while the form keeps it ("keep")
+        diagnosisInk: inkColumn(resolveInk(t.diagnosisInk, diagnosisInk, input.diagnosis)),
         painBefore: input.painBefore,
         painAfter: input.painAfter,
         comparison: input.comparison,
+        comparisonInk: inkColumn(resolveInk(null, comparisonInk, input.comparison)),
         createdBy: actor.name,
         updatedBy: actor.name,
         ...sheetRows(input.sheet),
@@ -327,7 +360,14 @@ export function sheetOf(c: Pick<Stored, 'points' | 'exercises' | 'home'>): Sheet
  * Field-by-field changes of a session for the history. Sheet fields are named "point:<id>:<field>",
  * "exercise:<code>:<field>" and "home:<code>:<field>" (Selbstausführung).
  */
-export function consultationChanges(before: Stored, input: ConsultationInput): Change[] {
+export function consultationChanges(
+  before: Stored,
+  input: ConsultationInput,
+  ink: { diagnosis: unknown; comparison: unknown } = {
+    diagnosis: before.diagnosisInk,
+    comparison: before.comparisonInk,
+  },
+): Change[] {
   const changes: Change[] = [];
   const cmp = (field: string, a: unknown, b: unknown) => {
     const x = str(a);
@@ -335,10 +375,10 @@ export function consultationChanges(before: Stored, input: ConsultationInput): C
     if (x !== y) changes.push({ field, before: x, after: y });
   };
   cmp('at', formatDateTime(before.at), formatDateTime(input.at));
-  cmp('diagnosis', before.diagnosis, input.diagnosis);
+  noteChange(changes, 'diagnosis', before.diagnosis, before.diagnosisInk, input.diagnosis, ink.diagnosis);
   cmp('painBefore', before.painBefore, input.painBefore);
   cmp('painAfter', before.painAfter, input.painAfter);
-  cmp('comparison', before.comparison, input.comparison);
+  noteChange(changes, 'comparison', before.comparison, before.comparisonInk, input.comparison, ink.comparison);
   const old = sheetOf(before);
   const next = input.sheet;
   const ids = [...new Set([...old.points, ...next.points].map((p) => p.pointId))];
@@ -373,17 +413,22 @@ export function consultationChanges(before: Stored, input: ConsultationInput): C
 export async function updateConsultation(
   actor: Actor,
   id: string,
-  input: ConsultationInput,
+  inputWithInk: ConsultationInput & ConsultationInk,
   photoChanges: { add?: PhotoUpload[]; remove?: string[] } = {},
 ) {
+  const { diagnosisInk = KEEP, comparisonInk = KEEP, ...input } = inputWithInk;
   const existing = await getConsultation(id);
   if (!existing) throw new TreatmentError('notFound');
+  const ink = {
+    diagnosis: resolveInk(existing.diagnosisInk, diagnosisInk, input.diagnosis),
+    comparison: resolveInk(existing.comparisonInk, comparisonInk, input.comparison),
+  };
   const t = existing.treatment;
   assertSide(t.side, input.sheet);
   await assertCatalog(input.sheet);
   const photos = preparePhotos(await blobFolder(t.patientId), photoChanges.add ?? []);
   await writePhotos(photos);
-  const changes = consultationChanges(existing, input);
+  const changes = consultationChanges(existing, input, ink);
   // exercise-log (iteration 4, design D8): entries of the patient point to their prescription, which therefore stays
   const keep = new Set(input.sheet.home.map((h) => h.code));
   const removed = existing.home.map((h) => h.exerciseCode).filter((code) => !keep.has(code));
@@ -412,9 +457,11 @@ export async function updateConsultation(
         data: {
           at: input.at,
           diagnosis: input.diagnosis,
+          diagnosisInk: inkColumn(ink.diagnosis),
           painBefore: input.painBefore,
           painAfter: input.painAfter,
           comparison: input.comparison,
+          comparisonInk: inkColumn(ink.comparison),
           updatedBy: actor.name,
           ...rows,
         },

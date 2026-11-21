@@ -12,6 +12,7 @@ import { deliverEmail, requestResend } from '@/lib/signing';
 import { publishVersion } from '@/lib/consent-texts';
 import { formatDate } from '@/lib/format';
 import { LOCALE_COOKIE } from '@/i18n/request';
+import { inkChangeFrom, InkError, type InkChange } from '@/lib/handwriting';
 
 export type PatientFormState = {
   errors?: Record<string, string>;
@@ -24,6 +25,13 @@ export async function savePatient(_prev: PatientFormState, fd: FormData): Promis
   const actor = await requireUser();
   const id = String(fd.get('id') ?? '');
   const values = formDataToObject(fd);
+  let ink: InkChange;
+  try {
+    ink = inkChangeFrom(fd, 'furtherDiagnoses');
+  } catch (e) {
+    if (!(e instanceof InkError)) throw e;
+    return { errors: { furtherDiagnoses: e.code }, values };
+  }
   const parsed = patientSchema.safeParse(values);
   if (!parsed.success) return { errors: fieldErrors(parsed.error), values };
   if (!id) {
@@ -41,10 +49,10 @@ export async function savePatient(_prev: PatientFormState, fd: FormData): Promis
           })),
         };
     }
-    const created = await createPatient(actor, parsed.data);
+    const created = await createPatient(actor, parsed.data, ink);
     redirect(`/patients/${created.id}?flash=created`);
   }
-  await updatePatient(actor, id, parsed.data);
+  await updatePatient(actor, id, parsed.data, ink);
   redirect(`/patients/${id}?flash=saved`);
 }
 

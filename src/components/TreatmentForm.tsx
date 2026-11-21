@@ -7,6 +7,8 @@ import { saveTreatment, type TreatmentFormState } from '@/app/(app)/treatment-ac
 import { SIDES } from '@/lib/schemas';
 import { PainSlider } from './PainSlider';
 import { PhotoField, usePhotos, type SavedPhoto } from './PhotoField';
+import { NoteInput } from './NoteInput';
+import type { Ink, InputMode } from '@pain-therapy/shared/ink';
 
 export type TreatmentValues = {
   startedAt: string;
@@ -28,6 +30,8 @@ export function TreatmentForm({
   saved,
   cancelHref,
   regionLocked = false,
+  diagnosisInk = null,
+  inputMode = 'KEYBOARD',
 }: {
   patientId: string;
   id?: string;
@@ -37,6 +41,10 @@ export function TreatmentForm({
   cancelHref: string;
   /** after the first session the Schmerzbereich and the side are fixed (the sheets hang off them) */
   regionLocked?: boolean;
+  /** Diagnose als Handschrift (iteration 10) */
+  diagnosisInk?: Ink | null;
+  /** Eingabe bei Bemerkungen of the user (iteration 10, design D3) */
+  inputMode?: InputMode;
 }) {
   const t = useTranslations('treatments');
   const tc = useTranslations('common');
@@ -176,7 +184,16 @@ export function TreatmentForm({
             />
           ))}
           {field('diagnosis', t('diagnosis'), 'w6', (c) => (
-            <textarea {...c} />
+            <NoteInput
+              field="treatment.diagnosis"
+              name="diagnosis"
+              value={v.diagnosis}
+              onChange={(diagnosis) => setV((prev) => ({ ...prev, diagnosis }))}
+              ink={diagnosisInk}
+              defaultMode={inputMode}
+              label={t('diagnosis')}
+              textProps={c}
+            />
           ))}
           <div className={`f w6 ${errors.photos ? 'bad' : ''}`}>
             <span className="l">{t('photos')}</span>

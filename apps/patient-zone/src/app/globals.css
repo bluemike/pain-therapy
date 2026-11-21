@@ -944,3 +944,17 @@ a.tcard h2 {
   color: var(--muted);
   font-weight: 400;
 }
+
+/* Handschrift der Praxis (iteration 10, design D6): light paper in both themes */
+.ink {
+  margin: 4px 0 0;
+}
+.ink img {
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  height: auto;
+  background: #fff;
+  border: 1px solid var(--line, #e2d9c4);
+  border-radius: 6px;
+}
