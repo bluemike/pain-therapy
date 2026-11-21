@@ -93,7 +93,7 @@ export async function today(s: ProgramSession, ref = new Date()) {
         : null,
     };
   });
-  return { items, open: openToday(s.program.prescriptions, entries, ref) };
+  return { items, entries, open: openToday(s.program.prescriptions, entries, ref) };
 }
 
 export const nameIn = (x: { nameDe: string; nameEn: string }, language: Language) =>
@@ -198,14 +198,17 @@ export async function createEntry(
  * executions of the daily exercises of that day as done, without rating, at now for today and at 12:00 (on the day
  * of the consultation its time) for a past day. Entries already recorded stay unchanged.
  */
-export async function quickEntry(s: ProgramSession, now = new Date(), day?: string) {
+export async function quickEntry(s: ProgramSession, now = new Date(), day?: string, code?: string) {
   const at = day ? dayReference(day, s.program.consultationAt, now) : now;
   if (performedAtProblem(at, s.program.consultationAt, now)) return 0;
   const entries = await db.exerciseLogEntry.findMany({
     where: { patientId: s.patient.id, consultationId: s.program.consultationId, deletedAt: null },
     select: { exerciseCode: true, performedAt: true, done: true, rating: true },
   });
-  const open = openToday(s.program.prescriptions, entries, at);
+  // "Gemacht" on one card (iteration 14): one open execution of that exercise only
+  const open = openToday(s.program.prescriptions, entries, at)
+    .filter((o) => !code || o.exerciseCode === code)
+    .map((o) => (code ? { ...o, count: 1 } : o));
   let count = 0;
   await db.$transaction(async (tx) => {
     for (const o of open)
@@ -308,6 +311,20 @@ export async function deleteEntry(s: ProgramSession, id: string, now = new Date(
 
 /** The image bands of FRM, Standardübung and Varianten (iteration 8, design D2) */
 export const BANDS = ['frm', 'std', 'var'] as const;
+export const AUDIO_PARTS = ['frm-audio', 'epd-audio'] as const;
+export type AudioPart = (typeof AUDIO_PARTS)[number];
+
+/**
+ * Recording of FRM or of the prescribed EPD (Standardübung or the chosen variant) of an exercise of the active
+ * programs (iteration 14, "Anhören" in the zone): file names as in the practice app (exercise-sheets.ts).
+ */
+export function audioOf(s: ProgramSession, code: string, part: AudioPart, treatmentId?: string | null) {
+  const programs = treatmentId ? s.programs.filter((x) => x.treatmentId === treatmentId) : s.programs;
+  const p = programs.flatMap((x) => x.prescriptions).find((x) => x.exerciseCode === code);
+  if (!p) return null;
+  if (part === 'frm-audio') return `${code}-frm.mp3`;
+  return p.variant ? `${code}-V${p.variant}.mp3` : `${code}-std.mp3`;
+}
 export type Band = (typeof BANDS)[number];
 
 /**

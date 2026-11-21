@@ -142,11 +142,12 @@ test.describe('patient zone', () => {
     await expect(entries.first()).toContainText('7/10');
     await expect(entries.first()).toContainText('Rechte Seite spannt');
 
-    // Schnelleintrag: the open execution of 2A today
-    await patient.getByRole('button', { name: 'Alle heutigen Übungen erledigt' }).click();
-    await expect(patient.getByText(/1 Ausführung als gemacht erfasst/)).toBeVisible();
+    // Schnelleintrag with "Gemacht" on the card (iteration 14): the open execution of 2A today
+    await patient.getByRole('button', { name: '2A als gemacht erfassen' }).click();
+    await expect(patient.getByText('2A als gemacht erfasst.', { exact: false })).toBeVisible();
     await expect(entries).toHaveCount(2);
-    await expect(patient.getByRole('button', { name: 'Alle heutigen Übungen erledigt' })).toHaveCount(0);
+    await expect(patient.getByRole('button', { name: '2A erledigt' })).toBeDisabled();
+    await expect(patient.getByText('Heute 2 von 2 Ausführungen erfasst.')).toBeVisible();
 
     // Korrektur innerhalb von 24 Stunden: 7/10 becomes 5/10
     const rated = entries.filter({ hasText: '7/10' });
