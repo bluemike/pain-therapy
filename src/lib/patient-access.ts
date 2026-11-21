@@ -17,6 +17,7 @@ import { emailConsentOf } from './email-consent';
 import { formatDateZurich } from './format';
 import { translator } from './i18n-server';
 import { sendWithRetry } from './mail';
+import { documentsUrl, practiceSender } from './practice-mail';
 import { qrSvg, renderAccessSheetPdf } from './access-sheet-pdf';
 import type { Actor } from './session';
 
@@ -75,6 +76,31 @@ export async function issueAccessLink(
     tx,
   );
   return { link, url: linkUrl(config.patientZone.url, token) };
+}
+
+/**
+ * The link a document email carries (iteration 12, design D7): a new link replacing the valid one, with its delivery
+ * row (status follows the email). Null without the zone or when no link may be issued; then no email goes out.
+ */
+export async function issueMailLink(
+  actor: Pick<Actor, 'id' | 'name'>,
+  patientId: string,
+  recipient: string,
+  tx: Tx,
+  handoutId: string | null = null,
+): Promise<{ url: string; expiresAt: Date } | null> {
+  if (!zoneEnabled()) return null;
+  try {
+    const { link, url } = await issueAccessLink(actor, patientId, tx);
+    await tx.accessLinkDelivery.create({
+      data: { linkId: link.id, channel: 'EMAIL', handoutId, recipient, status: 'PENDING', requestedBy: actor.name },
+    });
+    await audit(actor, 'accessLink.sent', { patientId, after: recipient, details: { linkId: link.id, handoutId } }, tx);
+    return { url, expiresAt: link.expiresAt };
+  } catch (e) {
+    if (e instanceof AccessLinkError) return null;
+    throw e;
+  }
 }
 
 /** Email, QR code and access sheet all need the patient's name, language and address */
@@ -162,15 +188,41 @@ export async function inviteToSign(actor: Actor, patientId: string, channel: 'EM
 }
 
 /** Invitation to sign, in the patient's language: practice, request, link, date of birth; no health data */
-export function signatureInviteEmail(language: 'de' | 'en', name: string, url: string) {
+export function signatureInviteEmail(language: 'de' | 'en', name: string, url: string, practice: string) {
   const t = translator(language, 'signatureInviteEmail');
-  return { subject: t('subject'), text: t('body', { name, url }) };
+  return { subject: t('subject'), text: t('body', { name, url, practice }), bold: [practice] };
 }
 
 /** Text of the email with the link, in the patient's language (Text von der Praxis zu bestätigen, task 10.3) */
-export function accessLinkEmail(language: 'de' | 'en', name: string, url: string, expiresAt: Date) {
+export function accessLinkEmail(language: 'de' | 'en', name: string, url: string, expiresAt: Date, practice: string) {
   const t = translator(language, 'accessLinkEmail');
-  return { subject: t('subject'), text: t('body', { name, url, date: formatDateZurich(expiresAt) }) };
+  return {
+    subject: t('subject'),
+    text: t('body', { name, url, practice, date: formatDateZurich(expiresAt) }),
+    bold: [practice],
+  };
+}
+
+/**
+ * A new document in the zone (iteration 12, design D7): only the practice name and the link, no document title, no
+ * diagnosis, no attachment. The link opens «Dokumente», or with `home` the start page (an exercise sheet comes with a
+ * new home program to record).
+ */
+export function documentEmail(
+  language: 'de' | 'en',
+  name: string,
+  url: string,
+  expiresAt: Date,
+  practice: string,
+  opts: { home?: boolean } = {},
+) {
+  const t = translator(language, 'documentEmail');
+  const link = opts.home ? url : documentsUrl(url);
+  return {
+    subject: t('subject', { practice }),
+    text: t('body', { name, practice, url: link, date: formatDateZurich(expiresAt) }),
+    bold: [practice],
+  };
 }
 
 /** Sends the link by email (no attachment) with the retries of the exercise sheet; status on the delivery row. */
@@ -180,12 +232,13 @@ export async function deliverAccessLink(deliveryId: string, url: string, opts: {
     return delivery;
   const p = await patientOf(delivery.link.patientId);
   const name = `${p.firstName} ${p.lastName}`;
+  const sender = await practiceSender();
   const mail =
     delivery.purpose === 'SIGNATURE'
-      ? signatureInviteEmail(p.preferredLanguage, name, url)
-      : accessLinkEmail(p.preferredLanguage, name, url, delivery.link.expiresAt);
+      ? signatureInviteEmail(p.preferredLanguage, name, url, sender.fromName)
+      : accessLinkEmail(p.preferredLanguage, name, url, delivery.link.expiresAt, sender.fromName);
   const result = await sendWithRetry(
-    { to: delivery.recipient, ...mail },
+    { to: delivery.recipient, ...sender, ...mail },
     {
       retryDelayMs: opts.retryDelayMs,
       onFailedAttempt: async (attempt, lastError) => {

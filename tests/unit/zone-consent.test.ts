@@ -17,7 +17,7 @@ import {
   latestLinkOf,
   linkStatusOf,
 } from '@/lib/patient-access';
-import { deliverEmail, finalizePending, finalizeSignature, resolvePatientNote } from '@/lib/signing';
+import { finalizePending, finalizeSignature, resolvePatientNote } from '@/lib/signing';
 import { sha256 } from '@/lib/storage';
 import { setMailer, type OutgoingMail } from '@/lib/mail';
 import type { Actor } from '@/lib/session';
@@ -153,7 +153,6 @@ describe('invitation (Zur Unterschrift einladen)', () => {
     expect(sent[0]).toMatchObject({ to: 'anna@example.ch', subject: 'Please sign the liability waiver' });
     expect(sent[0].text).toContain(r.url);
     expect(sent[0].text).toContain('date of birth');
-    expect(sent[0].attachment).toBeUndefined();
     expect(sent[0].text).not.toMatch(/Haftungsausschluss\n|Diagnos/);
     expect(await inviteStatusOf(p.id, true)).toMatchObject({ kind: 'sent', channel: 'EMAIL' });
     const events = await db.auditEvent.findMany({ where: { patientId: p.id }, orderBy: { at: 'asc' } });
@@ -216,11 +215,10 @@ describe('PDF of a signature from the zone (PDF, Archiv und Zustellung)', () => 
     const done = [a, b].filter(Boolean);
     expect(done).toHaveLength(1);
     expect(await db.signedDocument.count({ where: { sessionId: sid } })).toBe(1);
-    const { document, delivery } = done[0]!;
+    const { document } = done[0]!;
     const file = await readFile(path.join(process.env.STORAGE_LOCAL_DIR!, document.blobPath));
     expect(sha256(file)).toBe(document.sha256);
     // zone-documents: the patient finds the PDF under "Dokumente" in the zone
-    expect(delivery).toBeNull();
     expect(await db.emailDelivery.count({ where: { documentId: document.id } })).toBe(0);
     expect(sent).toHaveLength(0);
     expect(await finalizeSignature(sid)).toBeNull();
@@ -229,27 +227,16 @@ describe('PDF of a signature from the zone (PDF, Archiv und Zustellung)', () => 
     expect(rec?.documents[0].session.channel).toBe('PATIENT_ZONE');
   });
 
-  it('still emails the PDF with consent when no patient zone is configured', async () => {
-    const p = await newPatient();
-    const sid = await signInZone(p.id, { email: true });
-    config.patientZone.url = '';
-    const r = await finalizeSignature(sid);
-    expect(r?.delivery).toMatchObject({
-      status: 'PENDING',
-      recipient: 'anna@example.ch',
-      requestedBy: 'Patienten-Zone',
-    });
-    await deliverEmail(r!.delivery!.id, { retryDelayMs: 1 });
-    expect(sent).toHaveLength(1);
-    expect(sent[0].attachment).toBeDefined();
-  });
-
-  it('records no consent without the zone and without consent (Ohne E-Mail-Einwilligung)', async () => {
-    const p = await newPatient();
-    const sid = await signInZone(p.id, { email: false });
-    config.patientZone.url = '';
-    const r = await finalizeSignature(sid);
-    expect(r?.delivery?.status).toBe('SKIPPED_NO_CONSENT');
+  it('sends no email at signing, also without the zone (iteration 12, design D7)', async () => {
+    for (const email of [true, false]) {
+      const p = await newPatient();
+      const sid = await signInZone(p.id, { email });
+      config.patientZone.url = '';
+      const r = await finalizeSignature(sid);
+      expect(await db.emailDelivery.count({ where: { documentId: r!.document.id } })).toBe(0);
+      config.patientZone.url = ZONE;
+    }
+    expect(sent).toHaveLength(0);
   });
 
   it('accepts only signed calls on the internal route', async () => {

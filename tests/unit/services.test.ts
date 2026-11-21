@@ -16,6 +16,7 @@ import { currentVersionNumber, INITIAL_TEXTS, publishVersion } from '@/lib/conse
 import { recordSignature, SignatureRecordError } from '@pain-therapy/shared/signing';
 import { deliverEmail, finalizeSignature, requestResend } from '@/lib/signing';
 import { setMailer, type OutgoingMail } from '@/lib/mail';
+import { config } from '@/lib/config';
 import { sha256 } from '@/lib/storage';
 import { EMPTY_PATIENT } from '@/lib/schemas';
 import type { Actor } from '@/lib/session';
@@ -71,7 +72,11 @@ async function completeSigning(
   return (await finalizeSignature(sid))!;
 }
 
-afterEach(() => setMailer(null));
+const zoneUrl = config.patientZone.url;
+afterEach(() => {
+  setMailer(null);
+  config.patientZone.url = zoneUrl;
+});
 
 describe('dashboard', () => {
   it('shows zeros on an empty system (dashboard: Leeres System)', async () => {
@@ -153,9 +158,10 @@ describe('patients and audit log', () => {
 });
 
 describe('signing, PDF archive and email', () => {
-  it('archives the PDF with matching checksum and emails it with consent (task 6.6, 7.2, 7.3)', async () => {
+  it('archives the PDF with matching checksum and emails only a link to it with consent (task 6.6, 7.2, 7.3; iteration 12, D7)', async () => {
     const sent: OutgoingMail[] = [];
     setMailer({ send: async (m) => void sent.push(m) });
+    config.patientZone.url = 'https://patient.example.test';
     const p = await createPatient(
       actor,
       form({
@@ -168,16 +174,25 @@ describe('signing, PDF archive and email', () => {
     );
     const s = await startSigning(p.id);
     expect(s.language).toBe('en');
-    const signed = await completeSigning(s.id, { ...signInput(true), note: 'New mobile' });
-    const document = signed.document!;
-    const delivery = signed.delivery!;
+    const { document } = await completeSigning(s.id, { ...signInput(true), note: 'New mobile' });
     const file = await readFile(path.join(process.env.STORAGE_LOCAL_DIR!, document.blobPath));
     expect(sha256(file)).toBe(document.sha256);
     expect(file.subarray(0, 5).toString()).toBe('%PDF-');
-    await deliverEmail(delivery.id, { retryDelayMs: 1 });
+    // Signed in front of the practice or in the zone: no email at signing
+    expect(await db.emailDelivery.count({ where: { documentId: document.id } })).toBe(0);
+    const { delivery, access } = await requestResend(actor, document.id);
+    expect(access?.url).toMatch(/^https:\/\/patient\.example\.test\/l\/[A-Za-z0-9_-]{43}$/);
+    await deliverEmail(delivery.id, { retryDelayMs: 1, access: access! });
     expect(sent).toHaveLength(1);
-    expect(sent[0].to).toBe('sarah@example.com');
-    expect(sent[0].subject).toBe(`Your signed liability waiver (${document.documentNumber})`);
+    expect(sent[0]).toMatchObject({
+      to: 'sarah@example.com',
+      subject: 'New document from Pain Therapy Test',
+      fromName: 'Pain Therapy Test',
+      replyTo: 'praxis@example.test',
+    });
+    expect(sent[0].text).toContain(`${access!.url}?tab=dokumente`);
+    expect(sent[0].text).not.toMatch(/waiver|PT-\d{4}/i);
+    expect(Object.keys(sent[0]).sort()).toEqual(['bold', 'fromName', 'replyTo', 'subject', 'text', 'to']);
     const consents = await db.consent.findMany({ where: { sessionId: s.id } });
     expect(consents.map((c) => [c.kind, c.granted]).sort()).toEqual([
       ['DATA_PROCESSING', true],
@@ -193,7 +208,7 @@ describe('signing, PDF archive and email', () => {
     );
   });
 
-  it('sends nothing without email consent', async () => {
+  it('sends nothing without email consent, and nothing without the patient zone', async () => {
     const sent: OutgoingMail[] = [];
     setMailer({ send: async (m) => void sent.push(m) });
     const p = await createPatient(
@@ -201,9 +216,21 @@ describe('signing, PDF archive and email', () => {
       form({ firstName: 'Marco', lastName: 'Caduff', dateOfBirth: '08.06.1972', email: 'm@example.ch' }),
     );
     const s = await startSigning(p.id);
-    const { delivery } = await completeSigning(s.id, signInput(false));
-    expect(delivery!.status).toBe('SKIPPED_NO_CONSENT');
-    await deliverEmail(delivery!.id, { retryDelayMs: 1 });
+    const { document } = await completeSigning(s.id, signInput(false));
+    const { delivery } = await requestResend(actor, document.id);
+    expect(delivery.status).toBe('SKIPPED_NO_CONSENT');
+    await deliverEmail(delivery.id, { retryDelayMs: 1 });
+    expect(sent).toHaveLength(0);
+
+    const q = await createPatient(
+      actor,
+      form({ firstName: 'Nina', lastName: 'Caduff', dateOfBirth: '08.06.1973', email: 'n@example.ch' }),
+    );
+    const t = await startSigning(q.id);
+    config.patientZone.url = '';
+    const other = await requestResend(actor, (await completeSigning(t.id, signInput(true))).document.id);
+    expect(other.access).toBeNull();
+    expect(await deliverEmail(other.delivery.id, { retryDelayMs: 1 })).toMatchObject({ status: 'FAILED' });
     expect(sent).toHaveLength(0);
   });
 
@@ -212,22 +239,24 @@ describe('signing, PDF archive and email', () => {
     setMailer({
       send: async () => {
         calls++;
-        throw new Error('Graph 503');
+        throw new Error('SMTP 451');
       },
     });
+    config.patientZone.url = 'https://patient.example.test';
     const p = await createPatient(
       actor,
       form({ firstName: 'Laura', lastName: 'Bianchi', dateOfBirth: '14.09.1988', email: 'laura@example.ch' }),
     );
     const s = await startSigning(p.id);
-    const { document, delivery } = await completeSigning(s.id, signInput(true));
-    const failed = await deliverEmail(delivery!.id, { retryDelayMs: 1 });
+    const { document } = await completeSigning(s.id, signInput(true));
+    const first = await requestResend(actor, document.id);
+    const failed = await deliverEmail(first.delivery.id, { retryDelayMs: 1, access: first.access! });
     expect(calls).toBe(3);
     expect(failed?.status).toBe('FAILED');
     expect(failed?.attempts).toBe(3);
     setMailer({ send: async () => {} });
-    const again = await requestResend(actor, document!.id);
-    expect((await deliverEmail(again.id, { retryDelayMs: 1 }))?.status).toBe('SENT');
+    const again = await requestResend(actor, document.id);
+    expect((await deliverEmail(again.delivery.id, { retryDelayMs: 1, access: again.access! }))?.status).toBe('SENT');
   });
 
   it('aborts open iPad sessions and keeps signed ones (Iteration 6, signing-zone-only, task 1.3)', async () => {

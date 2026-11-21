@@ -95,8 +95,21 @@ header.top {
   color: var(--gold);
   font-style: normal;
 }
+.plogo {
+  display: block;
+  height: 36px;
+  max-width: 140px;
+  object-fit: contain;
+  /* Logos are usually dark on transparent: a light plate keeps them readable on the dark bar */
+  background: #fff;
+  border-radius: 6px;
+  padding: 3px 6px;
+}
 .appname {
   flex: 1;
+}
+.foot .platform {
+  font-size: 12px;
 }
 .logout .linkbtn {
   color: var(--bar-fg);

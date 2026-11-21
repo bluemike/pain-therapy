@@ -565,7 +565,8 @@ async function DeliveryLine({
       {tc('print')}
     </PdfLink>
   );
-  const resend = zoneEnabled() ? null : (
+  // Iteration 12, design D7: a resend carries a new link to the zone, so only with the zone
+  const resend = !zoneEnabled() ? null : (
     <form action={resendEmail} className="inline">
       <input type="hidden" name="documentId" value={documentId} />
       <input type="hidden" name="patientId" value={patientId} />

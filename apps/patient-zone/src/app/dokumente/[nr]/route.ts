@@ -19,7 +19,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ nr: str
   const { nr } = await params;
   const notFound = () => new Response('Not found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
   const doc = await documentOf(s, nr);
-  const data = doc ? await documentStore().get(doc.path) : null;
+  let data: Buffer | null = null;
+  for (const path of doc?.paths ?? []) {
+    data = await documentStore().get(path);
+    if (data) break;
+  }
   if (!doc || !data) return notFound();
   await zoneAudit('document.viewedInZone', {
     patientId: s.patient.id,

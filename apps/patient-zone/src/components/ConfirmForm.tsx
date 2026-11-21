@@ -13,7 +13,7 @@ import { Invalid } from './Invalid';
  * zone-login (iteration 9): after 2 digits of day and month the cursor moves on, deleting in an empty field goes
  * back, and 4 digits of the year submit the form.
  */
-export function ConfirmForm({ token, locked }: { token: string; locked: boolean }) {
+export function ConfirmForm({ token, locked, tab }: { token: string; locked: boolean; tab?: string }) {
   const t = useTranslations('confirm');
   const [state, action, pending] = useActionState<ConfirmState, FormData>(confirmAction, {});
   const form = useRef<HTMLFormElement>(null);
@@ -49,6 +49,7 @@ export function ConfirmForm({ token, locked }: { token: string; locked: boolean 
   return (
     <form ref={form} action={action} className="confirm" noValidate>
       <input type="hidden" name="token" value={token} />
+      {tab ? <input type="hidden" name="tab" value={tab} /> : null}
       {error ? (
         <div className="banner err" role="alert">
           {t(error)}

@@ -1,26 +1,32 @@
 import type { ConsentKind, Language } from '@prisma/client';
-import { ZONE_ACTOR } from '@pain-therapy/shared/access';
 import { signatureSize, zonePlace } from '@pain-therapy/shared/signing';
-import { config } from './config';
-import { db } from './db';
+import { runInPractice } from '@pain-therapy/shared/practice-context';
+import { db, rawDb } from './db';
 import { audit, SYSTEM_ACTOR } from './audit';
+import { blobFolder, requirePractice } from './practice';
 import { formatDateTime } from './format';
-import { translator } from './i18n-server';
 import { sendWithRetry } from './mail';
+import { practiceSender } from './practice-mail';
+import { documentEmail, issueMailLink } from './patient-access';
+import type { MailAccess } from './handouts';
 import { renderSignedFormPdf } from './pdf';
 import { signatureSvg, type Stroke } from './signature';
 import { documentStore, sha256 } from './storage';
 import type { Actor } from './session';
 
-/** Next human-readable document number PT-YYYY-NNNNN, shared by signed forms and exercise sheets */
+/**
+ * Next human-readable document number <Kürzel>-YYYY-NNNNN of the current practice, shared by signed forms and
+ * exercise sheets (iteration 12, design D5: counter and prefix per practice)
+ */
 export async function nextDocumentNumber(): Promise<string> {
+  const practice = await requirePractice();
   const year = new Date().getUTCFullYear();
   const row = await db.documentCounter.upsert({
-    where: { year },
+    where: { practiceId_year: { practiceId: practice.id, year } },
     create: { year, last: 1 },
     update: { last: { increment: 1 } },
   });
-  return `PT-${year}-${String(row.last).padStart(5, '0')}`;
+  return `${practice.documentPrefix}-${year}-${String(row.last).padStart(5, '0')}`;
 }
 
 /**
@@ -59,22 +65,16 @@ export async function finalizeSignature(sid: string) {
         patient,
         consents,
         note: session.patientNote,
-        place: session.place ?? (zone ? zonePlace(session.language) : ''),
+        place: session.place ?? (zone ? zonePlace(session.language) : (await requirePractice()).defaultPlace),
         signedAtText: formatDateTime(session.completedAt ?? new Date()),
         signature: { paths, width: size.width, height: size.height },
         online:
           zone && session.zoneSession ? { confirmedAtText: formatDateTime(session.zoneSession.createdAt) } : undefined,
       });
       const hash = sha256(pdf);
-      const blobPath = `${patient.id}/${documentNumber}.pdf`;
+      const blobPath = `${await blobFolder(patient.id)}/${documentNumber}.pdf`;
       await documentStore().put(blobPath, pdf, 'application/pdf');
 
-      const emailStatus = !consents.unencryptedEmail
-        ? 'SKIPPED_NO_CONSENT'
-        : !patient.email
-          ? 'SKIPPED_NO_ADDRESS'
-          : 'PENDING';
-      const requestedBy = zone ? ZONE_ACTOR.name : session.startedBy;
       const document = await tx.signedDocument.create({
         data: {
           documentNumber,
@@ -87,17 +87,8 @@ export async function finalizeSignature(sid: string) {
           sizeBytes: pdf.length,
         },
       });
-      // zone-documents (iteration 9, design D4): with the patient zone the document is only there, no email with it
-      const delivery = config.patientZone.url
-        ? null
-        : await tx.emailDelivery.create({
-            data: {
-              documentId: document.id,
-              recipient: emailStatus === 'PENDING' ? patient.email : null,
-              status: emailStatus,
-              requestedBy,
-            },
-          });
+      // zone-documents (iteration 9, design D4; iteration 12, design D7): the document is only in the zone, the
+      // patient signed there and sees it at once, so no email goes out
       await audit(
         SYSTEM_ACTOR,
         'document.archived',
@@ -108,7 +99,7 @@ export async function finalizeSignature(sid: string) {
         },
         tx,
       );
-      return { document, delivery };
+      return { document };
     },
     { maxWait: 10_000, timeout: 60_000 },
   );
@@ -119,20 +110,18 @@ export async function finalizeSignature(sid: string) {
  * app restarted while the patient signed in the zone. Called by the job caj-pain-therapy-finalize every 5 minutes.
  */
 export async function finalizePending(now = new Date()) {
-  const open = await db.signatureSession.findMany({
+  // Over all practices (owner connection), then each session in its own practice (iteration 12, design D1)
+  const open = await rawDb.signatureSession.findMany({
     where: { status: 'SIGNED', document: null, completedAt: { lt: new Date(now.getTime() - 60_000) } },
-    select: { id: true },
+    select: { id: true, practiceId: true },
     orderBy: { completedAt: 'asc' },
     take: 50,
   });
   let done = 0;
-  for (const { id } of open) {
+  for (const { id, practiceId } of open) {
     try {
-      const result = await finalizeSignature(id);
-      if (result) {
-        done++;
-        if (result.delivery?.status === 'PENDING') await deliverEmail(result.delivery.id).catch(console.error);
-      }
+      const result = await runInPractice(practiceId, () => finalizeSignature(id));
+      if (result) done++;
     } catch (e) {
       console.error(`finalizeSignature ${id} failed`, e);
     }
@@ -140,37 +129,49 @@ export async function finalizePending(now = new Date()) {
   return { found: open.length, done };
 }
 
-/** Sends the signed PDF, retrying up to 3 times (consent-documents: Zustellung, Fehlgeschlagener Versand). */
-export async function deliverEmail(deliveryId: string, opts: { retryDelayMs?: number } = {}) {
+/**
+ * Sends the link to a signed form, retrying up to 3 times (consent-documents: Zustellung, Fehlgeschlagener Versand).
+ * Iteration 12, design D7: only the practice name and the link to «Dokumente», never the PDF; without a link nothing
+ * is sent and the delivery fails.
+ */
+export async function deliverEmail(deliveryId: string, opts: { retryDelayMs?: number; access?: MailAccess } = {}) {
   const delivery = await db.emailDelivery.findUnique({
     where: { id: deliveryId },
-    include: { document: { include: { patient: true, session: true } } },
+    include: { document: { include: { patient: true } } },
   });
   if (!delivery || delivery.status !== 'PENDING' || !delivery.recipient) return delivery;
   const { document } = delivery;
-  const lang = document.language as Language;
-  const t = translator(lang, 'email');
-  const data = await documentStore().get(document.blobPath);
-  if (sha256(data) !== document.sha256) throw new Error(`Checksum mismatch for ${document.documentNumber}`);
-  const mail = {
-    to: delivery.recipient,
-    subject: t('subject', { number: document.documentNumber }),
-    text: t('body', {
-      name: `${document.patient.firstName} ${document.patient.lastName}`,
-      date: formatDateTime(document.session.completedAt ?? document.createdAt).slice(0, 10),
-    }),
-    attachment: { name: `${document.documentNumber}.pdf`, contentType: 'application/pdf', data },
-  };
-  const result = await sendWithRetry(mail, {
-    retryDelayMs: opts.retryDelayMs,
-    onFailedAttempt: async (attempt, lastError) => {
-      await db.emailDelivery.update({ where: { id: deliveryId }, data: { attempts: attempt, lastError } });
-    },
-  });
+  const sender = await practiceSender();
+  const result = opts.access
+    ? await sendWithRetry(
+        {
+          to: delivery.recipient,
+          ...sender,
+          ...documentEmail(
+            document.language as Language,
+            `${document.patient.firstName} ${document.patient.lastName}`,
+            opts.access.url,
+            opts.access.expiresAt,
+            sender.fromName,
+          ),
+        },
+        {
+          retryDelayMs: opts.retryDelayMs,
+          onFailedAttempt: async (attempt, lastError) => {
+            await db.emailDelivery.update({ where: { id: deliveryId }, data: { attempts: attempt, lastError } });
+          },
+        },
+      )
+    : ({ ok: false, attempts: 0, lastError: 'No link to the patient zone' } as const);
+  const linkDelivery = { channel: 'EMAIL' as const, status: 'PENDING' as const, recipient: delivery.recipient };
   if (result.ok) {
     await db.emailDelivery.update({
       where: { id: deliveryId },
       data: { status: 'SENT', attempts: result.attempts, sentAt: new Date(), lastError: null },
+    });
+    await db.accessLinkDelivery.updateMany({
+      where: { ...linkDelivery, link: { patientId: document.patientId }, handoutId: null },
+      data: { status: 'SENT', attempts: result.attempts, sentAt: new Date() },
     });
     await audit(SYSTEM_ACTOR, 'email.sent', {
       patientId: document.patientId,
@@ -179,17 +180,27 @@ export async function deliverEmail(deliveryId: string, opts: { retryDelayMs?: nu
     });
     return db.emailDelivery.findUnique({ where: { id: deliveryId } });
   }
-  const { lastError } = result;
-  await db.emailDelivery.update({ where: { id: deliveryId }, data: { status: 'FAILED' } });
+  const lastError = result.lastError.slice(0, 300);
+  await db.emailDelivery.update({
+    where: { id: deliveryId },
+    data: { status: 'FAILED', attempts: result.attempts, lastError },
+  });
+  await db.accessLinkDelivery.updateMany({
+    where: { ...linkDelivery, link: { patientId: document.patientId }, handoutId: null },
+    data: { status: 'FAILED', attempts: result.attempts, lastError },
+  });
   await audit(SYSTEM_ACTOR, 'email.failed', {
     patientId: document.patientId,
-    after: lastError.slice(0, 300),
+    after: lastError,
     details: { document: document.documentNumber },
   });
   return db.emailDelivery.findUnique({ where: { id: deliveryId } });
 }
 
-/** "Erneut senden": a new delivery for the same archived PDF, to the current address, if consent was given. */
+/**
+ * "Erneut senden": a new email with a new zone link to the same archived form, to the current address, if consent was
+ * given. Returns the link for deliverEmail (iteration 12, design D7).
+ */
 export async function requestResend(actor: Actor, documentId: string) {
   const doc = await db.signedDocument.findUniqueOrThrow({
     where: { id: documentId },
@@ -197,15 +208,19 @@ export async function requestResend(actor: Actor, documentId: string) {
   });
   const consent = doc.session.consents.find((c) => c.kind === 'UNENCRYPTED_EMAIL')?.granted ?? false;
   const status = !consent ? 'SKIPPED_NO_CONSENT' : !doc.patient.email ? 'SKIPPED_NO_ADDRESS' : 'PENDING';
-  const delivery = await db.emailDelivery.create({
-    data: { documentId, recipient: status === 'PENDING' ? doc.patient.email : null, status, requestedBy: actor.name },
+  return db.$transaction(async (tx) => {
+    const delivery = await tx.emailDelivery.create({
+      data: { documentId, recipient: status === 'PENDING' ? doc.patient.email : null, status, requestedBy: actor.name },
+    });
+    await audit(
+      actor,
+      'email.resend',
+      { patientId: doc.patientId, after: doc.patient.email, details: { document: doc.documentNumber } },
+      tx,
+    );
+    const access = status === 'PENDING' ? await issueMailLink(actor, doc.patientId, doc.patient.email!, tx) : null;
+    return { delivery, access };
   });
-  await audit(actor, 'email.resend', {
-    patientId: doc.patientId,
-    after: doc.patient.email,
-    details: { document: doc.documentNumber },
-  });
-  return delivery;
 }
 
 /** zone-consent-invitation: Anmerkung zu den Personalien "Erledigt" (design D9) */

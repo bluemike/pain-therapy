@@ -103,3 +103,30 @@ describe('signed PDF', () => {
     ]);
   });
 });
+
+/** practice-settings (iteration 12): the header shows the practice, its logo or its name as text */
+describe('practice in the PDF header', () => {
+  const brand = {
+    name: 'Physio Muster',
+    addressLine: 'Physio Muster | Bahnhofstrasse 10 | 7000 Chur',
+    contactEmail: 'anna@example.test',
+  };
+  it('prints name and address of the practice, not Ayanta', async () => {
+    const text = await pdfText(await renderSignedFormPdf({ ...input('de'), brand: { ...brand, logo: null } }));
+    expect(text).toContain('Physio Muster | Bahnhofstrasse 10 | 7000 Chur');
+    expect(text.toLowerCase()).not.toContain('ayanta');
+  });
+  it('renders a PNG logo instead of the name', async () => {
+    // 1×1 PNG
+    const png = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+      'base64',
+    );
+    const pdf = await renderSignedFormPdf({
+      ...input('de'),
+      brand: { ...brand, logo: { data: png, type: 'image/png' } },
+    });
+    expect(pdf.length).toBeGreaterThan(1000);
+    expect(pdf.toString('latin1')).toContain('/Subtype /Image');
+  });
+});

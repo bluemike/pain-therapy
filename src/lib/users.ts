@@ -8,11 +8,11 @@ export { presetFor } from './profile-presets';
 
 /** user-profile (iteration 8, design D9): Anzeigename and Berufsbezeichnung of the practice users. */
 
-/** First name from the Entra name, the fallback while no display name is set */
+/** First name of the name, the fallback while no display name is set */
 export const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? '';
 
-export async function profileOf(entraOid: string) {
-  const u = await db.user.findUnique({ where: { entraOid } });
+export async function profileOf(userId: string) {
+  const u = await db.user.findUnique({ where: { id: userId } });
   if (!u) return null;
   return { ...u, greetingName: u.displayName?.trim() || firstName(u.name) };
 }
@@ -28,7 +28,7 @@ export async function updateProfile(
   actor: Actor,
   input: { displayName: string; title: ProfessionalTitle },
 ): Promise<void> {
-  const u = await db.user.findUnique({ where: { entraOid: actor.id } });
+  const u = await db.user.findUnique({ where: { id: actor.id } });
   if (!u) throw new ProfileError('notFound');
   await db.$transaction(async (tx) => {
     await tx.user.update({ where: { id: u.id }, data: input });

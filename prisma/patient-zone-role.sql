@@ -59,6 +59,9 @@ BEGIN
   GRANT SELECT ("exerciseCode", "number", "images", "aids", "seconds", "retiredAt") ON "ExerciseVariant" TO patient_zone;
 
   -- Access link: read, and update only the counters and the last use
+  -- Practice of the patient (iteration 12, design D6): name, contact, logo and privacy notice for header and footer
+  GRANT SELECT ("id", "slug", "name", "status", "addressLine", "contactEmail", "phone", "logo", "logoType",
+                "privacyNotice", "updatedAt") ON "Practice" TO patient_zone;
   GRANT SELECT ON "PatientAccessLink" TO patient_zone;
   GRANT UPDATE ("failedAttempts", "lockedUntil", "blockedAt", "lastUsedAt") ON "PatientAccessLink" TO patient_zone;
 
@@ -78,5 +81,10 @@ BEGIN
 
   -- Append only, without reading back (the zone inserts without RETURNING)
   GRANT INSERT ON "AuditEvent" TO patient_zone;
+
+  -- Iteration 12 (design D6): row-level security limits every table above to the practice of the request; the
+  -- practice of a link token or device session comes from these two owner functions
+  GRANT EXECUTE ON FUNCTION zone_practice_of_link(text) TO patient_zone;
+  GRANT EXECUTE ON FUNCTION zone_practice_of_session(text) TO patient_zone;
 END
 $$;

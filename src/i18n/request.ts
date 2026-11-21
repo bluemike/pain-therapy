@@ -22,7 +22,7 @@ async function savedUserLocale(): Promise<string | null> {
     const session = await auth();
     if (!session?.user?.id) return null;
     const { db } = await import('@/lib/db');
-    const user = await db.user.findUnique({ where: { entraOid: session.user.id }, select: { locale: true } });
+    const user = await db.user.findUnique({ where: { id: session.user.id }, select: { locale: true } });
     return user?.locale ?? null;
   } catch {
     return null;

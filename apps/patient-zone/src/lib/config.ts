@@ -26,9 +26,4 @@ export const config = {
     documentLocalDir: process.env.STORAGE_LOCAL_DIR ?? '../../data/documents',
     documentContainer: process.env.AZURE_STORAGE_CONTAINER ?? 'signed-documents',
   },
-  practice: {
-    name: 'Ayanta Pain Therapy',
-    email: process.env.PRACTICE_EMAIL ?? 'pain-therapy@ayanta.ch',
-    address: 'Via Prau da Cuort 5, 7153 Falera',
-  },
 };

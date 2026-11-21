@@ -43,9 +43,7 @@ services:
       AUTH_URL: http://localhost:3000
       AUTH_DEV_LOGIN: 'true'
       # Set these three to test the real Entra ID sign-in locally (see docs/entra.md)
-      AUTH_MICROSOFT_ENTRA_ID_ID: ${AUTH_MICROSOFT_ENTRA_ID_ID:-}
-      AUTH_MICROSOFT_ENTRA_ID_SECRET: ${AUTH_MICROSOFT_ENTRA_ID_SECRET:-}
-      AUTH_MICROSOFT_ENTRA_ID_TENANT_ID: ${AUTH_MICROSOFT_ENTRA_ID_TENANT_ID:-}
+      AUTH_ENCRYPTION_KEY: ${AUTH_ENCRYPTION_KEY:-}
       STORAGE_DRIVER: azure
       AZURE_STORAGE_CONNECTION_STRING: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;
       MAIL_DRIVER: outbox

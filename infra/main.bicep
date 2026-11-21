@@ -1,4 +1,4 @@
-// Azure resources for pain-therapy.ayanta.ch (design D2, D3, D8). Deploy into a resource group in Switzerland North:
+// Azure resources for pain-therapy.online (design D2, D3, D8; iteration 12: practices, sign-in without Entra, SMTP). Deploy into a resource group in Switzerland North:
 //   az deployment group create -g rg-pain-therapy -f infra/main.bicep -p infra/main.bicepparam
 // See docs/deployment.md for the first deployment, DNS and the managed certificate.
 
@@ -11,26 +11,24 @@ param location string = 'switzerlandnorth'
 @description('Short name used in resource names.')
 param name string = 'pain-therapy'
 
-@description('Public host name of the app.')
+@description('Public host name of the app (iteration 12, design D10): the apex of the platform domain.')
+param domain string = 'pain-therapy.online'
+
+@description('''Custom domains pain-therapy.online and www on the app: off until the DNS records exist (A and TXT at
+the apex, CNAME and TXT for www), add once DNS resolves, bind to issue and bind the managed certificates. Until bind the
+app keeps answering on the former host name. See docs/deployment.md, section "Iteration 12".''')
+@allowed(['off', 'add', 'bind'])
+param domainMode string = 'off'
+
+@description('Former host name of the app; stays bound and redirects to the new one once domainMode is bind.')
 param customDomain string = 'pain-therapy.ayanta.ch'
 
-@description('''Custom domain on the app: off for the first deployment (before the DNS records exist),
-add once DNS resolves (Azure verifies the TXT record), bind to issue and bind the managed certificate. See docs/deployment.md.''')
+@description('Binding of the former host name (bind in production since iteration 1).')
 @allowed(['off', 'add', 'bind'])
 param customDomainMode string = 'off'
 
 @description('Container image tag in the registry. Empty on the very first deployment, before any image was pushed.')
 param imageTag string = ''
-
-@description('Ayanta Entra ID tenant.')
-param entraTenantId string
-
-@description('Client ID of the "Ayanta Schmerztherapie" app registration (docs/entra.md).')
-param entraClientId string
-
-@secure()
-@description('Client secret of the app registration.')
-param entraClientSecret string
 
 @secure()
 @description('Random secret for signing session cookies, at least 32 characters (openssl rand -base64 32).')
@@ -42,22 +40,42 @@ param postgresAdminLogin string = 'painadmin'
 @secure()
 param postgresAdminPassword string
 
-@description('Mailbox that sends the signed PDFs (Graph sendMail), e.g. pain-therapy@ayanta.ch.')
-param mailSender string
+@secure()
+@description('''Password of the database role practice_app (iteration 12, design D1), set by the migration job
+(prisma/practice-app-role.mjs). The practice app connects as practice_app and is limited by row-level security.''')
+param practiceAppDbPassword string
 
-@description('Default place shown on the signing page.')
-param defaultPlace string = 'Falera'
+@secure()
+@description('Key for the authenticator secrets of the sign-in, 32 bytes base64 (openssl rand -base64 32). Never change it: the authenticator apps of all users depend on it.')
+param authEncryptionKey string
+
+@secure()
+@description('Device password of noreply@pain-therapy.online at Infomaniak, for SMTP (iteration 12, design D7).')
+param smtpPassword string
+
+@description('Sender of all mails; the display name is the practice.')
+param mailFrom string = 'noreply@pain-therapy.online'
+
+@description('Platform account invited by the 5-minute job while none exists (task 5.0).')
+param platformAdminEmail string = 'admin@pain-therapy.online'
 
 @description('Retention of signed PDFs in days; 7300 days = 20 years after signing.')
 param documentRetentionDays int = 7300
 
 // ---------- Patient zone (iteration 4, design D13) ----------
 
-@description('Public host name of the patient zone (second Container App).')
+@description('Public host name of the patient zone (iteration 12, design D10).')
+param zoneDomain string = 'patient.pain-therapy.online'
+
+@description('Custom domain of the patient zone, like domainMode. New links use it once bound.')
+@allowed(['off', 'add', 'bind'])
+param zoneDomainMode string = 'off'
+
+@description('''Former host name of the patient zone. Stays bound and served (no redirect) until the last link sent with
+it has expired, at most 6 months after the switch (design D10).''')
 param zoneCustomDomain string = 'patient.pain-therapy.ayanta.ch'
 
-@description('''Custom domain on the patient zone, like customDomainMode: off until the DNS records exist, then add,
-then bind. Until bind, PATIENT_ZONE_URL of the practice app stays empty and the link features stay hidden.''')
+@description('Binding of the former zone host name (bind in production since iteration 4).')
 @allowed(['off', 'add', 'bind'])
 param zoneCustomDomainMode string = 'off'
 
@@ -78,8 +96,14 @@ var zoneImage = empty(zoneImageTag)
   ? 'mcr.microsoft.com/k8se/quickstart:latest'
   : '${registry.properties.loginServer}/pain-therapy-zone:${zoneImageTag}'
 var zonePort = empty(zoneImageTag) ? 80 : 3000
-// Shown to the practice app only once the host name of the zone is bound (design D13)
-var patientZoneUrl = zoneCustomDomainMode == 'bind' ? 'https://${zoneCustomDomain}' : ''
+// Shown to the practice app only once a host name of the zone is bound (design D13); the new one first (iteration 12)
+var patientZoneUrl = zoneDomainMode == 'bind'
+  ? 'https://${zoneDomain}'
+  : zoneCustomDomainMode == 'bind' ? 'https://${zoneCustomDomain}' : ''
+// Address of the app for sign-in, passkeys and invitation links: the new domain once bound, else the former one
+var appUrl = domainMode == 'bind' ? 'https://${domain}' : 'https://${customDomain}'
+// Former host names that redirect to appUrl (src/middleware.ts)
+var legacyHosts = domainMode == 'bind' ? '${customDomain},www.${domain}' : ''
 // Address of the practice app for the zone and the finalize job (iteration 5, design D11): its default host name in
 // the Container Apps environment, so the calls do not depend on the custom domain. /api/internal/* takes only calls
 // signed with zone-internal-secret.
@@ -180,10 +204,32 @@ resource secretAuth 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   properties: { value: authSecret }
 }
 
-resource secretEntra 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+// Iteration 12 (design D1, D2, D7): role practice_app, key of the authenticator secrets, SMTP password. The secret
+// entra-client-secret of the former sign-in is no longer used; remove it by hand after the switch (docs/deployment.md).
+resource secretPracticeAppDbPassword 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   parent: vault
-  name: 'entra-client-secret'
-  properties: { value: entraClientSecret }
+  name: 'practice-app-db-password'
+  properties: { value: practiceAppDbPassword }
+}
+
+resource secretPracticeAppDatabaseUrl 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: vault
+  name: 'practice-app-database-url'
+  properties: {
+    value: 'postgresql://practice_app:${uriComponent(practiceAppDbPassword)}@${postgres.properties.fullyQualifiedDomainName}:5432/${dbName}?sslmode=require'
+  }
+}
+
+resource secretAuthEncryption 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: vault
+  name: 'auth-encryption-key'
+  properties: { value: authEncryptionKey }
+}
+
+resource secretSmtp 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: vault
+  name: 'smtp-password'
+  properties: { value: smtpPassword }
 }
 
 resource secretDatabaseUrl 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
@@ -361,6 +407,16 @@ resource exerciseMedia 'Microsoft.Storage/storageAccounts/blobServices/container
   }
 }
 
+// Exports of a practice as ZIP (iteration 12, design D9): written by the practice app, downloadable for 24 hours,
+// then deleted by the 5-minute job. No immutability; soft delete of the blob service applies.
+resource practiceExports 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+  parent: blobService
+  name: 'practice-exports'
+  properties: {
+    publicAccess: 'None'
+  }
+}
+
 resource blobContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(storage.id, identity.id, roles.storageBlobDataContributor)
   scope: storage
@@ -422,6 +478,41 @@ resource certificate 'Microsoft.App/managedEnvironments/managedCertificates@2024
   }
 }
 
+// Iteration 12 (design D10): apex and www of pain-therapy.online, and the new zone host name. The apex certificate is
+// validated over HTTP (A record), the others over CNAME.
+resource domainCertificate 'Microsoft.App/managedEnvironments/managedCertificates@2024-03-01' = if (domainMode == 'bind') {
+  parent: environment
+  name: 'cert-${replace(domain, '.', '-')}'
+  location: location
+  tags: tags
+  properties: {
+    subjectName: domain
+    domainControlValidation: 'HTTP'
+  }
+}
+
+resource wwwCertificate 'Microsoft.App/managedEnvironments/managedCertificates@2024-03-01' = if (domainMode == 'bind') {
+  parent: environment
+  name: 'cert-www-${replace(domain, '.', '-')}'
+  location: location
+  tags: tags
+  properties: {
+    subjectName: 'www.${domain}'
+    domainControlValidation: 'CNAME'
+  }
+}
+
+resource zoneDomainCertificate 'Microsoft.App/managedEnvironments/managedCertificates@2024-03-01' = if (zoneDomainMode == 'bind') {
+  parent: environment
+  name: 'cert-${replace(zoneDomain, '.', '-')}'
+  location: location
+  tags: tags
+  properties: {
+    subjectName: zoneDomain
+    domainControlValidation: 'CNAME'
+  }
+}
+
 resource zoneCertificate 'Microsoft.App/managedEnvironments/managedCertificates@2024-03-01' = if (zoneCustomDomainMode == 'bind') {
   parent: environment
   name: 'cert-${replace(zoneCustomDomain, '.', '-')}'
@@ -433,20 +524,38 @@ resource zoneCertificate 'Microsoft.App/managedEnvironments/managedCertificates@
   }
 }
 
+var secretDatabaseOwner = {
+  name: 'database-url'
+  keyVaultUrl: secretDatabaseUrl.properties.secretUri
+  identity: identity.id
+}
+var secretInternal = {
+  name: 'zone-internal-secret'
+  keyVaultUrl: secretZoneInternal.properties.secretUri
+  identity: identity.id
+}
 var secrets = [
-  { name: 'database-url', keyVaultUrl: secretDatabaseUrl.properties.secretUri, identity: identity.id }
+  secretDatabaseOwner
+  {
+    name: 'practice-app-database-url'
+    keyVaultUrl: secretPracticeAppDatabaseUrl.properties.secretUri
+    identity: identity.id
+  }
   { name: 'auth-secret', keyVaultUrl: secretAuth.properties.secretUri, identity: identity.id }
-  { name: 'entra-client-secret', keyVaultUrl: secretEntra.properties.secretUri, identity: identity.id }
-  { name: 'zone-internal-secret', keyVaultUrl: secretZoneInternal.properties.secretUri, identity: identity.id }
+  { name: 'auth-encryption-key', keyVaultUrl: secretAuthEncryption.properties.secretUri, identity: identity.id }
+  { name: 'smtp-password', keyVaultUrl: secretSmtp.properties.secretUri, identity: identity.id }
+  secretInternal
 ]
 
 var appEnv = [
-  { name: 'DATABASE_URL', secretRef: 'database-url' }
+  // Iteration 12 (design D1): patient data as practice_app under row-level security; the owner only for users,
+  // practices, the platform functions and jobs across practices
+  { name: 'DATABASE_URL', secretRef: 'practice-app-database-url' }
+  { name: 'DATABASE_ADMIN_URL', secretRef: 'database-url' }
   { name: 'AUTH_SECRET', secretRef: 'auth-secret' }
-  { name: 'AUTH_URL', value: 'https://${customDomain}' }
-  { name: 'AUTH_MICROSOFT_ENTRA_ID_ID', value: entraClientId }
-  { name: 'AUTH_MICROSOFT_ENTRA_ID_SECRET', secretRef: 'entra-client-secret' }
-  { name: 'AUTH_MICROSOFT_ENTRA_ID_TENANT_ID', value: entraTenantId }
+  { name: 'AUTH_ENCRYPTION_KEY', secretRef: 'auth-encryption-key' }
+  { name: 'AUTH_URL', value: appUrl }
+  { name: 'LEGACY_HOSTS', value: legacyHosts }
   { name: 'FORCE_HTTPS', value: 'true' }
   { name: 'AZURE_CLIENT_ID', value: identity.properties.clientId }
   { name: 'STORAGE_DRIVER', value: 'azure' }
@@ -454,12 +563,64 @@ var appEnv = [
   { name: 'AZURE_STORAGE_CONTAINER', value: documents.name }
   { name: 'AZURE_STORAGE_PHOTO_CONTAINER', value: photos.name }
   { name: 'AZURE_STORAGE_EXERCISE_CONTAINER', value: exerciseMedia.name }
-  { name: 'MAIL_DRIVER', value: 'graph' }
-  { name: 'MAIL_SENDER', value: mailSender }
-  { name: 'DEFAULT_PLACE', value: defaultPlace }
+  { name: 'AZURE_STORAGE_EXPORT_CONTAINER', value: practiceExports.name }
+  { name: 'DOCUMENT_RETENTION_DAYS', value: string(documentRetentionDays) }
+  // Iteration 12 (design D7): links only, over SMTP at Infomaniak
+  { name: 'MAIL_DRIVER', value: 'smtp' }
+  { name: 'MAIL_FROM', value: mailFrom }
+  { name: 'SMTP_PASSWORD', secretRef: 'smtp-password' }
+  { name: 'PLATFORM_ADMIN_EMAIL', value: platformAdminEmail }
   { name: 'PATIENT_ZONE_URL', value: patientZoneUrl }
   { name: 'ZONE_INTERNAL_SECRET', secretRef: 'zone-internal-secret' }
 ]
+
+// Host names of the app: the former one while it is bound, and pain-therapy.online with www (iteration 12)
+var appDomains = concat(
+  customDomainMode == 'off'
+    ? []
+    : [
+        {
+          name: customDomain
+          bindingType: customDomainMode == 'bind' ? 'SniEnabled' : 'Disabled'
+          certificateId: customDomainMode == 'bind' ? certificate.id : null
+        }
+      ],
+  domainMode == 'off'
+    ? []
+    : [
+        {
+          name: domain
+          bindingType: domainMode == 'bind' ? 'SniEnabled' : 'Disabled'
+          certificateId: domainMode == 'bind' ? domainCertificate.id : null
+        }
+        {
+          name: 'www.${domain}'
+          bindingType: domainMode == 'bind' ? 'SniEnabled' : 'Disabled'
+          certificateId: domainMode == 'bind' ? wwwCertificate.id : null
+        }
+      ]
+)
+
+var zoneDomains = concat(
+  zoneCustomDomainMode == 'off'
+    ? []
+    : [
+        {
+          name: zoneCustomDomain
+          bindingType: zoneCustomDomainMode == 'bind' ? 'SniEnabled' : 'Disabled'
+          certificateId: zoneCustomDomainMode == 'bind' ? zoneCertificate.id : null
+        }
+      ],
+  zoneDomainMode == 'off'
+    ? []
+    : [
+        {
+          name: zoneDomain
+          bindingType: zoneDomainMode == 'bind' ? 'SniEnabled' : 'Disabled'
+          certificateId: zoneDomainMode == 'bind' ? zoneDomainCertificate.id : null
+        }
+      ]
+)
 
 resource app 'Microsoft.App/containerApps@2024-03-01' = {
   name: 'ca-${name}'
@@ -482,15 +643,7 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
         targetPort: appPort
         transport: 'auto'
         allowInsecure: false
-        customDomains: customDomainMode == 'off'
-          ? []
-          : [
-              {
-                name: customDomain
-                bindingType: customDomainMode == 'bind' ? 'SniEnabled' : 'Disabled'
-                certificateId: customDomainMode == 'bind' ? certificate.id : null
-              }
-            ]
+        customDomains: appDomains
       }
     }
     template: {
@@ -514,7 +667,7 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
   }
 }
 
-// Runs `prisma migrate deploy` and then `catalog:sync` (prisma/migrate.sh) with the same image before each new
+// Runs `prisma migrate deploy`, the roles patient_zone and practice_app, then `catalog:sync` (prisma/migrate.sh) with the same image before each new
 // revision (started by .github/workflows/deploy.yml).
 resource migrateJob 'Microsoft.App/jobs@2024-03-01' = {
   name: 'caj-${name}-migrate'
@@ -534,10 +687,15 @@ resource migrateJob 'Microsoft.App/jobs@2024-03-01' = {
       replicaRetryLimit: 0
       manualTriggerConfig: { parallelism: 1, replicaCompletionCount: 1 }
       secrets: [
-        secrets[0]
+        secretDatabaseOwner
         {
           name: 'patient-zone-db-password'
           keyVaultUrl: secretZoneDbPassword.properties.secretUri
+          identity: identity.id
+        }
+        {
+          name: 'practice-app-db-password'
+          keyVaultUrl: secretPracticeAppDbPassword.properties.secretUri
           identity: identity.id
         }
       ]
@@ -557,6 +715,7 @@ resource migrateJob 'Microsoft.App/jobs@2024-03-01' = {
             { name: 'AZURE_STORAGE_ACCOUNT_URL', value: storage.properties.primaryEndpoints.blob }
             { name: 'AZURE_STORAGE_EXERCISE_CONTAINER', value: exerciseMedia.name }
             { name: 'PATIENT_ZONE_DB_PASSWORD', secretRef: 'patient-zone-db-password' }
+            { name: 'PRACTICE_APP_DB_PASSWORD', secretRef: 'practice-app-db-password' }
           ]
           resources: { cpu: json('0.25'), memory: '0.5Gi' }
         }
@@ -602,15 +761,7 @@ resource zoneApp 'Microsoft.App/containerApps@2024-03-01' = {
         targetPort: zonePort
         transport: 'auto'
         allowInsecure: false
-        customDomains: zoneCustomDomainMode == 'off'
-          ? []
-          : [
-              {
-                name: zoneCustomDomain
-                bindingType: zoneCustomDomainMode == 'bind' ? 'SniEnabled' : 'Disabled'
-                certificateId: zoneCustomDomainMode == 'bind' ? zoneCertificate.id : null
-              }
-            ]
+        customDomains: zoneDomains
       }
     }
     template: {
@@ -668,7 +819,7 @@ resource finalizeJob 'Microsoft.App/jobs@2024-03-01' = {
       replicaTimeout: 300
       replicaRetryLimit: 0
       scheduleTriggerConfig: { cronExpression: '*/5 * * * *', parallelism: 1, replicaCompletionCount: 1 }
-      secrets: [secrets[3]]
+      secrets: [secretInternal]
       registries: [{ server: registry.properties.loginServer, identity: identity.id }]
     }
     template: {
@@ -693,6 +844,8 @@ output registryName string = registry.name
 output appName string = app.name
 output migrateJobName string = migrateJob.name
 output appFqdn string = app.properties.configuration.ingress.fqdn
+// A record of the apex pain-therapy.online (iteration 12, docs/deployment.md)
+output environmentStaticIp string = environment.properties.staticIp
 output customDomainVerificationId string = environment.properties.customDomainConfiguration.customDomainVerificationId
 output identityPrincipalId string = identity.properties.principalId
 output identityClientId string = identity.properties.clientId

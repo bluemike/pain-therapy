@@ -394,32 +394,53 @@ describe('exercise handout', () => {
     await expect(db.handoutDelivery.delete({ where: { id: delivery.id } })).rejects.toThrow(/cannot be deleted/);
   });
 
-  it('sends by email through Microsoft Graph with consent and shows the status (Versand per E-Mail)', async () => {
+  it('sends by email over SMTP with consent: practice as sender, only the link (Versand per E-Mail)', async () => {
     const { p, c } = await consultationWithProgram('Mail', { emailConsent: true });
     expect((await emailConsentOf(p.id)).granted).toBe(true);
-    const requests: { url: string; body: { message: { toRecipients: unknown[]; attachments: { name: string }[] } } }[] =
-      [];
-    vi.stubGlobal('fetch', async (url: string, init: { body: string }) => {
-      requests.push({ url, body: JSON.parse(init.body) });
-      return new Response(null, { status: 202 });
-    });
-    const driver = config.mail.driver;
-    config.mail.driver = 'graph';
+    const mails: Record<string, unknown>[] = [];
+    let options: Record<string, unknown> = {};
+    vi.doMock('nodemailer', () => ({
+      default: {
+        createTransport: (o: Record<string, unknown>) => {
+          options = o;
+          return { sendMail: async (m: Record<string, unknown>) => void mails.push(m) };
+        },
+      },
+    }));
+    const saved = { driver: config.mail.driver, zone: config.patientZone.url, password: config.mail.smtp.password };
+    config.mail.driver = 'smtp';
+    config.mail.smtp.password = 'test-only';
+    config.patientZone.url = 'https://patient.example.test';
     setMailer(null);
     try {
-      const { handout, delivery } = await createHandout(actor, c.id, 'EMAIL');
+      const { handout, delivery, access } = await createHandout(actor, c.id, 'EMAIL');
       expect(delivery).toMatchObject({ channel: 'EMAIL', status: 'PENDING', recipient: 'anna@example.ch' });
-      const sent = await deliverHandout(delivery.id, { retryDelayMs: 1 });
+      const sent = await deliverHandout(delivery.id, { retryDelayMs: 1, access: access! });
       expect(sent).toMatchObject({ status: 'SENT', attempts: 1 });
-      expect(requests).toHaveLength(1);
-      expect(requests[0].url).toBe('https://graph.microsoft.com/v1.0/users/pain-therapy%40ayanta.ch/sendMail');
-      expect(requests[0].body.message.toRecipients).toEqual([{ emailAddress: { address: 'anna@example.ch' } }]);
-      expect(requests[0].body.message.attachments[0].name).toBe(`${handout.documentNumber}.pdf`);
+      expect(options).toMatchObject({
+        host: 'mail.infomaniak.com',
+        port: 465,
+        secure: true,
+        auth: { user: 'noreply@pain-therapy.online', pass: 'test-only' },
+      });
+      expect(mails).toHaveLength(1);
+      expect(mails[0]).toMatchObject({
+        from: { name: 'Pain Therapy Test', address: 'noreply@pain-therapy.online' },
+        to: 'anna@example.ch',
+        replyTo: 'praxis@example.test',
+        subject: 'Neues Dokument von Pain Therapy Test',
+      });
+      expect(mails[0]).not.toHaveProperty('attachments');
+      expect(String(mails[0].text)).not.toContain(handout.documentNumber);
       const [listed] = await handoutsOf(p.id);
       expect(listed.deliveries[0].status).toBe('SENT');
       expect((await historyOf(p.id)).some((e) => e.action === 'email.sent')).toBe(true);
     } finally {
-      config.mail.driver = driver;
+      Object.assign(config.mail, { driver: saved.driver });
+      config.mail.smtp.password = saved.password;
+      config.patientZone.url = saved.zone;
+      setMailer(null);
+      vi.doUnmock('nodemailer');
     }
   });
 
@@ -457,16 +478,24 @@ describe('exercise handout', () => {
     setMailer({
       send: async () => {
         calls++;
-        throw new Error('Graph sendMail 503');
+        throw new Error('SMTP 451');
       },
     });
-    const { handout, delivery } = await createHandout(actor, c.id, 'EMAIL');
-    const failed = await deliverHandout(delivery.id, { retryDelayMs: 1 });
-    expect(failed).toMatchObject({ status: 'FAILED', attempts: 3, lastError: 'Graph sendMail 503' });
-    expect(calls).toBe(3);
-    setMailer({ send: async () => {} });
-    const again = await requestHandoutResend(actor, handout.id);
-    expect((await deliverHandout(again.id, { retryDelayMs: 1 }))?.status).toBe('SENT');
+    const zone = config.patientZone.url;
+    config.patientZone.url = 'https://patient.example.test';
+    try {
+      const { handout, delivery, access } = await createHandout(actor, c.id, 'EMAIL');
+      const failed = await deliverHandout(delivery.id, { retryDelayMs: 1, access: access! });
+      expect(failed).toMatchObject({ status: 'FAILED', attempts: 3, lastError: 'SMTP 451' });
+      expect(calls).toBe(3);
+      setMailer({ send: async () => {} });
+      const again = await requestHandoutResend(actor, handout.id);
+      expect((await deliverHandout(again.delivery.id, { retryDelayMs: 1, access: again.access! }))?.status).toBe(
+        'SENT',
+      );
+    } finally {
+      config.patientZone.url = zone;
+    }
   });
 
   it('stores a new version after a change and keeps the older one (Neue Version)', async () => {

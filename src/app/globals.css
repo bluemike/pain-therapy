@@ -160,6 +160,22 @@ a {
   font-style: normal;
   color: var(--gold-text);
 }
+.logo .plogo {
+  display: block;
+  height: 32px;
+  max-width: 160px;
+  object-fit: contain;
+  align-self: center;
+}
+.platform-foot {
+  padding: 16px 20px;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+.platform-foot a {
+  color: inherit;
+}
 .logo .app {
   font-size: 13px;
   color: var(--muted);
@@ -774,6 +790,18 @@ legend small {
   font-weight: 400;
   color: var(--muted);
   font-size: 12.5px;
+}
+/* content of a fieldset without .grid (iteration 13: «Praxis» logo and privacy notice sat beside the legend) */
+.fs-body {
+  clear: both;
+  padding: 18px 20px 20px;
+}
+.fs-foot {
+  clear: both;
+  margin: 0;
+  padding: 0 20px 18px;
+  font-size: 12.5px;
+  color: var(--muted);
 }
 .grid {
   clear: both;
@@ -2979,4 +3007,321 @@ dialog[open] {
   min-height: 40px;
   border-top: 1px solid var(--border);
   margin-left: auto;
+}
+
+/* team-management and platform (iteration 12, phase 5) */
+.team-card {
+  padding: 20px;
+  margin-top: 16px;
+}
+.team-card h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+.team-card > h2 {
+  padding: 0 0 12px;
+}
+ul.team {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+ul.team > li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  align-items: center;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+ul.team > li:first-child {
+  border-top: 0;
+}
+ul.team .who {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  flex: 1 1 240px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+ul.team .roles,
+ul.team .acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+}
+.team-form,
+.platform-form {
+  display: grid;
+  gap: 14px 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  margin-top: 12px;
+}
+.team-form .f,
+.platform-form .f {
+  grid-column: auto;
+}
+.platform-form .f.wide,
+.platform-form .full,
+.team-form .full {
+  grid-column: 1 / -1;
+}
+.platform-form .group {
+  grid-column: 1 / -1;
+  margin: 8px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.platform-form .group:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.platform-form .group small {
+  display: block;
+  margin-top: 2px;
+  font-weight: 400;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.team-form > .btn,
+.platform-form > .btn {
+  justify-self: start;
+  grid-column: 1 / -1;
+}
+@media (max-width: 640px) {
+  .team-form,
+  .platform-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.team-card .meta {
+  margin: 0 0 12px;
+  font-size: 13.5px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.team-card .acts {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 4px 0 8px;
+}
+.team-card details {
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0 14px;
+  background: var(--surface);
+}
+.team-card details[open] {
+  padding-bottom: 14px;
+}
+.team-card details > summary {
+  cursor: pointer;
+  list-style: none;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.team-card details > summary::-webkit-details-marker {
+  display: none;
+}
+.team-card details > summary::before {
+  content: '▸';
+  color: var(--gold-text);
+  transition: transform 0.15s;
+}
+.team-card details[open] > summary::before {
+  transform: rotate(90deg);
+}
+.team-card details > p {
+  margin: 0 0 8px;
+}
+
+/* sign-in and invitation steps (iteration 13) */
+.login-flow,
+.login-flow form {
+  display: grid;
+  gap: 14px;
+}
+.login-flow .or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.login-flow .or::before,
+.login-flow .or::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--border);
+}
+ol.auth-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 8px;
+  counter-reset: none;
+}
+ol.auth-steps li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px 6px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 12.5px;
+  line-height: 1.2;
+  color: var(--muted);
+  background: var(--surface);
+}
+ol.auth-steps li .n {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 12px;
+  background: var(--line);
+  color: var(--mid);
+}
+ol.auth-steps li .t {
+  min-width: 0;
+  max-width: 100%;
+  hyphens: auto;
+}
+ol.auth-steps li.on {
+  border-color: var(--gold);
+  background: var(--gold-bg);
+  color: var(--ink);
+  font-weight: 600;
+}
+ol.auth-steps li.on .n {
+  background: var(--gold);
+  color: #fff;
+}
+ol.auth-steps li.done .n {
+  background: var(--gold-pale);
+  color: var(--gold-text);
+}
+
+.team-form fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: none;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.team-form fieldset > legend {
+  float: none;
+  width: 100%;
+  padding: 0 0 6px;
+  border: 0;
+  font-size: 13px;
+}
+.danger-zone {
+  border: 1px solid var(--danger, #b42318);
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 8px;
+}
+
+/* six-digit codes as boxes and the sign-in form (iteration 13) */
+.login-flow form .f,
+.lcard form .f {
+  grid-column: auto;
+}
+.btn--wide {
+  width: 100%;
+}
+.linkbtn.inline {
+  min-height: 0;
+  padding: 0;
+  font-size: inherit;
+  text-decoration: underline;
+}
+.otp {
+  position: relative;
+  max-width: 360px;
+}
+.otp-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  z-index: 1;
+  font-size: 16px;
+  cursor: text;
+}
+.otp-boxes {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+.otp-boxes span {
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 24px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.otp-boxes span:nth-child(3) {
+  margin-right: 8px;
+}
+.otp-input:focus + .otp-boxes span.cur {
+  border-color: var(--gold);
+  outline: 2px solid var(--gold-pale);
+}
+.otp-input:focus-visible + .otp-boxes {
+  outline: none;
+}
+ol.auth-steps li:has(button.back) {
+  padding: 0;
+}
+ol.auth-steps button.back {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 6px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+ol.auth-steps button.back:hover .t {
+  color: var(--gold-text);
+  text-decoration: underline;
+}
+ol.auth-steps button.back:focus-visible {
+  outline: 2px solid var(--gold);
 }

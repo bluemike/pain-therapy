@@ -64,6 +64,20 @@ const COLUMNS: Record<string, string[]> = {
     'zip',
   ],
   'PatientAccessLink.UPDATE': ['blockedAt', 'failedAttempts', 'lastUsedAt', 'lockedUntil'],
+  // Iteration 12, design D6: header, footer and privacy notice of the patient's practice
+  'Practice.SELECT': [
+    'addressLine',
+    'contactEmail',
+    'id',
+    'logo',
+    'logoType',
+    'name',
+    'phone',
+    'privacyNotice',
+    'slug',
+    'status',
+    'updatedAt',
+  ],
   'Region.SELECT': ['code', 'id', 'nameDe', 'nameEn'],
   'RollingTool.SELECT': ['code', 'nameDe', 'nameEn', 'sort'],
   'SignatureSession.SELECT': [

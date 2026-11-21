@@ -1,7 +1,10 @@
+import { PLATFORM_NAME } from '@pain-therapy/shared/brand';
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { auth, signOut } from '@/auth';
 import { requireUser } from '@/lib/session';
+import { currentPractice } from '@/lib/practice';
+import { PlatformFooter } from '@/components/PlatformFooter';
 import { profileOf } from '@/lib/users';
 import { GreetedMark } from '@/components/GreetedMark';
 import { Logo } from '@/components/Logo';
@@ -18,7 +21,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     { href: '/', label: t('dashboard') },
     { href: '/patients', label: t('patients') },
     { href: '/catalog', label: t('catalog') },
-    ...(user.roles.includes('ADMIN') ? [{ href: '/admin/consent-texts', label: t('consentTexts') }] : []),
+    ...(user.roles.includes('ADMIN')
+      ? [
+          { href: '/practice', label: t('practice') },
+          { href: '/practice/team', label: t('team') },
+          { href: '/admin/consent-texts', label: t('consentTexts') },
+        ]
+      : []),
   ];
   const initials = user.name
     .split(/\s+/)
@@ -27,7 +36,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .join('')
     .toUpperCase();
   // user-profile (iteration 8, design D9): the professional title instead of "Therapeut:in"
-  const [profile, session, tp] = await Promise.all([profileOf(user.id), auth(), getTranslations('profile')]);
+  const [profile, session, tp, practice] = await Promise.all([
+    profileOf(user.id),
+    auth(),
+    getTranslations('profile'),
+    currentPractice(),
+  ]);
   const title = tp(`title_${profile?.title ?? 'THERAPIST_F'}`);
   const role = user.roles.includes('ADMIN') ? `${title} · ${t('roleAdmin')}` : title;
   const signOutForm = (
@@ -46,8 +60,23 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         {t('skipToContent')}
       </a>
       <header className="hdr">
-        <Link href="/" className="logo" aria-label={`Ayanta ${tc('appName')}`} style={{ textDecoration: 'none' }}>
-          <Logo appName={tc('appName')} />
+        <Link
+          href="/"
+          className="logo"
+          aria-label={`${practice?.name ?? PLATFORM_NAME} ${tc('appName')}`}
+          style={{ textDecoration: 'none' }}
+        >
+          <Logo
+            appName={tc('appName')}
+            practice={
+              practice
+                ? {
+                    name: practice.name,
+                    logoUrl: practice.logoType ? `/api/practice/logo?v=${practice.updatedAt.getTime()}` : null,
+                  }
+                : undefined
+            }
+          />
         </Link>
         <NavLinks items={items} />
         <div className="hright">
@@ -68,6 +97,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <main className="page" id="main">
         {children}
       </main>
+      <PlatformFooter />
       {session?.user?.authTime ? <GreetedMark authTime={session.user.authTime} /> : null}
     </div>
   );

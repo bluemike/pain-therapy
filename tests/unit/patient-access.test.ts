@@ -180,7 +180,8 @@ describe('access link from the record (Link senden aus der Akte)', () => {
     expect(sent).toHaveLength(1);
     expect(sent[0]).toMatchObject({ to: 'anna@example.ch', subject: 'Ihr Zugang zur Patienten-Zone' });
     expect(sent[0].text).toContain(r.url);
-    expect(sent[0].attachment).toBeUndefined();
+    expect(sent[0].fromName).toBe('Pain Therapy Test');
+    expect(sent[0].text).toMatch(/Freundliche Grüsse\nPain Therapy Test$/);
     const link = await latestLinkOf(p.id);
     expect(link?.tokenHash).toBe(sha(tokenOf(r.url)));
     // Valid for six months
@@ -291,12 +292,13 @@ describe('link with the exercise sheet (Link mit dem Übungsblatt)', () => {
     const { p, c } = await withProgram('Blatt', { emailConsent: true });
     const { handout, delivery, access } = await createHandout(actor, c.id, 'EMAIL', { withLink: true });
     expect(access?.url).toMatch(/^https:\/\/patient\.example\.ch\/l\//);
-    const done = await deliverHandout(delivery.id, { retryDelayMs: 1, accessUrl: access!.url });
+    const done = await deliverHandout(delivery.id, { retryDelayMs: 1, access: access! });
     expect(done?.status).toBe('SENT');
     expect(sent).toHaveLength(1);
-    expect(sent[0].text).toContain(access!.url);
-    // iteration 9 (design D4): the email carries only the link, the sheet is in the zone under «Dokumente»
-    expect(sent[0].attachment).toBeUndefined();
+    // iteration 12 (design D7): only the practice and the link to «Dokumente», no document title, no attachment
+    expect(sent[0]).toMatchObject({ subject: 'Neues Dokument von Pain Therapy Test', replyTo: 'praxis@example.test' });
+    expect(sent[0].text).toContain(`${access!.url}\n`);
+    expect(sent[0].text).not.toMatch(/Übungsblatt|Sitzung|PT-\d{4}/);
     const archived = await pdfText(
       Buffer.from(await (await import('@/lib/storage')).documentStore().get(handout.blobPath)),
     );
@@ -330,6 +332,9 @@ describe('link with the exercise sheet (Link mit dem Übungsblatt)', () => {
     const r = await createHandout(actor, c.id, 'PRINT', { withLink: true });
     expect(r.access).toBeNull();
     expect(r.printPdf).toBeNull();
+    // Iteration 12 (design D7): an email carries only the link, so without the zone there is none
+    const mail = await withProgram('OhneZoneMail', { emailConsent: true });
+    await expect(createHandout(actor, mail.c.id, 'EMAIL')).rejects.toMatchObject({ code: 'noZone' });
   });
 });
 
