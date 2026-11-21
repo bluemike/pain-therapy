@@ -1619,14 +1619,6 @@ dialog.modal::backdrop {
     box-shadow: var(--shadow);
   }
 }
-table.list tr.click {
-  position: relative;
-}
-table.list tr.click td:first-child a::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-}
 table.list tr.click td:first-child a:focus-visible {
   outline: none;
 }
