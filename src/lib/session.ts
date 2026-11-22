@@ -31,6 +31,7 @@ export async function requireSignedIn(): Promise<{ id: string; authTime: number 
 export async function requirePlatformAdmin(): Promise<Actor> {
   const session = await auth();
   if (!session?.user?.id) redirect('/login');
-  if (!session.user.platformAdmin) redirect('/no-access?reason=forbidden');
+  // A practice user lands here after signing in where the platform administrator signed out before (callbackUrl)
+  if (!session.user.platformAdmin) redirect(session.user.roles?.length ? '/' : '/no-access?reason=forbidden');
   return { id: session.user.id, name: session.user.name ?? '', email: session.user.email ?? '', roles: [] };
 }
