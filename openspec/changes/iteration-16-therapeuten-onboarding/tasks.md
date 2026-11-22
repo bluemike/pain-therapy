@@ -11,7 +11,7 @@
 - [x] 1.2 Token von `api@pain-therapy.online` mit Bereich «mail» genügt für Auflisten, Anlegen und Ändern
 - [x] 1.3 Kein dokumentierter Endpunkt für Gerätepasswörter; Übergabe über die App festgelegt (Design D4)
 - [ ] 1.4 ASPSMS: Testversand an eine Swisscom- und eine Sunrise-Nummer, alphanumerischer Absender «PainTherapy» möglich? (nach der Kontoprüfung)
-- [ ] 1.5 Prüfen, dass `DELETE` das Testpostfach entfernt hat
+- [x] 1.5 `DELETE` entfernt das Testpostfach (HTTP 200, 22.11.2026); Löschen bei Ablauf einer Einladung ist damit machbar
 
 ## 2. Datenmodell (0.5 PT)
 
