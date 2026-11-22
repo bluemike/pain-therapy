@@ -49,3 +49,4 @@
 - [x] 6.1 «Eigene Adresse (kein Postfach bei uns)» in der Einladung bleibt der Weg für Therapeutinnen mit eigener Adresse (z.B. `christina.franz@ayanta.ch`): kein Infomaniak-Postfach, keine Übergabe, Anmeldung mit E-Mail-Code bzw. SMS-Code und Passkey
 - [x] 6.2 Patienten-Mails gehen weiter von `noreply@pain-therapy.online`, Antworten (Reply-To) an die Adresse der Therapeutin, die gesendet hat; ohne sie an die Kontaktadresse der Praxis (`replyTo` auf den drei Versand-Tabellen)
 - [x] 6.3 Plattform-Seite: offene Einladungen einer Praxis zurückziehen; die Postfach-Zeile einer zurückgezogenen Einladung mit bestehendem Postfach wird samt übergebenem Passwort gelöscht, das Postfach bei Infomaniak bleibt
+- [x] 6.4 «Mein Profil > Anmeldeadresse»: neue Adresse mit Code an diese Adresse bestätigen; Konto, Passkeys und Mitgliedschaften bleiben, offene Einladungen an die neue Adresse werden zurückgezogen

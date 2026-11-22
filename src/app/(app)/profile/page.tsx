@@ -5,6 +5,7 @@ import { requireUser } from '@/lib/session';
 import { firstName, profileOf } from '@/lib/users';
 import { ProfileForm } from '@/components/ProfileForm';
 import { MobileForm } from '@/components/MobileForm';
+import { EmailForm } from '@/components/EmailForm';
 import { authDb } from '@/lib/db';
 import { mailboxOf } from '@/lib/mailboxes';
 import { formatMobile } from '@/lib/phone';
@@ -49,6 +50,10 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       />
       <section className="card team-card" aria-labelledby="h_contact">
         <h2 id="h_contact">{t('contact')}</h2>
+        <h3>{t('emailTitle')}</h3>
+        <EmailForm current={user.email} />
+        <p className="muted small">{t('emailHint')}</p>
+        <h3>{t('mobileTitle')}</h3>
         <MobileForm current={extra?.mobile ? formatMobile(extra.mobile) : null} />
         <p className="muted small">{t('mobileHint')}</p>
         <h3>{t('mailbox')}</h3>

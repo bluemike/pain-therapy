@@ -7,7 +7,12 @@ import { fieldErrors, profileSchema } from '@/lib/schemas';
 import { updateProfile } from '@/lib/users';
 import { setInputMode } from '@/lib/handwriting';
 import { INPUT_MODES, type InputMode } from '@pain-therapy/shared/ink';
-import { confirmMobileChange, requestMobileChangeCode } from '@/lib/auth/login-codes';
+import {
+  confirmEmailChange,
+  confirmMobileChange,
+  requestEmailChangeCode,
+  requestMobileChangeCode,
+} from '@/lib/auth/login-codes';
 import { clientIp } from '@/lib/auth/request';
 import { maskMobile, normalizeMobile } from '@/lib/phone';
 import { audit } from '@/lib/audit';
@@ -44,5 +49,22 @@ export async function mobileConfirmAction(code: string): Promise<MobileResult> {
   if (!r.ok) return { ok: false, error: r.error };
   await audit(actor, 'profile.mobileChanged');
   revalidatePath('/profile');
+  return { ok: true };
+}
+
+/** Iteration 16 (Nachtrag): new sign-in address, confirmed with a code sent by email to that address */
+export async function emailSendCodeAction(raw: string): Promise<MobileResult> {
+  const actor = await requireUser();
+  const r = await requestEmailChangeCode(actor.id, raw, await clientIp());
+  return r.ok ? { ok: true } : { ok: false, error: r.error };
+}
+
+export async function emailConfirmAction(code: string): Promise<MobileResult> {
+  const actor = await requireUser();
+  const before = actor.email;
+  const r = await confirmEmailChange(actor.id, code, await clientIp());
+  if (!r.ok) return { ok: false, error: r.error };
+  await audit(actor, 'profile.emailChanged', { before });
+  revalidatePath('/', 'layout');
   return { ok: true };
 }

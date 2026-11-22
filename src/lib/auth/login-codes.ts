@@ -181,6 +181,79 @@ export async function confirmMobileChange(userId: string, rawCode: string, ip: s
   return r;
 }
 
+export type EmailChangeResult =
+  { ok: true } | { ok: false; error: 'locked' | 'invalidEmail' | 'taken' | 'same' | 'limit' };
+
+/**
+ * Iteration 16 (Nachtrag, Mike 22.11.2026): new sign-in address under «Mein Profil», e.g. from
+ * christina.franz@pain-therapy.online to christina.franz@ayanta.ch. The code goes to the new address; the account,
+ * its passkeys and memberships stay.
+ */
+export async function requestEmailChangeCode(userId: string, rawEmail: string, ip: string): Promise<EmailChangeResult> {
+  const u = await authDb.user.findUniqueOrThrow({ where: { id: userId }, select: { email: true } });
+  const target = normalizeEmail(rawEmail);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(target) || target.length > 254) return { ok: false, error: 'invalidEmail' };
+  if (target === u.email) return { ok: false, error: 'same' };
+  if (await authDb.user.findUnique({ where: { email: target }, select: { id: true } }))
+    return { ok: false, error: 'taken' };
+  if (await isLocked(u.email, ip)) return { ok: false, error: 'locked' };
+  const since = new Date(Date.now() - config.auth.lockMs);
+  const recent = await authDb.loginCode.count({
+    where: { email: u.email, purpose: 'EMAIL_CHANGE', createdAt: { gte: since } },
+  });
+  if (recent >= MAX_CODES_PER_WINDOW) return { ok: false, error: 'limit' };
+  const code = sixDigits();
+  await authDb.$transaction([
+    authDb.loginCode.updateMany({
+      where: { email: u.email, purpose: 'EMAIL_CHANGE', usedAt: null },
+      data: { usedAt: new Date() },
+    }),
+    authDb.loginCode.create({
+      data: {
+        email: u.email,
+        purpose: 'EMAIL_CHANGE',
+        target,
+        codeHash: hmac(`code:${u.email}:${code}`),
+        expiresAt: new Date(Date.now() + config.auth.codeTtlMs),
+      },
+    }),
+  ]);
+  const t = translator('de', 'authMail');
+  await getMailer().send({
+    to: target,
+    subject: t('emailChangeSubject', { code }),
+    text: t('emailChangeText', { code }),
+    bold: [code],
+  });
+  return { ok: true };
+}
+
+/** Confirms the code sent to the new address and makes it the sign-in address */
+export async function confirmEmailChange(
+  userId: string,
+  rawCode: string,
+  ip: string,
+): Promise<VerifyResult | { ok: false; error: 'taken' }> {
+  const u = await authDb.user.findUniqueOrThrow({ where: { id: userId }, select: { email: true } });
+  const r = await verifyCode(u.email, rawCode, ip, 'EMAIL_CHANGE');
+  if (!r.ok) return r;
+  const row = await authDb.loginCode.findUnique({ where: { ticketHash: hashToken(r.ticket) } });
+  if (!row?.target) return { ok: false, error: 'expired' };
+  const target = row.target;
+  if (await authDb.user.findUnique({ where: { email: target }, select: { id: true } }))
+    return { ok: false, error: 'taken' };
+  await authDb.$transaction([
+    authDb.user.update({ where: { id: userId }, data: { email: target } }),
+    authDb.loginCode.update({ where: { id: row.id }, data: { usedAt: new Date() } }),
+    // Open invitations to the new address are no longer needed: the person is already here
+    authDb.invitation.updateMany({
+      where: { email: target, acceptedAt: null, revokedAt: null },
+      data: { revokedAt: new Date() },
+    }),
+  ]);
+  return r;
+}
+
 export type VerifyResult = { ok: true; ticket: string } | { ok: false; error: 'locked' | 'wrong' | 'expired' };
 
 /** Checks the code; the ticket is valid 10 minutes for the next step */

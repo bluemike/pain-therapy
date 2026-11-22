@@ -909,7 +909,20 @@
     "mailbox": "E-Mail-Postfach",
     "mailboxReady": "Zugang bereit, jetzt abholen",
     "mailboxOpen": "Zugang verwalten",
-    "noMailbox": "Kein Postfach bei Pain Therapy."
+    "noMailbox": "Kein Postfach bei Pain Therapy.",
+    "emailTitle": "Anmeldeadresse",
+    "emailCurrent": "Sie melden sich an mit {email}.",
+    "emailNew": "Neue Adresse",
+    "emailSend": "Code senden",
+    "emailCode": "Code aus der E-Mail an {email}",
+    "emailConfirm": "Adresse bestätigen",
+    "emailSaved": "Anmeldeadresse geändert. Ihr Passkey gilt weiter.",
+    "emailHint": "Zum Beispiel Ihre eigene Praxis-Adresse. Antworten von Patient:innen auf Mails, die Sie auslösen, gehen an diese Adresse.",
+    "emailError_invalidEmail": "Bitte eine gültige E-Mail-Adresse eingeben.",
+    "emailError_taken": "Diese Adresse gehört bereits zu einem anderen Konto.",
+    "emailError_same": "Das ist bereits Ihre Anmeldeadresse.",
+    "emailError_limit": "Zu viele Codes in kurzer Zeit. Bitte warten Sie 15 Minuten.",
+    "mobileTitle": "Handynummer"
   },
   "pdfView": {
     "title": "Dokument",
@@ -1013,7 +1026,9 @@
     "invitationPlatformText": "Guten Tag{name}\n\n{inviter} hat Sie als Plattform-Admin von Pain Therapy Online eingeladen. Als Plattform-Admin legen Sie Praxen an, laden deren Praxis-Admins ein und betreuen die Plattform. Patientendaten sehen Sie dabei nicht.\n\nÖffnen Sie diesen Link, um Ihre Anmeldung einzurichten (7 Tage gültig):\n{url}\n\nFreundliche Grüsse\nPain Therapy Online",
     "invitationSms": "{practice}:{name} Sie sind eingeladen. Einrichten: {url} (7 Tage gültig)",
     "codeSms": "Ihr Pain-Therapy-Code: {code}. Gültig 10 Minuten. Nicht weitergeben.",
-    "mailboxReadySms": "Pain Therapy: Ihr E-Mail-Zugang ist bereit. Abholen nach der Anmeldung unter {url} (14 Tage)."
+    "mailboxReadySms": "Pain Therapy: Ihr E-Mail-Zugang ist bereit. Abholen nach der Anmeldung unter {url} (14 Tage).",
+    "emailChangeSubject": "Code für die neue Anmeldeadresse: {code}",
+    "emailChangeText": "Guten Tag\n\nSie möchten diese Adresse als Anmeldeadresse bei Pain Therapy Online verwenden. Ihr Code lautet:\n\n{code}\n\nEr ist 10 Minuten gültig. Falls Sie das nicht veranlasst haben, können Sie diese E-Mail ignorieren.\n\nFreundliche Grüsse\nPain Therapy Online"
   },
   "practice": {
     "title": "Praxis",
