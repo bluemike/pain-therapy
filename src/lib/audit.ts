@@ -76,7 +76,13 @@ export type AuditAction =
   | 'practice.suspended'
   | 'practice.reactivated'
   | 'practice.exported'
-  | 'practice.deleted';
+  | 'practice.deleted'
+  // Iteration 16 (design D4, D7): mailbox access handed over by the platform admin, shown once, asked for again; new
+  // mobile number (never a password or a code)
+  | 'mailbox.accessHandedOver'
+  | 'mailbox.accessShown'
+  | 'mailbox.accessRequested'
+  | 'profile.mobileChanged';
 
 type Tx = Prisma.TransactionClient | PrismaClient;
 

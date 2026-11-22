@@ -11,9 +11,16 @@ import {
   newPracticeSchema,
   practiceDetailsSchema,
   PlatformError,
+  invitePracticeAdminWith,
+  setMailboxQuota,
   setPracticeStatus,
   updatePracticeDetails,
 } from '@/lib/platform';
+import { OnboardingError, parseInviteForm } from '@/lib/onboarding';
+import { handOverAccess, MailboxError, retryMailbox } from '@/lib/mailboxes';
+import { audit } from '@/lib/audit';
+import { authDb } from '@/lib/db';
+import { runInPractice } from '@pain-therapy/shared/practice-context';
 import { buildExport, requestExport } from '@/lib/practice-export';
 import { z } from 'zod';
 
@@ -32,7 +39,8 @@ async function run(
   try {
     await fn(actor);
   } catch (e) {
-    if (e instanceof PlatformError) redirect(`/platform?error=${e.code}`);
+    if (e instanceof PlatformError || e instanceof OnboardingError || e instanceof MailboxError)
+      redirect(`/platform?error=${e.code}`);
     throw e;
   }
   redirect(`/platform?flash=${typeof flash === 'string' ? flash : flash()}`);
@@ -104,4 +112,28 @@ export async function exportAction(fd: FormData) {
 export async function deleteAction(fd: FormData) {
   if (fd.get('understood') !== 'on') redirect('/platform?error=confirm');
   await run((actor) => deletePractice(actor, String(fd.get('id')), String(fd.get('confirm') ?? '')), 'deleted');
+}
+
+/** Iteration 16 (design D1, D3): practice admin by SMS or e-mail, with a new or existing mailbox */
+export async function invitePracticeAdminAction(fd: FormData) {
+  await run((actor) => invitePracticeAdminWith(actor, String(fd.get('id')), parseInviteForm(fd)), 'invited');
+}
+
+/** Iteration 16 (design D4): device password from the Manager, checked and kept encrypted for at most 14 days */
+export async function handOverAction(fd: FormData) {
+  await run(async (actor) => {
+    const id = String(fd.get('id'));
+    const { address } = await handOverAccess(id, String(fd.get('password') ?? ''));
+    const row = await authDb.mailboxProvisioning.findUnique({ where: { id }, select: { practiceId: true } });
+    if (row?.practiceId)
+      await runInPractice(row.practiceId, () => audit(actor, 'mailbox.accessHandedOver', { details: { address } }));
+  }, 'handedOver');
+}
+
+export async function mailboxQuotaAction(fd: FormData) {
+  await run(() => setMailboxQuota(String(fd.get('id')), Number(fd.get('quota'))), 'quotaSaved');
+}
+
+export async function retryMailboxPlatformAction(fd: FormData) {
+  await run(() => retryMailbox(String(fd.get('id')), null), 'mailboxRetried');
 }

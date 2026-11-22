@@ -1,3 +1,5 @@
+import { readFile, writeFile } from 'node:fs/promises';
+import path from 'node:path';
 import { expect, test } from '@playwright/test';
 import { expectNoA11yViolations, login, unique } from './helpers';
 
@@ -91,6 +93,8 @@ test.describe('platform and team', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Team' })).toBeVisible();
     await expect(page.getByTestId('member').filter({ hasText: 'Mike Franz (Sie)' })).toBeVisible();
     await page.getByLabel('Name', { exact: true }).fill('Tina Test');
+    // Iteration 16: SMS is preselected; this invitation goes by e-mail to the person's own address
+    await page.getByLabel('per E-Mail', { exact: true }).check();
     await page.getByLabel('E-Mail', { exact: true }).fill(`tina.${id}@example.test`);
     await page.getByRole('button', { name: 'Einladung senden' }).click();
     await expect(page.getByText('Die Einladung ist unterwegs.')).toBeVisible();
@@ -100,5 +104,41 @@ test.describe('platform and team', () => {
     await invitation.getByRole('button', { name: 'Zurückziehen' }).click();
     await expect(page.getByText('Die Einladung gilt nicht mehr.')).toBeVisible();
     await expect(invitation).toHaveCount(0);
+  });
+
+  test('a person invited by SMS gets a new mailbox, and the platform account hands over its access', async ({
+    browser,
+    page,
+  }) => {
+    test.setTimeout(90_000);
+    const id = unique();
+    const address = `nora.${id}@pain-therapy.online`;
+    await login(page);
+    await page.getByRole('link', { name: 'Team' }).first().click();
+    await page.getByLabel('Name', { exact: true }).fill(`Nora ${id}`);
+    await page.getByLabel('Handynummer').fill('079 123 45 67');
+    await page.getByRole('radio', { name: /Neues Postfach @pain-therapy\.online/ }).check();
+    // A brand-new mailbox is read by nobody yet: e-mail is not offered
+    await expect(page.getByLabel('per E-Mail', { exact: true })).toBeDisabled();
+    await page.getByLabel('Neue Adresse').fill(`nora.${id}`);
+    await page.getByRole('button', { name: 'Einladung senden' }).click();
+    await expect(page.getByText('Die Einladung ist unterwegs.')).toBeVisible();
+    await expect(page.getByTestId('invitation').filter({ hasText: address })).toBeVisible();
+
+    const context = await browser.newContext();
+    const platform = await context.newPage();
+    await login(platform, { role: 'platform', name: 'Plattform Admin', email: `platform.${id}@example.test` });
+    const row = platform.getByTestId('mailbox').filter({ hasText: address });
+    await expect(row).toContainText('Postfach: Zugang offen');
+    await expectNoA11yViolations(platform, 'platform-mailboxes');
+    // What the Manager does with «Gerät hinzufügen», in the local Infomaniak fake (src/lib/infomaniak.ts)
+    const fake = path.join(process.env.E2E_OUTBOX_DIR!, 'infomaniak.json');
+    const state = JSON.parse(await readFile(fake, 'utf8'));
+    state.devices = { ...state.devices, [`nora.${id}`]: ['device-password-e2e'] };
+    await writeFile(fake, JSON.stringify(state));
+    await row.getByLabel('Gerätepasswort').fill('device-password-e2e');
+    await row.getByRole('button', { name: 'Zugang übergeben' }).click();
+    await expect(platform.getByText(/bereit zur Abholung/)).toBeVisible();
+    await context.close();
   });
 });

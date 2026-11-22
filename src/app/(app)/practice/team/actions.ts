@@ -3,9 +3,10 @@
 import { redirect } from 'next/navigation';
 import { requireUser } from '@/lib/session';
 import { requirePractice } from '@/lib/practice';
+import { OnboardingError, parseInviteForm } from '@/lib/onboarding';
+import { MailboxError, retryMailbox } from '@/lib/mailboxes';
 import {
   inviteMember,
-  inviteSchema,
   resetMember,
   revokeInvitation,
   rolesOf,
@@ -25,16 +26,24 @@ async function run(
   try {
     await fn(actor, id);
   } catch (e) {
-    if (e instanceof TeamError) redirect(`/practice/team?error=${e.code}`);
+    if (e instanceof TeamError || e instanceof OnboardingError || e instanceof MailboxError)
+      redirect(`/practice/team?error=${e.code}`);
     throw e;
   }
   redirect(`/practice/team?flash=${flash}`);
 }
 
+/** Iteration 16: by SMS or e-mail, with or without a mailbox at pain-therapy.online */
 export async function inviteAction(fd: FormData) {
-  const parsed = inviteSchema.safeParse({ email: fd.get('email'), name: fd.get('name'), roles: rolesOf(fd) });
-  if (!parsed.success) redirect('/practice/team?error=invalid');
-  await run((actor, practiceId) => inviteMember(actor, practiceId, parsed.data).then(() => undefined), 'invited');
+  await run(
+    (actor, practiceId) => inviteMember(actor, practiceId, parseInviteForm(fd), rolesOf(fd)).then(() => undefined),
+    'invited',
+  );
+}
+
+/** Iteration 16 (design D3): «Erneut versuchen» for a mailbox Infomaniak did not create */
+export async function retryMailboxAction(fd: FormData) {
+  await run((_actor, practiceId) => retryMailbox(String(fd.get('id')), practiceId), 'mailboxRetried');
 }
 
 export async function revokeAction(fd: FormData) {

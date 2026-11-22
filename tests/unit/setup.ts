@@ -13,3 +13,6 @@ process.env.MAIL_DRIVER = 'outbox';
 process.env.MAIL_OUTBOX_DIR = path.join(os.tmpdir(), `pt-outbox-${process.pid}`);
 
 vi.mock('server-only', () => ({}));
+// Iteration 16: SMS and the Infomaniak fake write into temporary folders
+process.env.SMS_OUTBOX_DIR = path.join(os.tmpdir(), `pt-sms-${process.pid}`);
+process.env.INFOMANIAK_FAKE_FILE = path.join(os.tmpdir(), `pt-infomaniak-${process.pid}.json`);

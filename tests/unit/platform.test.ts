@@ -4,6 +4,7 @@ import { runInPractice } from '@pain-therapy/shared/practice-context';
 import { rawDb } from '@/lib/db';
 import { setMailer, type OutgoingMail } from '@/lib/mail';
 import { inviteMember, resetMember, setMemberActive, setMemberRoles, teamOf } from '@/lib/team';
+import type { InviteForm } from '@/lib/onboarding';
 import {
   createPractice,
   deletePractice,
@@ -32,6 +33,15 @@ async function member(email: string, roles: ('PRACTICE_ADMIN' | 'THERAPIST')[], 
   return { id: u.id, name: u.name, email, roles: ['ADMIN' as const] } satisfies Actor;
 }
 
+/** Invitation form of iteration 16 with an own address, by e-mail */
+const byMail = (name: string, email: string): InviteForm => ({
+  name,
+  channel: 'EMAIL',
+  mobile: null,
+  mailbox: { mode: 'NONE' },
+  email: email.toLowerCase(),
+});
+
 beforeAll(resetDatabase);
 afterAll(resetDatabase);
 beforeEach(() => {
@@ -42,12 +52,12 @@ beforeEach(() => {
 describe('team of a practice (team-management)', () => {
   it('invites with name and roles, refuses members and people of other practices', async () => {
     const admin = await member('chef@example.test', ['PRACTICE_ADMIN', 'THERAPIST']);
-    await inviteMember(admin, TEST_PRACTICE_ID, { email: 'Neu@Example.test', name: 'Nora Neu', roles: ['THERAPIST'] });
+    await inviteMember(admin, TEST_PRACTICE_ID, byMail('Nora Neu', 'Neu@Example.test'), ['THERAPIST']);
     expect(sent.at(-1)).toMatchObject({ to: 'neu@example.test', subject: 'Einladung von Pain Therapy Test' });
     const team = await teamOf(TEST_PRACTICE_ID);
     expect(team.invitations).toMatchObject([{ email: 'neu@example.test', name: 'Nora Neu', roles: ['THERAPIST'] }]);
     await expect(
-      inviteMember(admin, TEST_PRACTICE_ID, { email: 'chef@example.test', name: 'x', roles: ['THERAPIST'] }),
+      inviteMember(admin, TEST_PRACTICE_ID, byMail('x', 'chef@example.test'), ['THERAPIST']),
     ).rejects.toMatchObject({ code: 'member' });
   });
 

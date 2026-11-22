@@ -8,6 +8,7 @@ import { translator } from '../i18n-server';
 import { decrypt, hashToken, hmac, randomToken, sixDigits } from './crypto';
 import { accessOf, normalizeEmail, redeemRecoveryCode, type NoAccessReason } from './accounts';
 import { verifyTotp } from './totp';
+import { sendSms, SmsLimitError } from '../sms';
 
 /**
  * Email code as first factor (therapist-login, design D2): 6 digits, valid 10 minutes, single use, stored as HMAC.
@@ -90,6 +91,96 @@ export async function requestCode(
   return { ok: true };
 }
 
+export type SmsRequestResult =
+  { ok: true } | { ok: false; error: 'locked' | 'noMobile' | 'smsFailed' | 'smsDayLimit' | 'smsInvitationLimit' };
+
+/**
+ * Iteration 16 (design D1): the code of an invitation by SMS, sent to the number of the invitation when its link is
+ * opened. Same rules as the email code (10 minutes, newest counts, lock after 5 wrong codes); stored under the
+ * invitation's address so the lock and the ticket work as for the email code.
+ */
+export async function requestInvitationSmsCode(invitationId: string, ip: string): Promise<SmsRequestResult> {
+  const inv = await authDb.invitation.findFirst({
+    where: { id: invitationId, acceptedAt: null, revokedAt: null, expiresAt: { gt: new Date() } },
+    select: { id: true, email: true, mobile: true },
+  });
+  if (!inv?.mobile) return { ok: false, error: 'noMobile' };
+  if (await isLocked(inv.email, ip)) return { ok: false, error: 'locked' };
+  const code = sixDigits();
+  await authDb.$transaction([
+    authDb.loginCode.updateMany({ where: { email: inv.email, usedAt: null }, data: { usedAt: new Date() } }),
+    authDb.loginCode.create({
+      data: {
+        email: inv.email,
+        purpose: 'INVITATION_SMS',
+        invitationId: inv.id,
+        codeHash: hmac(`code:${inv.email}:${code}`),
+        expiresAt: new Date(Date.now() + config.auth.codeTtlMs),
+      },
+    }),
+  ]);
+  try {
+    const t = translator('de', 'authMail');
+    const sent = await sendSms({ to: inv.mobile, text: t('codeSms', { code }), purpose: 'CODE', invitationId: inv.id });
+    return sent ? { ok: true } : { ok: false, error: 'smsFailed' };
+  } catch (e) {
+    if (e instanceof SmsLimitError) return { ok: false, error: e.code };
+    throw e;
+  }
+}
+
+/**
+ * Iteration 16 (design D7): code to a new mobile number under «Mein Profil». The number travels with the code row and
+ * becomes the user's number once the code is confirmed.
+ */
+export async function requestMobileChangeCode(userId: string, mobile: string, ip: string): Promise<SmsRequestResult> {
+  const u = await authDb.user.findUniqueOrThrow({ where: { id: userId }, select: { email: true } });
+  if (await isLocked(u.email, ip)) return { ok: false, error: 'locked' };
+  const since = new Date(Date.now() - config.auth.lockMs);
+  const recent = await authDb.loginCode.count({
+    where: { email: u.email, purpose: 'MOBILE_CHANGE', createdAt: { gte: since } },
+  });
+  if (recent >= MAX_CODES_PER_WINDOW) return { ok: false, error: 'smsInvitationLimit' };
+  const code = sixDigits();
+  await authDb.$transaction([
+    authDb.loginCode.updateMany({
+      where: { email: u.email, purpose: 'MOBILE_CHANGE', usedAt: null },
+      data: { usedAt: new Date() },
+    }),
+    authDb.loginCode.create({
+      data: {
+        email: u.email,
+        purpose: 'MOBILE_CHANGE',
+        target: mobile,
+        codeHash: hmac(`code:${u.email}:${code}`),
+        expiresAt: new Date(Date.now() + config.auth.codeTtlMs),
+      },
+    }),
+  ]);
+  try {
+    const t = translator('de', 'authMail');
+    const sent = await sendSms({ to: mobile, text: t('codeSms', { code }), purpose: 'CODE', userId });
+    return sent ? { ok: true } : { ok: false, error: 'smsFailed' };
+  } catch (e) {
+    if (e instanceof SmsLimitError) return { ok: false, error: e.code };
+    throw e;
+  }
+}
+
+/** Confirms the code to the new number and stores it; false for a wrong or expired code */
+export async function confirmMobileChange(userId: string, rawCode: string, ip: string): Promise<VerifyResult> {
+  const u = await authDb.user.findUniqueOrThrow({ where: { id: userId }, select: { email: true } });
+  const r = await verifyCode(u.email, rawCode, ip, 'MOBILE_CHANGE');
+  if (!r.ok) return r;
+  const row = await authDb.loginCode.findUnique({ where: { ticketHash: hashToken(r.ticket) } });
+  if (!row?.target) return { ok: false, error: 'expired' };
+  await authDb.$transaction([
+    authDb.user.update({ where: { id: userId }, data: { mobile: row.target } }),
+    authDb.loginCode.update({ where: { id: row.id }, data: { usedAt: new Date() } }),
+  ]);
+  return r;
+}
+
 export type VerifyResult = { ok: true; ticket: string } | { ok: false; error: 'locked' | 'wrong' | 'expired' };
 
 /** Checks the code; the ticket is valid 10 minutes for the next step */
@@ -125,7 +216,10 @@ export async function verifyCode(
 export async function ticketOf(ticket: string | undefined, purpose: LoginCodePurpose) {
   if (!ticket) return null;
   const row = await authDb.loginCode.findUnique({ where: { ticketHash: hashToken(ticket) } });
-  if (!row || row.purpose !== purpose || row.usedAt || !row.verifiedAt) return null;
+  // An invitation is confirmed by email or, since iteration 16, by SMS; both lead to the same setup
+  const fits =
+    purpose === 'INVITATION' ? ['INVITATION', 'INVITATION_SMS'].includes(row?.purpose ?? '') : row?.purpose === purpose;
+  if (!row || !fits || row.usedAt || !row.verifiedAt) return null;
   // After an invitation the setup may take longer (installing an authenticator app)
   const ttl = purpose === 'INVITATION' ? 3 * config.auth.codeTtlMs : config.auth.codeTtlMs;
   if (row.verifiedAt.getTime() + ttl < Date.now()) return null;

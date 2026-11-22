@@ -19,7 +19,16 @@ import { RecoveryCodes } from './RecoveryCodes';
 type Step = 'send' | 'code' | 'factor' | 'recovery';
 
 /** Einladung annehmen: 1 E-Mail bestätigen, 2 Anmeldung einrichten, 3 Wiederherstellungscodes */
-export function InviteFlow({ token, email }: { token: string; email: string }) {
+export function InviteFlow({
+  token,
+  email,
+  sms = null,
+}: {
+  token: string;
+  email: string;
+  /** Iteration 16: masked mobile number when the invitation came by SMS */
+  sms?: string | null;
+}) {
   const t = useTranslations('invite');
   const tl = useTranslations('login');
   const [step, setStep] = useState<Step>('send');
@@ -64,7 +73,7 @@ export function InviteFlow({ token, email }: { token: string; email: string }) {
       <AuthSteps
         label={tl('stepsLabel')}
         current={current}
-        steps={labels.map((s) => ({ key: s, label: t(`step_${s}`) }))}
+        steps={labels.map((s) => ({ key: s, label: s === 'code' && sms ? t('step_sms') : t(`step_${s}`) }))}
       />
       {error ? (
         <div className="banner err" role="alert">
@@ -74,7 +83,7 @@ export function InviteFlow({ token, email }: { token: string; email: string }) {
 
       {step === 'send' ? (
         <>
-          <p>{t('sendText', { email })}</p>
+          <p>{sms ? t('sendSmsText', { mobile: sms }) : t('sendText', { email })}</p>
           <button type="button" className="btn btn--gold" onClick={send} disabled={pending}>
             {t('send')}
           </button>
@@ -91,11 +100,11 @@ export function InviteFlow({ token, email }: { token: string; email: string }) {
         >
           <div className="f">
             <label className="l" htmlFor="invite-code">
-              {tl('code')}
+              {sms ? t('smsCode') : tl('code')}
             </label>
             <CodeInput id="invite-code" value={code} onChange={setCode} autoFocus describedBy="invite-code-hint" />
             <p className="muted" id="invite-code-hint" style={{ fontSize: 13, margin: 0 }}>
-              {tl('codeHint', { email })}{' '}
+              {sms ? t('smsCodeHint', { mobile: sms }) : tl('codeHint', { email })}{' '}
               <button type="button" className="linkbtn inline" onClick={send} disabled={pending}>
                 {tl('resend')}
               </button>

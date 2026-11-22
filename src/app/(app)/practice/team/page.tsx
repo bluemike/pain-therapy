@@ -3,12 +3,19 @@ import { requireUser } from '@/lib/session';
 import { requirePractice } from '@/lib/practice';
 import { teamOf } from '@/lib/team';
 import { formatDate, formatDateTime } from '@/lib/format';
-import { activeAction, inviteAction, resetAction, revokeAction, rolesAction } from './actions';
+import { config } from '@/lib/config';
+import { mailboxesEnabled } from '@/lib/infomaniak';
+import { practiceMailboxCount, sweepMailboxes } from '@/lib/mailboxes';
+import { ONBOARDING_ERRORS } from '@/lib/onboarding';
+import { maskMobile } from '@/lib/phone';
+import { authDb } from '@/lib/db';
+import { InviteFields } from '@/components/InviteFields';
+import { activeAction, inviteAction, resetAction, retryMailboxAction, revokeAction, rolesAction } from './actions';
 
 export const dynamic = 'force-dynamic';
 
 const ROLES = ['THERAPIST', 'PRACTICE_ADMIN'] as const;
-const FLASH = ['invited', 'revoked', 'roles', 'deactivated', 'reactivated', 'reset'];
+const FLASH = ['invited', 'revoked', 'roles', 'deactivated', 'reactivated', 'reset', 'mailboxRetried'];
 const ERRORS = ['lastAdmin', 'self', 'member', 'otherPractice', 'noRole', 'invalid', 'notFound'];
 
 /** team-management (iteration 12, design D3, D4): Seite «Team», nur für die Praxis-Admin */
@@ -18,8 +25,32 @@ export default async function TeamPage({
   searchParams: Promise<{ flash?: string; error?: string }>;
 }) {
   const actor = await requireUser('manageConsentTexts');
-  const [t, practice, sp] = await Promise.all([getTranslations('team'), requirePractice(), searchParams]);
+  const [t, to, practice, sp] = await Promise.all([
+    getTranslations('team'),
+    getTranslations('onboarding'),
+    requirePractice(),
+    searchParams,
+  ]);
+  await sweepMailboxes().catch((e) => console.error('Mailbox sweep failed', e instanceof Error ? e.message : e));
   const { members, invitations } = await teamOf(practice.id);
+  const [{ mailboxQuota }, used] = await Promise.all([
+    authDb.practice.findUniqueOrThrow({ where: { id: practice.id }, select: { mailboxQuota: true } }),
+    practiceMailboxCount(practice.id),
+  ]);
+  const mailboxPill = (mb: { id: string; status: string; access: string } | null) =>
+    mb ? (
+      <span className="mb-state">
+        <span className={`pill ${mb.status === 'FAILED' ? 'err' : mb.access === 'DELIVERED' ? 'ok' : 'warn'}`}>
+          {mb.status === 'FAILED' ? to('mb_FAILED') : to(`mb_${mb.access}` as 'mb_OPEN')}
+        </span>
+        {mb.status === 'FAILED' ? (
+          <form action={retryMailboxAction}>
+            <input type="hidden" name="id" value={mb.id} />
+            <button className="linkbtn inline">{to('retry')}</button>
+          </form>
+        ) : null}
+      </span>
+    ) : null;
   const roleBoxes = (prefix: string, roles: readonly string[]) =>
     ROLES.map((r) => (
       <label key={r} className="ck">
@@ -49,6 +80,10 @@ export default async function TeamPage({
         <div className="banner err" role="alert">
           <p>{t(`error_${sp.error}` as 'error_self')}</p>
         </div>
+      ) : sp.error && (ONBOARDING_ERRORS as string[]).includes(sp.error) ? (
+        <div className="banner err" role="alert">
+          <p>{to(`error_${sp.error}` as 'error_invalid')}</p>
+        </div>
       ) : null}
 
       <section className="card team-card" aria-labelledby="h_members">
@@ -64,7 +99,11 @@ export default async function TeamPage({
                     {m.name}
                     {self ? ` (${t('you')})` : ''}
                   </b>
-                  <span className="muted">{m.email}</span>
+                  <span className="muted">
+                    {m.email}
+                    {m.mobile ? ` · ${maskMobile(m.mobile)}` : ''}
+                  </span>
+                  {mailboxPill(m.mailbox)}
                   <span className="muted">
                     <span className={`pill ${status === 'active' ? 'ok' : status === 'pending' ? 'warn' : ''}`}>
                       {t(`status_${status}`)}
@@ -112,9 +151,13 @@ export default async function TeamPage({
               <li key={i.id} data-testid="invitation">
                 <div className="who">
                   <b>{i.name ?? i.email}</b>
-                  <span className="muted">{i.email}</span>
                   <span className="muted">
-                    {i.roles.map((r) => t(`role_${r}`)).join(', ')} ·{' '}
+                    {i.email}
+                    {i.mobile ? ` · ${maskMobile(i.mobile)}` : ''}
+                  </span>
+                  {mailboxPill(i.mailbox)}
+                  <span className="muted">
+                    {to(`via_${i.channel}`)} · {i.roles.map((r) => t(`role_${r}`)).join(', ')} ·{' '}
                     {t('validUntil', { date: formatDate(i.expiresAt) })} · {t('invitedBy', { name: i.invitedBy })}
                   </span>
                 </div>
@@ -133,18 +176,12 @@ export default async function TeamPage({
       <section className="card team-card" aria-labelledby="h_invite">
         <h2 id="h_invite">{t('invite')}</h2>
         <form action={inviteAction} className="team-form">
-          <div className="f">
-            <label className="l" htmlFor="i_name">
-              {t('name')}
-            </label>
-            <input className="inp" id="i_name" name="name" required maxLength={100} autoComplete="off" />
-          </div>
-          <div className="f">
-            <label className="l" htmlFor="i_email">
-              {t('email')}
-            </label>
-            <input className="inp" id="i_email" name="email" type="email" required maxLength={200} autoComplete="off" />
-          </div>
+          <InviteFields
+            idPrefix="i"
+            domain={config.mailboxes.domain}
+            mailboxesEnabled={mailboxesEnabled()}
+            quotaLeft={Math.max(0, mailboxQuota - used)}
+          />
           <fieldset className="full">
             <legend className="l" id="i_roles">
               {t('roles')}

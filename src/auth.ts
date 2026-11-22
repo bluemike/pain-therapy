@@ -107,6 +107,7 @@ const providers: Provider[] = [
       if (!inv?.acceptedAt) denied('expired');
       const user = await authDb.user.findUnique({ where: { email: row.email }, select: { id: true } });
       if (!user) denied('expired');
+      // ticketOf(…, 'INVITATION') also accepts the SMS code of an invitation (iteration 16)
       const access = await accessOf(user.id);
       if (!access.ok) denied(access.reason);
       if (!(await consumeTicket(ticket))) denied('expired');

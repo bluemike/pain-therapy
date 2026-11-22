@@ -83,6 +83,46 @@ export const config = {
     retryDelayMs: Number(process.env.MAIL_RETRY_DELAY_MS ?? 2000),
   },
   /**
+   * SMS (iteration 16, design D2): ASPSMS in Azure, a local outbox folder in development and tests. Never the outbox
+   * inside Azure Container Apps.
+   */
+  sms: {
+    driver: (process.env.SMS_DRIVER ?? (process.env.CONTAINER_APP_NAME ? 'aspsms' : 'outbox')) as
+      'outbox' | 'aspsms' | 'fail',
+    outboxDir: process.env.SMS_OUTBOX_DIR ?? './data/sms-outbox',
+    aspsms: {
+      url: process.env.ASPSMS_URL ?? 'https://json.aspsms.com/SendSimpleTextSMS',
+      /** Key Vault secrets aspsms-userkey and aspsms-password */
+      userKey: process.env.ASPSMS_USERKEY ?? '',
+      password: process.env.ASPSMS_PASSWORD ?? '',
+      /** Alphanumeric sender, at most 11 characters */
+      originator: process.env.ASPSMS_ORIGINATOR ?? 'PainTherapy',
+    },
+    perInvitationPerHour: 5,
+    perDay: Number(process.env.SMS_PER_DAY ?? 50),
+  },
+  /**
+   * Mailboxes at Infomaniak (iteration 16, design D3, D6): API token of api@pain-therapy.online (Key Vault secret
+   * infomaniak-api-token). Without a token outside Azure a local fake keeps the mailboxes in a file (development,
+   * tests); inside Azure without a token the mailbox functions are off.
+   */
+  mailboxes: {
+    domain: (process.env.MAILBOX_DOMAIN ?? 'pain-therapy.online').trim().toLowerCase(),
+    apiUrl: (process.env.INFOMANIAK_API_URL ?? 'https://api.infomaniak.com').replace(/\/$/, ''),
+    token: process.env.INFOMANIAK_API_TOKEN ?? '',
+    mailHostingId: process.env.INFOMANIAK_MAIL_HOSTING_ID ?? '',
+    /** For the link into the Manager; optional */
+    accountId: process.env.INFOMANIAK_ACCOUNT_ID ?? '',
+    fakeFile: process.env.INFOMANIAK_FAKE_FILE ?? './data/infomaniak-fake.json',
+    imapHost: process.env.MAILBOX_IMAP_HOST ?? 'mail.infomaniak.com',
+    imapPort: 993,
+    smtpPort: 465,
+    /** Handed over device password waits at most 14 days (design D4) */
+    handoverTtlMs: 14 * 24 * 60 * 60 * 1000,
+    /** One-time link to the Apple profile */
+    profileTtlMs: 10 * 60 * 1000,
+  },
+  /**
    * Address of the patient zone (iteration 4, design D13), e.g. https://patient.pain-therapy.ayanta.ch. Empty until
    * its host name is bound: then "Link senden" and "Link zur Patienten-Zone mitsenden" stay hidden.
    */

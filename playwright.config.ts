@@ -64,6 +64,9 @@ export default defineConfig({
         DATABASE_ADMIN_URL: ownerDatabaseUrl,
         PATIENT_ZONE_URL: ZONE_URL,
         MAIL_OUTBOX_DIR: process.env.E2E_OUTBOX_DIR,
+        // Iteration 16: SMS into files, Infomaniak as a local JSON file
+        SMS_OUTBOX_DIR: path.join(process.env.E2E_OUTBOX_DIR!, 'sms'),
+        INFOMANIAK_FAKE_FILE: path.join(process.env.E2E_OUTBOX_DIR!, 'infomaniak.json'),
         ZONE_INTERNAL_SECRET: INTERNAL_SECRET,
         // Handschrift → Text (iteration 10): fixed text instead of Azure Document Intelligence
         DOCINTEL_STUB: '1',
