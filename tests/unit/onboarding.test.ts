@@ -19,7 +19,9 @@ import {
 } from '@/lib/mailboxes';
 import { acceptInvitation, invitationById, userForInvitation } from '@/lib/auth/accounts';
 import {
+  confirmEmailChange,
   confirmMobileChange,
+  requestEmailChangeCode,
   requestInvitationSmsCode,
   requestMobileChangeCode,
   ticketOf,
@@ -351,5 +353,36 @@ describe('own address instead of a mailbox (Mike, 22.11.2026)', () => {
       expect((await practiceSender(null)).replyTo).toBe('praxis@example.test');
     });
     expect(replyToOf({ email: ' Christina.Franz@Ayanta.ch ' })).toBe('christina.franz@ayanta.ch');
+  });
+});
+
+describe('sign-in address under «Mein Profil»', () => {
+  it('changes the address with a code sent to the new one, keeps the account and drops invitations to it', async () => {
+    const u = await rawDb.user.create({
+      data: { email: 'christina.franz@pain-therapy.online', name: 'Christina Franz', activatedAt: new Date() },
+    });
+    await rawDb.user.create({ data: { email: 'besetzt@example.test', name: 'Besetzt' } });
+    const inv = await rawDb.invitation.create({
+      data: {
+        email: 'christina.franz@ayanta.ch',
+        name: 'Christina Franz',
+        practiceId: TEST_PRACTICE_ID,
+        roles: ['PRACTICE_ADMIN'],
+        tokenHash: 'email-change-test',
+        invitedBy: 'Plattform',
+        expiresAt: new Date(Date.now() + 86_400_000),
+      },
+    });
+    expect(await requestEmailChangeCode(u.id, 'kein-mail', '10.0.0.3')).toEqual({ ok: false, error: 'invalidEmail' });
+    expect(await requestEmailChangeCode(u.id, 'Besetzt@example.test', '10.0.0.3')).toEqual({
+      ok: false,
+      error: 'taken',
+    });
+    expect(await requestEmailChangeCode(u.id, ' Christina.Franz@Ayanta.ch ', '10.0.0.3')).toEqual({ ok: true });
+    expect(mails.at(-1)!.to).toBe('christina.franz@ayanta.ch');
+    expect((await confirmEmailChange(u.id, '111111', '10.0.0.3')).ok).toBe(false);
+    expect((await confirmEmailChange(u.id, codeOf(mails.at(-1)!.text), '10.0.0.3')).ok).toBe(true);
+    expect((await rawDb.user.findUniqueOrThrow({ where: { id: u.id } })).email).toBe('christina.franz@ayanta.ch');
+    expect((await rawDb.invitation.findUniqueOrThrow({ where: { id: inv.id } })).revokedAt).not.toBeNull();
   });
 });

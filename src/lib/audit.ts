@@ -82,7 +82,8 @@ export type AuditAction =
   | 'mailbox.accessHandedOver'
   | 'mailbox.accessShown'
   | 'mailbox.accessRequested'
-  | 'profile.mobileChanged';
+  | 'profile.mobileChanged'
+  | 'profile.emailChanged';
 
 type Tx = Prisma.TransactionClient | PrismaClient;
 

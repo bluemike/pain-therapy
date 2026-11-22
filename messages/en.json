@@ -909,7 +909,20 @@
     "mailbox": "Mailbox",
     "mailboxReady": "Access ready, pick it up now",
     "mailboxOpen": "Manage access",
-    "noMailbox": "No mailbox with Pain Therapy."
+    "noMailbox": "No mailbox with Pain Therapy.",
+    "emailTitle": "Sign-in address",
+    "emailCurrent": "You sign in with {email}.",
+    "emailNew": "New address",
+    "emailSend": "Send code",
+    "emailCode": "Code from the email to {email}",
+    "emailConfirm": "Confirm address",
+    "emailSaved": "Sign-in address changed. Your passkey still works.",
+    "emailHint": "For example your own practice address. Patients answering mails you send reach this address.",
+    "emailError_invalidEmail": "Please enter a valid email address.",
+    "emailError_taken": "This address already belongs to another account.",
+    "emailError_same": "This is already your sign-in address.",
+    "emailError_limit": "Too many codes in a short time. Please wait 15 minutes.",
+    "mobileTitle": "Mobile number"
   },
   "pdfView": {
     "title": "Document",
@@ -1013,7 +1026,9 @@
     "invitationPlatformText": "Guten Tag{name}\n\n{inviter} hat Sie als Plattform-Admin von Pain Therapy Online eingeladen. Als Plattform-Admin legen Sie Praxen an, laden deren Praxis-Admins ein und betreuen die Plattform. Patientendaten sehen Sie dabei nicht.\n\nÖffnen Sie diesen Link, um Ihre Anmeldung einzurichten (7 Tage gültig):\n{url}\n\nFreundliche Grüsse\nPain Therapy Online",
     "invitationSms": "{practice}:{name} Sie sind eingeladen. Einrichten: {url} (7 Tage gültig)",
     "codeSms": "Ihr Pain-Therapy-Code: {code}. Gültig 10 Minuten. Nicht weitergeben.",
-    "mailboxReadySms": "Pain Therapy: Ihr E-Mail-Zugang ist bereit. Abholen nach der Anmeldung unter {url} (14 Tage)."
+    "mailboxReadySms": "Pain Therapy: Ihr E-Mail-Zugang ist bereit. Abholen nach der Anmeldung unter {url} (14 Tage).",
+    "emailChangeSubject": "Code for your new sign-in address: {code}",
+    "emailChangeText": "Hello\n\nYou want to use this address to sign in to Pain Therapy Online. Your code is:\n\n{code}\n\nIt is valid for 10 minutes. If you did not ask for this, you can ignore this email.\n\nKind regards\nPain Therapy Online"
   },
   "practice": {
     "title": "Practice",

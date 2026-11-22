@@ -159,6 +159,8 @@ enum LoginCodePurpose {
   INVITATION_SMS
   /// Iteration 16 (design D7): code by SMS to a new mobile number under «Mein Profil»
   MOBILE_CHANGE
+  /// Iteration 16 (Nachtrag): code by email to a new sign-in address under «Mein Profil»
+  EMAIL_CHANGE
 }
 
 /// 6-digit code sent by email (design D2): valid 10 minutes, single use. After the code is confirmed, the ticket
@@ -170,7 +172,7 @@ model LoginCode {
   invitationId String?
   invitation   Invitation?      @relation(fields: [invitationId], references: [id], onDelete: Cascade)
   codeHash     String
-  /// MOBILE_CHANGE: the new number the code went to (iteration 16)
+  /// MOBILE_CHANGE / EMAIL_CHANGE: the new number or address the code went to (iteration 16)
   target       String?
   expiresAt    DateTime
   verifiedAt   DateTime?
