@@ -188,7 +188,7 @@ describe('signing, PDF archive and email', () => {
       to: 'sarah@example.com',
       subject: 'New document from Pain Therapy Test',
       fromName: 'Pain Therapy Test',
-      replyTo: 'praxis@example.test',
+      replyTo: 'mike.franz@ayanta.ch',
     });
     expect(sent[0].text).toContain(`${access!.url}?tab=dokumente`);
     expect(sent[0].text).not.toMatch(/waiver|PT-\d{4}/i);

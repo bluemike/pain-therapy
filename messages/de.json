@@ -1175,7 +1175,10 @@
     "flash_savedInvited": "Die Praxisangaben sind gespeichert und die Praxis-Admin eingeladen.",
     "flash_handedOver": "Zugang funktioniert und ist bereit zur Abholung (14 Tage). Die Person erhält eine SMS, falls sie schon angemeldet ist.",
     "flash_quotaSaved": "Kontingent gespeichert.",
-    "flash_mailboxRetried": "Neuer Versuch gestartet. Der Status des Postfachs ist aktualisiert."
+    "flash_mailboxRetried": "Neuer Versuch gestartet. Der Status des Postfachs ist aktualisiert.",
+    "openInvitation": "Einladung offen: {email}",
+    "revokeInvitation": "Zurückziehen",
+    "flash_invitationRevoked": "Die Einladung gilt nicht mehr. Ein bestehendes Postfach bleibt erhalten."
   },
   "notes": {
     "modeLabel": "Eingabe für {field}",

@@ -13,7 +13,7 @@ import { documentStore, exerciseMediaStore, sha256 } from './storage';
 import type { Actor } from './session';
 import { emailConsentOf } from './email-consent';
 import { AccessLinkError, documentEmail, issueAccessLink, issueMailLink, zoneEnabled } from './patient-access';
-import { practiceSender } from './practice-mail';
+import { practiceSender, replyToOf } from './practice-mail';
 import { qrPng, type AccessSheetInput } from './access-sheet-pdf';
 
 /** exercise-handout: Übungsblatt erstellen, ablegen, senden oder drucken (design D5, D6). */
@@ -234,6 +234,7 @@ export async function createHandout(
         recipient: channel === 'EMAIL' ? ctx.patient.email : null,
         status: channel === 'EMAIL' ? 'PENDING' : null,
         requestedBy: actor.name,
+        replyTo: replyToOf(actor),
       },
     });
     await audit(
@@ -263,6 +264,7 @@ export async function createHandout(
           recipient: delivery.recipient,
           status: channel === 'EMAIL' ? 'PENDING' : null,
           requestedBy: actor.name,
+          replyTo: replyToOf(actor),
         },
       });
       await audit(
@@ -309,7 +311,7 @@ export async function deliverHandout(deliveryId: string, opts: { retryDelayMs?: 
   const { handout } = delivery;
   const details = { document: handout.documentNumber };
   const linkDelivery = { handoutId: handout.id, channel: 'EMAIL' as const, status: 'PENDING' as const };
-  const sender = await practiceSender();
+  const sender = await practiceSender(delivery.replyTo);
   const result = opts.access
     ? await sendWithRetry(
         {
@@ -376,6 +378,7 @@ export async function requestHandoutResend(actor: Actor, handoutId: string) {
         recipient: status === 'PENDING' ? h.patient.email : null,
         status,
         requestedBy: actor.name,
+        replyTo: replyToOf(actor),
       },
     });
     await audit(

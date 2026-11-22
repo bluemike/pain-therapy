@@ -427,7 +427,7 @@ describe('exercise handout', () => {
       expect(mails[0]).toMatchObject({
         from: { name: 'Pain Therapy Test', address: 'noreply@pain-therapy.online' },
         to: 'anna@example.ch',
-        replyTo: 'praxis@example.test',
+        replyTo: 'christina@ayanta.ch',
         subject: 'Neues Dokument von Pain Therapy Test',
       });
       expect(mails[0]).not.toHaveProperty('attachments');

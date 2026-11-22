@@ -197,6 +197,14 @@ export async function sweepMailboxes(now = new Date()) {
     where: { profileExpiresAt: { lt: now } },
     data: { profileEnc: null, profileTokenHash: null, profileExpiresAt: null },
   });
+  // An existing mailbox stays at Infomaniak; only our row (and a handed-over password) goes with its invitation
+  await authDb.mailboxProvisioning.deleteMany({
+    where: {
+      mode: 'EXISTING',
+      userId: null,
+      invitation: { acceptedAt: null, OR: [{ revokedAt: { not: null } }, { expiresAt: { lt: now } }] },
+    },
+  });
   const orphans = await authDb.mailboxProvisioning.findMany({
     where: {
       mode: 'NEW',

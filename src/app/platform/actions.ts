@@ -12,6 +12,7 @@ import {
   practiceDetailsSchema,
   PlatformError,
   invitePracticeAdminWith,
+  revokePracticeInvitation,
   setMailboxQuota,
   setPracticeStatus,
   updatePracticeDetails,
@@ -136,4 +137,12 @@ export async function mailboxQuotaAction(fd: FormData) {
 
 export async function retryMailboxPlatformAction(fd: FormData) {
   await run(() => retryMailbox(String(fd.get('id')), null), 'mailboxRetried');
+}
+
+/** Iteration 16: withdraws an open invitation, e.g. to invite the person again with her own address */
+export async function revokeInvitationPlatformAction(fd: FormData) {
+  await run(
+    (actor) => revokePracticeInvitation(actor, String(fd.get('practiceId')), String(fd.get('id'))),
+    'invitationRevoked',
+  );
 }

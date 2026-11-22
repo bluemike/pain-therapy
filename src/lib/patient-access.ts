@@ -17,7 +17,7 @@ import { emailConsentOf } from './email-consent';
 import { formatDateZurich } from './format';
 import { translator } from './i18n-server';
 import { sendWithRetry } from './mail';
-import { documentsUrl, practiceSender } from './practice-mail';
+import { documentsUrl, practiceSender, replyToOf } from './practice-mail';
 import { qrSvg, renderAccessSheetPdf } from './access-sheet-pdf';
 import type { Actor } from './session';
 
@@ -83,7 +83,7 @@ export async function issueAccessLink(
  * row (status follows the email). Null without the zone or when no link may be issued; then no email goes out.
  */
 export async function issueMailLink(
-  actor: Pick<Actor, 'id' | 'name'>,
+  actor: Pick<Actor, 'id' | 'name' | 'email'>,
   patientId: string,
   recipient: string,
   tx: Tx,
@@ -93,7 +93,15 @@ export async function issueMailLink(
   try {
     const { link, url } = await issueAccessLink(actor, patientId, tx);
     await tx.accessLinkDelivery.create({
-      data: { linkId: link.id, channel: 'EMAIL', handoutId, recipient, status: 'PENDING', requestedBy: actor.name },
+      data: {
+        linkId: link.id,
+        channel: 'EMAIL',
+        handoutId,
+        recipient,
+        status: 'PENDING',
+        requestedBy: actor.name,
+        replyTo: replyToOf(actor),
+      },
     });
     await audit(actor, 'accessLink.sent', { patientId, after: recipient, details: { linkId: link.id, handoutId } }, tx);
     return { url, expiresAt: link.expiresAt };
@@ -131,6 +139,7 @@ export async function sendAccessLink(actor: Actor, patientId: string) {
         recipient: email ? p.email : null,
         status: email ? 'PENDING' : null,
         requestedBy: actor.name,
+        replyTo: replyToOf(actor),
       },
     });
     await audit(
@@ -166,6 +175,7 @@ export async function inviteToSign(actor: Actor, patientId: string, channel: 'EM
         recipient: channel === 'EMAIL' ? p.email : null,
         status: channel === 'EMAIL' ? 'PENDING' : null,
         requestedBy: actor.name,
+        replyTo: replyToOf(actor),
       },
     });
     await audit(
@@ -232,7 +242,7 @@ export async function deliverAccessLink(deliveryId: string, url: string, opts: {
     return delivery;
   const p = await patientOf(delivery.link.patientId);
   const name = `${p.firstName} ${p.lastName}`;
-  const sender = await practiceSender();
+  const sender = await practiceSender(delivery.replyTo);
   const mail =
     delivery.purpose === 'SIGNATURE'
       ? signatureInviteEmail(p.preferredLanguage, name, url, sender.fromName)
@@ -275,7 +285,14 @@ export async function accessSheetPrinted(
   if (!link) throw new AccessLinkError('notFound');
   await db.$transaction(async (tx) => {
     await tx.accessLinkDelivery.create({
-      data: { linkId, channel: 'PRINT', purpose, handoutId: handoutId ?? null, requestedBy: actor.name },
+      data: {
+        linkId,
+        channel: 'PRINT',
+        purpose,
+        handoutId: handoutId ?? null,
+        requestedBy: actor.name,
+        replyTo: replyToOf(actor),
+      },
     });
     await audit(
       actor,
