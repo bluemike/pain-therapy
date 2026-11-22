@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { invitationByToken } from '@/lib/auth/accounts';
 import { Logo } from '@/components/Logo';
 import { InviteFlow } from '@/components/auth/InviteFlow';
+import { maskMobile } from '@/lib/phone';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,13 +22,17 @@ export default async function InvitationPage({ params }: { params: Promise<{ tok
               <h1>{inv.practiceName ? t('title', { practice: inv.practiceName }) : t('titlePlatform')}</h1>
               <p>
                 {t(
-                  inv.platformAdmin ? 'introPlatform' : inv.roles.includes('PRACTICE_ADMIN') ? 'introAdmin' : 'intro',
+                  `${inv.platformAdmin ? 'introPlatform' : inv.roles.includes('PRACTICE_ADMIN') ? 'introAdmin' : 'intro'}${inv.channel === 'SMS' ? 'Sms' : ''}` as 'intro',
                   {
                     inviter: inv.invitedBy,
                   },
                 )}
               </p>
-              <InviteFlow token={token} email={inv.email} />
+              <InviteFlow
+                token={token}
+                email={inv.email}
+                sms={inv.channel === 'SMS' && inv.mobile ? maskMobile(inv.mobile) : null}
+              />
             </>
           ) : (
             <>

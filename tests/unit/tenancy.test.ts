@@ -129,7 +129,8 @@ describe.skipIf(!allowed)('row-level security per practice (Daten gehören genau
    * Task 7.2: a table added later with a practiceId but without a policy would be readable across practices. Only
    * these tables carry a practiceId without row-level security, on purpose: the sign-in looks up memberships and
    * invitations by email before a practice is known (src/lib/team.ts filters by practice), and the practice app has
-   * no rights at all on PendingBlobDeletion.
+   * no rights at all on PendingBlobDeletion. MailboxProvisioning (iteration 16) is an auth table like Invitation:
+   * the platform admin sees all mailboxes, and src/lib/mailboxes.ts filters by practice.
    */
   it('protects every table with a practiceId by a policy, and practice_app cannot bypass it', async () => {
     const tables = await rawDb.$queryRaw<{ table: string; rls: boolean; policies: number; select: boolean }[]>`
@@ -141,7 +142,7 @@ describe.skipIf(!allowed)('row-level security per practice (Daten gehören genau
       WHERE n.nspname = 'public' AND c.relkind = 'r'
         AND EXISTS (SELECT 1 FROM pg_attribute a WHERE a.attrelid = c.oid AND a.attname = 'practiceId' AND NOT a.attisdropped)
       ORDER BY 1`;
-    const exempt = ['Invitation', 'PendingBlobDeletion', 'PracticeMembership'];
+    const exempt = ['Invitation', 'MailboxProvisioning', 'PendingBlobDeletion', 'PracticeMembership'];
     const unprotected = tables.filter((t) => !(t.rls && t.policies > 0)).map((t) => t.table);
     expect(unprotected).toEqual(exempt);
     expect(tables.find((t) => t.table === 'PendingBlobDeletion')?.select).toBe(false);

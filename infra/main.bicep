@@ -68,6 +68,10 @@ param handwritingSku string = 'F0'
 @description('Platform account invited by the 5-minute job while none exists (task 5.0).')
 param platformAdminEmail string = 'admin@pain-therapy.online'
 
+@description('Infomaniak account and Mail Service of pain-therapy.online (iteration 16); the API token is in the vault.')
+param infomaniakAccountId string = '2550060'
+param infomaniakMailHostingId string = '1127554'
+
 @description('Retention of signed PDFs in days; 7300 days = 20 years after signing.')
 param documentRetentionDays int = 7300
 
@@ -581,6 +585,14 @@ var secrets = [
   { name: 'auth-encryption-key', keyVaultUrl: secretAuthEncryption.properties.secretUri, identity: identity.id }
   { name: 'smtp-password', keyVaultUrl: secretSmtp.properties.secretUri, identity: identity.id }
   secretInternal
+  // Iteration 16: stored by hand in the vault (never in a parameter or the repo), only referenced here
+  { name: 'aspsms-userkey', keyVaultUrl: '${vault.properties.vaultUri}secrets/aspsms-userkey', identity: identity.id }
+  { name: 'aspsms-password', keyVaultUrl: '${vault.properties.vaultUri}secrets/aspsms-password', identity: identity.id }
+  {
+    name: 'infomaniak-api-token'
+    keyVaultUrl: '${vault.properties.vaultUri}secrets/infomaniak-api-token'
+    identity: identity.id
+  }
 ]
 
 var appEnv = [
@@ -610,6 +622,13 @@ var appEnv = [
   { name: 'PLATFORM_ADMIN_EMAIL', value: platformAdminEmail }
   { name: 'PATIENT_ZONE_URL', value: patientZoneUrl }
   { name: 'ZONE_INTERNAL_SECRET', secretRef: 'zone-internal-secret' }
+  // Iteration 16: invitations and codes by SMS (ASPSMS), mailboxes at pain-therapy.online (Infomaniak API)
+  { name: 'SMS_DRIVER', value: 'aspsms' }
+  { name: 'ASPSMS_USERKEY', secretRef: 'aspsms-userkey' }
+  { name: 'ASPSMS_PASSWORD', secretRef: 'aspsms-password' }
+  { name: 'INFOMANIAK_API_TOKEN', secretRef: 'infomaniak-api-token' }
+  { name: 'INFOMANIAK_ACCOUNT_ID', value: infomaniakAccountId }
+  { name: 'INFOMANIAK_MAIL_HOSTING_ID', value: infomaniakMailHostingId }
 ]
 
 // Host names of the app: the former one while it is bound, and pain-therapy.online with www (iteration 12)

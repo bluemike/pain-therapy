@@ -5,11 +5,37 @@ import { exportsOf } from '@/lib/practice-export';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { ExportList } from '@/components/ExportList';
 import { PlatformPracticeForm } from '@/components/PlatformPracticeForm';
-import { deleteAction, exportAction, invitePlatformAdminAction, statusAction } from './actions';
+import { config } from '@/lib/config';
+import { managerUrl } from '@/lib/infomaniak';
+import { mailboxOverview, sweepMailboxes } from '@/lib/mailboxes';
+import { ONBOARDING_ERRORS } from '@/lib/onboarding';
+import { InviteFields } from '@/components/InviteFields';
+import {
+  deleteAction,
+  exportAction,
+  handOverAction,
+  invitePlatformAdminAction,
+  invitePracticeAdminAction,
+  mailboxQuotaAction,
+  retryMailboxPlatformAction,
+  statusAction,
+} from './actions';
 
 export const dynamic = 'force-dynamic';
 
-const FLASH = ['created', 'suspended', 'reactivated', 'invited', 'exporting', 'deleted', 'saved', 'savedInvited'];
+const FLASH = [
+  'created',
+  'suspended',
+  'reactivated',
+  'invited',
+  'exporting',
+  'deleted',
+  'saved',
+  'savedInvited',
+  'handedOver',
+  'quotaSaved',
+  'mailboxRetried',
+];
 const ERRORS = ['slugTaken', 'notSuspended', 'noExport', 'confirm', 'otherPractice', 'invalid', 'notFound', 'deleted'];
 
 function PersonForm({
@@ -57,9 +83,11 @@ export default async function PlatformPage({
 }: {
   searchParams: Promise<{ flash?: string; error?: string }>;
 }) {
-  const [t, tt, sp, practices, admins] = await Promise.all([
+  await sweepMailboxes().catch((e) => console.error('Mailbox sweep failed', e instanceof Error ? e.message : e));
+  const [t, tt, to, sp, practices, admins, mailboxes] = await Promise.all([
     getTranslations('platformAdmin'),
     getTranslations('team'),
+    getTranslations('onboarding'),
     searchParams,
     practicesOverview(),
     authDb.user.findMany({
@@ -67,6 +95,7 @@ export default async function PlatformPage({
       select: { id: true, name: true, email: true, activatedAt: true },
       orderBy: { createdAt: 'asc' },
     }),
+    mailboxOverview(),
   ]);
   const names = { name: tt('name'), email: tt('email') };
   const exports = new Map(await Promise.all(practices.map(async (p) => [p.id, await exportsOf(p.id)] as const)));
@@ -90,7 +119,87 @@ export default async function PlatformPage({
         <div className="banner err" role="alert">
           <p>{t(`error_${sp.error}` as 'error_invalid')}</p>
         </div>
+      ) : sp.error && (ONBOARDING_ERRORS as string[]).includes(sp.error) ? (
+        <div className="banner err" role="alert">
+          <p>{to(`error_${sp.error}` as 'error_invalid')}</p>
+        </div>
       ) : null}
+
+      <section className="card team-card" aria-labelledby="h_mailboxes" data-testid="mailboxes">
+        <h2 id="h_mailboxes">{to('mailboxesTitle')}</h2>
+        <p className="meta">
+          {!mailboxes.enabled
+            ? to('mailboxOff')
+            : mailboxes.used === null
+              ? to('usageUnknown')
+              : to('usage', { used: mailboxes.used, total: mailboxes.total })}
+        </p>
+        {mailboxes.rows.length ? (
+          <ul className="team">
+            {mailboxes.rows.map((m) => (
+              <li key={m.id} data-testid="mailbox">
+                <div className="who">
+                  <b>{m.person}</b>
+                  <span className="muted">
+                    {m.address}
+                    {m.practice ? ` · ${m.practice.name}` : ''}
+                  </span>
+                  <span className="muted">
+                    <span
+                      className={`pill ${m.status === 'FAILED' ? 'err' : m.access === 'DELIVERED' ? 'ok' : 'warn'}`}
+                    >
+                      {m.status === 'FAILED' ? to('mb_FAILED') : to(`mb_${m.access}` as 'mb_OPEN')}
+                    </span>
+                    {m.memberInactive ? (
+                      <>
+                        {' '}
+                        <span className="pill warn">{to('memberInactive')}</span>
+                      </>
+                    ) : null}
+                    {m.requestedAt ? ` · ${to('requested', { at: formatDateTime(m.requestedAt) })}` : ''}
+                    {m.access === 'READY' && m.handoverExpiresAt
+                      ? ` · ${to('readyUntil', { date: formatDate(m.handoverExpiresAt) })}`
+                      : ''}
+                  </span>
+                </div>
+                {m.status === 'FAILED' ? (
+                  <form action={retryMailboxPlatformAction}>
+                    <input type="hidden" name="id" value={m.id} />
+                    <button className="btn btn--ghost">{to('retry')}</button>
+                  </form>
+                ) : m.task ? (
+                  <form action={handOverAction} className="handover">
+                    <input type="hidden" name="id" value={m.id} />
+                    <p className="muted small full">
+                      {to('handoverSteps', { address: m.address })}{' '}
+                      <a href={managerUrl()} target="_blank" rel="noreferrer">
+                        {to('openManager')}
+                      </a>
+                    </p>
+                    <div className="f">
+                      <label className="l" htmlFor={`ho_${m.id}`}>
+                        {to('devicePassword')}
+                      </label>
+                      <input
+                        className="inp"
+                        id={`ho_${m.id}`}
+                        name="password"
+                        type="password"
+                        required
+                        autoComplete="off"
+                        spellCheck={false}
+                      />
+                    </div>
+                    <button className="btn btn--gold">{to('handOver')}</button>
+                  </form>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="muted">{to('noMailboxes')}</p>
+        )}
+      </section>
 
       {practices.map((p) => (
         <section key={p.id} className="card team-card" data-testid="practice" aria-labelledby={`h_${p.id}`}>
@@ -123,6 +232,35 @@ export default async function PlatformPage({
                 <summary>{t('editDetails')}</summary>
                 <PlatformPracticeForm practice={{ id: p.id, values: details.get(p.id) ?? {} }} />
               </details>
+              <details>
+                <summary>{to('inviteAdmin')}</summary>
+                <form action={invitePracticeAdminAction} className="team-form">
+                  <input type="hidden" name="id" value={p.id} />
+                  <InviteFields
+                    idPrefix={`pa_${p.id}`}
+                    domain={config.mailboxes.domain}
+                    allowExisting
+                    mailboxesEnabled={mailboxes.enabled}
+                  />
+                  <button className="btn btn--gold">{tt('send')}</button>
+                </form>
+              </details>
+              <form action={mailboxQuotaAction} className="quota">
+                <input type="hidden" name="id" value={p.id} />
+                <label className="l" htmlFor={`q_${p.id}`}>
+                  {to('quota')}
+                </label>
+                <input
+                  className="inp"
+                  id={`q_${p.id}`}
+                  name="quota"
+                  type="number"
+                  min={0}
+                  max={100}
+                  defaultValue={p.mailboxQuota}
+                />
+                <button className="btn btn--ghost">{to('saveQuota')}</button>
+              </form>
               {p.status === 'SUSPENDED' ? (
                 <details className="danger-zone">
                   <summary>{t('delete')}</summary>

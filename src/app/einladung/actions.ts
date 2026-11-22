@@ -4,7 +4,8 @@ import type { PublicKeyCredentialCreationOptionsJSON, RegistrationResponseJSON }
 import { signIn } from '@/auth';
 import { config } from '@/lib/config';
 import { acceptInvitation, invitationByToken, userForInvitation } from '@/lib/auth/accounts';
-import { requestCode, ticketOf, verifyCode } from '@/lib/auth/login-codes';
+import { requestCode, requestInvitationSmsCode, ticketOf, verifyCode } from '@/lib/auth/login-codes';
+import { authDb } from '@/lib/db';
 import { deviceLabel, registerPasskey, registrationOptions } from '@/lib/auth/passkeys';
 import { confirmTotpSetup, startTotpSetup } from '@/lib/auth/totp-setup';
 import {
@@ -27,14 +28,23 @@ type Result<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 export async function inviteSendCodeAction(token: string): Promise<Result> {
   const inv = await invitationByToken(token);
   if (!inv.ok) return { ok: false, error: inv.reason };
-  const r = await requestCode(inv.email, await clientIp(), 'INVITATION', inv.id);
+  // Iteration 16 (design D1): an invitation by SMS confirms the number instead of the address
+  const r =
+    inv.channel === 'SMS'
+      ? await requestInvitationSmsCode(inv.id, await clientIp())
+      : await requestCode(inv.email, await clientIp(), 'INVITATION', inv.id);
   return r.ok ? { ok: true } : { ok: false, error: r.error };
 }
 
 export async function inviteVerifyCodeAction(token: string, code: string): Promise<Result> {
   const inv = await invitationByToken(token);
   if (!inv.ok) return { ok: false, error: inv.reason };
-  const r = await verifyCode(inv.email, code, await clientIp(), 'INVITATION');
+  const r = await verifyCode(
+    inv.email,
+    code,
+    await clientIp(),
+    inv.channel === 'SMS' ? 'INVITATION_SMS' : 'INVITATION',
+  );
   if (!r.ok) return { ok: false, error: r.error };
   await userForInvitation(inv.id);
   await setTicket(INVITE_TICKET_COOKIE, r.ticket, (3 * config.auth.codeTtlMs) / 1000);
@@ -85,12 +95,19 @@ async function accept(who: { userId: string; invitationId: string }): Promise<Re
   }
 }
 
-/** After the recovery codes: sign in with the ticket and go to the start page */
+/**
+ * After the recovery codes: sign in with the ticket and go to the start page, or (iteration 16, design D4) to the
+ * mailbox access when the invitation came with a mailbox at pain-therapy.online.
+ */
 export async function inviteFinishAction(): Promise<{ error: string }> {
   const ticket = await getTicket(INVITE_TICKET_COOKIE);
   if (!ticket) return { error: 'expired' };
+  const row = await ticketOf(ticket, 'INVITATION');
+  const mailbox = row?.invitationId
+    ? await authDb.mailboxProvisioning.findUnique({ where: { invitationId: row.invitationId }, select: { id: true } })
+    : null;
   return signInOrError(
-    () => signIn('invitation', { ticket, redirectTo: '/' }),
+    () => signIn('invitation', { ticket, redirectTo: mailbox ? '/postfach?neu=1' : '/' }),
     () => clearTicket(INVITE_TICKET_COOKIE),
   );
 }

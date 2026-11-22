@@ -1,10 +1,11 @@
 import 'server-only';
-import type { PracticeStatus } from '@prisma/client';
+import type { PracticeRole, PracticeStatus } from '@prisma/client';
 import { z } from 'zod';
 import { runInPractice } from '@pain-therapy/shared/practice-context';
 import { authDb, db, rawDb } from './db';
 import { audit } from './audit';
 import { createInvitation, normalizeEmail } from './auth/accounts';
+import { resolveInviteAddress, sendInvite, type InviteForm } from './onboarding';
 import { INITIAL_TEXTS } from './consent-texts';
 import { addressLineOf } from './practice-settings';
 import { config } from './config';
@@ -157,6 +158,7 @@ export async function practicesOverview() {
       contactEmail: true,
       createdAt: true,
       deletedAt: true,
+      mailboxQuota: true,
       memberships: { where: { active: true }, select: { user: { select: { lastLoginAt: true, activatedAt: true } } } },
       invitations: {
         where: { acceptedAt: null, revokedAt: null, expiresAt: { gt: new Date() } },
@@ -184,6 +186,7 @@ export async function practicesOverview() {
       members: active.length,
       lastActivity: last.length ? new Date(Math.max(...last)) : null,
       openInvitations: p.invitations.map((i) => i.email),
+      mailboxQuota: p.mailboxQuota,
       lastExport: p.exports[0] ?? null,
     };
   });
@@ -244,6 +247,31 @@ export async function invitePracticeAdmin(actor: Actor, practiceId: string, inpu
     }),
   );
   return inv;
+}
+
+/**
+ * Iteration 16 (design D1, D3): practice admin invited by SMS or e-mail, with a new or an existing mailbox at
+ * pain-therapy.online (e.g. Chrissie with christina.franz@).
+ */
+export async function invitePracticeAdminWith(actor: Actor, practiceId: string, form: InviteForm) {
+  const p = await livePractice(practiceId);
+  const email = await resolveInviteAddress(form, { practiceId: p.id, byPlatform: true });
+  await assertInvitable(email, p.id);
+  const roles: PracticeRole[] = ['PRACTICE_ADMIN', 'THERAPIST'];
+  const inv = await sendInvite({ form, email, practiceId: p.id, roles, invitedBy: actor.name });
+  await runInPractice(p.id, () =>
+    audit(actor, 'team.invited', {
+      after: email,
+      details: { roles, invitationId: inv.id, by: 'platform', channel: form.channel, mailbox: form.mailbox.mode },
+    }),
+  );
+  return inv;
+}
+
+/** Iteration 16 (design D5): how many mailboxes the practice admin may have created */
+export async function setMailboxQuota(practiceId: string, quota: number) {
+  if (!Number.isInteger(quota) || quota < 0 || quota > 100) throw new PlatformError('notFound');
+  await rawDb.practice.update({ where: { id: practiceId }, data: { mailboxQuota: quota } });
 }
 
 /** A further platform administrator, invited by an existing one (design D3) */

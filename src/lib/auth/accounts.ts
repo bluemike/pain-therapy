@@ -5,6 +5,7 @@ import { authDb } from '../db';
 import { config } from '../config';
 import { getMailer } from '../mail';
 import { translator } from '../i18n-server';
+import { assertSmsAllowed, sendSms } from '../sms';
 import { presetFor } from '../profile-presets';
 import { hashToken, hmac, normalizeRecoveryCode, randomToken, recoveryCode } from './crypto';
 
@@ -105,7 +106,16 @@ export type InvitationInput = {
   name?: string | null;
   /** Name of who invites, shown in the mail and on the page */
   invitedBy: string;
+  /** Iteration 16 (design D1): SMS with the link to `mobile` (E.164) instead of the mail */
+  channel?: 'EMAIL' | 'SMS';
+  mobile?: string | null;
 };
+
+export class InvitationDeliveryError extends Error {
+  constructor(public code: 'smsFailed' | 'smsDayLimit' | 'smsInvitationLimit' | 'noMobile') {
+    super(code);
+  }
+}
 
 /**
  * Creates an invitation (7 days, single use) and sends its link to the address. An older open invitation of the same
@@ -113,6 +123,14 @@ export type InvitationInput = {
  */
 export async function createInvitation(input: InvitationInput): Promise<{ id: string; url: string }> {
   const email = normalizeEmail(input.email);
+  const channel = input.channel ?? 'EMAIL';
+  if (channel === 'SMS') {
+    if (!input.mobile) throw new InvitationDeliveryError('noMobile');
+    // Nothing is created when the SMS could not go out anyway
+    await assertSmsAllowed().catch((e: { code?: string }) => {
+      throw new InvitationDeliveryError(e.code === 'smsInvitationLimit' ? 'smsInvitationLimit' : 'smsDayLimit');
+    });
+  }
   const token = randomToken();
   const inv = await authDb.$transaction(async (tx) => {
     await tx.invitation.updateMany({
@@ -129,12 +147,35 @@ export async function createInvitation(input: InvitationInput): Promise<{ id: st
         tokenHash: hashToken(token),
         expiresAt: new Date(Date.now() + config.auth.invitationTtlMs),
         invitedBy: input.invitedBy,
+        channel,
+        mobile: input.mobile ?? null,
       },
       include: { practice: { select: { name: true, contactEmail: true } } },
     });
   });
   const url = `${config.auth.appUrl}/einladung/${token}`;
   const t = translator('de', 'authMail');
+  if (channel === 'SMS') {
+    // Short path for the 160 characters of one SMS (design D1)
+    const first = (inv.name ?? '').split(/\s+/)[0] ?? '';
+    const sent = await sendSms({
+      to: input.mobile!,
+      text: t('invitationSms', {
+        practice: inv.practice?.name ?? PLATFORM_NAME,
+        name: first ? ` ${first},` : '',
+        url: `${config.auth.appUrl}/e/${token}`,
+      }),
+      purpose: 'INVITATION',
+      invitationId: inv.id,
+    }).catch((e: { code?: string }) => {
+      throw new InvitationDeliveryError(e.code === 'smsInvitationLimit' ? 'smsInvitationLimit' : 'smsDayLimit');
+    });
+    if (!sent) {
+      await authDb.invitation.update({ where: { id: inv.id }, data: { revokedAt: new Date() } });
+      throw new InvitationDeliveryError('smsFailed');
+    }
+    return { id: inv.id, url };
+  }
   const vars = { inviter: input.invitedBy, name: inv.name ? ` ${inv.name}` : '', url };
   // Iteration 13: own wording for the platform account; practice invitations come from the practice (display name,
   // reply to its contact address), the practice name in bold
@@ -167,6 +208,10 @@ export type InvitationView =
       roles: PracticeRole[];
       platformAdmin: boolean;
       invitedBy: string;
+      channel: 'EMAIL' | 'SMS';
+      mobile: string | null;
+      /** A mailbox at pain-therapy.online comes with the invitation (iteration 16) */
+      mailbox: boolean;
     }
   | { ok: false; reason: 'notFound' | 'expired' | 'used' };
 
@@ -174,7 +219,7 @@ export async function invitationByToken(token: string): Promise<InvitationView> 
   if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return { ok: false, reason: 'notFound' };
   const inv = await authDb.invitation.findUnique({
     where: { tokenHash: hashToken(token) },
-    include: { practice: { select: { name: true, status: true } } },
+    include: { practice: { select: { name: true, status: true } }, mailbox: { select: { id: true } } },
   });
   return viewOf(inv);
 }
@@ -182,13 +227,19 @@ export async function invitationByToken(token: string): Promise<InvitationView> 
 export async function invitationById(id: string): Promise<InvitationView> {
   const inv = await authDb.invitation.findUnique({
     where: { id },
-    include: { practice: { select: { name: true, status: true } } },
+    include: { practice: { select: { name: true, status: true } }, mailbox: { select: { id: true } } },
   });
   return viewOf(inv);
 }
 
 function viewOf(
-  inv: (Prisma.InvitationGetPayload<object> & { practice: { name: string; status: string } | null }) | null | undefined,
+  inv:
+    | (Prisma.InvitationGetPayload<object> & {
+        practice: { name: string; status: string } | null;
+        mailbox: { id: string } | null;
+      })
+    | null
+    | undefined,
 ): InvitationView {
   if (!inv || inv.revokedAt) return { ok: false, reason: 'notFound' };
   if (inv.acceptedAt) return { ok: false, reason: 'used' };
@@ -201,6 +252,9 @@ function viewOf(
     roles: inv.roles,
     platformAdmin: inv.platformAdmin,
     invitedBy: inv.invitedBy,
+    channel: inv.channel,
+    mobile: inv.mobile,
+    mailbox: !!inv.mailbox,
   };
 }
 
@@ -209,8 +263,13 @@ export async function userForInvitation(invitationId: string): Promise<string> {
   const inv = await authDb.invitation.findUniqueOrThrow({ where: { id: invitationId } });
   const u = await authDb.user.upsert({
     where: { email: inv.email },
-    create: { email: inv.email, name: inv.name ?? inv.email.split('@')[0] ?? inv.email, ...presetFor(inv.email) },
-    update: {},
+    create: {
+      email: inv.email,
+      name: inv.name ?? inv.email.split('@')[0] ?? inv.email,
+      mobile: inv.mobile,
+      ...presetFor(inv.email),
+    },
+    update: inv.mobile ? { mobile: inv.mobile } : {},
     select: { id: true },
   });
   return u.id;
@@ -238,6 +297,8 @@ export async function acceptInvitation(invitationId: string, userId: string): Pr
       where: { id: userId },
       data: { activatedAt: new Date(), ...(inv.platformAdmin ? { platformAdmin: true } : {}) },
     });
+    // Iteration 16: the mailbox of the invitation belongs to the account from now on
+    await tx.mailboxProvisioning.updateMany({ where: { invitationId }, data: { userId } });
     return issueRecoveryCodes(userId, tx);
   });
 }
@@ -273,6 +334,8 @@ export async function resetSignIn(userId: string, invitedBy: string): Promise<{ 
     platformAdmin: u.platformAdmin,
     name: u.name,
     invitedBy,
+    // Iteration 16 (sms-invitation: Anmeldung zurücksetzen über denselben Kanal)
+    ...(u.mobile ? { channel: 'SMS' as const, mobile: u.mobile } : {}),
   });
   return { url };
 }

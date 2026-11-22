@@ -114,10 +114,13 @@ model User {
   noteInputMode  NoteInputMode     @default(KEYBOARD)
   /// Audiosprache (iteration 15, design D3), used while the interface is German
   audioLanguage  AudioLanguage     @default(de)
+  /// Handynummer in E.164 (iteration 16, design D7): only for invitations, resets and the mailbox notice
+  mobile         String?
 
   memberships   PracticeMembership[]
   passkeys      Passkey[]
   recoveryCodes RecoveryCode[]
+  mailboxes     MailboxProvisioning[]
 }
 
 /// WebAuthn credential of a user (design D2), registered with user verification
@@ -152,6 +155,10 @@ model RecoveryCode {
 enum LoginCodePurpose {
   LOGIN
   INVITATION
+  /// Iteration 16 (design D1): code by SMS when an invitation by SMS is opened
+  INVITATION_SMS
+  /// Iteration 16 (design D7): code by SMS to a new mobile number under «Mein Profil»
+  MOBILE_CHANGE
 }
 
 /// 6-digit code sent by email (design D2): valid 10 minutes, single use. After the code is confirmed, the ticket
@@ -163,6 +170,8 @@ model LoginCode {
   invitationId String?
   invitation   Invitation?      @relation(fields: [invitationId], references: [id], onDelete: Cascade)
   codeHash     String
+  /// MOBILE_CHANGE: the new number the code went to (iteration 16)
+  target       String?
   expiresAt    DateTime
   verifiedAt   DateTime?
   ticketHash   String?          @unique
@@ -195,23 +204,28 @@ model WebAuthnChallenge {
 
 /// Invitation to a practice or to the platform (design D4): 7 days, single use
 model Invitation {
-  id            String         @id @default(cuid())
+  id            String            @id @default(cuid())
   email         String
   /// null for an invitation as platform administrator
   practiceId    String?
-  practice      Practice?      @relation(fields: [practiceId], references: [id])
+  practice      Practice?         @relation(fields: [practiceId], references: [id])
   roles         PracticeRole[]
-  platformAdmin Boolean        @default(false)
+  platformAdmin Boolean           @default(false)
   /// Name of the invited person, taken over by the account (phase 5)
   name          String?
-  tokenHash     String         @unique
+  tokenHash     String            @unique
   expiresAt     DateTime
   acceptedAt    DateTime?
   revokedAt     DateTime?
   invitedBy     String
-  createdAt     DateTime       @default(now())
+  createdAt     DateTime          @default(now())
+  /// Iteration 16 (design D1): by e-mail (default) or SMS to `mobile` (E.164)
+  channel       InvitationChannel @default(EMAIL)
+  mobile        String?
 
   loginCodes LoginCode[]
+  sms        SmsMessage[]
+  mailbox    MailboxProvisioning?
 
   @@index([email])
 }
@@ -1062,6 +1076,9 @@ model Practice {
 
   memberships           PracticeMembership[]
   invitations           Invitation[]
+  /// Iteration 16 (design D5): mailboxes the practice admin may have created at pain-therapy.online
+  mailboxQuota          Int                    @default(5)
+  mailboxes             MailboxProvisioning[]
   patients              Patient[]
   anamneses             Anamnesis[]
   consentTexts          ConsentTextVersion[]
@@ -1137,4 +1154,97 @@ model PracticeMembership {
 
   @@unique([userId, practiceId])
   @@index([practiceId])
+}
+
+/// Iteration 16 (design D1)
+enum InvitationChannel {
+  EMAIL
+  SMS
+}
+
+enum SmsPurpose {
+  INVITATION
+  CODE
+  MAILBOX_READY
+}
+
+enum SmsStatus {
+  SENT
+  FAILED
+}
+
+/// Every SMS sent (design D2): masked recipient, never the text or a code. Counts for the limits per invitation
+/// (5 per hour) and for the platform (50 per day).
+model SmsMessage {
+  id           String      @id @default(cuid())
+  /// e.g. "+41 79 *** ** 67"
+  toMasked     String
+  purpose      SmsPurpose
+  status       SmsStatus
+  error        String?
+  invitationId String?
+  invitation   Invitation? @relation(fields: [invitationId], references: [id], onDelete: SetNull)
+  userId       String?
+  createdAt    DateTime    @default(now())
+
+  @@index([createdAt])
+  @@index([invitationId, createdAt])
+}
+
+/// Iteration 16 (design D3)
+enum MailboxMode {
+  NEW
+  EXISTING
+}
+
+enum MailboxStatus {
+  CREATED
+  FAILED
+  DELETED
+}
+
+/// Access of the person to the mailbox (design D4)
+enum MailboxAccess {
+  /// The platform admin still has to create a device password at Infomaniak and hand it over
+  OPEN
+  /// Handed over, waiting to be shown once (at most 14 days)
+  READY
+  /// Shown once and deleted
+  DELIVERED
+  /// Not picked up within 14 days, deleted
+  EXPIRED
+}
+
+/// A mailbox at pain-therapy.online that the app created or uses for a person (design D3, D4). Only the device
+/// password of a handover is kept, encrypted, until it is shown once or expires.
+model MailboxProvisioning {
+  id                String        @id @default(cuid())
+  /// Full address, lower case
+  address           String        @unique
+  mode              MailboxMode
+  status            MailboxStatus
+  lastError         String?
+  practiceId        String?
+  practice          Practice?     @relation(fields: [practiceId], references: [id])
+  invitationId      String?       @unique
+  invitation        Invitation?   @relation(fields: [invitationId], references: [id], onDelete: SetNull)
+  userId            String?
+  user              User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  access            MailboxAccess @default(OPEN)
+  /// AES-256-GCM (src/lib/auth/crypto.ts), only while access = READY
+  handoverEnc       String?
+  handoverExpiresAt DateTime?
+  handedOverAt      DateTime?
+  deliveredAt       DateTime?
+  /// When the person asked for a new access under «Mein Profil»
+  requestedAt       DateTime?
+  /// Apple profile behind a one-time link (10 minutes), encrypted, cleared when downloaded
+  profileTokenHash  String?       @unique
+  profileEnc        String?
+  profileExpiresAt  DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([practiceId])
+  @@index([access])
 }

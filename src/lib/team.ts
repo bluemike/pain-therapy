@@ -1,9 +1,10 @@
 import 'server-only';
 import type { PracticeRole } from '@prisma/client';
-import { z } from 'zod';
 import { authDb } from './db';
 import { audit } from './audit';
-import { createInvitation, normalizeEmail, resetSignIn } from './auth/accounts';
+import { InvitationDeliveryError, normalizeEmail, resetSignIn } from './auth/accounts';
+import { resolveInviteAddress, sendInvite, OnboardingError, type InviteForm } from './onboarding';
+import { mailboxStatesOf } from './mailboxes';
 import type { Actor } from './session';
 
 /**
@@ -17,12 +18,6 @@ export class TeamError extends Error {
     super(code);
   }
 }
-
-export const inviteSchema = z.object({
-  email: z.string().trim().toLowerCase().email().max(200),
-  name: z.string().trim().min(1).max(100),
-  roles: z.array(z.enum(['PRACTICE_ADMIN', 'THERAPIST'])).min(1),
-});
 
 /** Roles from the form checkboxes "Therapeut:in" and "Praxis-Admin" */
 export function rolesOf(fd: FormData): PracticeRole[] {
@@ -38,18 +33,34 @@ export async function teamOf(practiceId: string) {
       select: {
         roles: true,
         active: true,
-        user: { select: { id: true, name: true, email: true, activatedAt: true, lastLoginAt: true } },
+        user: { select: { id: true, name: true, email: true, activatedAt: true, lastLoginAt: true, mobile: true } },
       },
     }),
     authDb.invitation.findMany({
       where: { practiceId, acceptedAt: null, revokedAt: null, expiresAt: { gt: new Date() } },
       orderBy: { createdAt: 'desc' },
-      select: { id: true, email: true, name: true, roles: true, expiresAt: true, invitedBy: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        roles: true,
+        expiresAt: true,
+        invitedBy: true,
+        channel: true,
+        mobile: true,
+      },
     }),
   ]);
+  const mailboxes = await mailboxStatesOf(practiceId);
   return {
-    members: members.map((m) => ({ ...m.user, roles: m.roles, active: m.active, activated: !!m.user.activatedAt })),
-    invitations,
+    members: members.map((m) => ({
+      ...m.user,
+      roles: m.roles,
+      active: m.active,
+      activated: !!m.user.activatedAt,
+      mailbox: mailboxes.get(m.user.email) ?? null,
+    })),
+    invitations: invitations.map((i) => ({ ...i, mailbox: mailboxes.get(i.email) ?? null })),
   };
 }
 
@@ -72,10 +83,23 @@ async function keepsAdmin(practiceId: string, userId: string) {
 
 /**
  * Invites someone to the practice: a new address, an earlier member (back with new roles) or a deactivated one. A
- * person belongs to one practice, so an address with an active membership elsewhere is refused.
+ * person belongs to one practice, so an address with an active membership elsewhere is refused. Iteration 16: by SMS
+ * or e-mail, with or without a mailbox at pain-therapy.online (the practice admin within the quota).
  */
-export async function inviteMember(actor: Actor, practiceId: string, input: z.infer<typeof inviteSchema>) {
-  const email = normalizeEmail(input.email);
+export async function inviteMember(actor: Actor, practiceId: string, form: InviteForm, roles: PracticeRole[]) {
+  if (!roles.length) throw new TeamError('noRole');
+  const email = await resolveInviteAddress(form, { practiceId, byPlatform: false });
+  await assertInvitableHere(practiceId, email);
+  const inv = await sendInvite({ form, email, practiceId, roles, invitedBy: actor.name });
+  await audit(actor, 'team.invited', {
+    after: email,
+    details: { roles, invitationId: inv.id, channel: form.channel, mailbox: form.mailbox.mode },
+  });
+  return inv;
+}
+
+async function assertInvitableHere(practiceId: string, rawEmail: string) {
+  const email = normalizeEmail(rawEmail);
   const user = await authDb.user.findUnique({
     where: { email },
     select: { platformAdmin: true, memberships: { where: { active: true }, select: { practiceId: true } } },
@@ -83,15 +107,6 @@ export async function inviteMember(actor: Actor, practiceId: string, input: z.in
   if (user?.platformAdmin) throw new TeamError('otherPractice');
   if (user?.memberships.some((m) => m.practiceId === practiceId)) throw new TeamError('member');
   if (user?.memberships.length) throw new TeamError('otherPractice');
-  const inv = await createInvitation({
-    email,
-    name: input.name,
-    practiceId,
-    roles: input.roles,
-    invitedBy: actor.name,
-  });
-  await audit(actor, 'team.invited', { after: email, details: { roles: input.roles, invitationId: inv.id } });
-  return inv;
 }
 
 export async function revokeInvitation(actor: Actor, practiceId: string, invitationId: string) {
@@ -141,6 +156,11 @@ export async function resetMember(actor: Actor, practiceId: string, userId: stri
   if (userId === actor.id) throw new TeamError('self');
   const m = await membershipOf(practiceId, userId);
   if (!m.active) throw new TeamError('notFound');
-  await resetSignIn(userId, actor.name);
+  try {
+    await resetSignIn(userId, actor.name);
+  } catch (e) {
+    if (e instanceof InvitationDeliveryError) throw new OnboardingError(e.code);
+    throw e;
+  }
   await audit(actor, 'team.signInReset', { details: { email: m.user.email } });
 }

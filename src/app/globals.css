@@ -3613,3 +3613,87 @@ input.inp[type='datetime-local']::-webkit-date-and-time-value {
   opacity: 0.6;
   pointer-events: none;
 }
+
+/* Iteration 16: invitation with mailbox, handover on the platform page, «Mein E-Mail-Postfach» */
+.addr-inp {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.addr-inp .inp {
+  flex: 1;
+  min-width: 0;
+}
+.mb-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.handover,
+.quota,
+.row-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.handover a {
+  text-decoration: underline;
+}
+.handover .full {
+  flex-basis: 100%;
+  margin: 0;
+}
+.handover .f {
+  flex: 1;
+  min-width: 200px;
+}
+.quota {
+  margin-top: 12px;
+}
+.quota .inp {
+  width: 90px;
+}
+.row-form .l {
+  flex-basis: 100%;
+  margin: 0;
+}
+.row-form .inp {
+  flex: 1;
+  min-width: 180px;
+}
+.mailbox-card {
+  display: grid;
+  gap: 12px;
+  max-width: 640px;
+}
+.secret {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--gold-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+.secret code {
+  flex: 1;
+  min-width: 0;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+}
+.kv {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px 14px;
+  margin: 0;
+}
+.kv dt {
+  color: var(--muted);
+}
+.kv dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}

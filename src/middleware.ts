@@ -7,6 +7,8 @@ import { legacyTarget } from '@/lib/legacy-host';
 const PUBLIC = [
   '/login',
   '/einladung',
+  // Iteration 16 (design D1): short invitation link of the SMS
+  '/e',
   '/impressum',
   '/no-access',
   '/api/auth',
