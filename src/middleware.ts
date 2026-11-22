@@ -51,5 +51,8 @@ export default auth((req) => {
 
 export const config = {
   runtime: 'nodejs',
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|icon.svg|robots.txt).*)'],
+  // The photo upload of a handoff bypasses the middleware: with the Node.js runtime Next.js hands the route a request
+  // whose body the middleware already read («Response body object should not be disturbed or locked», 2026-11-22).
+  // The route is public and checks its token itself.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|icon.svg|robots.txt|foto/.*/upload).*)'],
 };

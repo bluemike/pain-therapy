@@ -96,7 +96,7 @@ test('home exercise screens', async ({ page }, info) => {
     await group(`Übung ${code}: Übung fällt`).getByRole('button', { name: 'mittel' }).click();
   await page.locator('section[aria-labelledby="h_home"]').scrollIntoViewIfNeeded();
   await shot('20-home-exercises');
-  // The form never gets wider than the screen (iteration 15: audio and «Blatt ansehen» in the home block)
+  // The form never gets wider than the screen (iteration 15: «Blatt ansehen» in the home block)
   const width = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
   expect(width[0]).toBeLessThanOrEqual(width[1]);
   await page.getByRole('button', { name: 'Sitzung speichern' }).click();

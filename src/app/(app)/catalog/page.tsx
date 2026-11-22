@@ -6,7 +6,6 @@ import { positionLabel } from '@/lib/positions';
 import { timingOf } from '@/lib/exercise-sheets';
 import { executionTime, formatMinutes } from '@/lib/home-program';
 import { ExercisePreview } from '@/components/ExercisePreview';
-import { ExerciseAudio } from '@/components/ExerciseAudio';
 
 export const dynamic = 'force-dynamic';
 
@@ -225,14 +224,7 @@ export default async function CatalogPage({
                         <small className="muted"> · {other(x)}</small>
                       </td>
                       <td className="exmedia">
-                        {x.sheet ? (
-                          <>
-                            <ExercisePreview code={x.code} name={localName(x, locale)} />
-                            <ExerciseAudio code={x.code} />
-                          </>
-                        ) : (
-                          '–'
-                        )}
+                        {x.sheet ? <ExercisePreview code={x.code} name={localName(x, locale)} /> : '–'}
                       </td>
                       <td>{areaName(x.group)}</td>
                       <td className="num">

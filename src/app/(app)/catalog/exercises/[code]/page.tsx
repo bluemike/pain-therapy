@@ -6,7 +6,6 @@ import { localName } from '@/lib/catalog';
 import { exerciseDetail } from '@/lib/exercise-sheets';
 import { executionTime, formatMinutes } from '@/lib/home-program';
 import { ExerciseImage } from '@/components/ExerciseImage';
-import { ExerciseAudio } from '@/components/ExerciseAudio';
 
 export const dynamic = 'force-dynamic';
 
@@ -91,9 +90,6 @@ export default async function ExercisePage({ params }: { params: Promise<{ code:
           <section className="card" aria-labelledby="h_rolling">
             <header>
               <h2 id="h_rolling">{t('sectionRolling')}</h2>
-              {x.sheet ? (
-                <ExerciseAudio code={x.code} kind="frm-audio" label={`${x.code} ${t('sectionRolling')}`} />
-              ) : null}
             </header>
             <div className="body">
               <ExerciseImage
@@ -138,9 +134,6 @@ export default async function ExercisePage({ params }: { params: Promise<{ code:
           <section className="card" aria-labelledby="h_stretch">
             <header>
               <h2 id="h_stretch">{t('sectionStandard')}</h2>
-              {x.sheet ? (
-                <ExerciseAudio code={x.code} kind="std-audio" label={`${x.code} ${t('sectionStandard')}`} />
-              ) : null}
             </header>
             <div className="body">
               <ExerciseImage
@@ -196,7 +189,6 @@ export default async function ExercisePage({ params }: { params: Promise<{ code:
                           <th scope="col">{t('colText')}</th>
                           <th scope="col">{t('aids')}</th>
                           <th scope="col">{t('colTime')}</th>
-                          <th scope="col">{t('listen')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -210,13 +202,6 @@ export default async function ExercisePage({ params }: { params: Promise<{ code:
                               <td className="pre">{text ?? (seg ? '–' : todo)}</td>
                               <td>{aids(v.aids)}</td>
                               <td className="num">{seconds ? min(seconds / 60) : notSet}</td>
-                              <td>
-                                <ExerciseAudio
-                                  code={x.code}
-                                  kind={`v${v.number}-audio`}
-                                  label={`${x.code} ${t('variantN', { n: v.number })}`}
-                                />
-                              </td>
                             </tr>
                           );
                         })}
