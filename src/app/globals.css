@@ -2149,6 +2149,11 @@ table.catalog td {
   color: var(--gold-text);
   white-space: nowrap;
   text-align: right;
+  /* Duration, «Blatt ansehen» and time per week stacked, so the duration never runs into the button (2026-11-22) */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
 }
 .rx .opts {
   grid-column: 2 / 4;
@@ -2326,6 +2331,7 @@ ol.steps li {
     /* Audio and «Blatt ansehen» wrap instead of widening the page on a phone (iteration 15) */
     white-space: normal;
     min-width: 0;
+    align-items: flex-start;
   }
   .rx .opts {
     grid-column: 1 / -1;
