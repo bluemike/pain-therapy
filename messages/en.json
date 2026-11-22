@@ -1175,7 +1175,10 @@
     "flash_savedInvited": "The practice details are saved and the practice admin is invited.",
     "flash_handedOver": "The access works and is ready to be picked up (14 days). The person gets an SMS if already signed up.",
     "flash_quotaSaved": "Quota saved.",
-    "flash_mailboxRetried": "New attempt made. The mailbox status is updated."
+    "flash_mailboxRetried": "New attempt made. The mailbox status is updated.",
+    "openInvitation": "Open invitation: {email}",
+    "revokeInvitation": "Withdraw",
+    "flash_invitationRevoked": "The invitation is no longer valid. An existing mailbox stays as it is."
   },
   "notes": {
     "modeLabel": "Input for {field}",

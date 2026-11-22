@@ -43,3 +43,9 @@
 - [ ] 5.2 E2E mit `ConsoleSender` und einem Infomaniak-Mock: Einladung per SMS bis Schritt «Ihr E-Mail-Postfach» (teilweise: E2E bis zur Übergabe auf der Plattform-Seite; Annahme per SMS-Code bis zur Anzeige des Zugangs als Unit-Test)
 - [ ] 5.3 Audit-Einträge ohne Passwörter und Codes, Security-Review
 - [ ] 5.4 Abnahme mit Chrissie auf dem iPad (Mike)
+
+## 6. Eigene Adresse statt Postfach (Nachtrag Mike, 22.11.2026)
+
+- [x] 6.1 «Eigene Adresse (kein Postfach bei uns)» in der Einladung bleibt der Weg für Therapeutinnen mit eigener Adresse (z.B. `christina.franz@ayanta.ch`): kein Infomaniak-Postfach, keine Übergabe, Anmeldung mit E-Mail-Code bzw. SMS-Code und Passkey
+- [x] 6.2 Patienten-Mails gehen weiter von `noreply@pain-therapy.online`, Antworten (Reply-To) an die Adresse der Therapeutin, die gesendet hat; ohne sie an die Kontaktadresse der Praxis (`replyTo` auf den drei Versand-Tabellen)
+- [x] 6.3 Plattform-Seite: offene Einladungen einer Praxis zurückziehen; die Postfach-Zeile einer zurückgezogenen Einladung mit bestehendem Postfach wird samt übergebenem Passwort gelöscht, das Postfach bei Infomaniak bleibt

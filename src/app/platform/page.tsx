@@ -18,6 +18,7 @@ import {
   invitePracticeAdminAction,
   mailboxQuotaAction,
   retryMailboxPlatformAction,
+  revokeInvitationPlatformAction,
   statusAction,
 } from './actions';
 
@@ -35,6 +36,7 @@ const FLASH = [
   'handedOver',
   'quotaSaved',
   'mailboxRetried',
+  'invitationRevoked',
 ];
 const ERRORS = ['slugTaken', 'notSuspended', 'noExport', 'confirm', 'otherPractice', 'invalid', 'notFound', 'deleted'];
 
@@ -212,8 +214,23 @@ export default async function PlatformPage({
           <p className="meta">
             {p.slug} · {p.contactEmail} · {t('members', { count: p.members })} ·{' '}
             {p.lastActivity ? t('lastActivity', { at: formatDateTime(p.lastActivity) }) : t('neverActive')}
-            {p.openInvitations.length ? ` · ${t('openInvitations', { emails: p.openInvitations.join(', ') })}` : ''}
           </p>
+          {p.deletedAt || !p.invitations.length ? null : (
+            <ul className="team" data-testid="open-invitations">
+              {p.invitations.map((i) => (
+                <li key={i.id}>
+                  <div className="who">
+                    <span className="muted">{t('openInvitation', { email: i.email })}</span>
+                  </div>
+                  <form action={revokeInvitationPlatformAction}>
+                    <input type="hidden" name="practiceId" value={p.id} />
+                    <input type="hidden" name="id" value={i.id} />
+                    <button className="btn btn--ghost">{t('revokeInvitation')}</button>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          )}
           {p.deletedAt ? null : (
             <>
               <div className="acts">

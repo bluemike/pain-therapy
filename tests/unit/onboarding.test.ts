@@ -26,6 +26,9 @@ import {
   verifyCode,
 } from '@/lib/auth/login-codes';
 import type { Actor } from '@/lib/session';
+import { invitePracticeAdminWith, revokePracticeInvitation } from '@/lib/platform';
+import { practiceSender, replyToOf } from '@/lib/practice-mail';
+import { runInPractice } from '@pain-therapy/shared/practice-context';
 import { resetDatabase } from './db-reset';
 import { TEST_PRACTICE_ID } from './test-practice';
 
@@ -296,5 +299,57 @@ describe('mobile number under «Mein Profil»', () => {
     expect((await confirmMobileChange(actor.id, '111111', '10.0.0.2')).ok).toBe(false);
     expect((await confirmMobileChange(actor.id, codeOf(sms.at(-1)!.text), '10.0.0.2')).ok).toBe(true);
     expect((await rawDb.user.findUniqueOrThrow({ where: { id: actor.id } })).mobile).toBe('+41761234590');
+  });
+});
+
+describe('own address instead of a mailbox (Mike, 22.11.2026)', () => {
+  it('withdraws an invitation with an existing mailbox and invites the person again with her own address', async () => {
+    const u = await rawDb.user.upsert({
+      where: { email: 'platform16@example.test' },
+      create: { email: 'platform16@example.test', name: 'Plattform', platformAdmin: true, activatedAt: new Date() },
+      update: {},
+    });
+    const platform: Actor = { id: u.id, name: u.name, email: u.email, roles: [] };
+    const sms1: InviteForm = {
+      name: 'Christina Franz',
+      channel: 'SMS',
+      mobile: '+41791112233',
+      mailbox: { mode: 'EXISTING', localPart: 'christina.franz' },
+      email: null,
+    };
+    const inv = await invitePracticeAdminWith(platform, TEST_PRACTICE_ID, sms1);
+    infomaniak.devices.set('christina.franz@pain-therapy.online', 'geraet-1');
+    const row = await rawDb.mailboxProvisioning.findUniqueOrThrow({ where: { invitationId: inv.id } });
+    await handOverAccess(row.id, 'geraet-1');
+
+    await revokePracticeInvitation(platform, TEST_PRACTICE_ID, inv.id);
+    await expect(revokePracticeInvitation(platform, TEST_PRACTICE_ID, inv.id)).rejects.toMatchObject({
+      code: 'notFound',
+    });
+    await sweepMailboxes();
+    // Our row and the handed-over password are gone; the mailbox itself stays at Infomaniak
+    expect(await rawDb.mailboxProvisioning.findUnique({ where: { id: row.id } })).toBeNull();
+    expect(infomaniak.boxes.has('christina.franz')).toBe(true);
+
+    const own = await invitePracticeAdminWith(platform, TEST_PRACTICE_ID, {
+      ...sms1,
+      mailbox: { mode: 'NONE' },
+      email: 'christina.franz@ayanta.ch',
+    });
+    expect(await invitationById(own.id)).toMatchObject({ ok: true });
+    expect(await rawDb.mailboxProvisioning.count({ where: { invitationId: own.id } })).toBe(0);
+    expect((await rawDb.invitation.findUniqueOrThrow({ where: { id: own.id } })).email).toBe(
+      'christina.franz@ayanta.ch',
+    );
+  });
+
+  it('sends patient mails from noreply@ with the therapist as Reply-To, else the practice contact', async () => {
+    await runInPractice(TEST_PRACTICE_ID, async () => {
+      expect(await practiceSender('christina.franz@ayanta.ch')).toMatchObject({
+        replyTo: 'christina.franz@ayanta.ch',
+      });
+      expect((await practiceSender(null)).replyTo).toBe('praxis@example.test');
+    });
+    expect(replyToOf({ email: ' Christina.Franz@Ayanta.ch ' })).toBe('christina.franz@ayanta.ch');
   });
 });

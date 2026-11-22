@@ -75,3 +75,17 @@ The platform overview SHALL show used and available addresses of the Infomaniak 
 #### Scenario: Mitglied deaktiviert
 - **WHEN** die Praxis-Admin von Falera ein Mitglied mit Postfach deaktiviert
 - **THEN** bleibt das Postfach bestehen und die Plattform-Übersicht markiert es als «Mitglied deaktiviert»
+
+### Requirement: Own address and Reply-To
+
+A person invited with «Eigene Adresse» SHALL sign in with that address and SHALL get no mailbox at pain-therapy.online and no hand-over task. Patient mails SHALL be sent from `noreply@pain-therapy.online` with the practice name as display name and the sign-in address of the therapist who requested the mail as Reply-To, or the contact address of the practice when none is stored. The Plattform-Admin SHALL be able to withdraw an open invitation; for an existing mailbox only the app's record and a handed-over password are removed.
+
+#### Scenario: Therapist with her own address
+
+- **WHEN** the Plattform-Admin invites Christina Franz with «Eigene Adresse» `christina.franz@ayanta.ch`
+- **THEN** no mailbox is created or handed over, and the invitation and sign-in use `christina.franz@ayanta.ch`
+
+#### Scenario: Patient answers a document mail
+
+- **WHEN** Christina sends a patient a document link and the patient answers
+- **THEN** the mail came from `noreply@pain-therapy.online` and the answer goes to `christina.franz@ayanta.ch`

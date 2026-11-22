@@ -406,6 +406,8 @@ model EmailDelivery {
   lastError   String?
   sentAt      DateTime?
   requestedBy String
+  /// Iteration 16: address of the therapist who sent it, for Reply-To; null for the practice contact address
+  replyTo     String?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 }
@@ -895,6 +897,8 @@ model HandoutDelivery {
   lastError   String?
   sentAt      DateTime?
   requestedBy String
+  /// Iteration 16: address of the therapist who sent it, for Reply-To; null for the practice contact address
+  replyTo     String?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 }
@@ -966,6 +970,8 @@ model AccessLinkDelivery {
   lastError   String?
   sentAt      DateTime?
   requestedBy String
+  /// Iteration 16: address of the therapist who sent it, for Reply-To; null for the practice contact address
+  replyTo     String?
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 

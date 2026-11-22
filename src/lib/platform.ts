@@ -162,7 +162,7 @@ export async function practicesOverview() {
       memberships: { where: { active: true }, select: { user: { select: { lastLoginAt: true, activatedAt: true } } } },
       invitations: {
         where: { acceptedAt: null, revokedAt: null, expiresAt: { gt: new Date() } },
-        select: { email: true },
+        select: { id: true, email: true },
       },
       exports: {
         where: { status: 'DONE' },
@@ -186,6 +186,7 @@ export async function practicesOverview() {
       members: active.length,
       lastActivity: last.length ? new Date(Math.max(...last)) : null,
       openInvitations: p.invitations.map((i) => i.email),
+      invitations: p.invitations,
       mailboxQuota: p.mailboxQuota,
       lastExport: p.exports[0] ?? null,
     };
@@ -247,6 +248,22 @@ export async function invitePracticeAdmin(actor: Actor, practiceId: string, inpu
     }),
   );
   return inv;
+}
+
+/**
+ * Iteration 16: withdraws an open invitation of a practice, e.g. to invite the same person again with her own
+ * address. The mailbox row of a withdrawn invitation is cleaned up by sweepMailboxes (src/lib/mailboxes.ts).
+ */
+export async function revokePracticeInvitation(actor: Actor, practiceId: string, invitationId: string) {
+  const p = await livePractice(practiceId);
+  const r = await authDb.invitation.updateMany({
+    where: { id: invitationId, practiceId: p.id, acceptedAt: null, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+  if (!r.count) throw new PlatformError('notFound');
+  await runInPractice(p.id, () =>
+    audit(actor, 'team.invitationRevoked', { details: { invitationId, by: 'platform' } }),
+  );
 }
 
 /**

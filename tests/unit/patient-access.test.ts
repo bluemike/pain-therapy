@@ -295,8 +295,9 @@ describe('link with the exercise sheet (Link mit dem Übungsblatt)', () => {
     const done = await deliverHandout(delivery.id, { retryDelayMs: 1, access: access! });
     expect(done?.status).toBe('SENT');
     expect(sent).toHaveLength(1);
-    // iteration 12 (design D7): only the practice and the link to «Dokumente», no document title, no attachment
-    expect(sent[0]).toMatchObject({ subject: 'Neues Dokument von Pain Therapy Test', replyTo: 'praxis@example.test' });
+    // iteration 12 (design D7): only the practice and the link to «Dokumente», no document title, no attachment;
+    // iteration 16: answers go to the therapist who sent it
+    expect(sent[0]).toMatchObject({ subject: 'Neues Dokument von Pain Therapy Test', replyTo: 'christina@ayanta.ch' });
     expect(sent[0].text).toContain(`${access!.url}\n`);
     expect(sent[0].text).not.toMatch(/Übungsblatt|Sitzung|PT-\d{4}/);
     const archived = await pdfText(

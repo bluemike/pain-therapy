@@ -6,7 +6,7 @@ import { audit, SYSTEM_ACTOR } from './audit';
 import { blobFolder, requirePractice } from './practice';
 import { formatDateTime } from './format';
 import { sendWithRetry } from './mail';
-import { practiceSender } from './practice-mail';
+import { practiceSender, replyToOf } from './practice-mail';
 import { documentEmail, issueMailLink } from './patient-access';
 import type { MailAccess } from './handouts';
 import { renderSignedFormPdf } from './pdf';
@@ -141,7 +141,7 @@ export async function deliverEmail(deliveryId: string, opts: { retryDelayMs?: nu
   });
   if (!delivery || delivery.status !== 'PENDING' || !delivery.recipient) return delivery;
   const { document } = delivery;
-  const sender = await practiceSender();
+  const sender = await practiceSender(delivery.replyTo);
   const result = opts.access
     ? await sendWithRetry(
         {
@@ -210,7 +210,13 @@ export async function requestResend(actor: Actor, documentId: string) {
   const status = !consent ? 'SKIPPED_NO_CONSENT' : !doc.patient.email ? 'SKIPPED_NO_ADDRESS' : 'PENDING';
   return db.$transaction(async (tx) => {
     const delivery = await tx.emailDelivery.create({
-      data: { documentId, recipient: status === 'PENDING' ? doc.patient.email : null, status, requestedBy: actor.name },
+      data: {
+        documentId,
+        recipient: status === 'PENDING' ? doc.patient.email : null,
+        status,
+        requestedBy: actor.name,
+        replyTo: replyToOf(actor),
+      },
     });
     await audit(
       actor,
