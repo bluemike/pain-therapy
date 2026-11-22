@@ -9,15 +9,11 @@ import {
   TIMES_PER_DAY,
   WEEKDAYS,
   weekdayBit,
-  hasEpd,
-  hasFrm,
   type Parts,
   type Timing,
 } from '@/lib/home-program';
 import { ExerciseImage } from './ExerciseImage';
-import { ExerciseAudio } from './ExerciseAudio';
 import { Seg } from './Seg';
-import { TailoredSheet } from './TailoredSheet';
 import { ExercisePreview } from './ExercisePreview';
 import { X } from 'lucide-react';
 
@@ -79,12 +75,13 @@ export function HomeProgramBlock({
               const e = executionTime(r.timing);
               const bad = errors[`home:${r.code}`];
               const parts = r.parts ?? 'FRM_EPD';
-              const epdAudio = r.variant ? (`v${r.variant}-audio` as const) : ('std-audio' as const);
               return (
                 <li className={`rx${bad ? ' bad' : ''}`} key={r.code} data-code={r.code}>
                   <ExerciseImage className="rximg" code={r.code} kind="main" alt={t('imageOf', { code: r.code })} />
                   <div className="nm">
-                    <TailoredSheet code={r.code} name={r.name} variant={r.variant} epd={r.epd} parts={parts} />
+                    <span className="rxname">
+                      <b>{r.code}</b> {r.name}
+                    </span>
                     <small>
                       {parts === 'FRM'
                         ? t('partsFrm')
@@ -99,12 +96,6 @@ export function HomeProgramBlock({
                   <div className="dur">
                     {r.timing ? t('perExecution', { duration: min(e.seconds / 60) }) : '–'}
                     {r.timing && e.stretchMissing ? <small>{t('stretchNotSet')}</small> : null}
-                    <ExerciseAudio
-                      code={r.code}
-                      kind={hasFrm(parts) ? 'frm-audio' : epdAudio}
-                      then={hasFrm(parts) && hasEpd(parts) ? epdAudio : undefined}
-                      label={hasEpd(parts) ? `${r.code} ${r.epd}` : `${r.code} FRM`}
-                    />
                     <ExercisePreview code={r.code} name={r.name} sheet />
                     {r.timing ? (
                       <small data-testid={`week-${r.code}`}>

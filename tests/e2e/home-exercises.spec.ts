@@ -207,33 +207,19 @@ test.describe('home exercises and exercise sheet', () => {
     await popup.getByRole('button', { name: 'Schliessen' }).click();
     await expect(popup).toBeHidden();
 
-    // Prescribed: the Selbstausführung offers the tailored sheet and «Anhören» (FRM, then the EPD)
+    // Prescribed: the Selbstausführung shows the name as text, «Blatt ansehen» with the original sheet and no audio
+    // (Mike 2026-11-22: audio only for the patient)
     await page.getByLabel('Übung 2A verordnet').check();
     await group(page, 'Übung 2A: Übung fällt').getByRole('button', { name: 'leicht' }).click();
     const home = page.locator('section[aria-labelledby="h_home"]');
-    await home.getByRole('button', { name: /^2A / }).click();
-    const sheet = page.getByTestId('tailored-2A');
-    await expect(sheet).toBeVisible();
-    await expect(sheet.getByRole('heading', { name: /^Faszien-Rollmassage/ })).toBeVisible();
-    await expect(sheet.getByRole('heading', { name: /^Engpassdehnung · Standard/ })).toBeVisible();
-    await expect(sheet.getByRole('img', { name: /2A FRM: Bildband/ })).toBeVisible();
-    await expect(sheet.getByText(/^Variante \d:/)).toHaveCount(0);
+    await expect(home.getByRole('button', { name: /^2A / })).toHaveCount(0);
+    await expect(home.getByRole('button', { name: /vorlesen/ })).toHaveCount(0);
+    await home.getByRole('button', { name: 'Übungsblatt 2A ansehen' }).click();
+    const sheet = page.getByRole('dialog', { name: /2A/ });
+    await expect(sheet.getByRole('img', { name: 'Übungsblatt 2A' })).toBeVisible();
     await expectCentered(page, sheet);
     await sheet.getByRole('button', { name: 'Schliessen' }).click();
     await expect(sheet).toBeHidden();
-
-    // Audio anhören und stoppen (placeholder: three seconds of silence)
-    const play = home.getByRole('button', { name: 'Übung 2A Standard vorlesen' });
-    await play.click();
-    const stop = home.getByRole('button', { name: 'Vorlesen von Übung 2A Standard stoppen' });
-    await expect(stop).toHaveAttribute('aria-pressed', 'true');
-    await stop.click();
-    await expect(play).toHaveAttribute('aria-pressed', 'false');
-
-    // Audio not uploaded yet
-    await page.route('**/api/exercise-media/2A/frm-audio', (r) => r.fulfill({ status: 404, body: 'Not found' }));
-    await play.click();
-    await expect(home.getByText('Audio nicht verfügbar')).toBeVisible();
 
     // Without a prescription the session goes back to the record
     await home.getByRole('button', { name: 'Verordnung 2A entfernen' }).click();
@@ -254,12 +240,12 @@ test.describe('catalog exercise', () => {
       await expect(page.getByRole('heading', { name: h, exact: true })).toBeVisible();
     await expect(page.locator('main')).toContainText('Platzhalter 2A');
     await expect(page.locator('main')).toContainText('Bereich 2 Rumpf');
-    // Image bands and one recording per part (iteration 8, exercise-segments)
+    // Image bands per part (iteration 8, exercise-segments)
     for (const part of ['Faszien-Rollmassage', 'Standardübung'])
       await expect
         .poll(() => page.getByAltText(`2A ${part}: Bildband`).evaluate((img: HTMLImageElement) => img.naturalWidth))
         .toBeGreaterThan(0);
-    await expect(page.getByRole('button', { name: 'Übung 2A Faszien-Rollmassage vorlesen' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /vorlesen/ })).toHaveCount(0);
     await expect(page.locator('dl.kv')).toContainText('2 min pro Seite');
     await expect(page.locator('dl.kv')).toContainText('4 min');
     for (const alt of ['Hauptbild 2A', 'Übungsblatt 2A'])
@@ -280,12 +266,12 @@ test.describe('catalog exercise', () => {
   });
 });
 
-test.describe('exercise preview and audio (iteration 7)', () => {
-  test('catalog: preview and audio for every exercise', async ({ page }) => {
+test.describe('exercise preview (iteration 7)', () => {
+  test('catalog: preview for every exercise, audio only for the patient', async ({ page }) => {
     await login(page);
     await page.goto('/catalog?tab=exercises');
     await expect(page.getByRole('button', { name: 'Bild von Übung 1A gross öffnen' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Übung 4G vorlesen' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /vorlesen/ })).toHaveCount(0);
     const res = await page.request.get('/api/exercise-media/1A/audio', { headers: { range: 'bytes=0-1' } });
     expect(res.status()).toBe(206);
     expect(res.headers()['content-type']).toBe('audio/mpeg');

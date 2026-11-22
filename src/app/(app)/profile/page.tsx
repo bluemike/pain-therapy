@@ -45,7 +45,6 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           displayName: profile.displayName ?? firstName(profile.name),
           title: profile.title,
           noteInputMode: profile.noteInputMode,
-          audioLanguage: profile.audioLanguage,
         }}
       />
       <section className="card team-card" aria-labelledby="h_contact">
