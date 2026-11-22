@@ -99,7 +99,7 @@ td.num{font-variant-numeric:tabular-nums}
 <div class="wrap">
   <header>
     <h1>Therapeutinnen einladen und Postfach einrichten</h1>
-    <p class="lead">Mockup zu Iteration 16: Einladung per SMS mit Code, Postfach bei Infomaniak automatisch angelegt, Zugang für Apple Mail und Outlook einmal in der App. Beispieldaten; Jürg Müller ist erfunden.</p>
+    <p class="lead">Mockup zu Iteration 16: Einladung per SMS mit Code, Postfach bei Infomaniak automatisch angelegt, Zugang für Apple Mail und Outlook über die App übergeben. Beispieldaten; Jürg Müller ist erfunden.</p>
   </header>
   <nav id="nav" aria-label="Ansichten">
     <a href="#einladen">1 Einladen</a>
@@ -124,7 +124,7 @@ td.num{font-variant-numeric:tabular-nums}
           <div style="display:grid;gap:8px">
             <label>E-Mail-Postfach</label>
             <div class="opt"><b>Neues Postfach anlegen</b><div class="addr"><input id="in-addr" value="christina.franz" aria-label="Adresse"><span>@pain-therapy.online</span></div><span class="hint danger">Diese Adresse ist schon vergeben.</span></div>
-            <div class="opt on"><b>Postfach besteht schon</b><span>christina.franz@pain-therapy.online · neues Passwort beim Annehmen</span></div>
+            <div class="opt on"><b>Postfach besteht schon</b><span>christina.franz@pain-therapy.online · bleibt unverändert</span></div>
             <div class="opt"><b>Eigene Adresse</b><span class="hint">Kein Postfach bei Pain Therapy, z.B. anna@physio-muster.ch</span></div>
           </div>
           <button class="btn primary block" type="button">Einladung senden</button>
@@ -135,7 +135,7 @@ td.num{font-variant-numeric:tabular-nums}
       <b>Ein Formular statt zwei Systeme</b>
       <span>Name, Handynummer und Postfach. Mike muss nicht mehr in den Infomaniak Manager.</span>
       <span>«Postfach besteht schon» sieht nur der Plattform-Admin. Die Praxis-Admin legt neue Postfächer im Rahmen ihres Kontingents an oder lädt mit eigener Adresse ein.</span>
-      <span>Das Postfach entsteht erst, wenn die Einladung angenommen ist.</span>
+      <span>Ein neues Postfach entsteht beim Senden und wird wieder gelöscht, wenn die Einladung nie angenommen wird.</span>
       <span>Spec: sms-invitation, mailbox-provisioning</span>
     </aside>
   </section>
@@ -192,8 +192,8 @@ td.num{font-variant-numeric:tabular-nums}
         <div class="center">
           <div class="steps"><span>1 SMS-Code</span><span>2 Anmeldung</span><span>3 Wiederherstellung</span><span class="on">4 E-Mail-Postfach</span></div>
           <h2>Ihr E-Mail-Postfach</h2>
-          <p class="hint">christina.franz@pain-therapy.online ist bereit. Das Passwort sehen Sie nur jetzt. Unter «Mein Profil» können Sie jederzeit ein neues ausstellen.</p>
-          <div class="secret"><span>tR7k-Mw4q-Xn2P-hB9s-Lc3v</span><button class="btn" type="button">Kopieren</button></div>
+          <p class="hint">christina.franz@pain-therapy.online ist bereit. Das Passwort sehen Sie nur jetzt. Unter «Mein Profil» können Sie jederzeit einen neuen Zugang anfordern.</p>
+          <div class="secret"><span>Xq3vTn8rKp2mWz6hBs4c</span><button class="btn" type="button">Kopieren</button></div>
           <button class="btn primary block" type="button">Auf diesem iPad einrichten</button>
           <p class="hint">Lädt ein Profil. Danach unter Einstellungen > «Profil geladen» installieren. Apple Mail ist dann fertig eingerichtet.</p>
           <h3>Outlook</h3>
@@ -203,15 +203,14 @@ td.num{font-variant-numeric:tabular-nums}
             <dt>Eingang</dt><dd>mail.infomaniak.com · 993 · SSL</dd>
             <dt>Ausgang</dt><dd>mail.infomaniak.com · 465 · SSL</dd>
           </dl>
-          <p class="hint">Webmail: mail.infomaniak.com</p>
-          <button class="btn block" type="button">Fertig, zum Cockpit</button>
+                    <button class="btn block" type="button">Fertig, zum Cockpit</button>
         </div>
       </div>
     </div>
     <aside class="note">
       <b>Passwort nur hinter dem Passkey</b>
-      <span>Die App erzeugt das Passwort erst jetzt, setzt es bei Infomaniak und speichert es nirgends. Nie per SMS oder E-Mail.</span>
-      <span>Offen bis Aufgabe 1.1: ob das per API gesetzte Passwort im neuen Infomaniak Mail Service für IMAP gilt. Sonst zeigt dieser Schritt eine Anleitung für ein Gerätepasswort im Infomaniak-Konto.</span>
+      <span>Das Gerätepasswort hat Mike im Infomaniak Manager erzeugt und in der App übergeben (Ansicht Plattform). Die App zeigt es hier einmal und löscht es dann. Nie per SMS, E-Mail oder Chat.</span>
+      <span>Ist der Zugang noch nicht übergeben, steht hier «Ihr E-Mail-Zugang wird vorbereitet» und Chrissie bekommt eine SMS, sobald er bereit ist.</span>
     </aside>
   </section>
 
@@ -224,7 +223,7 @@ td.num{font-variant-numeric:tabular-nums}
           <thead><tr><th>Name</th><th>E-Mail</th><th>Handy</th><th>Rolle</th><th>Postfach</th><th></th></tr></thead>
           <tbody>
             <tr><td>Chrissie</td><td>christina.franz@pain-therapy.online</td><td class="num">079 *** ** 67</td><td>Praxis-Admin, Therapeutin</td><td><span class="pill ok">aktiv</span></td><td><button class="btn" type="button">…</button></td></tr>
-            <tr><td>Jürg Müller</td><td>juerg.mueller@pain-therapy.online</td><td class="num">078 *** ** 12</td><td>Therapeut/in</td><td><span class="pill warn">fehlgeschlagen</span></td><td><button class="btn" type="button">Erneut versuchen</button></td></tr>
+            <tr><td>Jürg Müller</td><td>juerg.mueller@pain-therapy.online</td><td class="num">078 *** ** 12</td><td>Therapeut/in</td><td><span class="pill warn">Zugang offen</span></td><td><span class="pill warn">Einladung offen (SMS)</span></td></tr>
             <tr><td>Anna Beispiel</td><td>anna@physio-muster.ch</td><td class="num">076 *** ** 90</td><td>Therapeut/in</td><td><span class="pill mut">eigene Adresse</span></td><td><span class="pill warn">Einladung offen (SMS)</span></td></tr>
           </tbody>
         </table></div>
@@ -233,7 +232,7 @@ td.num{font-variant-numeric:tabular-nums}
     </div>
     <aside class="note">
       <b>Status auf einen Blick</b>
-      <span>Schlägt das Anlegen bei Infomaniak fehl, ist das Konto trotzdem aktiv; Postfach lässt sich erneut anlegen.</span>
+      <span>«Zugang offen»: Postfach angelegt, Mike hat den Zugang noch nicht übergeben. Schlägt das Anlegen fehl, geht die Einladung trotzdem hinaus und die Spalte zeigt «fehlgeschlagen» mit «Erneut versuchen».</span>
     </aside>
   </section>
 
@@ -243,10 +242,9 @@ td.num{font-variant-numeric:tabular-nums}
       <div class="body">
         <div class="center">
           <h2>E-Mail-Postfach</h2>
-          <p class="hint">christina.franz@pain-therapy.online · Zugang zuletzt ausgestellt am 22.11.2026</p>
-          <div class="warnbox">Ein neuer Zugang ersetzt das bisherige Passwort. Apple Mail und Outlook fragen danach nach dem neuen Passwort.</div>
-          <button class="btn primary block" type="button">Neuen Postfach-Zugang ausstellen</button>
-          <p class="hint">Sie bestätigen mit Face ID oder dem Authenticator-Code.</p>
+          <p class="hint">christina.franz@pain-therapy.online · Zugang zuletzt abgeholt am 22.11.2026</p>
+          <button class="btn primary block" type="button">Neuen Zugang anfordern</button>
+          <p class="hint">Zum Beispiel für Outlook auf dem Laptop. Der Betreiber bereitet ihn vor; Sie erhalten eine SMS, sobald er bereitsteht. Der bisherige Zugang auf dem iPad bleibt gültig.</p>
           <h3>Handynummer</h3>
           <div class="row"><input id="pf-mobile" value="079 123 45 67" style="flex:1;min-width:0" aria-label="Handynummer"><button class="btn" type="button">Ändern</button></div>
         </div>
@@ -254,7 +252,7 @@ td.num{font-variant-numeric:tabular-nums}
     </div>
     <aside class="note">
       <b>Später noch Outlook dazu?</b>
-      <span>Ein neuer Zugang zeigt Passwort, Profil und Outlook-Anleitung wieder. So braucht niemand ein Passwort aufzubewahren.</span>
+      <span>Jedes Gerät bekommt bei Infomaniak ein eigenes Passwort. Ein neuer Zugang zeigt Passwort, Profil und Outlook-Anleitung wieder. So braucht niemand ein Passwort aufzubewahren.</span>
       <span>Auch für Chrissie, falls sie bereits über die E-Mail-Einladung aktiv ist.</span>
     </aside>
   </section>
@@ -272,13 +270,22 @@ td.num{font-variant-numeric:tabular-nums}
             <tr><td>Plattform (admin@, noreply@)</td><td class="num">2</td><td>–</td><td>–</td></tr>
           </tbody>
         </table></div>
+        <h3>Postfach-Zugang vorbereiten</h3>
+        <div class="opt on" style="gap:8px">
+          <b>Christina Franz · christina.franz@pain-therapy.online</b>
+          <span class="hint">1. Im Infomaniak Manager: Adresse > Geräte > «Gerät hinzufügen», ohne Benutzer, Name «Pain Therapy». 2. Passwort hier einfügen.</span>
+          <div class="row"><button class="btn" type="button">Im Manager öffnen</button></div>
+          <div class="addr"><input id="ho-pw" value="••••••••••••••••••••" aria-label="Gerätepasswort"><button class="btn primary" type="button">Übergeben</button></div>
+          <span class="hint" style="color:var(--ok)">Zugang funktioniert. Bereit zur Abholung bis 06.12.2026.</span>
+        </div>
+        <div class="opt"><b>Jürg Müller · juerg.mueller@pain-therapy.online</b><span class="hint">Einladung offen · Zugang noch nicht vorbereitet</span></div>
         <p class="hint">Postfächer deaktivierter Mitglieder bleiben bestehen; löschen oder weitergeben im Infomaniak Manager.</p>
       </div>
     </div>
     <aside class="note">
       <b>Mike behält die Kosten im Griff</b>
       <span>10 Adressen sind bei Infomaniak enthalten, weitere kosten extra. Kontingent pro Praxis, Standard 5.</span>
-      <span>Das API-Token gehört einem eigenen Infomaniak-Benutzer, der nur diesen Mail Service verwalten darf.</span>
+      <span>Das API-Token gehört dem Infomaniak-Benutzer api@, der nur diesen Mail Service verwalten darf. Es legt Postfächer an und löscht sie, erzeugt aber keine Passwörter: Gerätepasswörter gibt es bei Infomaniak nur im Manager (getestet 22.11.2026). Etwa eine Minute pro Person.</span>
     </aside>
   </section>
 </div>

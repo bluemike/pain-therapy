@@ -2,20 +2,21 @@
 
 ## 0. Voraussetzungen (Mike)
 
-- [ ] 0.1 Bei Infomaniak einen Benutzer «pain-therapy-app» mit Rechten nur auf den Mail Service von «Pain Therapy» anlegen, damit ein API-Token erzeugen und als Key-Vault-Geheimnis `infomaniak-api-token` hinterlegen; `mail_hosting_id` aus der URL des Mail Service notieren
-- [ ] 0.2 Konto bei ASPSMS eröffnen, 500 Credits kaufen (30 EUR), Userkey und Passwort als `aspsms-userkey` und `aspsms-password` in den Key Vault
+- [x] 0.1 Infomaniak-Benutzer `api@pain-therapy.online` (nur Mail Service), API-Token «pain-therapy-onboarding» mit Bereich «mail» als Key-Vault-Geheimnis `infomaniak-api-token`; `mail_hosting_id` 1127554 (22.11.2026)
+- [x] 0.2 Konto bei ASPSMS mit 1000 Credits, Userkey und Passwort als `aspsms-userkey` und `aspsms-password` in den Key Vault
 
-## 1. Abklärung Infomaniak und ASPSMS (0.5 PT)
+## 1. Abklärung Infomaniak und ASPSMS
 
-- [ ] 1.1 Testpostfach `api-test@pain-therapy.online` per API anlegen; prüfen, ob das gesetzte Passwort für IMAP und SMTP (mail.infomaniak.com) funktioniert; danach löschen
-- [ ] 1.2 Nötigen Token-Bereich ermitteln und festhalten, ob das Token auf den Mail Service beschränkt ist
-- [ ] 1.3 Prüfen, ob es einen Endpunkt für Gerätepasswörter gibt; falls 1.1 scheitert, Ausweichweg aus dem Design (Anleitung statt Profil) festlegen und Mike informieren
-- [ ] 1.4 ASPSMS: Testversand an eine Swisscom- und eine Sunrise-Nummer, alphanumerischer Absender «PainTherapy» möglich?
+- [x] 1.1 Testpostfach `api-test@pain-therapy.online` per API anlegen (HTTP 201); das gesetzte Passwort gilt nicht für IMAP und SMTP, auch nicht nach `PATCH` (22.11.2026)
+- [x] 1.2 Token von `api@pain-therapy.online` mit Bereich «mail» genügt für Auflisten, Anlegen und Ändern
+- [x] 1.3 Kein dokumentierter Endpunkt für Gerätepasswörter; Übergabe über die App festgelegt (Design D4)
+- [ ] 1.4 ASPSMS: Testversand an eine Swisscom- und eine Sunrise-Nummer, alphanumerischer Absender «PainTherapy» möglich? (nach der Kontoprüfung)
+- [ ] 1.5 Prüfen, dass `DELETE` das Testpostfach entfernt hat
 
 ## 2. Datenmodell (0.5 PT)
 
 - [ ] 2.1 `Invitation.channel`, `Invitation.mobile`, `Invitation.mailboxMode`, `Invitation.mailboxAddress`; `User.mobile`; `Practice.mailboxQuota`
-- [ ] 2.2 `SmsMessage` (maskierter Empfänger, Zweck, Status, Credits) und `MailboxProvisioning` (Adresse, Praxis, Benutzer, Status, letzter Fehler)
+- [ ] 2.2 `SmsMessage` (maskierter Empfänger, Zweck, Status, Credits) und `MailboxProvisioning` (Adresse, Praxis, Benutzer, Status, letzter Fehler, `handoverEnc` und Ablauf)
 - [ ] 2.3 `LoginCodePurpose.INVITATION_SMS`
 
 ## 3. SMS-Versand (1 PT)
@@ -28,12 +29,12 @@
 
 ## 4. Postfächer (1.5 bis 2 PT)
 
-- [ ] 4.1 `src/lib/infomaniak.ts`: Postfächer auflisten, anlegen, Passwort setzen; Fehler und asynchrone Antworten behandeln
-- [ ] 4.2 Einladungsdialog: drei Modi, Vorschlag der Adresse, Prüfung ob frei, Kontingent
-- [ ] 4.3 Nach der Einrichtung des zweiten Faktors: Postfach anlegen oder Passwort setzen, Status in `MailboxProvisioning`, «Erneut versuchen»
-- [ ] 4.4 Schritt «Ihr E-Mail-Postfach»: Passwort einmal anzeigen, Kopieren, Outlook-Anleitung, Webmail-Link
+- [ ] 4.1 `src/lib/infomaniak.ts`: Postfächer auflisten, anlegen, löschen; Fehler und asynchrone Antworten behandeln
+- [ ] 4.2 Einladungsdialog: drei Modi, Vorschlag der Adresse, Prüfung ob frei, Kontingent; Anlegen beim Senden, Löschen bei Ablauf oder Rückzug ohne Annahme
+- [ ] 4.3 Plattform-Übersicht: Aufgaben «Postfach-Zugang vorbereiten» mit Link in den Manager, Feld «Postfach-Zugang übergeben» mit IMAP-Prüfung, verschlüsselt höchstens 14 Tage
+- [ ] 4.4 Schritt «Ihr E-Mail-Postfach»: Zugang einmal anzeigen und löschen, Kopieren, Outlook-Anleitung; «wird vorbereitet» mit SMS, sobald bereit
 - [ ] 4.5 `src/lib/mail-profile.ts`: Apple-Profil (`com.apple.mail.managed`) über einmaligen Link, 10 Minuten, nicht gespeichert
-- [ ] 4.6 «Mein Profil > E-Mail-Postfach»: neuen Zugang ausstellen nach erneuter Bestätigung
+- [ ] 4.6 «Mein Profil > E-Mail-Postfach»: neuen Zugang anfordern
 - [ ] 4.7 Plattform-Übersicht: belegte und freie Adressen, Kontingent pro Praxis, Postfächer deaktivierter Mitglieder
 
 ## 5. Tests und Abnahme (1 PT)
