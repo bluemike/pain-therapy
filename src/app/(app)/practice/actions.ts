@@ -18,6 +18,7 @@ const FIELDS = [
   'city',
   'contactEmail',
   'phone',
+  'privacyOfficer',
   'defaultPlace',
   'documentPrefix',
   'privacyNotice',
