@@ -21,6 +21,8 @@ export const practiceSchema = z.object({
   city: z.string().trim().max(80, 'tooLong'),
   contactEmail: z.string().trim().toLowerCase().email('email').max(254, 'tooLong'),
   phone: z.string().trim().max(40, 'tooLong'),
+  /** Iteration 17 (design D4): «Verantwortliche Person» of the privacy notice in the form */
+  privacyOfficer: z.string().trim().max(100, 'tooLong'),
   defaultPlace: z.string().trim().min(1, 'required').max(80, 'tooLong'),
   documentPrefix: z
     .string()
@@ -73,6 +75,7 @@ export async function updatePractice(
     addressLine: addressLineOf(input),
     contactEmail: input.contactEmail,
     phone: input.phone || null,
+    privacyOfficer: input.privacyOfficer || null,
     defaultPlace: input.defaultPlace,
     documentPrefix: input.documentPrefix,
     privacyNotice: input.privacyNotice || null,

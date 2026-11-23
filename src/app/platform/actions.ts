@@ -24,6 +24,7 @@ import { authDb } from '@/lib/db';
 import { runInPractice } from '@pain-therapy/shared/practice-context';
 import { buildExport, requestExport } from '@/lib/practice-export';
 import { z } from 'zod';
+import { createPlan, PlanError, planSchema, setPlanActive, setPracticePlan, updatePlan } from '@/lib/plans';
 
 /** platform-admin (iteration 12, design D3, D9): actions of the page «Praxen» */
 
@@ -42,6 +43,10 @@ async function run(
   } catch (e) {
     if (e instanceof PlatformError || e instanceof OnboardingError || e instanceof MailboxError)
       redirect(`/platform?error=${e.code}`);
+    if (e instanceof PlanError)
+      redirect(
+        `/platform?error=${e.code === 'notFound' ? 'notFound' : e.code === 'inUse' ? 'planInUse' : 'planNameTaken'}#plans`,
+      );
     throw e;
   }
   redirect(`/platform?flash=${typeof flash === 'string' ? flash : flash()}`);
@@ -76,6 +81,7 @@ const DETAIL_FIELDS = [
   'defaultPlace',
   'contactEmail',
   'phone',
+  'privacyOfficer',
   'documentPrefix',
   'adminName',
   'adminEmail',
@@ -145,4 +151,33 @@ export async function revokeInvitationPlatformAction(fd: FormData) {
     (actor) => revokePracticeInvitation(actor, String(fd.get('practiceId')), String(fd.get('id'))),
     'invitationRevoked',
   );
+}
+
+/** practice-plans (iteration 17, design D7): plan of a practice */
+export async function practicePlanAction(fd: FormData) {
+  await run((actor) => setPracticePlan(actor, String(fd.get('id')), String(fd.get('planId'))), 'planSaved');
+}
+
+export type PlanFormState = { errors?: Record<string, string>; values?: Record<string, string> };
+
+/** «Modell anlegen» or, with an id, change name and limit of a plan */
+export async function savePlanAction(_prev: PlanFormState, fd: FormData): Promise<PlanFormState> {
+  await requirePlatformAdmin();
+  const values = { name: String(fd.get('name') ?? ''), patientLimit: String(fd.get('patientLimit') ?? '') };
+  const parsed = planSchema.safeParse(values);
+  if (!parsed.success) return { errors: fieldErrors(parsed.error), values };
+  const id = String(fd.get('id') ?? '');
+  try {
+    if (id) await updatePlan(id, parsed.data);
+    else await createPlan(parsed.data);
+  } catch (e) {
+    if (e instanceof PlanError && e.code === 'nameTaken') return { errors: { name: 'planNameTaken' }, values };
+    throw e;
+  }
+  redirect(`/platform?flash=${id ? 'planUpdated' : 'planCreated'}#plans`);
+}
+
+export async function planActiveAction(fd: FormData) {
+  const active = fd.get('active') === '1';
+  await run(() => setPlanActive(String(fd.get('id')), active), active ? 'planActivated' : 'planDeactivated');
 }

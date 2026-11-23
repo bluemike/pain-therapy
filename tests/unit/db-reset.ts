@@ -10,7 +10,7 @@ export async function resetDatabase() {
   if (!name.endsWith('_test')) throw new Error(`Refusing to empty ${name}`);
   const tables = await db.$queryRaw<
     { tablename: string }[]
-  >`SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename <> '_prisma_migrations'`;
+  >`SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename NOT IN ('_prisma_migrations', 'Plan')`;
   await db.$executeRawUnsafe(`TRUNCATE ${tables.map((t) => `"${t.tablename}"`).join(', ')} CASCADE`);
   await db.$executeRawUnsafe(TEST_PRACTICE_SQL);
 }

@@ -340,6 +340,8 @@ model SignatureSession {
   startedBy       String
   startedAt       DateTime            @default(now())
   completedAt     DateTime?
+  /// Iteration 17 (design D1): practice details filled into the form fields when the PDF was made
+  fieldValues     Json?
   abortedAt       DateTime?
   patientNote     String?
   place           String?
@@ -1059,28 +1061,39 @@ enum PracticeRole {
 /// A practice (tenant). Every patient-related row belongs to exactly one practice; PostgreSQL row-level security
 /// limits each request to the practice in the setting app.practice_id (prisma/rls.sql).
 model Practice {
-  id             String         @id @default(cuid())
-  slug           String         @unique
-  name           String
-  status         PracticeStatus @default(ACTIVE)
+  id              String         @id @default(cuid())
+  slug            String         @unique
+  name            String
+  status          PracticeStatus @default(ACTIVE)
   /// One line as printed in PDF footers, e.g. "Pain Therapy | Via Prau da Cuort 5 | 7153 Falera"
-  addressLine    String
-  street         String?
-  zip            String?
-  city           String?
-  defaultPlace   String
-  contactEmail   String
-  phone          String?
+  addressLine     String
+  street          String?
+  zip             String?
+  city            String?
+  defaultPlace    String
+  contactEmail    String
+  phone           String?
   /// Logo (PNG or JPEG, at most 500 KB) for app, zone and PDFs; null shows the name as text (design D5)
-  logo           Bytes?
-  logoType       String?
+  logo            Bytes?
+  logoType        String?
   /// Own text of the zone privacy notice (paragraphs); null uses the platform template with the practice details
-  privacyNotice  String?
-  documentPrefix String         @default("PT")
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  privacyNotice   String?
+  /// Iteration 17 (design D4): «Verantwortliche Person» of the privacy notice; empty shows the practice name alone
+  privacyOfficer  String?
+  /// Iteration 17 (design D3): template version of the consent form the practice adopted or dismissed
+  templateSeen    Int            @default(1)
+  /// Iteration 17 (design D7): plan with the patient limit, changed only by the platform admin
+  planId          String         @default("freemium")
+  plan            Plan           @relation(fields: [planId], references: [id])
+  planChangedAt   DateTime?
+  planChangedBy   String?
+  /// Iteration 17 (design D8): set when the platform admin got the mail about the reached limit; reset on a plan change
+  limitNotifiedAt DateTime?
+  documentPrefix  String         @default("PT")
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
   /// Set when the platform deleted the practice's data (design D9); the row keeps the slug from being given again
-  deletedAt      DateTime?
+  deletedAt       DateTime?
 
   memberships           PracticeMembership[]
   invitations           Invitation[]
@@ -1111,6 +1124,17 @@ model Practice {
   exports               PracticeExport[]
   photoHandoffs         PhotoHandoff[]
   photoHandoffUploads   PhotoHandoffUpload[]
+}
+
+/// Iteration 17 (design D7): plan of a practice; patientLimit null = unlimited. No prices (commercial terms open).
+model Plan {
+  id           String     @id
+  name         String     @unique
+  patientLimit Int?
+  sortOrder    Int        @default(0)
+  active       Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  practices    Practice[]
 }
 
 enum ExportStatus {

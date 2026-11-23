@@ -1,6 +1,8 @@
 import { getTranslations } from 'next-intl/server';
 import { authDb } from '@/lib/db';
 import { practiceDetailsOf, practicesOverview } from '@/lib/platform';
+import { listPlans } from '@/lib/plans';
+import { PlansSection, PracticeUsage } from './usage';
 import { exportsOf } from '@/lib/practice-export';
 import { formatDate, formatDateTime } from '@/lib/format';
 import { ExportList } from '@/components/ExportList';
@@ -17,6 +19,7 @@ import {
   invitePlatformAdminAction,
   invitePracticeAdminAction,
   mailboxQuotaAction,
+  practicePlanAction,
   retryMailboxPlatformAction,
   revokeInvitationPlatformAction,
   statusAction,
@@ -37,8 +40,24 @@ const FLASH = [
   'quotaSaved',
   'mailboxRetried',
   'invitationRevoked',
+  'planSaved',
+  'planCreated',
+  'planUpdated',
+  'planDeactivated',
+  'planActivated',
 ];
-const ERRORS = ['slugTaken', 'notSuspended', 'noExport', 'confirm', 'otherPractice', 'invalid', 'notFound', 'deleted'];
+const ERRORS = [
+  'planNameTaken',
+  'planInUse',
+  'slugTaken',
+  'notSuspended',
+  'noExport',
+  'confirm',
+  'otherPractice',
+  'invalid',
+  'notFound',
+  'deleted',
+];
 
 function PersonForm({
   id,
@@ -99,6 +118,7 @@ export default async function PlatformPage({
     }),
     mailboxOverview(),
   ]);
+  const plans = await listPlans();
   const names = { name: tt('name'), email: tt('email') };
   const exports = new Map(await Promise.all(practices.map(async (p) => [p.id, await exportsOf(p.id)] as const)));
   const details = new Map(
@@ -212,9 +232,9 @@ export default async function PlatformPage({
             </span>
           </h2>
           <p className="meta">
-            {p.slug} · {p.contactEmail} · {t('members', { count: p.members })} ·{' '}
-            {p.lastActivity ? t('lastActivity', { at: formatDateTime(p.lastActivity) }) : t('neverActive')}
+            {p.slug} · {p.contactEmail} · {t('members', { count: p.members })}
           </p>
+          {p.deletedAt ? null : <PracticeUsage p={p} t={t} />}
           {p.deletedAt || !p.invitations.length ? null : (
             <ul className="team" data-testid="open-invitations">
               {p.invitations.map((i) => (
@@ -262,6 +282,24 @@ export default async function PlatformPage({
                   <button className="btn btn--gold">{tt('send')}</button>
                 </form>
               </details>
+              <form action={practicePlanAction} className="quota">
+                <input type="hidden" name="id" value={p.id} />
+                <label className="l" htmlFor={`plan_${p.id}`}>
+                  {t('plan')}
+                </label>
+                <select className="inp" id={`plan_${p.id}`} name="planId" defaultValue={p.plan.id}>
+                  {plans
+                    .filter((pl) => pl.active || pl.id === p.plan.id)
+                    .map((pl) => (
+                      <option key={pl.id} value={pl.id}>
+                        {pl.patientLimit === null
+                          ? `${pl.name} (${t('unlimited')})`
+                          : `${pl.name} (${pl.patientLimit})`}
+                      </option>
+                    ))}
+                </select>
+                <button className="btn btn--ghost">{t('savePlan')}</button>
+              </form>
               <form action={mailboxQuotaAction} className="quota">
                 <input type="hidden" name="id" value={p.id} />
                 <label className="l" htmlFor={`q_${p.id}`}>
@@ -301,6 +339,8 @@ export default async function PlatformPage({
           )}
         </section>
       ))}
+
+      <PlansSection plans={plans} t={t} />
 
       <section className="card team-card" aria-labelledby="h_new">
         <h2 id="h_new">{t('new')}</h2>

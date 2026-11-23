@@ -1,6 +1,10 @@
 import { getTranslations } from 'next-intl/server';
 import { requireUser } from '@/lib/session';
-import { INITIAL_TEXTS, listVersions } from '@/lib/consent-texts';
+import Link from 'next/link';
+import { fieldValuesOf } from '@pain-therapy/shared/consent-fields';
+import { INITIAL_TEXTS, listVersions, templateOffered } from '@/lib/consent-texts';
+import { requirePractice } from '@/lib/practice';
+import { dismissTemplate } from '@/app/(app)/actions';
 import { dashboardData } from '@/lib/patients';
 import { formatDateTime } from '@/lib/format';
 import { ConsentTextForm } from '@/components/ConsentTextForm';
@@ -8,8 +12,11 @@ import { ConsentTextForm } from '@/components/ConsentTextForm';
 export const dynamic = 'force-dynamic';
 
 /** consent-signing: Versionierte Formulartexte (Administration only) */
-export default async function ConsentTextsPage() {
+export default async function ConsentTextsPage({ searchParams }: { searchParams: Promise<{ vorlage?: string }> }) {
   await requireUser('manageConsentTexts');
+  const [sp, practice, offered] = await Promise.all([searchParams, requirePractice(), templateOffered()]);
+  // consent-template (iteration 17, design D3): «Als neue Version übernehmen» loads the template into the form
+  const useTemplate = sp.vorlage === '1';
   const t = await getTranslations('admin');
   const versions = await listVersions();
   const latest = versions[0]?.version ?? 0;
@@ -25,6 +32,30 @@ export default async function ConsentTextsPage() {
           <div className="sub">{t('subtitle')}</div>
         </div>
       </div>
+      {offered && !useTemplate ? (
+        <div className="banner info template-offer" data-testid="template-offer">
+          <p>
+            <b>{t('templateTitle')}</b> {t('templateText', { version: latest })}
+          </p>
+          <div className="row" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <Link className="btn btn--gold" href="/admin/consent-texts?vorlage=1">
+              {t('templateAdopt')}
+            </Link>
+            <form action={dismissTemplate}>
+              <button className="btn">{t('templateDismiss')}</button>
+            </form>
+          </div>
+          <details style={{ width: '100%' }}>
+            <summary style={{ cursor: 'pointer' }}>{t('templateShow')}</summary>
+            <div className="admin-text">{INITIAL_TEXTS.de.body}</div>
+          </details>
+        </div>
+      ) : null}
+      {useTemplate ? (
+        <div className="banner info">
+          <p>{t('templateLoaded')}</p>
+        </div>
+      ) : null}
       {latest ? (
         <div className="banner info">
           <p>{t('resignCount', { count: resign })}</p>
@@ -35,13 +66,25 @@ export default async function ConsentTextsPage() {
           <h2>{t('newVersion')}</h2>
           <div className="body">
             <ConsentTextForm
+              key={useTemplate ? 'template' : 'current'}
               nextVersion={latest + 1}
-              initial={{
-                titleDe: de?.title ?? INITIAL_TEXTS.de.title,
-                bodyDe: de?.body ?? INITIAL_TEXTS.de.body,
-                titleEn: en?.title ?? INITIAL_TEXTS.en.title,
-                bodyEn: en?.body ?? INITIAL_TEXTS.en.body,
-              }}
+              values={fieldValuesOf(practice)}
+              fromTemplate={useTemplate}
+              initial={
+                useTemplate
+                  ? {
+                      titleDe: INITIAL_TEXTS.de.title,
+                      bodyDe: INITIAL_TEXTS.de.body,
+                      titleEn: INITIAL_TEXTS.en.title,
+                      bodyEn: INITIAL_TEXTS.en.body,
+                    }
+                  : {
+                      titleDe: de?.title ?? INITIAL_TEXTS.de.title,
+                      bodyDe: de?.body ?? INITIAL_TEXTS.de.body,
+                      titleEn: en?.title ?? INITIAL_TEXTS.en.title,
+                      bodyEn: en?.body ?? INITIAL_TEXTS.en.body,
+                    }
+              }
             />
           </div>
         </section>

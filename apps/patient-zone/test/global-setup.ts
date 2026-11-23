@@ -25,7 +25,7 @@ export default async function setup(project: TestProject) {
   // Empty first: a migration may refuse to run on existing patient data (iteration 8, design D11)
   const tables = await db.$queryRaw<
     { tablename: string }[]
-  >`SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename <> '_prisma_migrations'`;
+  >`SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename NOT IN ('_prisma_migrations', 'Plan')`;
   if (tables.length) await db.$executeRawUnsafe(`TRUNCATE ${tables.map((t) => `"${t.tablename}"`).join(', ')} CASCADE`);
   execSync('npx prisma migrate deploy', {
     cwd: path.resolve(__dirname, '../../..'),

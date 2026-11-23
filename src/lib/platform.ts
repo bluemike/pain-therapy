@@ -6,9 +6,10 @@ import { authDb, db, rawDb } from './db';
 import { audit } from './audit';
 import { createInvitation, normalizeEmail } from './auth/accounts';
 import { resolveInviteAddress, sendInvite, type InviteForm } from './onboarding';
-import { INITIAL_TEXTS } from './consent-texts';
+import { INITIAL_TEXTS, TEMPLATE_VERSION } from './consent-texts';
 import { addressLineOf } from './practice-settings';
 import { config } from './config';
+import { lastChangeOf, planState, usageOf } from './plans';
 import { documentStore, photoStore } from './storage';
 import type { Actor } from './session';
 
@@ -67,6 +68,7 @@ export const practiceDetailsSchema = z
     defaultPlace: z.string().trim().min(1, 'required').max(80, 'tooLong'),
     contactEmail: z.string().trim().toLowerCase().email('email').max(254, 'tooLong'),
     phone: z.string().trim().max(40, 'tooLong'),
+    privacyOfficer: z.string().trim().max(100, 'tooLong'),
     documentPrefix: z
       .string()
       .trim()
@@ -98,6 +100,7 @@ export async function practiceDetailsOf(practiceId: string) {
       defaultPlace: true,
       contactEmail: true,
       phone: true,
+      privacyOfficer: true,
       documentPrefix: true,
     },
   });
@@ -121,6 +124,7 @@ export async function updatePracticeDetails(actor: Actor, practiceId: string, in
     defaultPlace: input.defaultPlace,
     contactEmail: input.contactEmail,
     phone: input.phone || null,
+    privacyOfficer: input.privacyOfficer || null,
     documentPrefix: input.documentPrefix,
   };
   await rawDb.practice.update({ where: { id: before.id }, data });
@@ -159,7 +163,11 @@ export async function practicesOverview() {
       createdAt: true,
       deletedAt: true,
       mailboxQuota: true,
-      memberships: { where: { active: true }, select: { user: { select: { lastLoginAt: true, activatedAt: true } } } },
+      plan: { select: { id: true, name: true, patientLimit: true } },
+      memberships: {
+        where: { active: true },
+        select: { user: { select: { lastLoginAt: true, activatedAt: true, name: true } } },
+      },
       invitations: {
         where: { acceptedAt: null, revokedAt: null, expiresAt: { gt: new Date() } },
         select: { id: true, email: true },
@@ -172,10 +180,22 @@ export async function practicesOverview() {
       },
     },
   });
+  // platform-statistics (iteration 17, design D5, D6): numbers only, never patient details
+  const ids = practices.map((p) => p.id);
+  const [usage, lastChange] = await Promise.all([usageOf(ids), lastChangeOf(ids)]);
   return practices.map((p) => {
     const active = p.memberships.filter((m) => m.user.activatedAt);
     const last = active.map((m) => m.user.lastLoginAt.getTime());
+    const latest = active.reduce<(typeof active)[number] | null>(
+      (a, m) => (!a || m.user.lastLoginAt > a.user.lastLoginAt ? m : a),
+      null,
+    );
+    const counts = usage.get(p.id)!;
     return {
+      lastLoginBy: latest?.user.name ?? null,
+      lastChange: lastChange.get(p.id) ?? null,
+      usage: counts,
+      plan: { ...p.plan, state: planState(counts.patients, p.plan.patientLimit) },
       id: p.id,
       name: p.name,
       slug: p.slug,
@@ -212,6 +232,9 @@ export async function createPractice(actor: Actor, input: NewPractice) {
       defaultPlace: input.city,
       contactEmail: input.contactEmail,
       documentPrefix: input.documentPrefix,
+      // Iteration 17 (design D3, D4): starts with the current template; the first admin is the responsible person
+      templateSeen: TEMPLATE_VERSION,
+      privacyOfficer: input.adminName,
     },
   });
   await runInPractice(practice.id, async () => {

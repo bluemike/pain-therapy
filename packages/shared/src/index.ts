@@ -13,3 +13,4 @@ export * from './signing';
 export * from './time';
 export * from './tokens';
 export { createPrismaClient } from './db';
+export * from './consent-fields';

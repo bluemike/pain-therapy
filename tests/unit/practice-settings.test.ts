@@ -22,6 +22,7 @@ const valid = {
   defaultPlace: 'Chur',
   documentPrefix: 'pm',
   privacyNotice: '',
+  privacyOfficer: 'Christina Franz',
 };
 
 beforeAll(resetDatabase);

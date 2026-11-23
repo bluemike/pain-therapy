@@ -14,7 +14,7 @@ export const admin = new PrismaClient({ datasourceUrl: inject('adminUrl') });
 export async function resetDatabase() {
   const tables = await admin.$queryRaw<
     { tablename: string }[]
-  >`SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename <> '_prisma_migrations'`;
+  >`SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename NOT IN ('_prisma_migrations', 'Plan')`;
   await admin.$executeRawUnsafe(`TRUNCATE ${tables.map((t) => `"${t.tablename}"`).join(', ')} CASCADE`);
   await admin.$executeRawUnsafe(TEST_PRACTICE_SQL);
   for (const id of [1, 2, 3, 4])

@@ -178,6 +178,9 @@ describe('signing, PDF archive and email', () => {
     const file = await readFile(path.join(process.env.STORAGE_LOCAL_DIR!, document.blobPath));
     expect(sha256(file)).toBe(document.sha256);
     expect(file.subarray(0, 5).toString()).toBe('%PDF-');
+    // Iteration 17 (design D1): the practice details filled into the fields are kept with the session
+    const signed = await db.signatureSession.findUniqueOrThrow({ where: { id: s.id } });
+    expect(signed.fieldValues).toMatchObject({ practiceName: 'Pain Therapy Test', email: 'praxis@example.test' });
     // Signed in front of the practice or in the zone: no email at signing
     expect(await db.emailDelivery.count({ where: { documentId: document.id } })).toBe(0);
     const { delivery, access } = await requestResend(actor, document.id);

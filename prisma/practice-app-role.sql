@@ -24,6 +24,8 @@ BEGIN
   -- The therapy catalog is written only by catalog:sync as the owner; the practice app reads it (security review 7.4)
   REVOKE INSERT, UPDATE, DELETE ON "BodyArea", "Region", "RegionPoint", "RegionExercise", "OsteopressurePoint",
     "Exercise", "ExerciseSheet", "ExerciseVariant", "RollingTool", "TreatmentPosition" FROM practice_app;
+  -- Iteration 17 (design D7): plans are changed only by the platform admin (owner connection); the app reads them
+  REVOKE INSERT, UPDATE, DELETE ON "Plan" FROM practice_app;
   -- Iteration 15 (design D5): the public photo page finds the practice of its link (owner function)
   GRANT EXECUTE ON FUNCTION photo_handoff_practice(text) TO practice_app;
 END
