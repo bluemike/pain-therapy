@@ -71,7 +71,8 @@ test.describe('practice-settings', () => {
       'Fragen: Pain Therapy Falera · christina.franz@pain-therapy.online',
     );
     await patient.getByRole('link', { name: 'Datenschutz' }).click();
-    await expect(patient.getByText(/Via Prau da Cuort 5 \| 7153 Falera/)).toBeVisible();
+    // Iteration 17 (design D4): address as in the consent form, after the responsible person
+    await expect(patient.getByText(/Via Prau da Cuort 5, 7153 Falera/)).toBeVisible();
     await patient.context().close();
   });
 });
