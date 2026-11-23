@@ -14,7 +14,7 @@ export default async function setup() {
   const truncate = async () => {
     const tables = await db.$queryRaw<
       { tablename: string }[]
-    >`SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename <> '_prisma_migrations'`;
+    >`SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename NOT IN ('_prisma_migrations', 'Plan')`;
     if (tables.length)
       await db.$executeRawUnsafe(`TRUNCATE ${tables.map((t) => `"${t.tablename}"`).join(', ')} CASCADE`);
   };

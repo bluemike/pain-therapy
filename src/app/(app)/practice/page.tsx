@@ -7,6 +7,8 @@ import { PracticeForm } from '@/components/PracticeForm';
 import { ExportList } from '@/components/ExportList';
 import { exportsOf } from '@/lib/practice-export';
 import { exportAction } from './actions';
+import { planUsageOf } from '@/lib/plans';
+import { PlanCard } from '@/components/PlanNotice';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,6 +53,7 @@ export default async function PracticePage({ searchParams }: { searchParams: Pro
           city: p.city ?? '',
           contactEmail: p.contactEmail,
           phone: p.phone ?? '',
+          privacyOfficer: p.privacyOfficer ?? '',
           defaultPlace: p.defaultPlace,
           documentPrefix: p.documentPrefix,
           privacyNotice: p.privacyNotice ?? '',
@@ -65,6 +68,7 @@ export default async function PracticePage({ searchParams }: { searchParams: Pro
           {t('edit')}
         </Link>
       </section>
+      <PlanCard usage={await planUsageOf(p.id)} />
       <section className="card team-card" id="export" aria-labelledby="h_export">
         <h2 id="h_export">{te('title')}</h2>
         <p className="muted">{te('sub')}</p>

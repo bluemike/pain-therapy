@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { parseBlocks } from '@pain-therapy/shared/consent-blocks';
+import { fieldValuesOf, fillFields } from '@pain-therapy/shared/consent-fields';
+import { sessionPractice } from '@/lib/practice';
 import { touchSession } from '@/lib/access';
 import { getZoneSession } from '@/lib/session';
 import { openForm, personalDetails } from '@/lib/signing';
@@ -18,8 +20,15 @@ export default async function SigningFormPage() {
   const s = await getZoneSession();
   if (!s?.signaturePending) redirect('/');
   await touchSession(s);
-  const [form, p, t] = await Promise.all([openForm(s), personalDetails(s), getTranslations('signForm')]);
-  if (!form) redirect('/unterschrift');
+  const [form, p, t, practice] = await Promise.all([
+    openForm(s),
+    personalDetails(s),
+    getTranslations('signForm'),
+    sessionPractice(),
+  ]);
+  if (!form || !practice) redirect('/unterschrift');
+  // consent-template (iteration 17, design D1): the fields with the practice details
+  const values = fieldValuesOf(practice);
   const details: [string, string][] = [
     [t('name'), `${p.firstName} ${p.lastName}`],
     [t('dateOfBirth'), dateOf(p.dateOfBirth)],
@@ -31,9 +40,9 @@ export default async function SigningFormPage() {
   return (
     <ZoneSigningForm
       sid={form.sid}
-      title={form.text.title}
+      title={fillFields(form.text.title, values)}
       version={form.text.version}
-      blocks={parseBlocks(form.text.body)}
+      blocks={parseBlocks(fillFields(form.text.body, values))}
       details={details}
     />
   );

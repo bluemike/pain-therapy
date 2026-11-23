@@ -1,5 +1,7 @@
 import type { ConsentKind, Language } from '@prisma/client';
 import { signatureSize, zonePlace } from '@pain-therapy/shared/signing';
+import { fieldValuesOf, fillFields } from '@pain-therapy/shared/consent-fields';
+import { notifyLimitReached } from './plans';
 import { runInPractice } from '@pain-therapy/shared/practice-context';
 import { db, rawDb } from './db';
 import { audit, SYSTEM_ACTOR } from './audit';
@@ -35,6 +37,13 @@ export async function nextDocumentNumber(): Promise<string> {
  * document is left alone, and an advisory lock per session serialises concurrent calls (the zone and the job). Returns null when there is nothing to do. The caller starts the email with deliverEmail().
  */
 export async function finalizeSignature(sid: string) {
+  const result = await finalizeInTransaction(sid);
+  // practice-plans (iteration 17, design D8): a new signed patient may reach the plan's limit; never blocks
+  if (result) void notifyLimitReached((await requirePractice()).id);
+  return result;
+}
+
+async function finalizeInTransaction(sid: string) {
   return db.$transaction(
     async (tx) => {
       await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`finalize:${sid}`}))::text`;
@@ -56,16 +65,20 @@ export async function finalizeSignature(sid: string) {
       const { paths } = signatureSvg(strokes, size.width, size.height);
       // Taken outside the transaction: a failed run leaves a gap in the numbers, never a number used twice
       const documentNumber = await nextDocumentNumber();
+      // consent-template (iteration 17, design D1): the practice details as they are now, kept with the session
+      const practice = await requirePractice();
+      const fieldValues = fieldValuesOf(practice);
+      await tx.signatureSession.update({ where: { id: sid }, data: { fieldValues } });
       const pdf = await renderSignedFormPdf({
         language: session.language,
         documentNumber,
         textVersion: textVersion.version,
-        title: textVersion.title,
-        body: textVersion.body,
+        title: fillFields(textVersion.title, fieldValues),
+        body: fillFields(textVersion.body, fieldValues),
         patient,
         consents,
         note: session.patientNote,
-        place: session.place ?? (zone ? zonePlace(session.language) : (await requirePractice()).defaultPlace),
+        place: session.place ?? (zone ? zonePlace(session.language) : practice.defaultPlace),
         signedAtText: formatDateTime(session.completedAt ?? new Date()),
         signature: { paths, width: size.width, height: size.height },
         online:

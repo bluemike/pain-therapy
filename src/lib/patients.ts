@@ -3,6 +3,8 @@ import { db } from './db';
 import { asInk } from '@pain-therapy/shared/ink';
 import { inkColumn, noteForHistory, resolveInk, type InkChange } from './handwriting';
 import { audit } from './audit';
+import { assertCanCreatePatient } from './plans';
+import { requirePractice } from './practice';
 import { formatDate, parseSwissDate } from './format';
 import { ANAMNESIS_FIELDS, PATIENT_FIELDS, type PatientInput } from './schemas';
 import { latestSignedVersion } from '@pain-therapy/shared/signing';
@@ -184,6 +186,8 @@ function splitInput(input: PatientInput) {
 export async function createPatient(actor: Actor, input: PatientInput, ink: InkChange = { kind: 'keep' }) {
   const { patient, anamnesis } = splitInput(input);
   const furtherDiagnosesInk = inkColumn(resolveInk(null, ink, input.furtherDiagnoses));
+  // practice-plans (iteration 17, design D8): refused at the plan's patient limit
+  await assertCanCreatePatient((await requirePractice()).id);
   return db.$transaction(async (tx) => {
     const created = await tx.patient.create({
       data: {

@@ -140,7 +140,7 @@
   "privacy": {
     "title": "Privacy",
     "who": "Who sees your entries?",
-    "whoText": "Only your therapist and the practice{name}. Nothing is passed on to third parties and no third-party services are used; the data is stored in Switzerland.",
+    "whoText": "Only your therapist and the practice{name}, as far as their work requires. Data goes to third parties only with your consent or where the law allows or requires it. The data is stored encrypted in Microsoft Azure data centres in Switzerland; emails with access links are sent by the Swiss provider Infomaniak. Both are contractually bound to data protection. There are no advertising or analytics services.",
     "what": "What is stored?",
     "whatText": "Your entries (done or not, rating, date and time, note) and a log of the accesses. Your IP address is only stored as an encrypted check value to limit repeated failed attempts, and deleted after 30 days. For the liability waiver the patient zone shows your personal details for checking and stores your signature, your consents and your remark.",
     "why": "What for?",
@@ -148,10 +148,15 @@
     "howLong": "How long?",
     "howLongText": "The entries are kept with your record. After the confirmation the device stays signed in for 30 days; only a technically necessary cookie is set for this.",
     "contact": "Contact",
-    "contactText": "Questions, information or correction: {name}, {address}, {email}.",
+    "contactText": "Responsible, and for questions, access, correction or erasure: {name}, {address}, {email}.",
     "back": "Back",
     "yourPractice": " you attend",
-    "contactGeneric": "Questions, access or correction: please contact your practice."
+    "contactGeneric": "Questions, access, correction or erasure: please contact your practice.",
+    "security": "How is your data protected?",
+    "securityText": "With appropriate technical and organisational measures against unauthorised access, loss and misuse: an encrypted connection, confirmation with your date of birth, limits on failed attempts and a log of all accesses.",
+    "rights": "Your rights",
+    "rightsText": "You can request information and a copy of your data, have incorrect data corrected, request its transfer or erasure unless a retention obligation applies, and withdraw a consent for the future.",
+    "contactPhone": "Phone: {phone}."
   },
   "notFound": {
     "title": "Page not found",

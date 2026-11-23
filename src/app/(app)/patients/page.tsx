@@ -5,7 +5,7 @@ import { listPatients } from '@/lib/patients';
 import { formatDate } from '@/lib/format';
 import { ConsentPill, StatusPill } from '@/components/Pills';
 import { SearchBox } from '@/components/SearchBox';
-import { PlusIcon } from '@/components/Icons';
+import { NewPatientButton, PlanNotice } from '@/components/PlanNotice';
 import { ClickRow } from '@/components/ClickRow';
 
 export const dynamic = 'force-dynamic';
@@ -35,11 +35,9 @@ export default async function PatientsPage({
           <h1>{t('title')}</h1>
           <div className="sub">{t('count', { count: rows.length })}</div>
         </div>
-        <Link className="btn btn--gold" href="/patients/new">
-          <PlusIcon />
-          {td('newPatient')}
-        </Link>
+        <NewPatientButton label={td('newPatient')} />
       </div>
+      <PlanNotice />
       <div className="toolbar">
         <SearchBox placeholder={td('searchPlaceholder')} id="lq" />
         <div className="chips" role="group" aria-label="Filter">

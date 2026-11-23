@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { fieldValuesOf } from '@pain-therapy/shared/consent-fields';
 import { getTranslations } from 'next-intl/server';
 import { practiceDetails } from '@/lib/db';
 import { sessionPractice } from '@/lib/practice';
@@ -30,11 +31,21 @@ export default async function Privacy({ searchParams }: { searchParams: Promise<
             <p>{t('whyText')}</p>
             <h2>{t('howLong')}</h2>
             <p>{t('howLongText')}</p>
+            <h2>{t('security')}</h2>
+            <p>{t('securityText')}</p>
+            <h2>{t('rights')}</h2>
+            <p>{t('rightsText')}</p>
             <h2>{t('contact')}</h2>
             <p>
               {p
-                ? t('contactText', { name: p.name, address: p.addressLine, email: p.contactEmail })
+                ? t('contactText', {
+                    // Iteration 17 (design D4): responsible person and address as in the consent form
+                    name: [p.privacyOfficer, p.name].filter(Boolean).join(', '),
+                    address: fieldValuesOf(p).address || p.addressLine,
+                    email: p.contactEmail,
+                  })
                 : t('contactGeneric')}
+              {p?.phone ? ` ${t('contactPhone', { phone: p.phone })}` : null}
             </p>
           </>
         )}

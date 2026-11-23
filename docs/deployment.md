@@ -412,6 +412,25 @@ az storage blob upload-batch --account-name <storageAccountName> --auth-mode log
 
 An die Sprachdienste gehen nur die L&B-Texte, nie Patientendaten. Chrissie hört die Mundart-Dateien ab; einzelne lassen sich mit `--only 2A --force` neu erzeugen.
 
+## Iteration 17 (Datenschutz-Vorlage, Nutzung pro Praxis, Modelle)
+
+Keine neuen Geheimnisse und keine neue Infrastruktur. Die Migration `20261125090000_plans_consent_fields` legt die Modelle
+«Freemium» (20 Patient:innen) und «Unlimited» an, setzt `prc_falera` auf Unlimited, alle anderen Praxen auf Freemium,
+und füllt die verantwortliche Person mit der ersten aktiven Praxis-Admin. Die Rollenskripte geben der Patienten-Zone
+Strasse, PLZ, Ort und verantwortliche Person der Praxis frei und entziehen der Praxis-App das Schreiben in `Plan`.
+
+Nach dem Deployment:
+
+1. Plattform-Seite: Karten zeigen «Zuletzt angemeldet», «Zuletzt geändert», die Zähler und das Modell. Unter «Modelle»
+   weitere Modelle anlegen (Name, Limite oder leer für unbegrenzt).
+2. Falera: unter «Formulartexte» erscheint «Neue Vorlage verfügbar». «Als neue Version übernehmen», Text prüfen und
+   veröffentlichen. Achtung: Wie jede neue Version verlangt sie bei der nächsten Gelegenheit eine neue Unterschrift.
+3. Unter «Praxis» die verantwortliche Person (Datenschutz) prüfen.
+
+Gezählt werden Patient:innen mit unterschriebenem Formular (auch deaktivierte), Behandlungen mit mindestens einer
+Sitzung und Sitzungen mit Datum bis heute. Bei erreichter Limite ist nur «Neuer Patient» gesperrt; der Plattform-Admin
+erhält einmal eine E-Mail.
+
 ## Nach dem Go-live
 
 - **Aufbewahrung sperren:** Die Retention-Policy des Containers `signed-documents` ist zunächst entsperrt, damit sie korrigiert werden kann. Nach der Abnahme sperren (nicht umkehrbar):

@@ -7,9 +7,10 @@ import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
 import { requireUser } from '@/lib/session';
 import { fieldErrors, formDataToObject, patientSchema } from '@/lib/schemas';
+import { PlanLimitError } from '@/lib/plans';
 import { createPatient, findDuplicates, setStatus, updatePatient } from '@/lib/patients';
 import { deliverEmail, requestResend } from '@/lib/signing';
-import { publishVersion } from '@/lib/consent-texts';
+import { markTemplateSeen, publishVersion, unknownFieldsOf } from '@/lib/consent-texts';
 import { formatDate } from '@/lib/format';
 import { LOCALE_COOKIE } from '@/i18n/request';
 import { inkChangeFrom, InkError, type InkChange } from '@/lib/handwriting';
@@ -49,7 +50,13 @@ export async function savePatient(_prev: PatientFormState, fd: FormData): Promis
           })),
         };
     }
-    const created = await createPatient(actor, parsed.data, ink);
+    let created;
+    try {
+      created = await createPatient(actor, parsed.data, ink);
+    } catch (e) {
+      if (e instanceof PlanLimitError) redirect('/patients/new');
+      throw e;
+    }
     redirect(`/patients/${created.id}?flash=created`);
   }
   await updatePatient(actor, id, parsed.data, ink);
@@ -103,7 +110,12 @@ export async function setLocale(fd: FormData) {
   revalidatePath('/', 'layout');
 }
 
-export type PublishState = { errors?: Record<string, string>; published?: number };
+export type PublishState = {
+  errors?: Record<string, string>;
+  /** Unknown fields per input (iteration 17, design D1) */
+  unknown?: Record<string, string[]>;
+  published?: number;
+};
 
 export async function publishConsentText(_prev: PublishState, fd: FormData): Promise<PublishState> {
   const actor = await requireUser('manageConsentTexts');
@@ -116,7 +128,17 @@ export async function publishConsentText(_prev: PublishState, fd: FormData): Pro
   const errors: Record<string, string> = {};
   for (const [k, v] of Object.entries(input)) if (!v) errors[k] = 'required';
   if (Object.keys(errors).length) return { errors };
-  const version = await publishVersion(actor, input);
+  const unknown = unknownFieldsOf(input);
+  if (Object.keys(unknown).length)
+    return { errors: Object.fromEntries(Object.keys(unknown).map((k) => [k, 'unknownField'])), unknown };
+  const version = await publishVersion(actor, input, { fromTemplate: fd.get('fromTemplate') === '1' });
   revalidatePath('/', 'layout');
   return { published: version };
+}
+
+/** consent-template (iteration 17, design D3): «Nicht übernehmen» hides the notice about the new template */
+export async function dismissTemplate() {
+  await requireUser('manageConsentTexts');
+  await markTemplateSeen();
+  redirect('/admin/consent-texts');
 }

@@ -11,6 +11,7 @@ type Values = {
   city: string;
   contactEmail: string;
   phone: string;
+  privacyOfficer: string;
   defaultPlace: string;
   documentPrefix: string;
   privacyNotice: string;
@@ -22,6 +23,7 @@ const MAX: Record<string, number> = {
   city: 80,
   contactEmail: 254,
   phone: 40,
+  privacyOfficer: 100,
   defaultPlace: 80,
   privacyNotice: 8000,
 };
@@ -124,6 +126,7 @@ export function PracticeForm({
           {field('city')}
           {field('contactEmail', { type: 'email', required: true, hint: t('contactEmailHint') })}
           {field('phone', { type: 'tel' })}
+          {field('privacyOfficer', { hint: t('privacyOfficerHint') })}
           {field('defaultPlace', { required: true, hint: t('defaultPlaceHint') })}
         </div>
         <p className="hint fs-foot">{footer}</p>

@@ -9,7 +9,7 @@ import { GREETED_COOKIE, shouldGreet } from '@/lib/greeting';
 import { firstName, profileOf } from '@/lib/users';
 import { ConsentPill } from '@/components/Pills';
 import { SearchBox } from '@/components/SearchBox';
-import { PlusIcon } from '@/components/Icons';
+import { NewPatientButton, PlanNotice } from '@/components/PlanNotice';
 import { HomeProgramTile } from '@/components/HomeProgramTile';
 import { homeProgramOverview } from '@/lib/exercise-log';
 import { inviteStatusOf, zoneEnabled, type InviteStatus } from '@/lib/patient-access';
@@ -69,11 +69,9 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       </div>
       <div className="quick">
         <SearchBox placeholder={t('searchPlaceholder')} id="dq" />
-        <Link className="btn btn--gold" href="/patients/new">
-          <PlusIcon />
-          {t('newPatient')}
-        </Link>
+        <NewPatientButton label={t('newPatient')} />
       </div>
+      <PlanNotice />
 
       {data.openNotes.length ? (
         <div className="banner info notebox" role="status" data-testid="open-notes">
@@ -150,10 +148,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             <p className="muted" style={{ maxWidth: '46ch', margin: 0 }}>
               {t('emptyText')}
             </p>
-            <Link className="btn btn--gold" href="/patients/new">
-              <PlusIcon />
-              {t('newPatient')}
-            </Link>
+            <NewPatientButton label={t('newPatient')} />
           </div>
         </div>
       ) : (

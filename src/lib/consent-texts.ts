@@ -1,5 +1,7 @@
 import type { Language } from '@prisma/client';
-import { db } from './db';
+import { unknownFields } from '@pain-therapy/shared/consent-fields';
+import { db, rawDb } from './db';
+import { currentPractice, requirePractice } from './practice';
 import { audit } from './audit';
 import type { Actor } from './session';
 
@@ -21,6 +23,9 @@ async function ensureInitialTexts() {
       })),
       skipDuplicates: true,
     });
+    // Iteration 17 (design D3): version 1 is the current template, so it is not offered again
+    const p = await currentPractice();
+    if (p) await rawDb.practice.update({ where: { id: p.id }, data: { templateSeen: TEMPLATE_VERSION } });
   }
   initialTextsChecked = true;
 }
@@ -45,8 +50,9 @@ export async function listVersions() {
 export async function publishVersion(
   actor: Actor,
   input: { titleDe: string; bodyDe: string; titleEn: string; bodyEn: string },
+  opts: { fromTemplate?: boolean } = {},
 ) {
-  return db.$transaction(async (tx) => {
+  const version = await db.$transaction(async (tx) => {
     const max = await tx.consentTextVersion.aggregate({ _max: { version: true } });
     const version = (max._max.version ?? 0) + 1;
     await tx.consentTextVersion.createMany({
@@ -55,19 +61,50 @@ export async function publishVersion(
         { version, language: 'en', title: input.titleEn, body: input.bodyEn, publishedBy: actor.name },
       ],
     });
-    await audit(actor, 'consentText.published', { details: { version } }, tx);
+    await audit(actor, 'consentText.published', { details: { version, fromTemplate: !!opts.fromTemplate } }, tx);
     return version;
   });
+  if (opts.fromTemplate) await markTemplateSeen();
+  return version;
 }
 
-/** First version, written from the practice forms (pdf3, pages 2, 5 and 6). To be legally reviewed (task 6.1). */
+/** Unknown fields per input (design D1): «Praxisnam» blocks publishing */
+export function unknownFieldsOf(input: Record<string, string>): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  for (const [k, v] of Object.entries(input)) {
+    const unknown = unknownFields(v);
+    if (unknown.length) out[k] = unknown;
+  }
+  return out;
+}
+
+/** Whether the practice still gets the notice «Neue Vorlage verfügbar» (design D3) */
+export async function templateOffered(): Promise<boolean> {
+  const p = await currentPractice();
+  return !!p && p.templateSeen < TEMPLATE_VERSION;
+}
+
+/** Adopted or dismissed: the notice disappears until a newer template */
+export async function markTemplateSeen() {
+  const p = await requirePractice();
+  await rawDb.practice.update({ where: { id: p.id }, data: { templateSeen: TEMPLATE_VERSION } });
+}
+
+/**
+ * Platform template of the form (iteration 17, design D2): our first version from the practice forms (pdf3, pages 2, 5
+ * and 6) merged with the privacy notice of another practice (Datenschutz.pdf, 23.11.2026). Fields in guillemets are
+ * filled with the practice details (packages/shared/src/consent-fields.ts). New practices start with it as version 1;
+ * existing ones are offered it (design D3). To be legally reviewed by the practice.
+ */
+export const TEMPLATE_VERSION = 2;
+
 export const INITIAL_TEXTS = {
   de: {
     title: 'Haftungsausschluss, Patienteninformation und Datenschutzhinweis',
     body: `## 1. Haftungsausschluss
 Ich nehme die Schmerztherapie nach Liebscher & Bracht freiwillig und in eigener Verantwortung in Anspruch. Ich habe die Fragen zu meiner Gesundheit vollständig und wahrheitsgemäss beantwortet und melde wesentliche Veränderungen, zum Beispiel eine Schwangerschaft, neue Diagnosen oder neue Medikamente, sofort.
 
-Soweit gesetzlich zulässig, verzichte ich gegenüber dem Zentrum sowie der behandelnden Therapeutin oder dem behandelnden Therapeuten auf Haftungsansprüche, die aus der Behandlung oder den Übungen für zu Hause entstehen. Ausgenommen sind Schäden aus grober Fahrlässigkeit oder Vorsatz.
+Soweit gesetzlich zulässig, verzichte ich gegenüber «Praxisname» sowie der behandelnden Therapeutin oder dem behandelnden Therapeuten auf Haftungsansprüche, die aus der Behandlung oder den Übungen für zu Hause entstehen. Ausgenommen sind Schäden aus grober Fahrlässigkeit oder Vorsatz.
 
 ## 2. Patienteninformation zur Schmerztherapie
 Die Methode beruht auf Ihrer Mitarbeit. Muskulär-fasziale Spannungen verursachen rund 90 % aller Schmerzen. Mit der Osteopressur und den Engpassdehnungen werden diese Spannungen gelöst.
@@ -80,23 +117,43 @@ Die Methode beruht auf Ihrer Mitarbeit. Muskulär-fasziale Spannungen verursache
 Mögliche Reaktionen auf die Osteopressur sind blaue Flecken, druckempfindliche Stellen und eine vorübergehende Verschlechterung in den ersten 24 Stunden. Wärme hilft: ein warmes Bad oder eine Dusche, warme Wickel und Dehnen mit Intensität 8 bis 9.
 
 ## 3. Datenschutzhinweis
-Verantwortlich für die Bearbeitung Ihrer Daten ist die Praxis. Grundlage sind der Behandlungsvertrag und das Schweizer Datenschutzgesetz.
+Der Schutz Ihrer persönlichen Daten ist uns wichtig. Wir behandeln alle Angaben vertraulich und halten uns an das Schweizer Datenschutzgesetz (DSG). Grundlage der Bearbeitung ist der Behandlungsvertrag.
 
-Ihre Patientenakte enthält Personalien, Kontakt- und Versicherungsangaben, das Informationsgespräch sowie Gesundheitsdaten wie Anamnese, Diagnosen, Befunde und den Therapieverlauf. Wir bewahren die Akte 20 Jahre nach der letzten Behandlung auf, länger nur mit Ihrer ausdrücklichen Einwilligung.
+Verantwortlich für die Bearbeitung Ihrer Daten:
+- «Verantwortliche Person», «Praxisname»
+- «Adresse»
+- E-Mail: «E-Mail»
+- Telefon: «Telefon»
 
-Wir geben Daten nur weiter, wenn das Gesetz es erlaubt oder Sie eingewilligt haben. Angaben zu unbezahlten Rechnungen können an ein Inkassobüro gehen.
+Welche Daten wir bearbeiten: Personalien, Kontakt- und Versicherungsangaben, das Informationsgespräch, Gesundheitsdaten wie Beschwerden, Vorerkrankungen, Operationen, Medikamente, Diagnosen und Befunde, den Behandlungsverlauf mit den empfohlenen Übungen sowie Angaben zu Terminen und Rechnungen.
 
-Sie können Ihre Einwilligung widerrufen, Auskunft und eine Kopie Ihrer Daten verlangen (in der Regel kostenlos), Ihre Daten in einem maschinenlesbaren Format erhalten, Berichtigung verlangen oder einen Bestreitungsvermerk anbringen lassen.
+Wir verwenden Ihre Daten ausschliesslich für:
+- die Planung und Durchführung der Behandlungen
+- die Dokumentation des Behandlungsverlaufs
+- die Beratung und Ihr persönliches Übungsprogramm
+- Terminvereinbarungen und die Kommunikation mit Ihnen
+- die Rechnungsstellung und gesetzliche Pflichten
+
+Wir schützen Ihre Daten mit angemessenen technischen und organisatorischen Massnahmen vor unberechtigtem Zugriff, Verlust und Missbrauch. Zugriff haben nur berechtigte Personen der Praxis, soweit sie ihn für ihre Aufgabe brauchen.
+
+Wir geben Daten an andere Fachpersonen, Versicherungen oder weitere Dritte nur weiter, wenn Sie eingewilligt haben oder das Gesetz es erlaubt oder verlangt. Angaben zu unbezahlten Rechnungen können an ein Inkassobüro gehen. Für die Patientenakte nutzen wir die Plattform Pain Therapy: Ihre Daten liegen verschlüsselt in Rechenzentren von Microsoft Azure in der Schweiz, E-Mails mit Zugangslinks versendet der Schweizer Anbieter Infomaniak. Diese Dienstleister sind vertraglich zum Datenschutz verpflichtet.
+
+Wir bewahren Ihre Akte 20 Jahre nach der letzten Behandlung auf, länger nur mit Ihrer ausdrücklichen Einwilligung. Danach löschen oder anonymisieren wir sie.
+
+Sie können jederzeit Auskunft und eine Kopie Ihrer Daten verlangen (in der Regel kostenlos), Ihre Daten in einem maschinenlesbaren Format erhalten, unrichtige Angaben berichtigen oder einen Bestreitungsvermerk anbringen lassen, die Löschung verlangen, soweit keine Aufbewahrungspflicht entgegensteht, und eine Einwilligung für die Zukunft widerrufen. Wenden Sie sich dafür an die oben genannte Stelle.
 
 ## 4. Unverschlüsselte E-Mail
-Wenn Sie zustimmen, sendet Ihnen die Praxis Unterlagen und Informationen zu Terminen per unverschlüsselter E-Mail. Unverschlüsselte E-Mails können von Dritten gelesen werden. Diese Einwilligung ist freiwillig und lässt sich jederzeit widerrufen.`,
+Wenn Sie zustimmen, sendet Ihnen die Praxis Unterlagen und Informationen zu Terminen per unverschlüsselter E-Mail. Unverschlüsselte E-Mails können von Dritten gelesen werden. Diese Einwilligung ist freiwillig und lässt sich jederzeit widerrufen.
+
+## 5. Bestätigung
+Mit meiner Unterschrift bestätige ich, dass ich die Patienteninformation und den Datenschutzhinweis erhalten und verstanden habe und Gelegenheit hatte, Fragen zu stellen.`,
   },
   en: {
     title: 'Liability waiver, patient information and privacy notice',
     body: `## 1. Liability waiver
 I undergo pain therapy according to Liebscher & Bracht voluntarily and on my own responsibility. I have answered the questions about my health completely and truthfully, and I will report significant changes straight away, such as a pregnancy, new diagnoses or new medication.
 
-To the extent permitted by law, I waive liability claims against the centre and the treating therapist arising from the treatment or the home exercises. Damage caused by gross negligence or intent is excluded.
+To the extent permitted by law, I waive liability claims against «Practice name» and the treating therapist arising from the treatment or the home exercises. Damage caused by gross negligence or intent is excluded.
 
 ## 2. Patient information on the pain therapy
 The method relies on your cooperation. Muscular-fascial tension causes about 90% of all pain. Osteopressure and the stretching exercises release this tension.
@@ -109,15 +166,35 @@ The method relies on your cooperation. Muscular-fascial tension causes about 90%
 Possible reactions to osteopressure are bruises, tender spots and a temporary worsening in the first 24 hours. Warmth helps: a warm bath or shower, warm wraps, and stretching at intensity 8 to 9.
 
 ## 3. Privacy notice
-The practice is responsible for processing your data. The legal basis is the treatment contract and the Swiss Data Protection Act.
+Protecting your personal data matters to us. We treat all information confidentially and comply with the Swiss Data Protection Act (FADP). The legal basis for processing is the treatment contract.
 
-Your patient record contains personal, contact and insurance details, the information conversation, and health data such as medical history, diagnoses, findings and the course of therapy. We keep the record for 20 years after the last treatment, and longer only with your explicit consent.
+Responsible for processing your data:
+- «Responsible person», «Practice name»
+- «Address»
+- Email: «Email»
+- Phone: «Phone»
 
-We only disclose data where the law allows it or you have consented. Details of unpaid invoices may be passed to a debt-collection agency.
+Data we process: personal, contact and insurance details, the information conversation, health data such as complaints, previous illnesses, operations, medication, diagnoses and findings, the course of treatment with the recommended exercises, and details of appointments and invoices.
 
-You can withdraw your consent, request information and a copy of your data (normally free of charge), receive your data in a machine-readable format, request correction, or have a note added where accuracy is disputed.
+We use your data only for:
+- planning and carrying out the treatments
+- documenting the course of treatment
+- advice and your personal exercise programme
+- appointments and communication with you
+- invoicing and legal obligations
+
+We protect your data with appropriate technical and organisational measures against unauthorised access, loss and misuse. Only authorised people at the practice have access, and only as far as their work requires.
+
+We only disclose data to other professionals, insurers or other third parties if you have consented or the law allows or requires it. Details of unpaid invoices may be passed to a debt-collection agency. For the patient record we use the Pain Therapy platform: your data is stored encrypted in Microsoft Azure data centres in Switzerland, and emails with access links are sent by the Swiss provider Infomaniak. These providers are contractually bound to data protection.
+
+We keep your record for 20 years after the last treatment, and longer only with your explicit consent. After that we delete or anonymise it.
+
+You can at any time request information and a copy of your data (normally free of charge), receive your data in a machine-readable format, have incorrect data corrected or a note added where accuracy is disputed, request erasure unless a retention obligation applies, and withdraw a consent for the future. Please contact the person named above.
 
 ## 4. Unencrypted email
-If you agree, the practice sends you documents and appointment information by unencrypted email. Unencrypted emails can be read by third parties. This consent is optional and can be withdrawn at any time.`,
+If you agree, the practice sends you documents and appointment information by unencrypted email. Unencrypted emails can be read by third parties. This consent is optional and can be withdrawn at any time.
+
+## 5. Confirmation
+With my signature I confirm that I have received and understood the patient information and the privacy notice and that I had the opportunity to ask questions.`,
   },
 };

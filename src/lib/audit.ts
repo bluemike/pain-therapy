@@ -77,6 +77,7 @@ export type AuditAction =
   | 'practice.reactivated'
   | 'practice.exported'
   | 'practice.deleted'
+  | 'practice.planChanged'
   // Iteration 16 (design D4, D7): mailbox access handed over by the platform admin, shown once, asked for again; new
   // mobile number (never a password or a code)
   | 'mailbox.accessHandedOver'

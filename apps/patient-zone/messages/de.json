@@ -140,7 +140,7 @@
   "privacy": {
     "title": "Datenschutz",
     "who": "Wer sieht Ihre Einträge?",
-    "whoText": "Nur Ihre Therapeutin und die Praxis{name}. Es gibt keine Weitergabe an Dritte und keine Dienste von Drittanbietern; die Daten liegen in der Schweiz.",
+    "whoText": "Nur Ihre Therapeutin und die Praxis{name}, soweit sie es für ihre Aufgabe brauchen. Daten gehen an Dritte nur mit Ihrer Einwilligung oder wenn das Gesetz es erlaubt oder verlangt. Die Daten liegen verschlüsselt in Rechenzentren von Microsoft Azure in der Schweiz; E-Mails mit Zugangslinks versendet der Schweizer Anbieter Infomaniak. Beide sind vertraglich zum Datenschutz verpflichtet. Werbe- oder Analysedienste gibt es keine.",
     "what": "Was wird gespeichert?",
     "whatText": "Ihre Einträge (gemacht oder nicht, Bewertung, Datum und Zeit, Bemerkung) sowie ein Protokoll der Zugriffe. Ihre IP-Adresse wird nur als verschlüsselter Prüfwert gespeichert, um wiederholte Fehlversuche zu begrenzen, und nach 30 Tagen gelöscht. Für den Haftungsausschluss zeigt die Patienten-Zone Ihre Personalien zur Prüfung und speichert Ihre Unterschrift, Ihre Einwilligungen und Ihre Anmerkung.",
     "why": "Wozu?",
@@ -148,10 +148,15 @@
     "howLong": "Wie lange?",
     "howLongText": "Die Einträge werden mit Ihrer Akte aufbewahrt. Das Gerät bleibt nach der Bestätigung 30 Tage angemeldet; dafür wird nur ein technisch notwendiges Cookie gesetzt.",
     "contact": "Kontakt",
-    "contactText": "Fragen, Auskunft oder Berichtigung: {name}, {address}, {email}.",
+    "contactText": "Verantwortlich und für Fragen, Auskunft, Berichtigung oder Löschung: {name}, {address}, {email}.",
     "back": "Zurück",
     "yourPractice": ", bei der Sie in Behandlung sind",
-    "contactGeneric": "Fragen, Auskunft oder Berichtigung: Bitte wenden Sie sich an Ihre Praxis."
+    "contactGeneric": "Fragen, Auskunft, Berichtigung oder Löschung: Bitte wenden Sie sich an Ihre Praxis.",
+    "security": "Wie sind Ihre Daten geschützt?",
+    "securityText": "Mit angemessenen technischen und organisatorischen Massnahmen gegen unberechtigten Zugriff, Verlust und Missbrauch: verschlüsselte Verbindung, Bestätigung mit Ihrem Geburtsdatum, Begrenzung von Fehlversuchen und ein Protokoll aller Zugriffe.",
+    "rights": "Ihre Rechte",
+    "rightsText": "Sie können Auskunft und eine Kopie Ihrer Daten verlangen, unrichtige Angaben berichtigen lassen, die Herausgabe oder Löschung verlangen, soweit keine Aufbewahrungspflicht entgegensteht, und eine Einwilligung für die Zukunft widerrufen.",
+    "contactPhone": "Telefon: {phone}."
   },
   "notFound": {
     "title": "Seite nicht gefunden",

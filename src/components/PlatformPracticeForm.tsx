@@ -42,6 +42,7 @@ const EDIT: Group[] = [
       { k: 'defaultPlace', required: true, hint: 'defaultPlaceHint', max: 80 },
       { k: 'contactEmail', type: 'email', required: true, max: 254 },
       { k: 'phone', type: 'tel', max: 40 },
+      { k: 'privacyOfficer', hint: 'privacyOfficerHint', max: 100 },
     ],
   },
   {
