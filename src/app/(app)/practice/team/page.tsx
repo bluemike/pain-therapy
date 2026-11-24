@@ -10,12 +10,30 @@ import { ONBOARDING_ERRORS } from '@/lib/onboarding';
 import { maskMobile } from '@/lib/phone';
 import { authDb } from '@/lib/db';
 import { InviteFields } from '@/components/InviteFields';
-import { activeAction, inviteAction, resetAction, retryMailboxAction, revokeAction, rolesAction } from './actions';
+import {
+  activeAction,
+  inviteAction,
+  printInvitationAction,
+  resetAction,
+  retryMailboxAction,
+  revokeAction,
+  rolesAction,
+} from './actions';
+import { PrintInvitation } from '@/components/PrintInvitation';
 
 export const dynamic = 'force-dynamic';
 
 const ROLES = ['THERAPIST', 'PRACTICE_ADMIN'] as const;
-const FLASH = ['invited', 'revoked', 'roles', 'deactivated', 'reactivated', 'reset', 'mailboxRetried'];
+const FLASH = [
+  'invited',
+  'invitedSmsFailed',
+  'revoked',
+  'roles',
+  'deactivated',
+  'reactivated',
+  'reset',
+  'mailboxRetried',
+];
 const ERRORS = ['lastAdmin', 'self', 'member', 'otherPractice', 'noRole', 'invalid', 'notFound'];
 
 /** team-management (iteration 12, design D3, D4): Seite «Team», nur für die Praxis-Admin */
@@ -153,7 +171,8 @@ export default async function TeamPage({
                   <b>{i.name ?? i.email}</b>
                   <span className="muted">
                     {i.email}
-                    {i.mobile ? ` · ${maskMobile(i.mobile)}` : ''}
+                    {i.mobile && i.channel !== 'EMAIL' ? ` · ${maskMobile(i.mobile)}` : ''}
+                    {i.notifyEmail ? ` · ${to('mailTo', { email: i.notifyEmail })}` : ''}
                   </span>
                   {mailboxPill(i.mailbox)}
                   <span className="muted">
@@ -161,10 +180,13 @@ export default async function TeamPage({
                     {t('validUntil', { date: formatDate(i.expiresAt) })} · {t('invitedBy', { name: i.invitedBy })}
                   </span>
                 </div>
-                <form action={revokeAction}>
-                  <input type="hidden" name="id" value={i.id} />
-                  <button className="btn btn--ghost">{t('revoke')}</button>
-                </form>
+                <div className="acts">
+                  <PrintInvitation print={printInvitationAction.bind(null, i.id)} />
+                  <form action={revokeAction}>
+                    <input type="hidden" name="id" value={i.id} />
+                    <button className="btn btn--ghost">{t('revoke')}</button>
+                  </form>
+                </div>
               </li>
             ))}
           </ul>

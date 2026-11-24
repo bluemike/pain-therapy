@@ -2,7 +2,7 @@ import 'server-only';
 import type { PracticeRole } from '@prisma/client';
 import { authDb } from './db';
 import { audit } from './audit';
-import { InvitationDeliveryError, normalizeEmail, resetSignIn } from './auth/accounts';
+import { InvitationDeliveryError, normalizeEmail, reissueInvitationForPrint, resetSignIn } from './auth/accounts';
 import { resolveInviteAddress, sendInvite, OnboardingError, type InviteForm } from './onboarding';
 import { mailboxStatesOf } from './mailboxes';
 import type { Actor } from './session';
@@ -48,6 +48,7 @@ export async function teamOf(practiceId: string) {
         invitedBy: true,
         channel: true,
         mobile: true,
+        notifyEmail: true,
       },
     }),
   ]);
@@ -116,6 +117,14 @@ export async function revokeInvitation(actor: Actor, practiceId: string, invitat
   });
   if (!r.count) throw new TeamError('notFound');
   await audit(actor, 'team.invitationRevoked', { details: { invitationId } });
+}
+
+/** Iteration 19 (design D3): «Einladung drucken» for an open invitation of the practice; a new link replaces the old */
+export async function printInvitation(actor: Actor, practiceId: string, invitationId: string) {
+  const sheet = await reissueInvitationForPrint(invitationId, practiceId);
+  if (!sheet) throw new TeamError('notFound');
+  await audit(actor, 'team.invitationPrinted', { details: { invitationId } });
+  return sheet;
 }
 
 /** New roles of a member; the last practice admin keeps the role */

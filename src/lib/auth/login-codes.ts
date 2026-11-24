@@ -91,6 +91,48 @@ export async function requestCode(
   return { ok: true };
 }
 
+/**
+ * Iteration 19 (design D2): the e-mail code of an invitation, sent to its private address when it has one (a new
+ * mailbox nobody reads yet) and otherwise to the sign-in address. Stored under the sign-in address like every
+ * invitation code, so lock, limits and ticket stay the same.
+ */
+export async function requestInvitationEmailCode(invitationId: string, ip: string): Promise<RequestResult> {
+  const inv = await authDb.invitation.findFirst({
+    where: { id: invitationId, acceptedAt: null, revokedAt: null, expiresAt: { gt: new Date() } },
+    select: { id: true, email: true, notifyEmail: true, channel: true },
+  });
+  if (!inv || inv.channel === 'SMS') return { ok: true };
+  if (await isLocked(inv.email, ip)) return { ok: false, error: 'locked' };
+  const since = new Date(Date.now() - config.auth.lockMs);
+  const recent = await authDb.loginCode.count({ where: { email: inv.email, createdAt: { gte: since } } });
+  if (recent >= MAX_CODES_PER_WINDOW) return { ok: true };
+  const code = sixDigits();
+  await authDb.$transaction([
+    authDb.loginCode.updateMany({ where: { email: inv.email, usedAt: null }, data: { usedAt: new Date() } }),
+    authDb.loginCode.create({
+      data: {
+        email: inv.email,
+        purpose: 'INVITATION',
+        invitationId: inv.id,
+        codeHash: hmac(`code:${inv.email}:${code}`),
+        expiresAt: new Date(Date.now() + config.auth.codeTtlMs),
+      },
+    }),
+  ]);
+  const t = translator('de', 'authMail');
+  try {
+    await getMailer().send({
+      to: inv.notifyEmail ?? inv.email,
+      subject: t('codeSubject', { code }),
+      text: t('codeText', { code }),
+      bold: [code],
+    });
+  } catch (e) {
+    console.error('Invitation code could not be sent', e instanceof Error ? e.message : e);
+  }
+  return { ok: true };
+}
+
 export type SmsRequestResult =
   { ok: true } | { ok: false; error: 'locked' | 'noMobile' | 'smsFailed' | 'smsDayLimit' | 'smsInvitationLimit' };
 
@@ -102,9 +144,9 @@ export type SmsRequestResult =
 export async function requestInvitationSmsCode(invitationId: string, ip: string): Promise<SmsRequestResult> {
   const inv = await authDb.invitation.findFirst({
     where: { id: invitationId, acceptedAt: null, revokedAt: null, expiresAt: { gt: new Date() } },
-    select: { id: true, email: true, mobile: true },
+    select: { id: true, email: true, mobile: true, channel: true },
   });
-  if (!inv?.mobile) return { ok: false, error: 'noMobile' };
+  if (!inv?.mobile || inv.channel === 'EMAIL') return { ok: false, error: 'noMobile' };
   if (await isLocked(inv.email, ip)) return { ok: false, error: 'locked' };
   const code = sixDigits();
   await authDb.$transaction([

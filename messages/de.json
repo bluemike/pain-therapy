@@ -982,7 +982,16 @@
     "error_noMobile": "Zu dieser Einladung ist keine Handynummer erfasst.",
     "error_smsFailed": "Die SMS konnte nicht gesendet werden. Bitte versuchen Sie es in einigen Minuten erneut.",
     "error_smsDayLimit": "Heute können keine SMS mehr versendet werden. Bitte versuchen Sie es morgen erneut.",
-    "error_smsInvitationLimit": "Zu viele Codes in kurzer Zeit. Bitte warten Sie eine Stunde."
+    "error_smsInvitationLimit": "Zu viele Codes in kurzer Zeit. Bitte warten Sie eine Stunde.",
+    "introBoth": "{inviter} hat Sie als Therapeut/in eingeladen. Bestätigen Sie zuerst mit einem Code per SMS oder E-Mail, dass Sie es sind, danach richten Sie Ihre Anmeldung ein.",
+    "introAdminBoth": "{inviter} hat Sie als Praxis-Admin eingeladen. Bestätigen Sie zuerst mit einem Code per SMS oder E-Mail, dass Sie es sind, danach richten Sie Ihre Anmeldung ein.",
+    "introPlatformBoth": "{inviter} hat Sie als Plattform-Admin eingeladen. Bestätigen Sie zuerst mit einem Code per SMS oder E-Mail, dass Sie es sind, danach richten Sie Ihre Anmeldung ein.",
+    "step_both": "Code bestätigen",
+    "chooseText": "Wohin sollen wir den 6-stelligen Code senden?",
+    "sendVia_SMS": "Code per SMS an {mobile}",
+    "sendVia_EMAIL": "Code per E-Mail an {email}",
+    "switchTo_SMS": "Lieber per SMS",
+    "switchTo_EMAIL": "Lieber per E-Mail"
   },
   "factors": {
     "passkey": "Passkey auf diesem Gerät einrichten",
@@ -1132,7 +1141,8 @@
     "error_noRole": "Bitte mindestens eine Rolle wählen.",
     "error_invalid": "Bitte Name, gültige E-Mail und mindestens eine Rolle angeben.",
     "error_notFound": "Nicht gefunden.",
-    "flash_mailboxRetried": "Neuer Versuch gestartet. Der Status des Postfachs ist aktualisiert."
+    "flash_mailboxRetried": "Neuer Versuch gestartet. Der Status des Postfachs ist aktualisiert.",
+    "flash_invitedSmsFailed": "Die E-Mail-Einladung ist unterwegs. Die SMS konnte nicht gesendet werden."
   },
   "exports": {
     "title": "Daten exportieren",
@@ -1252,7 +1262,8 @@
     "flash_planCreated": "Das Modell ist angelegt.",
     "flash_planUpdated": "Das Modell ist gespeichert.",
     "flash_planDeactivated": "Das Modell ist deaktiviert.",
-    "flash_planActivated": "Das Modell ist wieder aktiv."
+    "flash_planActivated": "Das Modell ist wieder aktiv.",
+    "flash_invitedSmsFailed": "Die E-Mail-Einladung ist unterwegs. Die SMS konnte nicht gesendet werden."
   },
   "notes": {
     "modeLabel": "Eingabe für {field}",
@@ -1341,7 +1352,7 @@
     "email": "E-Mail",
     "address": "Neue Adresse",
     "existingAddress": "Bestehende Adresse",
-    "addressHint": "Vorschlag aus dem Name, änderbar. Die Einladung geht per SMS, weil das neue Postfach noch niemand liest.",
+    "addressHint": "Vorschlag aus dem Name, änderbar. Die E-Mail-Einladung geht an die private Adresse, weil das neue Postfach noch niemand liest.",
     "existingHint": "Die Adresse muss bei Infomaniak bestehen. Die App ändert am Postfach nichts.",
     "mb_OPEN": "Postfach: Zugang offen",
     "mb_READY": "Postfach: Zugang bereit",
@@ -1367,7 +1378,6 @@
     "saveQuota": "Kontingent speichern",
     "error_invalid": "Bitte Name und eine gültige E-Mail-Adresse angeben.",
     "error_mobileInvalid": "Bitte eine vollständige Handynummer eingeben, z. B. 079 123 45 67.",
-    "error_mailboxNeedsSms": "Ein neues Postfach liest noch niemand. Bitte die Einladung per SMS senden.",
     "error_mailboxDisabled": "Postfächer sind zurzeit nicht verfügbar. Bitte mit eigener Adresse einladen.",
     "error_mailboxInvalid": "Diese Adresse ist nicht möglich. Erlaubt sind Kleinbuchstaben, Ziffern, Punkt und Bindestrich.",
     "error_mailboxTaken": "Diese Adresse ist schon vergeben. Bitte eine andere wählen, z. B. mit einer Ziffer am Ende.",
@@ -1378,7 +1388,15 @@
     "error_smsFailed": "Die SMS konnte nicht gesendet werden. Es wurde keine Einladung erstellt.",
     "error_smsDayLimit": "Heute können keine SMS mehr versendet werden. Bitte per E-Mail einladen oder morgen erneut versuchen.",
     "error_smsInvitationLimit": "Zu viele SMS in kurzer Zeit. Bitte in einer Stunde erneut versuchen.",
-    "error_noMobile": "Bitte eine Handynummer angeben."
+    "error_noMobile": "Bitte eine Handynummer angeben.",
+    "channel_BOTH": "beides (SMS und E-Mail)",
+    "via_BOTH": "per SMS und E-Mail",
+    "channelHint": "Standard ist beides: Den Link kann sie auf dem Handy oder am Computer öffnen.",
+    "privateEmail": "Private E-Mail-Adresse",
+    "privateEmailHint": "Für die Einladung, falls sie am Computer geöffnet wird. Angemeldet wird mit der Postfach-Adresse.",
+    "mailTo": "E-Mail an {email}",
+    "error_privateEmailInvalid": "Bitte eine gültige private E-Mail-Adresse angeben. Das neue Postfach liest noch niemand.",
+    "error_noEmail": "Bitte eine E-Mail-Adresse angeben."
   },
   "mailbox": {
     "title": "Mein E-Mail-Postfach",
@@ -1415,5 +1433,30 @@
     "title": "Modell",
     "unlimited": "Patient:innen mit Unterschrift: {count}. Keine Limite.",
     "usage": "{count} von {limit} Patient:innen erfasst."
+  },
+  "invitePrint": {
+    "button": "Drucken",
+    "warning": "Erstellt einen neuen Link. Der Link aus SMS und E-Mail gilt dann nicht mehr.",
+    "confirm": "Neuen Link erstellen und drucken",
+    "cancel": "Abbrechen",
+    "error": "Diese Einladung ist nicht mehr offen. Bitte die Seite neu laden.",
+    "printAgain": "Drucken",
+    "close": "Schliessen",
+    "title": "Ihre Einladung, {name}",
+    "titleNoName": "Ihre Einladung",
+    "intro": "Sie sind eingeladen, in der Praxis «{practice}» mit Pain Therapy zu arbeiten. Scannen Sie den Code mit der Handykamera oder tippen Sie den Link im Browser am Computer ein.",
+    "introPlatform": "Sie sind als Plattform-Admin von Pain Therapy eingeladen. Scannen Sie den Code mit der Handykamera oder tippen Sie den Link im Browser am Computer ein.",
+    "qrLabel": "QR-Code mit dem Einladungslink",
+    "orType": "Oder Link eintippen",
+    "validUntil": "Gültig bis {date}",
+    "signIn": "Anmeldeadresse: {email}",
+    "stepsTitle": "So geht es",
+    "step1": "Code scannen oder Link im Browser öffnen, am besten am Computer oder iPad, mit dem Sie arbeiten werden.",
+    "step2": "«Code per SMS» oder «Code per E-Mail» wählen und den 6-stelligen Code eingeben.",
+    "step3": "Passkey (Face ID, Touch ID, Windows Hello) oder eine Authenticator-App einrichten und die Wiederherstellungscodes aufbewahren.",
+    "step4Mailbox": "Den Zugang zu Ihrem neuen E-Mail-Postfach einmal ansehen und notieren.",
+    "step4": "Ihr Profil prüfen (Name, Handynummer).",
+    "step5": "Fertig: Ab jetzt melden Sie sich mit Ihrer Anmeldeadresse an.",
+    "foot": "Dieses Blatt ersetzt frühere Einladungslinks per SMS oder E-Mail. Bewahren Sie es bis zur Anmeldung auf und geben Sie es nicht weiter. Bei Fragen hilft Ihre Praxis."
   }
 }

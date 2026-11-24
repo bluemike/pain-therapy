@@ -84,6 +84,24 @@ export async function login(
   await page.waitForURL((url) => !url.pathname.startsWith('/login'));
 }
 
+/** Iteration 19: the link of the newest therapist invitation mailed to `to`, ignoring mails listed in `before` */
+export async function invitationFromOutbox(to: string, before = new Set<string>()) {
+  let url = '';
+  await expect(async () => {
+    const files = (await readdir(OUTBOX)).filter((f) => f.endsWith('.json') && !before.has(f)).sort();
+    for (const f of files.reverse()) {
+      const mail = JSON.parse(await readFile(path.join(OUTBOX, f), 'utf8')) as { to: string; text: string };
+      const m = mail.to === to ? /https?:\/\/\S+\/einladung\/[A-Za-z0-9_-]{43}/.exec(mail.text) : null;
+      if (m) {
+        url = m[0];
+        return;
+      }
+    }
+    throw new Error(`No invitation to ${to} yet`);
+  }).toPass({ timeout: 20_000 });
+  return url;
+}
+
 /** The newest sign-in code sent to `to` (outbox), ignoring mails listed in `before` */
 export async function codeFromOutbox(to: string, before = new Set<string>()) {
   let code = '';

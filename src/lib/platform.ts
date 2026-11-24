@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { runInPractice } from '@pain-therapy/shared/practice-context';
 import { authDb, db, rawDb } from './db';
 import { audit } from './audit';
-import { createInvitation, normalizeEmail } from './auth/accounts';
+import { createInvitation, normalizeEmail, reissueInvitationForPrint } from './auth/accounts';
 import { resolveInviteAddress, sendInvite, type InviteForm } from './onboarding';
 import { INITIAL_TEXTS, TEMPLATE_VERSION } from './consent-texts';
 import { addressLineOf } from './practice-settings';
@@ -170,7 +170,7 @@ export async function practicesOverview() {
       },
       invitations: {
         where: { acceptedAt: null, revokedAt: null, expiresAt: { gt: new Date() } },
-        select: { id: true, email: true },
+        select: { id: true, email: true, channel: true },
       },
       exports: {
         where: { status: 'DONE' },
@@ -287,6 +287,17 @@ export async function revokePracticeInvitation(actor: Actor, practiceId: string,
   await runInPractice(p.id, () =>
     audit(actor, 'team.invitationRevoked', { details: { invitationId, by: 'platform' } }),
   );
+}
+
+/** Iteration 19 (design D3): «Einladung drucken» on the platform page; a new link replaces the old */
+export async function printPracticeInvitation(actor: Actor, practiceId: string, invitationId: string) {
+  const p = await livePractice(practiceId);
+  const sheet = await reissueInvitationForPrint(invitationId, p.id);
+  if (!sheet) throw new PlatformError('notFound');
+  await runInPractice(p.id, () =>
+    audit(actor, 'team.invitationPrinted', { details: { invitationId, by: 'platform' } }),
+  );
+  return sheet;
 }
 
 /**

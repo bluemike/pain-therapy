@@ -982,7 +982,16 @@
     "error_noMobile": "No mobile number is recorded for this invitation.",
     "error_smsFailed": "The SMS could not be sent. Please try again in a few minutes.",
     "error_smsDayLimit": "No more SMS can be sent today. Please try again tomorrow.",
-    "error_smsInvitationLimit": "Too many codes in a short time. Please wait an hour."
+    "error_smsInvitationLimit": "Too many codes in a short time. Please wait an hour.",
+    "introBoth": "{inviter} has invited you as a therapist. First confirm it is you with a code by text or e-mail, then set up your sign-in.",
+    "introAdminBoth": "{inviter} has invited you as a practice admin. First confirm it is you with a code by text or e-mail, then set up your sign-in.",
+    "introPlatformBoth": "{inviter} has invited you as a platform admin. First confirm it is you with a code by text or e-mail, then set up your sign-in.",
+    "step_both": "Confirm code",
+    "chooseText": "Where should we send the 6-digit code?",
+    "sendVia_SMS": "Code by text to {mobile}",
+    "sendVia_EMAIL": "Code by e-mail to {email}",
+    "switchTo_SMS": "Text instead",
+    "switchTo_EMAIL": "E-mail instead"
   },
   "factors": {
     "passkey": "Set up a passkey on this device",
@@ -1132,7 +1141,8 @@
     "error_noRole": "Please choose at least one role.",
     "error_invalid": "Please enter a name, a valid email and at least one role.",
     "error_notFound": "Not found.",
-    "flash_mailboxRetried": "New attempt made. The mailbox status is updated."
+    "flash_mailboxRetried": "New attempt made. The mailbox status is updated.",
+    "flash_invitedSmsFailed": "The e-mail invitation is on its way. The text message could not be sent."
   },
   "exports": {
     "title": "Export data",
@@ -1252,7 +1262,8 @@
     "flash_planCreated": "The plan has been added.",
     "flash_planUpdated": "The plan is saved.",
     "flash_planDeactivated": "The plan is deactivated.",
-    "flash_planActivated": "The plan is active again."
+    "flash_planActivated": "The plan is active again.",
+    "flash_invitedSmsFailed": "The e-mail invitation is on its way. The text message could not be sent."
   },
   "notes": {
     "modeLabel": "Input for {field}",
@@ -1341,7 +1352,7 @@
     "email": "Email",
     "address": "New address",
     "existingAddress": "Existing address",
-    "addressHint": "Suggested from the name, can be changed. The invitation goes by SMS because nobody reads the new mailbox yet.",
+    "addressHint": "Suggested from the name, can be changed. The e-mail invitation goes to the private address because nobody reads the new mailbox yet.",
     "existingHint": "The address must exist at Infomaniak. The app does not change the mailbox.",
     "mb_OPEN": "Mailbox: access pending",
     "mb_READY": "Mailbox: access ready",
@@ -1367,7 +1378,6 @@
     "saveQuota": "Save quota",
     "error_invalid": "Please enter a name and a valid email address.",
     "error_mobileInvalid": "Please enter a complete mobile number, e.g. 079 123 45 67.",
-    "error_mailboxNeedsSms": "Nobody reads a new mailbox yet. Please send the invitation by SMS.",
     "error_mailboxDisabled": "Mailboxes are not available at the moment. Please invite with an own address.",
     "error_mailboxInvalid": "This address is not possible. Use lower-case letters, digits, dot and dash.",
     "error_mailboxTaken": "This address is already taken. Please choose another, e.g. with a digit at the end.",
@@ -1378,7 +1388,15 @@
     "error_smsFailed": "The SMS could not be sent. No invitation was created.",
     "error_smsDayLimit": "No more SMS can be sent today. Please invite by email or try again tomorrow.",
     "error_smsInvitationLimit": "Too many SMS in a short time. Please try again in an hour.",
-    "error_noMobile": "Please enter a mobile number."
+    "error_noMobile": "Please enter a mobile number.",
+    "channel_BOTH": "both (text and e-mail)",
+    "via_BOTH": "by text and e-mail",
+    "channelHint": "Both is the default: she can open the link on her phone or on a computer.",
+    "privateEmail": "Private e-mail address",
+    "privateEmailHint": "For the invitation, in case she opens it on a computer. She signs in with the mailbox address.",
+    "mailTo": "e-mail to {email}",
+    "error_privateEmailInvalid": "Please enter a valid private e-mail address. Nobody reads the new mailbox yet.",
+    "error_noEmail": "Please enter an e-mail address."
   },
   "mailbox": {
     "title": "My mailbox",
@@ -1415,5 +1433,30 @@
     "title": "Plan",
     "unlimited": "Patients with a signature: {count}. No limit.",
     "usage": "{count} of {limit} patients recorded."
+  },
+  "invitePrint": {
+    "button": "Print",
+    "warning": "Creates a new link. The link from the text and the e-mail then stops working.",
+    "confirm": "Create new link and print",
+    "cancel": "Cancel",
+    "error": "This invitation is no longer open. Please reload the page.",
+    "printAgain": "Print",
+    "close": "Close",
+    "title": "Your invitation, {name}",
+    "titleNoName": "Your invitation",
+    "intro": "You are invited to work with Pain Therapy at the practice “{practice}”. Scan the code with your phone camera or type the link into the browser on a computer.",
+    "introPlatform": "You are invited as a platform admin of Pain Therapy. Scan the code with your phone camera or type the link into the browser on a computer.",
+    "qrLabel": "QR code with the invitation link",
+    "orType": "Or type the link",
+    "validUntil": "Valid until {date}",
+    "signIn": "Sign-in address: {email}",
+    "stepsTitle": "How it works",
+    "step1": "Scan the code or open the link in a browser, ideally on the computer or iPad you will work with.",
+    "step2": "Choose “Code by text” or “Code by e-mail” and enter the 6-digit code.",
+    "step3": "Set up a passkey (Face ID, Touch ID, Windows Hello) or an authenticator app and keep the recovery codes.",
+    "step4Mailbox": "Look at the access to your new mailbox once and write it down.",
+    "step4": "Check your profile (name, mobile number).",
+    "step5": "Done: from now on you sign in with your sign-in address.",
+    "foot": "This sheet replaces earlier invitation links by text or e-mail. Keep it until you have signed in and do not pass it on. Your practice will help with questions."
   }
 }
