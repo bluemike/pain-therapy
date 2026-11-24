@@ -162,6 +162,11 @@ export default async function PatientRecord({
           </p>
         </div>
       ) : null}
+      {active && p.consent === 'signed' && p.latestSignedVersion && p.latestSignedVersion < p.currentVersion ? (
+        <div className="banner info" data-testid="next-visit-version">
+          <p>{t('nextVisitBanner', { signed: p.latestSignedVersion, version: p.currentVersion })}</p>
+        </div>
+      ) : null}
       {p.unresolvedNote?.patientNote ? (
         <div className="banner info notebox" data-testid="patient-note">
           <p>
@@ -196,7 +201,7 @@ export default async function PatientRecord({
         </div>
         <div className="actions">
           {active ? (
-            <Link className="btn btn--gold" href={`/patients/${p.id}/treatments/new`}>
+            <Link className="btn btn--gold" href={`/patients/${p.id}/treatments/new`} prefetch={false}>
               <PlusIcon />
               {(await getTranslations('treatments'))('new')}
             </Link>
@@ -451,7 +456,7 @@ async function Treatments({
             {t('emptyText')}
           </p>
           {active ? (
-            <Link className="btn btn--gold" href={`/patients/${patientId}/treatments/new`}>
+            <Link className="btn btn--gold" href={`/patients/${patientId}/treatments/new`} prefetch={false}>
               <PlusIcon />
               {t('new')}
             </Link>
@@ -492,7 +497,7 @@ async function Treatments({
                   {t('edit')}
                 </Link>
                 {canOpen ? (
-                  <Link className="btn btn--ghost" href={`${base}/consultations/new`}>
+                  <Link className="btn btn--ghost" href={`${base}/consultations/new`} prefetch={false}>
                     <PlusIcon />
                     {t('addConsultation')}
                   </Link>
@@ -745,7 +750,14 @@ async function History({
   const th = await getTranslations('home');
   const locale = await getLocale();
   const detail = (e: AuditEvent) =>
-    (e.details ?? {}) as { regionId?: number; number?: number; kind?: string; exerciseCode?: string; channel?: string };
+    (e.details ?? {}) as {
+      regionId?: number;
+      number?: number;
+      kind?: string;
+      exerciseCode?: string;
+      channel?: string;
+      version?: number;
+    };
   const region = (e: AuditEvent) => {
     const r = regions.find((x) => x.id === detail(e).regionId);
     return r ? `${regionLabel(r, locale)} · ` : '';
@@ -782,6 +794,8 @@ async function History({
         return t('signingStarted');
       case 'signing.aborted':
         return t('signingAborted');
+      case 'consent.resignRequested':
+        return t('resignRequested', { version: detail(e).version ?? 0 });
       case 'signing.completed':
         return detail(e).channel === 'PATIENT_ZONE' ? t('signedZone') : t('signed');
       case 'document.archived':

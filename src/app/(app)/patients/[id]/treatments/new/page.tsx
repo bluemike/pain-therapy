@@ -22,7 +22,7 @@ export default async function NewTreatmentPage({ params }: { params: Promise<{ i
     getTranslations('treatments'),
     getTranslations('form'),
     getLocale(),
-    openingBlocker(id),
+    openingBlocker(id, user),
     listRegions(),
     inputModeOf(user.id),
   ]);

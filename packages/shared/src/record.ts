@@ -21,7 +21,7 @@ export async function hasRecord(db: Pick<PrismaClient, 'treatment' | 'signatureS
  * Shared by the practice app (link status, "Link senden") and the patient zone (confirmation, device session).
  */
 export async function linkPurposeOf(
-  db: Pick<PrismaClient, 'treatment' | 'consultation' | 'signatureSession' | 'consentTextVersion'>,
+  db: Pick<PrismaClient, 'treatment' | 'consultation' | 'signatureSession' | 'consentTextVersion' | 'patient'>,
   patientId: string,
   now = new Date(),
 ) {

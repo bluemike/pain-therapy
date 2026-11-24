@@ -2,8 +2,7 @@ import type { Consultation, Prisma, Treatment } from '@prisma/client';
 import { db } from './db';
 import { audit } from './audit';
 import { formatDateTime } from './format';
-import { consentStatusOf } from './patients';
-import { currentVersionNumber } from './consent-texts';
+import { consentOf, consentVersions } from './patients';
 import { blobFolder } from './practice';
 import { addPhotoRows, preparePhotos, removePhotoRows, writePhotos, type PhotoUpload } from './photos';
 import { claimHandoffPhotos } from './photo-handoff';
@@ -40,13 +39,21 @@ export class TreatmentError extends Error {
 /**
  * Voraussetzungen (design D9): new treatments and consultations only for active patients with a valid signed
  * disclaimer, the same check as "Unterschrift ausstehend" on the dashboard. Returns the reason or null.
+ *
+ * Iteration 18 (design D2): with `newVisit` (opening or saving a new treatment or session) a signature of an older
+ * version than the current one is no longer enough. The current version becomes the required one for this person
+ * (Patient.signatureRequiredVersion, audit "consent.resignRequested") and the opening is blocked until they sign.
  */
-export async function openingBlocker(patientId: string): Promise<'inactive' | 'consent' | null> {
-  const [p, current] = await Promise.all([
+export async function openingBlocker(
+  patientId: string,
+  newVisit?: Pick<Actor, 'id' | 'name'>,
+): Promise<'inactive' | 'consent' | null> {
+  const [p, versions] = await Promise.all([
     db.patient.findUnique({
       where: { id: patientId },
       select: {
         status: true,
+        signatureRequiredVersion: true,
         // The latest completed signature, also before its PDF exists (iteration 5, design D2)
         signatureSessions: {
           where: { status: 'SIGNED' },
@@ -56,15 +63,28 @@ export async function openingBlocker(patientId: string): Promise<'inactive' | 'c
         },
       },
     }),
-    currentVersionNumber(),
+    consentVersions(),
   ]);
   if (!p) throw new TreatmentError('notFound');
   if (p.status !== 'ACTIVE') return 'inactive';
-  return consentStatusOf(p.signatureSessions[0]?.textVersion.version, current) === 'signed' ? null : 'consent';
+  const latest = p.signatureSessions[0]?.textVersion.version;
+  if (newVisit && latest && latest < versions.current && (p.signatureRequiredVersion ?? 0) < versions.current) {
+    await db.patient.update({
+      where: { id: patientId },
+      data: { signatureRequiredVersion: versions.current },
+      select: { id: true },
+    });
+    await audit(newVisit, 'consent.resignRequested', {
+      patientId,
+      details: { version: versions.current, signedVersion: latest },
+    });
+    return 'consent';
+  }
+  return consentOf(latest, p.signatureRequiredVersion, versions) === 'signed' ? null : 'consent';
 }
 
-async function assertOpenable(patientId: string) {
-  const blocker = await openingBlocker(patientId);
+async function assertOpenable(patientId: string, actor: Pick<Actor, 'id' | 'name'>) {
+  const blocker = await openingBlocker(patientId, actor);
   if (blocker) throw new TreatmentError(blocker);
 }
 
@@ -114,7 +134,7 @@ export async function createTreatment(
 ) {
   const { diagnosisInk = KEEP, ...values } = input;
   const ink = resolveInk(null, diagnosisInk, values.diagnosis);
-  await assertOpenable(patientId);
+  await assertOpenable(patientId, actor);
   await assertRegion(input.regionId);
   const photos = preparePhotos(await blobFolder(patientId), uploads);
   await writePhotos(photos);
@@ -284,7 +304,7 @@ export async function createConsultation(
   const { diagnosisInk = KEEP, comparisonInk = KEEP, ...input } = inputWithInk;
   const t = await db.treatment.findUnique({ where: { id: treatmentId } });
   if (!t) throw new TreatmentError('notFound');
-  await assertOpenable(t.patientId);
+  await assertOpenable(t.patientId, actor);
   assertSide(t.side, input.sheet);
   await assertCatalog(input.sheet);
   const photos = preparePhotos(await blobFolder(t.patientId), uploads);

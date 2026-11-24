@@ -131,7 +131,10 @@ export async function publishConsentText(_prev: PublishState, fd: FormData): Pro
   const unknown = unknownFieldsOf(input);
   if (Object.keys(unknown).length)
     return { errors: Object.fromEntries(Object.keys(unknown).map((k) => [k, 'unknownField'])), unknown };
-  const version = await publishVersion(actor, input, { fromTemplate: fd.get('fromTemplate') === '1' });
+  const version = await publishVersion(actor, input, {
+    fromTemplate: fd.get('fromTemplate') === '1',
+    resignRequired: fd.get('resignMode') === 'all',
+  });
   revalidatePath('/', 'layout');
   return { published: version };
 }

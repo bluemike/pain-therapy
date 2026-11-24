@@ -22,7 +22,8 @@ export default async function ConsentTextsPage({ searchParams }: { searchParams:
   const latest = versions[0]?.version ?? 0;
   const de = versions.find((v) => v.version === latest && v.language === 'de');
   const en = versions.find((v) => v.version === latest && v.language === 'en');
-  const resign = (await dashboardData()).pending.filter((p) => p.consent === 'resign').length;
+  const dashboard = await dashboardData();
+  const resign = dashboard.pending.filter((p) => p.consent === 'resign').length;
   const grouped = [...new Set(versions.map((v) => v.version))].map((n) => versions.filter((v) => v.version === n));
   return (
     <>
@@ -58,7 +59,9 @@ export default async function ConsentTextsPage({ searchParams }: { searchParams:
       ) : null}
       {latest ? (
         <div className="banner info">
-          <p>{t('resignCount', { count: resign })}</p>
+          <p>
+            {t('resignCount', { count: resign })} {t('nextVisitCount', { count: dashboard.nextVisit })}
+          </p>
         </div>
       ) : null}
       <div className="two">

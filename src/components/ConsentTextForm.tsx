@@ -47,6 +47,8 @@ export function ConsentTextForm({
   const te = useTranslations('errors');
   const [state, action, pending] = useActionState<PublishState, FormData>(publishConsentText, {});
   const [text, setText] = useState(initial);
+  // Iteration 18 (design D3): by default the new version is signed at the next new treatment or session
+  const [resignMode, setResignMode] = useState<'next' | 'all'>('next');
   const last = useRef<Name>('bodyDe');
   const refs = useRef<Partial<Record<Name, HTMLInputElement | HTMLTextAreaElement | null>>>({});
 
@@ -147,9 +149,35 @@ export function ConsentTextForm({
       <p className="muted" style={{ margin: 0, fontSize: 13 }}>
         {t('bodyHint')}
       </p>
-      <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-        {t('publishNote')}
-      </p>
+      <fieldset className="choice" data-testid="resign-mode">
+        <legend>{t('resignLegend')}</legend>
+        <label className={`card ${resignMode === 'next' ? 'on' : ''}`}>
+          <input
+            type="radio"
+            name="resignMode"
+            value="next"
+            checked={resignMode === 'next'}
+            onChange={() => setResignMode('next')}
+          />
+          <span>
+            <b>{t('resignNext')}</b>
+            <span className="d">{t('resignNextText')}</span>
+          </span>
+        </label>
+        <label className={`card ${resignMode === 'all' ? 'on' : ''}`}>
+          <input
+            type="radio"
+            name="resignMode"
+            value="all"
+            checked={resignMode === 'all'}
+            onChange={() => setResignMode('all')}
+          />
+          <span>
+            <b>{t('resignAll')}</b>
+            <span className="d">{t('resignAllText')}</span>
+          </span>
+        </label>
+      </fieldset>
       <button className="btn btn--gold" disabled={pending} style={{ alignSelf: 'flex-start' }}>
         {t('publish', { version: state.published ? state.published + 1 : nextVersion })}
       </button>

@@ -20,6 +20,8 @@ export type AuditAction =
   | 'email.failed'
   | 'email.resend'
   | 'consentText.published'
+  // Iteration 18 (design D2): the current form version is required at a new treatment or session
+  | 'consent.resignRequested'
   | 'treatment.created'
   | 'treatment.updated'
   | 'consultation.created'

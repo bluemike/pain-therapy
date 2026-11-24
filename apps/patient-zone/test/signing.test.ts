@@ -15,11 +15,12 @@ import { admin, ago, consultation, DOB, link, now, patient, resetDatabase } from
 beforeEach(resetDatabase);
 afterAll(() => admin.$disconnect());
 
-async function publish(version: number) {
+async function publish(version: number, resignRequired = true) {
   await admin.consentTextVersion.createMany({
     data: (['de', 'en'] as const).map((language) => ({
       version,
       language,
+      resignRequired,
       title: `Titel ${version} ${language}`,
       body: `## Haftungsausschluss\nText ${version}`,
       publishedBy: 'Test',
@@ -93,6 +94,26 @@ describe('link valid while a signature is pending (Gültigkeit des Links bei aus
     const after = await resolveSession(sessionId, now);
     expect(after?.signaturePending).toBe(false);
     expect(programSession(after)?.program.prescriptions.map((x) => x.exerciseCode)).toEqual(['2A']);
+  });
+});
+
+describe('new version at the next treatment or session (iteration 18, design D4)', () => {
+  it('does not ask again until the practice requires the new version, then shows the newest text', async () => {
+    await publish(1);
+    const { zone, sessionId, patient: p } = await invited({ withProgram: true });
+    const form = await openForm(zone, now);
+    await submitSignature(zone, form!.sid, payload(), now);
+    await publish(2, false);
+    const kept = await resolveSession(sessionId, now);
+    expect(kept?.signaturePending).toBe(false);
+    expect(programSession(kept)?.program.prescriptions.map((x) => x.exerciseCode)).toEqual(['2A']);
+
+    // The practice opened a new treatment or session (practice app, openingBlocker)
+    await admin.patient.update({ where: { id: p.id }, data: { signatureRequiredVersion: 2 } });
+    const asked = await resolveSession(sessionId, now);
+    expect(asked?.signaturePending).toBe(true);
+    expect(programSession(asked)).toBeNull();
+    expect((await openForm(asked!, now))?.text).toMatchObject({ version: 2 });
   });
 });
 

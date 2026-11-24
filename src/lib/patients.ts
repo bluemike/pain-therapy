@@ -7,17 +7,42 @@ import { assertCanCreatePatient } from './plans';
 import { requirePractice } from './practice';
 import { formatDate, parseSwissDate } from './format';
 import { ANAMNESIS_FIELDS, PATIENT_FIELDS, type PatientInput } from './schemas';
-import { latestSignedVersion } from '@pain-therapy/shared/signing';
-import { currentVersionNumber } from './consent-texts';
+import { latestSignedVersion, requiredVersionOf } from '@pain-therapy/shared/signing';
+import { currentVersionNumber, mandatoryVersionNumber } from './consent-texts';
 import type { Actor } from './session';
 
 export type ConsentStatus = 'signed' | 'pending' | 'resign';
 
 /** Patient data access. Every read of a record and every write goes through here and into the audit log (design D5). */
 
-export function consentStatusOf(latestSignedVersion: number | null | undefined, currentVersion: number): ConsentStatus {
+/**
+ * `requiredVersion` (iteration 18, design D1) is the version the person must have signed; by default the current one.
+ * A valid older signature stays 'signed' until the practice asks for the newer version.
+ */
+export function consentStatusOf(
+  latestSignedVersion: number | null | undefined,
+  currentVersion: number,
+  requiredVersion: number = currentVersion,
+): ConsentStatus {
   if (!latestSignedVersion) return 'pending';
-  return latestSignedVersion < currentVersion ? 'resign' : 'signed';
+  return latestSignedVersion < requiredVersion ? 'resign' : 'signed';
+}
+
+/** Versions known for the whole practice; the required version of a person follows from these (design D1) */
+export type ConsentVersions = { current: number; mandatory: number };
+
+export async function consentVersions(): Promise<ConsentVersions> {
+  const [current, mandatory] = await Promise.all([currentVersionNumber(), mandatoryVersionNumber()]);
+  return { current, mandatory };
+}
+
+/** Status of one person from the latest signed version and the version the practice asked for */
+export function consentOf(
+  latest: number | null | undefined,
+  requested: number | null | undefined,
+  v: ConsentVersions,
+): ConsentStatus {
+  return consentStatusOf(latest, v.current, requiredVersionOf(latest, v.current, v.mandatory, requested));
 }
 
 /**
@@ -37,9 +62,15 @@ export type PatientListItem = Patient & { consent: ConsentStatus };
 
 function decorate<T extends Patient & { signatureSessions: { textVersion: { version: number } }[] }>(
   p: T,
-  current: number,
+  v: ConsentVersions,
 ) {
-  return { ...p, consent: consentStatusOf(p.signatureSessions[0]?.textVersion.version, current) };
+  const latest = p.signatureSessions[0]?.textVersion.version;
+  return {
+    ...p,
+    consent: consentOf(latest, p.signatureRequiredVersion, v),
+    /** Signed an older version that is not required yet: signs the new one at the next visit (iteration 18) */
+    nextVisitUpdate: !!latest && latest < v.current,
+  };
 }
 
 /** patient-records: Patientenliste und Suche (name or date of birth; iteration 11: no insurance number) */
@@ -66,7 +97,7 @@ export async function listPatients(opts: { q?: string; filter?: 'active' | 'inac
       orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
       take: 500,
     }),
-    currentVersionNumber(),
+    consentVersions(),
   ]);
   let result = rows.map((p) => decorate(p, current));
   // With several words ("Anna Müller") every word must match somewhere
@@ -83,7 +114,7 @@ export async function dashboardData() {
   startOfMonth.setUTCHours(0, 0, 0, 0);
   const [active, current, newThisMonth, recent] = await Promise.all([
     db.patient.findMany({ where: { status: 'ACTIVE' }, include: withLatestSignature, orderBy: { lastName: 'asc' } }),
-    currentVersionNumber(),
+    consentVersions(),
     db.patient.count({ where: { createdAt: { gte: startOfMonth } } }),
     db.patient.findMany({
       where: { status: 'ACTIVE' },
@@ -104,6 +135,8 @@ export async function dashboardData() {
     activeCount: active.length,
     newThisMonth,
     pending: decorated.filter((p) => p.consent !== 'signed'),
+    /** Signed, will sign the current version at the next treatment or session (iteration 18, design D3) */
+    nextVisit: decorated.filter((p) => p.consent === 'signed' && p.nextVisitUpdate).length,
     recent: recent.map((p) => decorate(p, current)),
     openNotes: openNotes.map((n) => n.patient),
   };
@@ -131,8 +164,8 @@ export async function viewPatient(actor: Actor, id: string) {
   });
   if (!patient) return null;
   await audit(actor, 'patient.viewed', { patientId: id });
-  const [current, latest, unresolvedNote, finalizing] = await Promise.all([
-    currentVersionNumber(),
+  const [versions, latest, unresolvedNote, finalizing] = await Promise.all([
+    consentVersions(),
     latestSignedVersion(db, id),
     // zone-consent-invitation: Anmerkung zu den Personalien, shown until a user marks it as done (design D9)
     db.signatureSession.findFirst({
@@ -149,8 +182,9 @@ export async function viewPatient(actor: Actor, id: string) {
   ]);
   return {
     ...patient,
-    consent: consentStatusOf(latest, current),
-    currentVersion: current,
+    consent: consentOf(latest, patient.signatureRequiredVersion, versions),
+    currentVersion: versions.current,
+    latestSignedVersion: latest,
     unresolvedNote,
     finalizing,
   };

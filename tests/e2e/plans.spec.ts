@@ -32,6 +32,10 @@ test.describe('plans, usage and form fields', () => {
     const fields = page.getByTestId('fields-de');
     await expect(fields.getByRole('button', { name: '«Praxisname»' })).toBeVisible();
     await expect(fields).toContainText('Pain Therapy');
+    // Iteration 18: by default a new version is signed at the next treatment or session
+    const mode = page.getByTestId('resign-mode');
+    await expect(mode.getByRole('radio', { name: /Bei der nächsten Behandlung oder Sitzung/ })).toBeChecked();
+    await expect(mode.getByRole('radio', { name: /Sofort von allen/ })).not.toBeChecked();
     await page.getByLabel('Text (Deutsch)').fill('## 3. Datenschutzhinweis\n- «Praxisname»\n- «Praxisnam»');
     await page.getByText('Vorschau Deutsch').click();
     await expect(page.locator('.consent-preview').first()).not.toContainText('«Praxisname»');
