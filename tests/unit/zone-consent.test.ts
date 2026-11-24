@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { internalToken } from '@pain-therapy/shared/internal-auth';
-import { recordSignature, signaturePending } from '@pain-therapy/shared/signing';
+import { recordSignature, signaturePending, signatureStateOf } from '@pain-therapy/shared/signing';
 import { db } from '@/lib/db';
 import { config } from '@/lib/config';
 import { createPatient, dashboardData, viewPatient } from '@/lib/patients';
@@ -315,10 +315,82 @@ describe('new text version', () => {
     const p = await newPatient();
     await signInZone(p.id);
     expect(await inviteStatusOf(p.id, false)).toMatchObject({ kind: 'signedOnline' });
-    await publishVersion(actor, { titleDe: 'T', bodyDe: '## A\nText', titleEn: 'T', bodyEn: '## A\nText' });
+    await publishVersion(
+      actor,
+      { titleDe: 'T', bodyDe: '## A\nText', titleEn: 'T', bodyEn: '## A\nText' },
+      { resignRequired: true },
+    );
     expect((await dashboardData()).pending.find((x) => x.id === p.id)?.consent).toBe('resign');
     // Invitations before the latest signature do not count
     expect(await inviteStatusOf(p.id, true)).toEqual({ kind: 'notInvited' });
     await expect(inviteToSign(actor, p.id, 'SCREEN')).resolves.toMatchObject({ channel: 'SCREEN' });
+  });
+});
+
+describe('new text version at the next treatment or session (iteration 18)', () => {
+  const publish = (resignRequired?: boolean) =>
+    publishVersion(
+      actor,
+      { titleDe: 'T', bodyDe: '## A\nText', titleEn: 'T', bodyEn: '## A\nText' },
+      resignRequired === undefined ? {} : { resignRequired },
+    );
+
+  it('keeps an older signature valid until a new treatment or session is opened', async () => {
+    const p = await newPatient();
+    await signInZone(p.id);
+    const signed = await currentVersionNumber();
+    await publish();
+    const current = await currentVersionNumber();
+    expect(current).toBe(signed + 1);
+
+    // Nothing pending: record, dashboard, zone and the invitation all see a valid signature
+    expect((await viewPatient(actor, p.id))?.consent).toBe('signed');
+    const dashboard = await dashboardData();
+    expect(dashboard.pending.some((x) => x.id === p.id)).toBe(false);
+    expect(dashboard.nextVisit).toBeGreaterThanOrEqual(1);
+    expect(await signatureStateOf(db, p.id)).toMatchObject({ requiredVersion: signed, pending: false });
+    await expect(inviteToSign(actor, p.id, 'SCREEN')).rejects.toMatchObject({ code: 'notPending' });
+    // Only checking (without a new visit) changes nothing
+    expect(await openingBlocker(p.id)).toBeNull();
+
+    // Opening a new treatment or session asks for the current version
+    expect(await openingBlocker(p.id, actor)).toBe('consent');
+    expect((await db.patient.findUnique({ where: { id: p.id } }))?.signatureRequiredVersion).toBe(current);
+    expect(await db.auditEvent.count({ where: { patientId: p.id, action: 'consent.resignRequested' } })).toBe(1);
+    expect((await viewPatient(actor, p.id))?.consent).toBe('resign');
+    expect(await signatureStateOf(db, p.id)).toMatchObject({ requiredVersion: current, pending: true });
+    // A second opening does not log again
+    expect(await openingBlocker(p.id, actor)).toBe('consent');
+    expect(await db.auditEvent.count({ where: { patientId: p.id, action: 'consent.resignRequested' } })).toBe(1);
+    await expect(inviteToSign(actor, p.id, 'SCREEN')).resolves.toMatchObject({ channel: 'SCREEN' });
+
+    // After signing the current version the treatment can be opened
+    await signInZone(p.id);
+    expect(await openingBlocker(p.id, actor)).toBeNull();
+    expect((await viewPatient(actor, p.id))?.consent).toBe('signed');
+  });
+
+  it('asks a person who never signed for the current version', async () => {
+    const p = await newPatient();
+    await publish();
+    expect(await signatureStateOf(db, p.id)).toMatchObject({
+      latestSignedVersion: null,
+      requiredVersion: await currentVersionNumber(),
+      pending: true,
+    });
+    expect(await openingBlocker(p.id, actor)).toBe('consent');
+  });
+
+  it('«Sofort von allen» requires the new version at once, also after later versions for the next visit', async () => {
+    const p = await newPatient();
+    await signInZone(p.id);
+    await publish(true);
+    const mandatory = await currentVersionNumber();
+    await publish(false);
+    expect(await signatureStateOf(db, p.id)).toMatchObject({ requiredVersion: mandatory, pending: true });
+    expect((await dashboardData()).pending.find((x) => x.id === p.id)?.consent).toBe('resign');
+    expect(
+      await db.consentTextVersion.findMany({ where: { version: mandatory }, select: { resignRequired: true } }),
+    ).toEqual([{ resignRequired: true }, { resignRequired: true }]);
   });
 });

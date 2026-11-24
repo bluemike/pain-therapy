@@ -1,5 +1,6 @@
 import type { Language } from '@prisma/client';
 import { unknownFields } from '@pain-therapy/shared/consent-fields';
+import { mandatoryConsentVersion } from '@pain-therapy/shared/signing';
 import { db, rawDb } from './db';
 import { currentPractice, requirePractice } from './practice';
 import { audit } from './audit';
@@ -36,6 +37,12 @@ export async function currentVersionNumber(): Promise<number> {
   return v._max.version ?? 0;
 }
 
+/** Newest version published with «Sofort von allen» (iteration 18, design D1); 0 if none */
+export async function mandatoryVersionNumber(): Promise<number> {
+  await ensureInitialTexts();
+  return mandatoryConsentVersion(db);
+}
+
 export async function currentText(language: Language) {
   await ensureInitialTexts();
   return db.consentTextVersion.findFirst({ where: { language }, orderBy: { version: 'desc' } });
@@ -50,18 +57,25 @@ export async function listVersions() {
 export async function publishVersion(
   actor: Actor,
   input: { titleDe: string; bodyDe: string; titleEn: string; bodyEn: string },
-  opts: { fromTemplate?: boolean } = {},
+  opts: { fromTemplate?: boolean; resignRequired?: boolean } = {},
 ) {
+  // Iteration 18 (design D3): by default the new version is signed at the next new treatment or session
+  const resignRequired = !!opts.resignRequired;
   const version = await db.$transaction(async (tx) => {
     const max = await tx.consentTextVersion.aggregate({ _max: { version: true } });
     const version = (max._max.version ?? 0) + 1;
     await tx.consentTextVersion.createMany({
       data: [
-        { version, language: 'de', title: input.titleDe, body: input.bodyDe, publishedBy: actor.name },
-        { version, language: 'en', title: input.titleEn, body: input.bodyEn, publishedBy: actor.name },
+        { version, language: 'de', title: input.titleDe, body: input.bodyDe, publishedBy: actor.name, resignRequired },
+        { version, language: 'en', title: input.titleEn, body: input.bodyEn, publishedBy: actor.name, resignRequired },
       ],
     });
-    await audit(actor, 'consentText.published', { details: { version, fromTemplate: !!opts.fromTemplate } }, tx);
+    await audit(
+      actor,
+      'consentText.published',
+      { details: { version, fromTemplate: !!opts.fromTemplate, resignRequired } },
+      tx,
+    );
     return version;
   });
   if (opts.fromTemplate) await markTemplateSeen();

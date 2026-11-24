@@ -280,7 +280,11 @@ describe('signing, PDF archive and email', () => {
   it('a new text version marks earlier signatures for re-signing (task 6.2)', async () => {
     const before = await dashboardData();
     expect(before.pending.some((p) => p.lastName === 'Thompson')).toBe(false);
-    await publishVersion(actor, { titleDe: 'T', bodyDe: '## A\nText', titleEn: 'T', bodyEn: '## A\nText' });
+    await publishVersion(
+      actor,
+      { titleDe: 'T', bodyDe: '## A\nText', titleEn: 'T', bodyEn: '## A\nText' },
+      { resignRequired: true },
+    );
     const after = await dashboardData();
     expect(after.pending.find((p) => p.lastName === 'Thompson')?.consent).toBe('resign');
   });

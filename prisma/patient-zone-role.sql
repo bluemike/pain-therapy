@@ -30,7 +30,7 @@ BEGIN
   -- the personal details the patient checks (iteration 5, design D8), but not the emergency contact, GP or occupation
   GRANT SELECT ("id", "firstName", "preferredLanguage", "dateOfBirth", "status",
                 "lastName", "street", "zip", "city", "phone", "mobile", "email", "insurer", "insuranceNumber",
-                "audioLanguage")
+                "audioLanguage", "signatureRequiredVersion")
     ON "Patient" TO patient_zone;
   -- exercise-audio (iteration 15, design D3): the patient switches between Hochdeutsch and Mundart
   GRANT UPDATE ("audioLanguage") ON "Patient" TO patient_zone;
@@ -77,7 +77,7 @@ BEGIN
   -- Signature in the patient zone (iteration 5, design D8): the current text, the own signature state, and writing a
   -- signature with its consents. No SELECT on the signature images or the remark; inserts without
   -- RETURNING (createMany), so INSERT needs no SELECT on the other columns
-  GRANT SELECT ("id", "version", "language", "title", "body") ON "ConsentTextVersion" TO patient_zone;
+  GRANT SELECT ("id", "version", "language", "title", "body", "resignRequired") ON "ConsentTextVersion" TO patient_zone;
   GRANT SELECT ("id", "patientId", "textVersionId", "language", "status", "channel", "zoneSessionId", "startedAt",
                 "completedAt") ON "SignatureSession" TO patient_zone;
   GRANT INSERT ON "SignatureSession" TO patient_zone;

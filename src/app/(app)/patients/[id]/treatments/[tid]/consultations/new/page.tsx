@@ -10,11 +10,11 @@ export const dynamic = 'force-dynamic';
 
 /** consultations: Konsultation eröffnen, date and time now, diagnosis from the treatment */
 export default async function NewConsultationPage({ params }: { params: Promise<{ id: string; tid: string }> }) {
-  await requireUser();
+  const user = await requireUser();
   const { id, tid } = await params;
   const tr = await getTreatment(tid);
   if (!tr || tr.patientId !== id) notFound();
-  const [blocker, defaults] = await Promise.all([openingBlocker(id), newConsultationDefaults(tid)]);
+  const [blocker, defaults] = await Promise.all([openingBlocker(id, user), newConsultationDefaults(tid)]);
   return (
     <ConsultationPage
       treatment={tr}

@@ -28,7 +28,7 @@ const TABLES: Record<string, string[]> = {
   SignatureSession: ['INSERT'],
 };
 const COLUMNS: Record<string, string[]> = {
-  'ConsentTextVersion.SELECT': ['body', 'id', 'language', 'title', 'version'],
+  'ConsentTextVersion.SELECT': ['body', 'id', 'language', 'resignRequired', 'title', 'version'],
   'Consultation.SELECT': [
     'at',
     'comparison',
@@ -71,6 +71,7 @@ const COLUMNS: Record<string, string[]> = {
     'mobile',
     'phone',
     'preferredLanguage',
+    'signatureRequiredVersion',
     'status',
     'street',
     'zip',

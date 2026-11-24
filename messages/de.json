@@ -258,7 +258,8 @@
     "treatmentCreatedFlash": "Behandlung eröffnet.",
     "treatmentSavedFlash": "Änderungen an der Behandlung gespeichert.",
     "consultationSavedFlash": "Sitzung Nr. {n} gespeichert.",
-    "tabLog": "Übungstagebuch"
+    "tabLog": "Übungstagebuch",
+    "nextVisitBanner": "Version {signed} ist unterschrieben und gilt weiter. Version {version} wird bei der nächsten Behandlung oder Sitzung unterschrieben."
   },
   "documents": {
     "title": "Haftungsausschluss, Patienteninformation und Datenschutz",
@@ -365,7 +366,8 @@
     "side_LEFT": "links",
     "side_RIGHT": "rechts",
     "variantN": "Variante {n}",
-    "zoneAudioLanguage": "Patienten-Zone: Audiosprache umgestellt"
+    "zoneAudioLanguage": "Patienten-Zone: Audiosprache umgestellt",
+    "resignRequested": "Neue Unterschrift verlangt (Version {version}), bei neuer Behandlung oder Sitzung"
   },
   "deactivate": {
     "title": "{name} deaktivieren?",
@@ -419,7 +421,6 @@
     "bodyEn": "Text (Englisch)",
     "bodyHint": "Abschnitte mit «## Überschrift», Listen mit «- ». Leerzeile trennt Absätze. Felder in Guillemets setzt die App aus den Praxisangaben ein.",
     "publish": "Version {version} veröffentlichen",
-    "publishNote": "Patient:innen, die eine ältere Version unterschrieben haben, werden als «Neue Unterschrift nötig» markiert.",
     "published": "Version {version} ist veröffentlicht.",
     "noVersions": "Noch keine Version veröffentlicht.",
     "resignCount": "{count, plural, =0 {Keine Patient:innen müssen neu unterschreiben.} one {# Patient:in muss neu unterschreiben.} other {# Patient:innen müssen neu unterschreiben.}}",
@@ -434,7 +435,13 @@
     "templateAdopt": "Als neue Version übernehmen",
     "templateDismiss": "Nicht übernehmen",
     "templateShow": "Vorlage ansehen",
-    "templateLoaded": "Die neue Vorlage ist im Formular geladen. Passen Sie sie bei Bedarf an und veröffentlichen Sie sie."
+    "templateLoaded": "Die neue Vorlage ist im Formular geladen. Passen Sie sie bei Bedarf an und veröffentlichen Sie sie.",
+    "nextVisitCount": "{count, plural, =0 {} one {# Patient:in unterschreibt die neue Version bei der nächsten Behandlung oder Sitzung.} other {# Patient:innen unterschreiben die neue Version bei der nächsten Behandlung oder Sitzung.}}",
+    "resignLegend": "Wann neu unterschreiben?",
+    "resignNext": "Bei der nächsten Behandlung oder Sitzung",
+    "resignNextText": "Bestehende Unterschriften bleiben gültig. Die neue Version wird erst verlangt, wenn Sie für die Person eine neue Behandlung oder Sitzung eröffnen. Neue Patient:innen unterschreiben sofort die neue Version.",
+    "resignAll": "Sofort von allen",
+    "resignAllText": "Alle, die eine ältere Version unterschrieben haben, werden sofort als «Neue Unterschrift nötig» markiert."
   },
   "treatments": {
     "title": "Behandlungen",

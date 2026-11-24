@@ -34,15 +34,35 @@ export const signingSchema = z.object({
 export type SigningInput = z.infer<typeof signingSchema>;
 
 /**
- * Ausstehende Unterschrift (design D2): no signature yet, or the latest one is of an older text version than the
- * current one. Without any published text (version 0) nothing can be signed, so nothing is pending.
+ * Verlangte Version (iteration 18, design D1): who never signed needs the current version. Who signed needs the
+ * newest version published with «Sofort von allen» (resignRequired) or the version the practice asked for at a new
+ * treatment or session (Patient.signatureRequiredVersion), whichever is higher.
  */
-export function signaturePending(latestSignedVersion: number | null | undefined, currentVersion: number): boolean {
-  if (currentVersion <= 0) return false;
-  return !latestSignedVersion || latestSignedVersion < currentVersion;
+export function requiredVersionOf(
+  latestSignedVersion: number | null | undefined,
+  currentVersion: number,
+  mandatoryVersion: number | null | undefined,
+  requestedVersion: number | null | undefined,
+): number {
+  if (!latestSignedVersion) return currentVersion;
+  return Math.min(currentVersion, Math.max(mandatoryVersion ?? 0, requestedVersion ?? 0));
 }
 
-type Reader = Pick<PrismaClient, 'signatureSession' | 'consentTextVersion'>;
+/**
+ * Ausstehende Unterschrift (design D2): no signature yet, or the latest one is of an older text version than the
+ * required one (iteration 18: by default the current one). Without any published text (version 0) nothing can be
+ * signed, so nothing is pending.
+ */
+export function signaturePending(
+  latestSignedVersion: number | null | undefined,
+  currentVersion: number,
+  requiredVersion: number = currentVersion,
+): boolean {
+  if (currentVersion <= 0) return false;
+  return !latestSignedVersion || latestSignedVersion < requiredVersion;
+}
+
+type Reader = Pick<PrismaClient, 'signatureSession' | 'consentTextVersion' | 'patient'>;
 
 /** Text version of the patient's most recent completed signature, from the session, not the PDF (design D2) */
 export async function latestSignedVersion(db: Pick<PrismaClient, 'signatureSession'>, patientId: string) {
@@ -60,9 +80,26 @@ export async function currentConsentVersion(db: Pick<PrismaClient, 'consentTextV
   return v._max.version ?? 0;
 }
 
+/** Newest version published with «Sofort von allen» (iteration 18, design D1); 0 if none */
+export async function mandatoryConsentVersion(db: Pick<PrismaClient, 'consentTextVersion'>): Promise<number> {
+  const v = await db.consentTextVersion.aggregate({ where: { resignRequired: true }, _max: { version: true } });
+  return v._max.version ?? 0;
+}
+
 export async function signatureStateOf(db: Reader, patientId: string) {
-  const [latest, current] = await Promise.all([latestSignedVersion(db, patientId), currentConsentVersion(db)]);
-  return { latestSignedVersion: latest, currentVersion: current, pending: signaturePending(latest, current) };
+  const [latest, current, mandatory, patient] = await Promise.all([
+    latestSignedVersion(db, patientId),
+    currentConsentVersion(db),
+    mandatoryConsentVersion(db),
+    db.patient.findUnique({ where: { id: patientId }, select: { signatureRequiredVersion: true } }),
+  ]);
+  const required = requiredVersionOf(latest, current, mandatory, patient?.signatureRequiredVersion);
+  return {
+    latestSignedVersion: latest,
+    currentVersion: current,
+    requiredVersion: required,
+    pending: signaturePending(latest, current, required),
+  };
 }
 
 const ZONE_PLACE = { de: 'Online (Patienten-Zone)', en: 'Online (patient zone)' } as const;

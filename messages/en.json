@@ -258,7 +258,8 @@
     "treatmentCreatedFlash": "Treatment opened.",
     "treatmentSavedFlash": "Changes to the treatment saved.",
     "consultationSavedFlash": "Session no. {n} saved.",
-    "tabLog": "Exercise log"
+    "tabLog": "Exercise log",
+    "nextVisitBanner": "Version {signed} is signed and stays valid. Version {version} will be signed at the next treatment or session."
   },
   "documents": {
     "title": "Liability waiver, patient information and privacy notice",
@@ -365,7 +366,8 @@
     "side_LEFT": "left",
     "side_RIGHT": "right",
     "variantN": "Variant {n}",
-    "zoneAudioLanguage": "Patient zone: audio language switched"
+    "zoneAudioLanguage": "Patient zone: audio language switched",
+    "resignRequested": "New signature requested (version {version}) at a new treatment or session"
   },
   "deactivate": {
     "title": "Deactivate {name}?",
@@ -419,7 +421,6 @@
     "bodyEn": "Text (English)",
     "bodyHint": "Sections with “## Heading”, lists with “- ”. A blank line separates paragraphs. The app fills fields in guillemets with the practice details.",
     "publish": "Publish version {version}",
-    "publishNote": "Patients who signed an older version will be marked \"Re-signing needed\".",
     "published": "Version {version} has been published.",
     "noVersions": "No version published yet.",
     "resignCount": "{count, plural, =0 {No patients need to sign again.} one {# patient needs to sign again.} other {# patients need to sign again.}}",
@@ -434,7 +435,13 @@
     "templateAdopt": "Adopt as new version",
     "templateDismiss": "Do not adopt",
     "templateShow": "View template",
-    "templateLoaded": "The new template is loaded in the form. Adjust it if needed and publish it."
+    "templateLoaded": "The new template is loaded in the form. Adjust it if needed and publish it.",
+    "nextVisitCount": "{count, plural, =0 {} one {# patient will sign the new version at the next treatment or session.} other {# patients will sign the new version at the next treatment or session.}}",
+    "resignLegend": "When to sign again?",
+    "resignNext": "At the next treatment or session",
+    "resignNextText": "Existing signatures stay valid. The new version is required only when you open a new treatment or session for the person. New patients sign the new version right away.",
+    "resignAll": "Everyone, right away",
+    "resignAllText": "Everyone who signed an older version is marked \"Re-signing needed\" at once."
   },
   "treatments": {
     "title": "Treatments",

@@ -424,12 +424,26 @@ Nach dem Deployment:
 1. Plattform-Seite: Karten zeigen «Zuletzt angemeldet», «Zuletzt geändert», die Zähler und das Modell. Unter «Modelle»
    weitere Modelle anlegen (Name, Limite oder leer für unbegrenzt).
 2. Falera: unter «Formulartexte» erscheint «Neue Vorlage verfügbar». «Als neue Version übernehmen», Text prüfen und
-   veröffentlichen. Achtung: Wie jede neue Version verlangt sie bei der nächsten Gelegenheit eine neue Unterschrift.
+   veröffentlichen. Seit Iteration 18 mit «Bei der nächsten Behandlung oder Sitzung», dann bleiben bestehende
+   Unterschriften gültig.
 3. Unter «Praxis» die verantwortliche Person (Datenschutz) prüfen.
 
 Gezählt werden Patient:innen mit unterschriebenem Formular (auch deaktivierte), Behandlungen mit mindestens einer
 Sitzung und Sitzungen mit Datum bis heute. Bei erreichter Limite ist nur «Neuer Patient» gesperrt; der Plattform-Admin
 erhält einmal eine E-Mail.
+
+## Iteration 18 (neue Formularversion bei der nächsten Behandlung oder Sitzung)
+
+Keine neuen Geheimnisse und keine neue Infrastruktur. Die Migration `20261126090000_consent_next_visit` ergänzt nur
+Spalten: `ConsentTextVersion.resignRequired` (bestehende Versionen `true` über den Spalten-Default, weil die Tabelle
+unveränderbar ist; neue Versionen standardmässig `false`) und `Patient.signatureRequiredVersion`. Der Migrations-Job
+gibt beide Spalten der Patienten-Zone zum Lesen frei (`prisma/patient-zone-role.sql`). Am Status bestehender
+Patient:innen ändert sich nichts.
+
+Nach dem Deployment unter «Formulartexte» eine neue Version mit «Bei der nächsten Behandlung oder Sitzung»
+veröffentlichen: Der Hinweis zeigt, wie viele die neue Version bei der nächsten Behandlung oder Sitzung unterschreiben.
+Öffnet man für eine solche Person «Neue Behandlung» oder «Neue Sitzung», wird die Unterschrift verlangt (Verlauf:
+«Neue Unterschrift verlangt»).
 
 ## Nach dem Go-live
 

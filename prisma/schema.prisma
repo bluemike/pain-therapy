@@ -233,35 +233,37 @@ model Invitation {
 }
 
 model Patient {
-  practiceId         String        @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
-  practice           Practice      @relation(fields: [practiceId], references: [id])
-  id                 String        @id @default(cuid())
-  firstName          String
-  lastName           String
-  gender             Gender?
-  dateOfBirth        DateTime      @db.Date
-  preferredLanguage  Language      @default(de)
+  practiceId               String        @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice                 Practice      @relation(fields: [practiceId], references: [id])
+  id                       String        @id @default(cuid())
+  firstName                String
+  lastName                 String
+  gender                   Gender?
+  dateOfBirth              DateTime      @db.Date
+  preferredLanguage        Language      @default(de)
   /// Audiosprache in der Patienten-Zone (iteration 15, design D3) while preferredLanguage is de
-  audioLanguage      AudioLanguage @default(de)
-  occupation         String?
-  gp                 String?
-  street             String?
-  zip                String?
-  city               String?
-  phone              String?
-  mobile             String?
-  email              String?
-  emergencyName      String?
-  emergencyPhone     String?
-  insurer            String?
-  insuranceNumber    String?
-  status             PatientStatus @default(ACTIVE)
-  deactivatedAt      DateTime?
-  deactivationReason String?
-  createdAt          DateTime      @default(now())
-  createdBy          String
-  updatedAt          DateTime      @updatedAt
-  updatedBy          String
+  audioLanguage            AudioLanguage @default(de)
+  occupation               String?
+  gp                       String?
+  street                   String?
+  zip                      String?
+  city                     String?
+  phone                    String?
+  mobile                   String?
+  email                    String?
+  emergencyName            String?
+  emergencyPhone           String?
+  insurer                  String?
+  insuranceNumber          String?
+  status                   PatientStatus @default(ACTIVE)
+  deactivatedAt            DateTime?
+  deactivationReason       String?
+  /// Iteration 18 (design D2): text version the practice asked for at a new treatment or session
+  signatureRequiredVersion Int?
+  createdAt                DateTime      @default(now())
+  createdBy                String
+  updatedAt                DateTime      @updatedAt
+  updatedBy                String
 
   anamnesis         Anamnesis?
   signatureSessions SignatureSession[]
@@ -312,15 +314,17 @@ model Anamnesis {
 
 /// Versioned disclaimer text (liability waiver, patient information, privacy notice), one row per version and language
 model ConsentTextVersion {
-  practiceId  String   @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
-  practice    Practice @relation(fields: [practiceId], references: [id])
-  id          String   @id @default(cuid())
-  version     Int
-  language    Language
-  title       String
-  body        String
-  publishedAt DateTime @default(now())
-  publishedBy String
+  practiceId     String   @default(dbgenerated("current_setting('app.practice_id'::text, true)"))
+  practice       Practice @relation(fields: [practiceId], references: [id])
+  id             String   @id @default(cuid())
+  version        Int
+  language       Language
+  title          String
+  body           String
+  publishedAt    DateTime @default(now())
+  publishedBy    String
+  /// Iteration 18 (design D1): true = everyone signs again at once; false = only at the next new treatment or session
+  resignRequired Boolean  @default(false)
 
   sessions SignatureSession[]
 
