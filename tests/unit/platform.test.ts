@@ -40,6 +40,7 @@ const byMail = (name: string, email: string): InviteForm => ({
   mobile: null,
   mailbox: { mode: 'NONE' },
   email: email.toLowerCase(),
+  notifyEmail: null,
 });
 
 beforeAll(resetDatabase);

@@ -6,7 +6,7 @@ import { suggestLocalPart, validLocalPart } from '@/lib/mailbox-address';
 import { mailProfile } from '@/lib/mail-profile';
 import { imapQuote, setMailService, type MailService } from '@/lib/infomaniak';
 import { setSmsSender } from '@/lib/sms';
-import { inviteMember, teamOf } from '@/lib/team';
+import { inviteMember, printInvitation, teamOf } from '@/lib/team';
 import { OnboardingError, parseInviteForm, type InviteForm } from '@/lib/onboarding';
 import {
   checkAddress,
@@ -17,18 +17,25 @@ import {
   sweepMailboxes,
   takeProfile,
 } from '@/lib/mailboxes';
-import { acceptInvitation, invitationById, userForInvitation } from '@/lib/auth/accounts';
+import {
+  acceptInvitation,
+  invitationById,
+  invitationByToken,
+  invitationTokenKey,
+  userForInvitation,
+} from '@/lib/auth/accounts';
 import {
   confirmEmailChange,
   confirmMobileChange,
   requestEmailChangeCode,
+  requestInvitationEmailCode,
   requestInvitationSmsCode,
   requestMobileChangeCode,
   ticketOf,
   verifyCode,
 } from '@/lib/auth/login-codes';
 import type { Actor } from '@/lib/session';
-import { invitePracticeAdminWith, revokePracticeInvitation } from '@/lib/platform';
+import { invitePracticeAdminWith, printPracticeInvitation, revokePracticeInvitation } from '@/lib/platform';
 import { practiceSender, replyToOf } from '@/lib/practice-mail';
 import { runInPractice } from '@pain-therapy/shared/practice-context';
 import { resetDatabase } from './db-reset';
@@ -145,10 +152,13 @@ describe('pure helpers', () => {
     expect(imapQuote('a\r\nb')).toBeNull();
   });
 
-  it('reads the invitation form: a new mailbox needs SMS, SMS needs a valid number', () => {
+  it('reads the invitation form: a mailbox by e-mail needs a private address, SMS needs a valid number', () => {
     expect(() =>
       parseInviteForm(fd({ name: 'A', channel: 'EMAIL', mailbox: 'NEW', localPart: 'a.b', mobile: '' })),
-    ).toThrow(OnboardingError);
+    ).toThrow(expect.objectContaining({ code: 'privateEmailInvalid' }));
+    expect(() =>
+      parseInviteForm(fd({ name: 'A', channel: 'BOTH', mailbox: 'NONE', email: 'a@b.ch', mobile: '' })),
+    ).toThrow(expect.objectContaining({ code: 'mobileInvalid' }));
     expect(() =>
       parseInviteForm(fd({ name: 'A', channel: 'SMS', mailbox: 'NONE', email: 'a@b.ch', mobile: '079 1' })),
     ).toThrow(OnboardingError);
@@ -160,7 +170,20 @@ describe('pure helpers', () => {
       mobile: '+41791234567',
       mailbox: { mode: 'NEW', localPart: 'a.b' },
       email: null,
+      notifyEmail: null,
     });
+    expect(
+      parseInviteForm(
+        fd({
+          name: 'A',
+          channel: 'BOTH',
+          mailbox: 'NEW',
+          localPart: 'a.b',
+          mobile: '079 123 45 67',
+          privateEmail: ' A.B@Gmail.com ',
+        }),
+      ),
+    ).toMatchObject({ channel: 'BOTH', notifyEmail: 'a.b@gmail.com', email: null });
   });
 });
 
@@ -171,6 +194,7 @@ describe('invitation by SMS with a new mailbox', () => {
     mobile: '+41781234512',
     mailbox: { mode: 'NEW', localPart },
     email: null,
+    notifyEmail: null,
   });
 
   it('creates the mailbox, sends the link by SMS, confirms the SMS code and hands the access over once', async () => {
@@ -284,7 +308,14 @@ describe('invitation by SMS with a new mailbox', () => {
       inviteMember(
         actor,
         TEST_PRACTICE_ID,
-        { name: 'Zu Viel', channel: 'SMS', mobile: '+41791110000', mailbox: { mode: 'NONE' }, email: 'zu@viel.test' },
+        {
+          name: 'Zu Viel',
+          channel: 'SMS',
+          mobile: '+41791110000',
+          mailbox: { mode: 'NONE' },
+          email: 'zu@viel.test',
+          notifyEmail: null,
+        },
         ['THERAPIST'],
       ),
     ).rejects.toMatchObject({ code: 'smsDayLimit' });
@@ -318,6 +349,7 @@ describe('own address instead of a mailbox (Mike, 22.11.2026)', () => {
       mobile: '+41791112233',
       mailbox: { mode: 'EXISTING', localPart: 'christina.franz' },
       email: null,
+      notifyEmail: null,
     };
     const inv = await invitePracticeAdminWith(platform, TEST_PRACTICE_ID, sms1);
     infomaniak.devices.set('christina.franz@pain-therapy.online', 'geraet-1');
@@ -384,5 +416,127 @@ describe('sign-in address under «Mein Profil»', () => {
     expect((await confirmEmailChange(u.id, codeOf(mails.at(-1)!.text), '10.0.0.3')).ok).toBe(true);
     expect((await rawDb.user.findUniqueOrThrow({ where: { id: u.id } })).email).toBe('christina.franz@ayanta.ch');
     expect((await rawDb.invitation.findUniqueOrThrow({ where: { id: inv.id } })).revokedAt).not.toBeNull();
+  });
+});
+
+describe('invitation by SMS, e-mail or both, and printed (iteration 19)', () => {
+  const both = (localPart: string, privateEmail: string | null = 'anna.privat@example.test'): InviteForm => ({
+    name: 'Anna Muster',
+    channel: 'BOTH',
+    mobile: '+41791234567',
+    mailbox: { mode: 'NEW', localPart },
+    email: null,
+    notifyEmail: privateEmail,
+  });
+  beforeAll(() => rawDb.practice.update({ where: { id: TEST_PRACTICE_ID }, data: { mailboxQuota: 50 } }));
+  const longToken = (text: string) => /\/einladung\/([A-Za-z0-9_-]{43})/.exec(text)?.[1] ?? '';
+
+  it('sends the same link by SMS and to the private address; the code comes by SMS or e-mail', async () => {
+    const actor = await admin();
+    const inv = await inviteMember(actor, TEST_PRACTICE_ID, both('anna.muster'), ['THERAPIST']);
+    expect(inv.smsFailed).toBeUndefined();
+    expect(infomaniak.boxes.has('anna.muster')).toBe(true);
+    expect(sms).toHaveLength(1);
+    expect(mails).toHaveLength(1);
+    expect(mails[0]!.to).toBe('anna.privat@example.test');
+    expect(longToken(mails[0]!.text)).toBe(tokenOf(sms[0]!.text));
+    expect(await invitationById(inv.id)).toMatchObject({
+      ok: true,
+      email: 'anna.muster@pain-therapy.online',
+      channel: 'BOTH',
+      notifyEmail: 'anna.privat@example.test',
+    });
+
+    // E-mail code to the private address, stored under the sign-in address
+    mails.length = 0;
+    expect(await requestInvitationEmailCode(inv.id, '10.0.19.1')).toEqual({ ok: true });
+    expect(mails).toHaveLength(1);
+    expect(mails[0]!.to).toBe('anna.privat@example.test');
+    const v = await verifyCode('anna.muster@pain-therapy.online', codeOf(mails[0]!.text), '10.0.19.1', 'INVITATION');
+    expect(v.ok).toBe(true);
+    if (v.ok) expect(await ticketOf(v.ticket, 'INVITATION')).toMatchObject({ invitationId: inv.id });
+
+    // The SMS code works as well
+    expect(await requestInvitationSmsCode(inv.id, '10.0.19.1')).toEqual({ ok: true });
+  });
+
+  it('keeps the invitation when the SMS of «beides» fails and the mail went out', async () => {
+    const actor = await admin();
+    setSmsSender({
+      send: async () => {
+        throw new Error('gateway down');
+      },
+    });
+    const inv = await inviteMember(actor, TEST_PRACTICE_ID, both('ben.teil', 'ben@example.test'), ['THERAPIST']);
+    expect(inv.smsFailed).toBe(true);
+    expect(mails.map((m) => m.to)).toEqual(['ben@example.test']);
+    expect(await invitationById(inv.id)).toMatchObject({ ok: true });
+  });
+
+  it('withdraws the invitation when neither channel goes out', async () => {
+    const actor = await admin();
+    setSmsSender({
+      send: async () => {
+        throw new Error('gateway down');
+      },
+    });
+    setMailer({
+      send: async () => {
+        throw new Error('smtp down');
+      },
+    });
+    const before = await rawDb.invitation.count({ where: { revokedAt: null } });
+    await expect(
+      inviteMember(
+        actor,
+        TEST_PRACTICE_ID,
+        { ...both('x'), mailbox: { mode: 'NONE' }, email: 'keiner@example.test', notifyEmail: null },
+        ['THERAPIST'],
+      ),
+    ).rejects.toMatchObject({ code: 'smsFailed' });
+    expect(await rawDb.invitation.count({ where: { revokedAt: null } })).toBe(before);
+  });
+
+  it('sends no e-mail code for an invitation by SMS only', async () => {
+    const actor = await admin();
+    const inv = await inviteMember(actor, TEST_PRACTICE_ID, { ...both('nur.sms'), channel: 'SMS', notifyEmail: null }, [
+      'THERAPIST',
+    ]);
+    mails.length = 0;
+    expect(await requestInvitationEmailCode(inv.id, '10.0.19.2')).toEqual({ ok: true });
+    expect(mails).toHaveLength(0);
+  });
+
+  it('prints with a new short link: the old links stop, the short one works in any case', async () => {
+    const actor = await admin();
+    const inv = await inviteMember(actor, TEST_PRACTICE_ID, both('clara.druck', 'clara@example.test'), ['THERAPIST']);
+    const old = tokenOf(sms.at(-1)!.text);
+    expect(await invitationByToken(old)).toMatchObject({ ok: true });
+
+    const sheet = await printInvitation(actor, TEST_PRACTICE_ID, inv.id);
+    expect(sheet).toMatchObject({ email: 'clara.druck@pain-therapy.online', mailbox: true, name: 'Anna Muster' });
+    const short = sheet.shortUrl.split('/e/')[1]!;
+    expect(short).toMatch(/^[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}$/);
+    expect(JSON.stringify(sheet)).not.toMatch(/\b\d{6}\b/);
+    expect(await invitationByToken(old)).toMatchObject({ ok: false, reason: 'notFound' });
+    expect(await invitationByToken(short)).toMatchObject({ ok: true, id: inv.id });
+    expect(await invitationByToken(short.toLowerCase().replace(/-/g, ''))).toMatchObject({ ok: true, id: inv.id });
+    expect(invitationTokenKey('nicht-gueltig')).toBeNull();
+
+    // Another practice cannot print it; printing again replaces the printed link
+    await expect(printInvitation(actor, 'other-practice', inv.id)).rejects.toMatchObject({ code: 'notFound' });
+    const u = await rawDb.user.upsert({
+      where: { email: 'platform16@example.test' },
+      create: { email: 'platform16@example.test', name: 'Plattform', platformAdmin: true, activatedAt: new Date() },
+      update: {},
+    });
+    const again = await printPracticeInvitation(
+      { id: u.id, name: u.name, email: u.email, roles: [] },
+      TEST_PRACTICE_ID,
+      inv.id,
+    );
+    expect(await invitationByToken(short)).toMatchObject({ ok: false });
+    expect(await invitationByToken(again.shortUrl.split('/e/')[1]!)).toMatchObject({ ok: true });
+    expect(await rawDb.auditEvent.count({ where: { action: 'team.invitationPrinted' } })).toBe(2);
   });
 });

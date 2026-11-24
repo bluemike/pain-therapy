@@ -7,12 +7,12 @@ import { normalizeMobile } from './phone';
 
 /**
  * Invitation with channel and mailbox (iteration 16, design D1, D3): one form on the team page and on the platform
- * page. Name, e-mail or SMS, and the mailbox: none (own address), a new one at pain-therapy.online, or an existing one
- * (platform admin only).
+ * page. Name, SMS, e-mail or both (iteration 19), and the mailbox: none (own address), a new one at
+ * pain-therapy.online, or an existing one (platform admin only). With a mailbox the mail goes to a private address.
  */
 
 export type OnboardingErrorCode =
-  'invalid' | 'mobileInvalid' | 'mailboxNeedsSms' | MailboxError['code'] | InvitationDeliveryError['code'];
+  'invalid' | 'mobileInvalid' | 'privateEmailInvalid' | MailboxError['code'] | InvitationDeliveryError['code'];
 
 export class OnboardingError extends Error {
   constructor(public code: OnboardingErrorCode) {
@@ -24,7 +24,7 @@ export class OnboardingError extends Error {
 export const ONBOARDING_ERRORS: OnboardingErrorCode[] = [
   'invalid',
   'mobileInvalid',
-  'mailboxNeedsSms',
+  'privateEmailInvalid',
   'mailboxDisabled',
   'mailboxInvalid',
   'mailboxTaken',
@@ -36,24 +36,28 @@ export const ONBOARDING_ERRORS: OnboardingErrorCode[] = [
   'smsDayLimit',
   'smsInvitationLimit',
   'noMobile',
+  'noEmail',
 ];
 
 const formSchema = z.object({
   name: z.string().trim().min(1).max(100),
-  channel: z.enum(['EMAIL', 'SMS']),
+  channel: z.enum(['EMAIL', 'SMS', 'BOTH']),
   mobile: z.string().trim().max(40),
   mailbox: z.enum(['NONE', 'NEW', 'EXISTING']),
   localPart: z.string().trim().toLowerCase().max(64),
   email: z.string().trim().toLowerCase().max(200),
+  privateEmail: z.string().trim().toLowerCase().max(200),
 });
 
 export type InviteForm = {
   name: string;
-  channel: 'EMAIL' | 'SMS';
+  channel: 'EMAIL' | 'SMS' | 'BOTH';
   mobile: string | null;
   mailbox: MailboxChoice;
   /** Own address (mailbox NONE) */
   email: string | null;
+  /** Iteration 19 (design D1): private address for the mail when a mailbox at pain-therapy.online is chosen */
+  notifyEmail: string | null;
 };
 
 /** Reads the shared invitation fields; throws OnboardingError */
@@ -65,25 +69,38 @@ export function parseInviteForm(fd: FormData): InviteForm {
     mailbox: fd.get('mailbox') ?? 'NONE',
     localPart: fd.get('localPart') ?? '',
     email: fd.get('email') ?? '',
+    privateEmail: fd.get('privateEmail') ?? '',
   });
   if (!raw.success) throw new OnboardingError('invalid');
   const v = raw.data;
   const mobile = v.mobile ? normalizeMobile(v.mobile) : null;
   if (v.mobile && !mobile) throw new OnboardingError('mobileInvalid');
-  if (v.channel === 'SMS' && !mobile) throw new OnboardingError('mobileInvalid');
-  // Nobody reads a brand-new mailbox yet: its invitation has to go by SMS
-  if (v.mailbox === 'NEW' && v.channel !== 'SMS') throw new OnboardingError('mailboxNeedsSms');
+  if (v.channel !== 'EMAIL' && !mobile) throw new OnboardingError('mobileInvalid');
   if (v.mailbox === 'NONE') {
     if (!z.email().safeParse(v.email).success) throw new OnboardingError('invalid');
-    return { name: v.name, channel: v.channel, mobile, mailbox: { mode: 'NONE' }, email: normalizeEmail(v.email) };
+    return {
+      name: v.name,
+      channel: v.channel,
+      mobile,
+      mailbox: { mode: 'NONE' },
+      email: normalizeEmail(v.email),
+      notifyEmail: null,
+    };
   }
   if (!v.localPart) throw new OnboardingError('mailboxInvalid');
+  // Nobody reads the mailbox yet (iteration 19, design D1): the mail goes to a private address instead
+  let notifyEmail: string | null = null;
+  if (v.channel !== 'SMS') {
+    if (!z.email().safeParse(v.privateEmail).success) throw new OnboardingError('privateEmailInvalid');
+    notifyEmail = normalizeEmail(v.privateEmail);
+  }
   return {
     name: v.name,
     channel: v.channel,
     mobile,
     mailbox: { mode: v.mailbox, localPart: v.localPart },
     email: null,
+    notifyEmail,
   };
 }
 
@@ -102,8 +119,9 @@ export async function resolveInviteAddress(
 }
 
 /**
- * Sends the invitation (SMS or e-mail) and creates the mailbox at Infomaniak. A failing mailbox does not stop the
- * invitation (design D3); a failing SMS does, and nothing stays behind.
+ * Sends the invitation (SMS, e-mail or both) and creates the mailbox at Infomaniak. A failing mailbox does not stop
+ * the invitation (design D3); a failing SMS does when it is the only channel, and nothing stays behind. With both
+ * channels `smsFailed` says the mail went out alone (iteration 19, design D1).
  */
 export async function sendInvite(input: {
   form: InviteForm;
@@ -112,7 +130,7 @@ export async function sendInvite(input: {
   roles: PracticeRole[];
   invitedBy: string;
 }) {
-  let inv: { id: string; url: string };
+  let inv: { id: string; url: string; smsFailed?: boolean };
   try {
     inv = await createInvitation({
       email: input.email,
@@ -122,6 +140,7 @@ export async function sendInvite(input: {
       invitedBy: input.invitedBy,
       channel: input.form.channel,
       mobile: input.form.mobile,
+      notifyEmail: input.form.notifyEmail,
     });
   } catch (e) {
     if (e instanceof InvitationDeliveryError) throw new OnboardingError(e.code);

@@ -12,12 +12,14 @@ import {
   practiceDetailsSchema,
   PlatformError,
   invitePracticeAdminWith,
+  printPracticeInvitation,
   revokePracticeInvitation,
   setMailboxQuota,
   setPracticeStatus,
   updatePracticeDetails,
 } from '@/lib/platform';
 import { OnboardingError, parseInviteForm } from '@/lib/onboarding';
+import { invitationSheet, type InvitationSheet } from '@/lib/invitation-sheet';
 import { handOverAccess, MailboxError, retryMailbox } from '@/lib/mailboxes';
 import { audit } from '@/lib/audit';
 import { authDb } from '@/lib/db';
@@ -123,7 +125,13 @@ export async function deleteAction(fd: FormData) {
 
 /** Iteration 16 (design D1, D3): practice admin by SMS or e-mail, with a new or existing mailbox */
 export async function invitePracticeAdminAction(fd: FormData) {
-  await run((actor) => invitePracticeAdminWith(actor, String(fd.get('id')), parseInviteForm(fd)), 'invited');
+  let smsFailed = false;
+  await run(
+    async (actor) => {
+      smsFailed = !!(await invitePracticeAdminWith(actor, String(fd.get('id')), parseInviteForm(fd))).smsFailed;
+    },
+    () => (smsFailed ? 'invitedSmsFailed' : 'invited'),
+  );
 }
 
 /** Iteration 16 (design D4): device password from the Manager, checked and kept encrypted for at most 14 days */
@@ -151,6 +159,20 @@ export async function revokeInvitationPlatformAction(fd: FormData) {
     (actor) => revokePracticeInvitation(actor, String(fd.get('practiceId')), String(fd.get('id'))),
     'invitationRevoked',
   );
+}
+
+/** Iteration 19 (design D3): «Einladung drucken» for an open invitation of a practice */
+export async function printInvitationPlatformAction(
+  practiceId: string,
+  invitationId: string,
+): Promise<{ ok: true; sheet: InvitationSheet } | { ok: false }> {
+  const actor = await requirePlatformAdmin();
+  try {
+    return { ok: true, sheet: await invitationSheet(await printPracticeInvitation(actor, practiceId, invitationId)) };
+  } catch (e) {
+    if (e instanceof PlatformError) return { ok: false };
+    throw e;
+  }
 }
 
 /** practice-plans (iteration 17, design D7): plan of a practice */

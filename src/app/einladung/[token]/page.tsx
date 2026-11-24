@@ -4,6 +4,7 @@ import { invitationByToken } from '@/lib/auth/accounts';
 import { Logo } from '@/components/Logo';
 import { InviteFlow } from '@/components/auth/InviteFlow';
 import { maskMobile } from '@/lib/phone';
+import { maskEmail } from '@/lib/mask-email';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +23,7 @@ export default async function InvitationPage({ params }: { params: Promise<{ tok
               <h1>{inv.practiceName ? t('title', { practice: inv.practiceName }) : t('titlePlatform')}</h1>
               <p>
                 {t(
-                  `${inv.platformAdmin ? 'introPlatform' : inv.roles.includes('PRACTICE_ADMIN') ? 'introAdmin' : 'intro'}${inv.channel === 'SMS' ? 'Sms' : ''}` as 'intro',
+                  `${inv.platformAdmin ? 'introPlatform' : inv.roles.includes('PRACTICE_ADMIN') ? 'introAdmin' : 'intro'}${{ SMS: 'Sms', EMAIL: '', BOTH: 'Both' }[inv.channel]}` as 'intro',
                   {
                     inviter: inv.invitedBy,
                   },
@@ -30,8 +31,10 @@ export default async function InvitationPage({ params }: { params: Promise<{ tok
               </p>
               <InviteFlow
                 token={token}
-                email={inv.email}
-                sms={inv.channel === 'SMS' && inv.mobile ? maskMobile(inv.mobile) : null}
+                email={
+                  inv.channel === 'SMS' ? null : inv.notifyEmail === inv.email ? inv.email : maskEmail(inv.notifyEmail)
+                }
+                sms={inv.channel !== 'EMAIL' && inv.mobile ? maskMobile(inv.mobile) : null}
               />
             </>
           ) : (

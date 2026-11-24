@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
-import { expectNoA11yViolations, login, unique } from './helpers';
+import { codeFromOutbox, expectNoA11yViolations, invitationFromOutbox, login, outboxFiles, unique } from './helpers';
 
 /**
  * Iteration 12, phase 5: the platform account creates, suspends, exports and deletes a practice (design D3, D9); the
@@ -93,7 +93,7 @@ test.describe('platform and team', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Team' })).toBeVisible();
     await expect(page.getByTestId('member').filter({ hasText: 'Mike Franz (Sie)' })).toBeVisible();
     await page.getByLabel('Name', { exact: true }).fill('Tina Test');
-    // Iteration 16: SMS is preselected; this invitation goes by e-mail to the person's own address
+    // Iteration 19: «beides» is preselected; this invitation goes by e-mail only to the person's own address
     await page.getByLabel('per E-Mail', { exact: true }).check();
     await page.getByLabel('E-Mail', { exact: true }).fill(`tina.${id}@example.test`);
     await page.getByRole('button', { name: 'Einladung senden' }).click();
@@ -106,7 +106,7 @@ test.describe('platform and team', () => {
     await expect(invitation).toHaveCount(0);
   });
 
-  test('a person invited by SMS gets a new mailbox, and the platform account hands over its access', async ({
+  test('a person invited by SMS and e-mail gets a new mailbox, accepts with the e-mail code, and the invitation prints', async ({
     browser,
     page,
   }) => {
@@ -118,12 +118,53 @@ test.describe('platform and team', () => {
     await page.getByLabel('Name', { exact: true }).fill(`Nora ${id}`);
     await page.getByLabel('Handynummer').fill('079 123 45 67');
     await page.getByRole('radio', { name: /Neues Postfach @pain-therapy\.online/ }).check();
-    // A brand-new mailbox is read by nobody yet: e-mail is not offered
-    await expect(page.getByLabel('per E-Mail', { exact: true })).toBeDisabled();
+    // Iteration 19: «beides» is preselected; nobody reads the new mailbox yet, so the mail goes to a private address
+    await expect(page.getByRole('radio', { name: 'beides (SMS und E-Mail)' })).toBeChecked();
     await page.getByLabel('Neue Adresse').fill(`nora.${id}`);
+    const privateAddress = `nora.privat.${id}@example.test`;
+    await page.getByLabel('Private E-Mail-Adresse').fill(privateAddress);
+    const before = await outboxFiles();
     await page.getByRole('button', { name: 'Einladung senden' }).click();
     await expect(page.getByText('Die Einladung ist unterwegs.')).toBeVisible();
-    await expect(page.getByTestId('invitation').filter({ hasText: address })).toBeVisible();
+    const invitation = page.getByTestId('invitation').filter({ hasText: address });
+    await expect(invitation).toContainText('per SMS und E-Mail');
+    await expect(invitation).toContainText(`E-Mail an ${privateAddress}`);
+
+    // On the computer: the link from the mail, the code by e-mail to the private address
+    const link = await invitationFromOutbox(privateAddress, before);
+    const invited = await browser.newContext();
+    const nora = await invited.newPage();
+    await nora.goto(link);
+    await expect(nora.getByRole('button', { name: /^Code per SMS an \+41 79/ })).toBeVisible();
+    await expectNoA11yViolations(nora, 'invitation-both');
+    const beforeCode = await outboxFiles();
+    await nora.getByRole('button', { name: `Code per E-Mail an n***@example.test` }).click();
+    await nora.getByLabel('Code aus der E-Mail').fill(await codeFromOutbox(privateAddress, beforeCode));
+    await nora.getByRole('button', { name: 'Weiter' }).click();
+    await expect(nora.getByText('Richten Sie jetzt Ihren zweiten Faktor ein.')).toBeVisible();
+    await invited.close();
+
+    // «Einladung drucken»: a new short link replaces the one of the SMS and the mail
+    await page.evaluate(() => {
+      window.print = () => undefined;
+    });
+    await invitation.getByRole('button', { name: 'Drucken' }).click();
+    await expect(invitation.getByText('Der Link aus SMS und E-Mail gilt dann nicht mehr.')).toBeVisible();
+    await invitation.getByRole('button', { name: 'Neuen Link erstellen und drucken' }).click();
+    const sheet = page.getByRole('dialog', { name: `Ihre Einladung, Nora ${id}` });
+    await expect(sheet).toBeVisible();
+    await expect(sheet.locator('.invite-print__link')).toHaveText(/\/e\/[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}$/);
+    await expect(sheet).toContainText(`Anmeldeadresse: ${address}`);
+    await expectNoA11yViolations(page, 'invitation-print');
+    const printed = (await sheet.locator('.invite-print__link').textContent())!;
+    await sheet.getByRole('button', { name: 'Schliessen' }).click();
+    const reopened = await browser.newContext();
+    const paper = await reopened.newPage();
+    await paper.goto(link);
+    await expect(paper.getByRole('heading', { name: 'Einladung nicht gültig' })).toBeVisible();
+    await paper.goto(`/e/${printed.split('/e/')[1]!.toLowerCase()}`);
+    await expect(paper.getByRole('button', { name: /^Code per SMS an/ })).toBeVisible();
+    await reopened.close();
 
     const context = await browser.newContext();
     const platform = await context.newPage();

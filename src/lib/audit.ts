@@ -68,6 +68,8 @@ export type AuditAction =
   // Iteration 12, phase 5 (design D3, D4, D9): team of a practice and the platform
   | 'team.invited'
   | 'team.invitationRevoked'
+  // Iteration 19 (design D3): «Einladung drucken» issued a new link
+  | 'team.invitationPrinted'
   | 'team.rolesChanged'
   | 'team.deactivated'
   | 'team.reactivated'

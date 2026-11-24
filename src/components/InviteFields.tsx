@@ -4,13 +4,14 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { suggestLocalPart } from '@/lib/mailbox-address';
 
-type Channel = 'SMS' | 'EMAIL';
+type Channel = 'SMS' | 'EMAIL' | 'BOTH';
 type Mode = 'NONE' | 'NEW' | 'EXISTING';
 
 /**
- * Invitation fields (iteration 16, design D1, D3): name, by SMS or e-mail, and the mailbox (none, new at
- * pain-therapy.online with a suggestion from the name, or an existing one for the platform admin). Used inside the
- * forms of the team page and the platform page; the server checks everything again (src/lib/onboarding.ts).
+ * Invitation fields (iteration 16, design D1, D3): name, by SMS, e-mail or both (iteration 19, default both), and the
+ * mailbox (none, new at pain-therapy.online with a suggestion from the name, or an existing one for the platform
+ * admin). With a mailbox and e-mail the mail goes to a private address. Used inside the forms of the team page and the
+ * platform page; the server checks everything again (src/lib/onboarding.ts).
  */
 export function InviteFields({
   idPrefix,
@@ -28,7 +29,7 @@ export function InviteFields({
 }) {
   const t = useTranslations('onboarding');
   const [name, setName] = useState('');
-  const [channel, setChannel] = useState<Channel>('SMS');
+  const [channel, setChannel] = useState<Channel>('BOTH');
   const [mode, setMode] = useState<Mode>('NONE');
   const [localPart, setLocalPart] = useState('');
   const [touched, setTouched] = useState(false);
@@ -36,11 +37,7 @@ export function InviteFields({
   const id = (s: string) => `${idPrefix}_${s}`;
   const lp = touched ? localPart : suggestLocalPart(name);
 
-  const choose = (m: Mode) => {
-    setMode(m);
-    // A new mailbox is read by nobody yet: its invitation goes by SMS
-    if (m === 'NEW') setChannel('SMS');
-  };
+  const choose = (m: Mode) => setMode(m);
 
   return (
     <>
@@ -61,27 +58,13 @@ export function InviteFields({
       </div>
       <fieldset className="full">
         <legend className="l">{t('channel')}</legend>
-        <label className="ck">
-          <input
-            type="radio"
-            name="channel"
-            value="SMS"
-            checked={channel === 'SMS'}
-            onChange={() => setChannel('SMS')}
-          />{' '}
-          {t('channel_SMS')}
-        </label>
-        <label className="ck">
-          <input
-            type="radio"
-            name="channel"
-            value="EMAIL"
-            checked={channel === 'EMAIL'}
-            disabled={mode === 'NEW'}
-            onChange={() => setChannel('EMAIL')}
-          />{' '}
-          {t('channel_EMAIL')}
-        </label>
+        {(['SMS', 'EMAIL', 'BOTH'] as const).map((c) => (
+          <label className="ck" key={c}>
+            <input type="radio" name="channel" value={c} checked={channel === c} onChange={() => setChannel(c)} />{' '}
+            {t(`channel_${c}`)}
+          </label>
+        ))}
+        <p className="hint">{t('channelHint')}</p>
       </fieldset>
       <div className="f">
         <label className="l" htmlFor={id('mobile')}>
@@ -95,7 +78,7 @@ export function InviteFields({
           inputMode="tel"
           autoComplete="off"
           maxLength={40}
-          required={channel === 'SMS'}
+          required={channel !== 'EMAIL'}
           placeholder="079 123 45 67"
           aria-describedby={id('mobile_hint')}
         />
@@ -180,6 +163,26 @@ export function InviteFields({
           <p className="hint">{t(mode === 'NEW' ? 'addressHint' : 'existingHint')}</p>
         </div>
       )}
+      {mode !== 'NONE' && channel !== 'SMS' ? (
+        <div className="f full">
+          <label className="l" htmlFor={id('privateEmail')}>
+            {t('privateEmail')}
+          </label>
+          <input
+            className="inp"
+            id={id('privateEmail')}
+            name="privateEmail"
+            type="email"
+            required
+            maxLength={200}
+            autoComplete="off"
+            aria-describedby={id('privateEmail_hint')}
+          />
+          <p className="hint" id={id('privateEmail_hint')}>
+            {t('privateEmailHint')}
+          </p>
+        </div>
+      ) : null}
     </>
   );
 }

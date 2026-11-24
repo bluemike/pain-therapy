@@ -21,9 +21,11 @@ import {
   mailboxQuotaAction,
   practicePlanAction,
   retryMailboxPlatformAction,
+  printInvitationPlatformAction,
   revokeInvitationPlatformAction,
   statusAction,
 } from './actions';
+import { PrintInvitation } from '@/components/PrintInvitation';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +34,7 @@ const FLASH = [
   'suspended',
   'reactivated',
   'invited',
+  'invitedSmsFailed',
   'exporting',
   'deleted',
   'saved',
@@ -240,13 +243,18 @@ export default async function PlatformPage({
               {p.invitations.map((i) => (
                 <li key={i.id}>
                   <div className="who">
-                    <span className="muted">{t('openInvitation', { email: i.email })}</span>
+                    <span className="muted">
+                      {t('openInvitation', { email: i.email })} · {to(`via_${i.channel}`)}
+                    </span>
                   </div>
-                  <form action={revokeInvitationPlatformAction}>
-                    <input type="hidden" name="practiceId" value={p.id} />
-                    <input type="hidden" name="id" value={i.id} />
-                    <button className="btn btn--ghost">{t('revokeInvitation')}</button>
-                  </form>
+                  <div className="acts">
+                    <PrintInvitation print={printInvitationPlatformAction.bind(null, p.id, i.id)} />
+                    <form action={revokeInvitationPlatformAction}>
+                      <input type="hidden" name="practiceId" value={p.id} />
+                      <input type="hidden" name="id" value={i.id} />
+                      <button className="btn btn--ghost">{t('revokeInvitation')}</button>
+                    </form>
+                  </div>
                 </li>
               ))}
             </ul>

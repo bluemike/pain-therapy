@@ -224,6 +224,9 @@ model Invitation {
   /// Iteration 16 (design D1): by e-mail (default) or SMS to `mobile` (E.164)
   channel       InvitationChannel @default(EMAIL)
   mobile        String?
+  /// Iteration 19 (design D1): private address for the invitation mail and the e-mail code when it differs from the
+  /// sign-in address (a mailbox at pain-therapy.online nobody reads yet)
+  notifyEmail   String?
 
   loginCodes LoginCode[]
   sms        SmsMessage[]
@@ -1192,6 +1195,8 @@ model PracticeMembership {
 enum InvitationChannel {
   EMAIL
   SMS
+  /// Iteration 19: SMS and e-mail with the same link
+  BOTH
 }
 
 enum SmsPurpose {

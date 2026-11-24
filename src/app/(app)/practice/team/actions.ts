@@ -5,8 +5,10 @@ import { requireUser } from '@/lib/session';
 import { requirePractice } from '@/lib/practice';
 import { OnboardingError, parseInviteForm } from '@/lib/onboarding';
 import { MailboxError, retryMailbox } from '@/lib/mailboxes';
+import { invitationSheet, type InvitationSheet } from '@/lib/invitation-sheet';
 import {
   inviteMember,
+  printInvitation,
   resetMember,
   revokeInvitation,
   rolesOf,
@@ -18,13 +20,14 @@ import {
 /** team-management (iteration 12, design D3, D4): actions of the page «Team», only for the practice admin */
 
 async function run(
-  fn: (actor: Awaited<ReturnType<typeof requireUser>>, practiceId: string) => Promise<void>,
+  fn: (actor: Awaited<ReturnType<typeof requireUser>>, practiceId: string) => Promise<void | string>,
   flash: string,
 ) {
   const actor = await requireUser('manageConsentTexts');
   const { id } = await requirePractice();
   try {
-    await fn(actor, id);
+    // A function may answer with another flash (iteration 19: the SMS of «beides» failed)
+    flash = (await fn(actor, id)) || flash;
   } catch (e) {
     if (e instanceof TeamError || e instanceof OnboardingError || e instanceof MailboxError)
       redirect(`/practice/team?error=${e.code}`);
@@ -33,10 +36,13 @@ async function run(
   redirect(`/practice/team?flash=${flash}`);
 }
 
-/** Iteration 16: by SMS or e-mail, with or without a mailbox at pain-therapy.online */
+/** Iteration 16/19: by SMS, e-mail or both, with or without a mailbox at pain-therapy.online */
 export async function inviteAction(fd: FormData) {
   await run(
-    (actor, practiceId) => inviteMember(actor, practiceId, parseInviteForm(fd), rolesOf(fd)).then(() => undefined),
+    (actor, practiceId) =>
+      inviteMember(actor, practiceId, parseInviteForm(fd), rolesOf(fd)).then((inv) =>
+        inv.smsFailed ? 'invitedSmsFailed' : undefined,
+      ),
     'invited',
   );
 }
@@ -64,4 +70,18 @@ export async function activeAction(fd: FormData) {
 
 export async function resetAction(fd: FormData) {
   await run((actor, practiceId) => resetMember(actor, practiceId, String(fd.get('userId'))), 'reset');
+}
+
+/** Iteration 19 (design D3): «Einladung drucken»; a new link replaces the one of the SMS and the mail */
+export async function printInvitationAction(
+  invitationId: string,
+): Promise<{ ok: true; sheet: InvitationSheet } | { ok: false }> {
+  const actor = await requireUser('manageConsentTexts');
+  const { id } = await requirePractice();
+  try {
+    return { ok: true, sheet: await invitationSheet(await printInvitation(actor, id, invitationId)) };
+  } catch (e) {
+    if (e instanceof TeamError) return { ok: false };
+    throw e;
+  }
 }
