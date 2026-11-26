@@ -30,16 +30,14 @@ export default async function MailboxPage({ searchParams }: { searchParams: Prom
       {mb ? (
         <section className="card mailbox-card" aria-labelledby="h_access">
           <h2 id="h_access">{t('access')}</h2>
-          {mb.access === 'READY' ? (
-            <MailboxReveal fresh={sp.neu === '1'} />
-          ) : mb.access === 'DELIVERED' ? (
-            <>
+          {mb.access === 'READY' || mb.access === 'DELIVERED' ? (
+            <MailboxReveal fresh={sp.neu === '1'} ready={mb.access === 'READY'}>
               <p>{t('delivered', { at: formatDateTime(mb.deliveredAt ?? new Date()) })}</p>
               <form action={requestAccessAction}>
                 <button className="btn btn--gold">{t('request')}</button>
               </form>
               <p className="muted small">{t('requestHint')}</p>
-            </>
+            </MailboxReveal>
           ) : (
             <>
               <p>{t('preparing')}</p>
@@ -52,7 +50,7 @@ export default async function MailboxPage({ searchParams }: { searchParams: Prom
       ) : (
         <p className="muted">{t('noneHint')}</p>
       )}
-      {sp.neu === '1' && mb?.access !== 'READY' ? (
+      {sp.neu === '1' && mb?.access !== 'READY' && mb?.access !== 'DELIVERED' ? (
         <Link className="btn btn--gold" href="/">
           {t('toApp')}
         </Link>
