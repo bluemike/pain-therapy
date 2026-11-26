@@ -8,8 +8,21 @@ import { revealAccessAction, type RevealResult } from '@/app/(app)/postfach/acti
 /**
  * Shows the mailbox access once (iteration 16, design D4): password to copy, the Apple profile behind a one-time
  * link and the settings for Outlook. After a reload the password is gone for good.
+ *
+ * The page renders this component for READY and for DELIVERED at the same place, with the DELIVERED status as
+ * children: the reveal re-renders the page (the session cookie is renewed in the action), which switches it to
+ * DELIVERED, and the component must keep its state so that the password stays on screen.
  */
-export function MailboxReveal({ fresh }: { fresh: boolean }) {
+export function MailboxReveal({
+  fresh,
+  ready,
+  children,
+}: {
+  fresh: boolean;
+  /** Access waiting to be shown; otherwise the children (status «abgeholt») are shown until a reveal happened */
+  ready: boolean;
+  children?: React.ReactNode;
+}) {
   const t = useTranslations('mailbox');
   const [shown, setShown] = useState<Extract<RevealResult, { ok: true }> | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +46,18 @@ export function MailboxReveal({ fresh }: { fresh: boolean }) {
       setCopied(false);
     }
   };
+
+  if (!shown && !ready)
+    return (
+      <>
+        {children}
+        {fresh ? (
+          <Link className="btn btn--gold" href="/">
+            {t('toApp')}
+          </Link>
+        ) : null}
+      </>
+    );
 
   if (!shown)
     return (
